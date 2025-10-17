@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss'
+const defaultTheme = require("tailwindcss/defaultTheme");
 
 const config: Config = {
   
@@ -9,12 +10,12 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-bai-jamjuree)'],
-        mono: ['var(--font-geist-mono)'],
-        geist: ['var(--font-geist-sans)'],
+        sans: ["var(--font-bai-jamjuree)", ...defaultTheme.fontFamily.sans],
       },
     },
   },
-  plugins: [],
+  plugins: [
+    require('tailwind-scrollbar-hide')
+  ],
 }
 export default config

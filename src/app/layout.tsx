@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
-import { Bai_Jamjuree } from "next/font/google";
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
+import 'antd/dist/reset.css';
 import "./globals.css";
-
+import QueryProvider from "../providers/QueryProvider";
+import { Bai_Jamjuree } from "next/font/google";
 
 const baiJamjuree = Bai_Jamjuree({
-  variable: "--font-bai-jamjuree",
-  weight: ['400', '500', '600', '700'],
-  subsets: ['thai', 'latin'],
-  display: 'swap',
+  weight: ["400", "500", "600", "700"], // เลือกน้ำหนักที่ต้องการ (500 คือ Medium)
+  subsets: ["thai", "latin"], // สำคัญมาก: ต้องมี 'thai'
+  variable: "--font-bai-jamjuree", // 3. ตั้งชื่อ CSS Variable
+  display: "swap", // ช่วยให้แสดงผลเร็วขึ้น
 });
 
 export const metadata: Metadata = {
@@ -24,11 +25,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="font-primary font-medium" >
       <body
-        className={`flex flex-col w-full min-h-[100vh] overflow-x-hidden`}
-      >
-        {children}
+        className={`flex flex-col w-full min-h-[100vh] overflow-x-hidden`}>
+        <QueryProvider>
+            {children}
+        </QueryProvider>
       </body>
     </html>
   );

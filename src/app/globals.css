@@ -1,28 +1,8 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
 
-/* @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-bai-jamjuree);
-  --font-mono: var(--font-bai-jamjuree);
-} */
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family:sans-serif;
+@theme{
+  --font-primary: "Bai Jamjuree", sans-serif;
 }
 
 .swiper-pagination-bullet {
@@ -34,7 +14,7 @@ body {
 }
 
 .swiper-pagination-bullet-active {
-  background-color: #de0426;
-  width: 50px;
-  border-radius: 50px;
+  background-color: red;
+  width: 60px;
+  border-radius: 60px;
 }
