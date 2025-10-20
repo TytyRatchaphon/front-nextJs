@@ -1,7 +1,12 @@
 'use client';
 
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay, Pagination, Navigation, A11y } from 'swiper/modules';
+import { Autoplay, Pagination, Navigation, A11y, FreeMode } from 'swiper/modules';
+import Image from 'next/image';
+import Link from 'next/link';  
+
+import 'swiper/css';
+import 'swiper/css/free-mode';
 
 import{
     useGetBanners,
@@ -159,14 +164,14 @@ export function NewNovelSlider() {
         {novels?.map((novel: NodeBook) => (
         <SwiperSlide>
             <div className='swiper-slide items-start SwiperSlide' style={{width: "151.667px", marginRight: "10px"}}>
-                <a className='flex flex-col cursor-pointer p-2 text-start  hover:text-primary bg-transparent' href="" style={{width: "100%", height: "auto"}}>
+                <Link className='flex flex-col cursor-pointer p-2 text-start  hover:text-primary bg-transparent' href={`/book/${novel.book_id}`} style={{width: "100%", height: "auto"}}>
                    <div className='relative' style={{width: "100%", overflow: "visible"}}>
                         <div className='relative' style={{width: "100%"}}>
-                            <img alt="enjoybook" loading="lazy" width="100" height="100" decoding="async" data-nimg="1" style={{color: "transparent", width: "2.5rem", height: "auto", position: "absolute", left: "-6px", top: "0.7rem", zIndex: 10}}   src="https://img.enjoybook.co/img/tag/newTag.png?w=256&amp;q=75">
-                            </img>                          
+                            <Image alt="enjoybook" loading="lazy" width="100" height="100" decoding="async" data-nimg="1" style={{color: "transparent", width: "2.5rem", height: "auto", position: "absolute", left: "-6px", top: "0.7rem", zIndex: 10}}   src="https://img.enjoybook.co/img/tag/newTag.png?w=256&amp;q=75">
+                            </Image>                          
                         </div>
                         <div className='flex items-center justify-center rounded-lg shadow-md cursor-pointer relative' style={{width: "100%", height: "auto", aspectRatio: "1 / 1.454"}}>
-                            <img alt="ข้ามมิติเป็นนักฝึกสัตว์วิเศษ ปลุกพลังนกสายฟ้าสะกดชะตาแผ่นดิน" loading="lazy" decoding="async" data-nimg="fill" className="rounded-lg undefined" style={{position: "absolute", height: "100%", width: "100%", inset: "0px", color: "transparent"}} sizes="400px" src={novel.img}></img>
+                            <Image alt="ข้ามมิติเป็นนักฝึกสัตว์วิเศษ ปลุกพลังนกสายฟ้าสะกดชะตาแผ่นดิน" loading="lazy" decoding="async" data-nimg="fill" className="rounded-lg undefined" fill={true} sizes="400px" src={novel.img}></Image>
                         </div>
                    </div>
                    <div className=''>
@@ -177,7 +182,7 @@ export function NewNovelSlider() {
                        <span className="text-sm text-black flex flex-row items-center lg:gap-2 gap-1"><svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 16 16" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"></path><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"></path></svg>{novel.status}</span>
                        <span className="text-sm text-black flex flex-row items-center lg:gap-2 gap-1"><svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 16 16" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2"></path></svg>{novel.id}</span>
                    </div>  
-                </a> 
+                </Link> 
             </div>
         </SwiperSlide>
         ))}
@@ -251,16 +256,62 @@ export function ExclusiveNovelSlider() {
 }
 
 
-export function CategoryTag(){
-    return(<Swiper
-    modules={[Navigation, Pagination, Autoplay, A11y]}
-            spaceBetween={50}
-            slidesPerView={10}
-            speed={1000}>
-      <SwiperSlide>
-            <div className='swiper-slide swiper-slide-active w-[auto] mx-1'>
-                <span className='text-[14px] text-black  bg-tag px-4 py-1 rounded-full lg:my-2'>นิยายจีน70</span>
-            </div>
-      </SwiperSlide>
-    </Swiper>)
+// ฟังก์ชันสำหรับแยก tags จาก string
+const parseTags = (tagString: string | null | undefined): string[] => {
+    if (!tagString) return [];
+    
+    // แยกด้วย comma หรือ semicolon หรือ pipe
+    return tagString
+        .split(/[,;|]/)
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0);
+};
+
+export function CategoryTag({ tags }: { tags?: string | null }) {
+    const tagList = parseTags(tags);
+    
+    // ถ้าไม่มี tags หรือ tags เป็น null/undefined ให้แสดง default
+    if (!tags || tagList.length === 0) {
+        return (
+            <Swiper
+            modules={[FreeMode]}
+            slidesPerView={1.5}
+            spaceBetween={-2}
+            freeMode={true}
+            className="mySwiper ps-10"
+            >
+                <SwiperSlide style={{ width: 'auto' }}>
+                        <span className='text-[14px] text-black bg-tag px-4 py-1 rounded-full lg:my-2'>
+                            ไม่มีหมวดหมู่
+                        </span>
+                </SwiperSlide>
+            </Swiper>
+        );
+    }
+    
+    return (
+            <Swiper
+            modules={[FreeMode]}
+            slidesPerView={2.5}
+            spaceBetween={8}
+            freeMode={true}
+            allowTouchMove={true}
+            grabCursor={true}
+            resistance={true}
+            resistanceRatio={0.85}
+            watchSlidesProgress={true}
+            passiveListeners={false}
+            slidesOffsetBefore={40}
+            slidesOffsetAfter={40} 
+            className="mySwiper ps-10 pe-12"
+            >
+            {tagList.map((tag, index) => (
+                <SwiperSlide key={index} style={{ width: 'auto' }}>
+                      <span className='text-[14px] text-black bg-tag px-4 py-1 rounded-full lg:my-2'>
+                          {tag}
+                      </span>                    
+                </SwiperSlide>
+            ))}
+        </Swiper>
+    );
 }

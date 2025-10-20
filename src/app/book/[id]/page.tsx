@@ -1,10 +1,31 @@
+'use client'
+
 import Navbar from '@/components/navbar'
 import React from 'react'
 // import PhotoPreview from '@/components/PhotoPreview'
 import { Image } from 'antd';
 import { CategoryTag } from '@/components/ImageSlider';
+import { useGetNodeBookById } from '@/hooks/useContents';
+import { useParams } from 'next/navigation'
 
-function page() {
+// ฟังก์ชันสำหรับจัดรูปแบบตัวเลข
+const formatViews = (num: number | undefined | null): string => {
+    if (!num) {
+        return '0';
+    }
+    if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+    }
+    if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
+};
+
+function BookDetailPage() {
+    const params = useParams<{ id: string }>()
+    const id = params?.id // string | undefined
+    const { data: novel, isLoading, error } = useGetNodeBookById(id as string);
   return (
     <div className='bg-white font-primary font-medium'>
         <div className='relative w-[100vw] items-center flex flex-col'>
@@ -27,8 +48,8 @@ function page() {
                                                         <div className='ant-image css-zg0ahe'>
                                                             <Image 
                                                                 className='ant-image-img rounded-lg z-0 undefined css-zg0ahe'
-                                                                src='https://img.enjoybook.co/img/book/B2025DF0u0dL15um74sFF308M1016113235.jpeg' 
-                                                                style={{ height: "auto", width: "100%", aspectRatio: "1 / 1.454;"}}>
+                                                                src={novel?.img} 
+                                                                style={{ height: "auto", width: "100%", aspectRatio: "1 / 1.454"}}>
                                                             </Image>
                                                         </div>
                                                     </div>
@@ -38,33 +59,35 @@ function page() {
                                                 <div>
                                                     <a href="/book">
                                                         <p className='text-2xl font-bold mb-2'>
-                                                            [จบ] (จัดแพ็คราคาพิเศษ) ทะลุมิติมาเป็นหมอสาวยุค 70 พร้อมจี้วิเศษพลิกชีวิต!
+                                                            {novel?.title}
                                                         </p>
                                                     </a>
                                                     <p className='text-md mb-2'>
                                                         โดย
-                                                        <a className='text-black font-bold ml-1' href="/book">BookBox</a>
+                                                        <a className='text-black font-bold ml-1' href="/book">{novel?.by}</a>
                                                     </p>
                                                     <a className='text-md text-primary mr-2 focus:outline-none' href=""></a>
                                                     <a className='text-md text-primary mr-2 focus:outline-none' href=""></a>
-                                                    <p className='text-md my-2 lg:my-4 line-clamp-4 text-wrap text-base' style={{overflow: 'hidden',display: '-webkit-box',WebkitLineClamp: 4 }}>
-                                                        'เฉิงลี่' ฟื้นในร่างหญิงชนบทยุคหลังปฏิวัติฯ แต่เธอต้องเผชิญกับชายเลว เพื่อนทรยศ และแผนทำลายชื่อเสียง เพื่อแลกกับเงินแค่ห้าหยวน! แต่เธอไม่ยอมโดนเหยียบย่ำง่าย ๆ จะลุกขึ้นสู้เพื่อศักดิ์ศรีและความยุติธรรม!
-                                                    </p>
+                                                    <div 
+                                                        className='book-description text-md my-2 lg:my-4 line-clamp-4 text-wrap text-base' 
+                                                        style={{overflow: 'hidden',display: '-webkit-box',WebkitLineClamp: 4 }}
+                                                        dangerouslySetInnerHTML={{ __html: novel?.description || 'ไม่มีคำอธิบาย' }}
+                                                    />
                                                 </div>
                                                 <div>
                                                     <div>
                                                         <div className='rounded-lg flex flex-row gap-5 md:gap-20 p-2 py-4 text-md items-center justify-center md:justify-start'>
                                                             <div className='flex flex-col text-center'>
                                                                 <span>ยอดวิว</span>
-                                                                <span className='font-bold text-xl'>77</span>
+                                                                <span className='font-bold text-xl'>{formatViews(novel?.view)}</span>
                                                             </div>
                                                             <div className='flex flex-col text-center'>
                                                                 <span>จำนวนตอน</span>
-                                                                <span className='font-bold text-xl'>18</span>
+                                                                <span className='font-bold text-xl'>{novel?.id}</span>
                                                             </div>
                                                             <div className='flex flex-col text-center'>
                                                                 <span>ความคิดเห็น</span>
-                                                                <span className='font-bold text-xl'>0</span>
+                                                                <span className='font-bold text-xl'>{novel?.tag}</span>
                                                             </div>
                                                         </div> 
                                                     </div>
@@ -79,14 +102,97 @@ function page() {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className='w-full my-1 overflow-auto scrollbar-hide p-0'>
-                                            <div className='swiper swiper-initialized swiper-horizontal swiper-free-mode mySwiper ps-10 swiper-backface-hidden'>
-                                                <div className='swiper-wrapper'>
-                                                    <CategoryTag/>
+                                        <div className='my-1 p-0 font-medium -mx-2 overflow-hidden' style={{ width: 888, height: 45 }}>
+                                            <CategoryTag tags={novel?.tag} />
+                                        </div>
+                                        <div className='py-3'></div>
+                                        <div className='flex flex-1 lg:p-3 flex-col justify-start text-left mb-10 overflow-x-hidden scrollbar-hide'>
+                                            <div className=''>
+                                                <span className='font-bold text-xl my-10 px-11'>แนะนำเรื่อง</span>
+                                                <div className='mt-5 px-2 md:px-11 text-wrap text-lg'>
+                                                    <div className='text-center mb-4'>
+                                                        <span className='font-bold'>
+                                                            *** ลิขสิทธิ์ถูกต้องภายใต้หจก. EnJoyBook ***
+                                                        </span>
+                                                    </div>
+                                                    <div className='text-center mb-2'>
+                                                        <span className='font-bold'>
+                                                            ได้รับลิขสิทธิ์ออนไลน์ (Digital license) สำหรับแปลขายลงบนเว็บไซต์ได้อย่างถูกลิขสิทธิ์ 100%
+                                                        </span>
+                                                    </div>
+                                                    <div className='text-center mb-2'>
+                                                        <span className='font-bold'>
+                                                            เจ้าของลิขสิทธิ์ต้นฉบับ : Alibaba Literature
+                                                        </span>
+                                                    </div>
+                                                    <div className='text-center mb-2'>
+                                                        <span className='font-bold'>
+                                                            ---------------------------------------
+                                                        </span>
+                                                    </div>
+                                                    <div className='text-center mb-2'>
+                                                        <span className='font-bold'>
+                                                            ทะลุมิติไปเป็นชาวสวนแม่ลูกสาม[นิยายแปล]
+                                                        </span>
+                                                    </div>
+                                                    <div className='text-center mb-2'>
+                                                        <span className='font-bold'>
+                                                            ชื่อจีน : 重回六零：种田发家养崽崽  ผู้แต่ง : 南方荔枝
+                                                        </span>
+                                                    </div>
+                                                    <div className='text-center mb-2'>
+                                                        <span className='font-bold'>
+                                                            จำนวนตอนทั้งสิ้น 701 ตอน(จบ)
+                                                        </span>
+                                                    </div>
+                                                    <div className='mb-2'>
+                                                        <span className='font-bold'>
+                                                            *นิยายเรื่องนี้อยู่ในยุค 1960 เทียบกับ พ.ศ. คือ 2503 เป็นยุคที่ประเทศจีนอยู่ในช่วงปฏิรูปการปกครองโดยมีพรรคคอมมิวนิสต์จีนเป็นผู้นำ ดังนั้นสรรพนาม ฉากเรื่อง ตัวละคร จะไม่เหมือนกับภาพในนิยายจอมยุทธ์กำลังภายใน
+                                                        </span>
+                                                    </div>
+                                                    <div className='mb-2' />
+                                                    <div className='mb-2'>
+                                                        จู่ ๆ ก็ทะลุมิติมาเป็นคุณแม่ลูกสามในยุคปฏิรูปการปกครองปี 60 ...
+                                                    </div>
+                                                    <div className='mb-2'>
+                                                        ใครจะไปคิดว่าชีวิตธรรมดาของ หลินชิงเหอ ผู้จัดการฝ่ายขายสาวจะเผชิญกับความไม่ธรรมดา หลังทะลุมิติเข้าไปเป็นตัวประกอบในนิยายที่เธออ่าน ซึ่งต้องเผชิญกับความยากลำบากของสถานการณ์ในช่วงเวลานั้น ไม่มีอะไรจะกินและไม่มีแม้แต่เสื้อผ้าจะสวมใส่ แต่โชคยังดีที่เธอได้พื้นที่มิติส่วนตัวไว้เก็บของ ทำให้เธอรอดตายไปได้ชั่วคราว แต่สิ่งที่น่ากังวลมากกว่านั้นก็คือ บุตรชายทั้งสามของเธอดันเป็นตัวร้ายในอนาคตของนิยายเรื่องนี้น่ะสิ แถมสามีในมิตินี้ของเธอยังต้องพบกับจุดจบน่าอนาถอีกด้วย
+                                                    </div>
+                                                    <div className='mb-2'>
+                                                        ตัวประกอบแม่ลูกสามอย่างเธอจะเปลี่ยนแปลงเนื้อเรื่องและเอาตัวให้รอดอย่างไรดีเนี่ย...
+                                                    </div>
+                                                    <div className='text-center mt-4 mb-2'>
+                                                        <span className='font-bold'>
+                                                            ---------------------------------------
+                                                        </span>
+                                                    </div>
+                                                    <div className='text-center mb-2'>
+                                                        <span className='font-bold'>
+                                                            เนื้อหาภายในเรื่อง ทะลุมิติไปเป็นชาวสวนแม่ลูกสาม[นิยายแปล] ฉบับ E-Book และ รูปเล่ม
+                                                        </span>
+                                                    </div>
+                                                    <div className='text-center mb-2'>
+                                                        <span className='font-bold'>
+                                                            เล่ม 1 : บทที่ 1-60 &nbsp;&nbsp;&nbsp; เล่ม 2 : บทที่ 61-120
+                                                        </span>
+                                                    </div>
+                                                    <div className='text-center mb-2'>
+                                                        <span className='font-bold'>
+                                                            ---------------------------------------
+                                                        </span>
+                                                    </div>
+                                                    <div className='text-center mb-2'>
+                                                        <span className='font-bold'>
+                                                            อัปเดตทุกวัน วันละ 2 ตอน
+                                                        </span>
+                                                    </div>
+                                                    <div className='text-center'>
+                                                        <span className='font-bold'>
+                                                            ติดตามผลงานของเราได้ที่ เพจ EnJoyBook
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className='py-3'></div>
                                     </div>
                                 </div>
                             </div>
@@ -100,4 +206,4 @@ function page() {
   )
 }
 
-export default page
+export default BookDetailPage

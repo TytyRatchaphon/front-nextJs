@@ -1,5 +1,6 @@
 import type { Config } from 'tailwindcss'
 const defaultTheme = require("tailwindcss/defaultTheme");
+import scrollbarHide from 'tailwind-scrollbar-hide'
 
 const config: Config = {
   

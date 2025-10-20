@@ -5,6 +5,65 @@
   --font-primary: "Bai Jamjuree", sans-serif;
 }
 
+/* HTML content styling */
+.book-description p {
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.book-description br {
+  line-height: 1.6;
+}
+
+.book-description .ql-align-center {
+  text-align: center;
+}
+
+/* Hide scrollbar */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
+
+/* Tag styling */
+.bg-tag {
+  background-color: #ffb9b9; /* สีชมพูอ่อน */
+  color: #000; /* สีเทาเข้ม */
+  border: 1px solid #ffb9b9;
+  transition: all 0.2s ease;
+  white-space: nowrap; /* ป้องกันการขึ้นบรรทัดใหม่ */
+  display: inline-block; /* ให้ tag มีขนาดตามเนื้อหา */
+  margin-right: 2px; /* ระยะห่างเล็กน้อยระหว่าง tags */
+}
+
+/* Force SwiperSlide to fit content */
+.mySwiper .swiper-slide {
+  width: auto !important;
+  flex-shrink: 0;
+}
+
+/* prevent tag text from overflowing its pill */
+.bg-tag {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 12rem; /* clamp long tags to 192px */
+}
+
+/* Enable scrolling for CategoryTag */
+.mySwiper {
+  cursor: grab;
+}
+
+.mySwiper:active {
+  cursor: grabbing;
+}
+
+
 .swiper-pagination-bullet {
   width: 8px;
   height: 8px;
