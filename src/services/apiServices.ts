@@ -1,30 +1,10 @@
 import apiClient from "./apiClient";
-import type { Banner, RecNovel, ExclusiveNovel, Novel, NodeBook} from "@/types/api";
+import type { BookTrans} from "@/types/api";
 
-export const fetchBanners = async (): Promise<Banner[]> => {
-    const response = await apiClient.get<Banner[]>("/banners");
-    return response.data
-};
-
-export const fetchRecNovels = async (): Promise<RecNovel[]> => {
-    const response = await apiClient.get<RecNovel[]>("/recNovels");
-    return response.data
-};
-
-export const fetchExclusiveNovels = async (): Promise<ExclusiveNovel[]> => {
-    const response = await apiClient.get<ExclusiveNovel[]>("/exclusiveNovels");
-    return response.data
-};
-
-export const fetchNovels = async (): Promise<Novel[]> => {
-    const response = await apiClient.get<Novel[]>("/novels");
-    return response.data
-};
-
-export const fetchNodeNovel = async (): Promise<NodeBook[]> => {
+export const fetchBookTrans = async (): Promise<BookTrans[]> => {
     try {
         // ลอง endpoint ต่างๆ
-        const response = await apiClient.get<{ data: NodeBook[] }>("/books");
+        const response = await apiClient.get<{ data: BookTrans[] }>("/books");
         
         console.log('getBooks API Response:', response.data);
         
@@ -39,7 +19,7 @@ export const fetchNodeNovel = async (): Promise<NodeBook[]> => {
         console.error('Error fetching books:', error);
         // ลอง endpoint อื่น
         try {
-            const response2 = await apiClient.get<{ data: NodeBook[] }>("/book/getBooks");
+            const response2 = await apiClient.get<{ data: BookTrans[] }>("/book/getBooks");
             console.log('getBooks API Response (fallback):', response2.data);
             return response2.data.data || [];
         } catch (error2) {
@@ -49,7 +29,7 @@ export const fetchNodeNovel = async (): Promise<NodeBook[]> => {
     }
 }
 
-export const fetchNodebookById = async (id: string): Promise<NodeBook> => {
+export const fetchBookTransById = async (id: string): Promise<BookTrans> => {
   try {
     const response = await apiClient.get(`/book/${id}`);
     

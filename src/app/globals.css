@@ -1,22 +1,274 @@
 @import "tailwindcss";
 
 
-@theme{
+:root {
   --font-primary: "Bai Jamjuree", sans-serif;
+  --font-bai-jamjuree: 'Bai Jamjuree', sans-serif;
 }
 
 /* HTML content styling */
+.book-description {
+  font-family: var(--font-bai-jamjuree);
+  font-weight: 500;
+  line-height: 1.1;
+  color: #333;
+}
+
 .book-description p {
-  margin-bottom: 1rem;
-  line-height: 1.6;
+  margin-bottom: 0.125rem;
+  line-height: 1.1;
+  font-family: var(--font-bai-jamjuree);
+  font-weight: 500;
 }
 
 .book-description br {
-  line-height: 1.6;
+  line-height: 1.1;
 }
 
 .book-description .ql-align-center {
   text-align: center;
+}
+
+.book-description h1,
+.book-description h2,
+.book-description h3,
+.book-description h4,
+.book-description h5,
+.book-description h6 {
+  font-family: var(--font-bai-jamjuree);
+  font-weight: 600;
+  margin-bottom: 0.0625rem;
+  margin-top: 0.125rem;
+  line-height: 1.05;
+  white-space: pre-line;
+  word-spacing: normal;
+  letter-spacing: normal;
+}
+
+/* เพิ่ม whitespace control สำหรับ title ที่แสดงในส่วน description */
+.book-description {
+  font-family: var(--font-bai-jamjuree);
+  font-weight: 500;
+  line-height: 1.1;
+  color: #333;
+  white-space: pre-line;
+  word-spacing: normal;
+  letter-spacing: normal;
+}
+
+.book-description strong,
+.book-description b {
+  font-family: var(--font-bai-jamjuree);
+  font-weight: 600;
+}
+
+.book-description em,
+.book-description i {
+  font-family: var(--font-bai-jamjuree);
+  font-style: italic;
+}
+
+.book-description ul,
+.book-description ol {
+  font-family: var(--font-bai-jamjuree);
+  margin-left: 1.5rem;
+  margin-bottom: 0.125rem;
+  line-height: 1.1;
+}
+
+.book-description li {
+  font-family: var(--font-bai-jamjuree);
+  margin-bottom: 0.03125rem;
+  line-height: 1.1;
+}
+
+.book-description blockquote {
+  font-family: var(--font-bai-jamjuree);
+  border-left: 4px solid #e5e7eb;
+  padding-left: 1rem;
+  margin: 0.125rem 0;
+  font-style: italic;
+  color: #6b7280;
+  line-height: 1.1;
+}
+
+.book-description a {
+  font-family: var(--font-bai-jamjuree);
+  color: #3b82f6;
+  text-decoration: underline;
+}
+
+.book-description a:hover {
+  color: #1d4ed8;
+}
+
+/* Hover effect for specific elements only */
+.hover-red:hover {
+  color: red !important;
+  transition: color 0.2s ease;
+}
+
+/* Hover for novel names specifically */
+.novel-name:hover {
+  color: red !important;
+  transition: color 0.2s ease;
+}
+
+/* Hover for author names specifically */
+.author-name:hover {
+  color: red !important;
+  transition: color 0.2s ease;
+}
+
+/* Hover for CategoryTag spans specifically */
+.category-tag:hover {
+  color: red !important;
+  transition: color 0.2s ease;
+}
+
+/* Hover for specific links only */
+.hover-link:hover {
+  color: red !important;
+  transition: color 0.2s ease;
+}
+
+/* Hover for buttons */
+.button-hover:hover {
+  color: red !important;
+  border-color: red !important;
+  transition: all 0.2s ease;
+}
+
+.button-hover:hover svg {
+  color: red !important;
+  fill: red !important;
+  transition: all 0.2s ease;
+}
+
+.button-hover:hover span {
+  color: red !important;
+  transition: color 0.2s ease;
+}
+
+/* Navbar hover effects */
+.navbar-link:hover {
+  color: red !important;
+  transition: color 0.2s ease;
+}
+
+.navbar-category:hover {
+  color: red !important;
+  transition: color 0.2s ease;
+}
+
+.navbar-category:hover svg {
+  color: red !important;
+  fill: red !important;
+  transition: all 0.2s ease;
+}
+
+.navbar-subcategory:hover {
+  color: red !important;
+  transition: color 0.2s ease;
+}
+
+.navbar-button:hover {
+  color: red !important;
+  transition: color 0.2s ease;
+}
+
+.navbar-button:hover svg {
+  color: red !important;
+  fill: red !important;
+  transition: all 0.2s ease;
+}
+
+/* Global font for all elements */
+* {
+  font-family: var(--font-bai-jamjuree) !important;
+}
+
+/* Specific font for different elements */
+body, html {
+  font-family: var(--font-bai-jamjuree) !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-bai-jamjuree) !important;
+}
+
+p, span, div, a, button, input, textarea, select {
+  font-family: var(--font-bai-jamjuree) !important;
+}
+
+/* Navbar specific font */
+.navbar-link, .navbar-category, .navbar-subcategory, .navbar-button {
+  font-family: var(--font-bai-jamjuree) !important;
+}
+
+/* Button specific font */
+.button-hover {
+  font-family: var(--font-bai-jamjuree) !important;
+}
+
+/* Link specific font */
+.hover-link, .novel-name, .author-name, .category-tag {
+  font-family: var(--font-bai-jamjuree) !important;
+}
+
+/* Ant Design components font */
+.ant-btn, .ant-input, .ant-select, .ant-form-item-label, .ant-tabs, .ant-modal, .ant-popover, .ant-notification, .ant-message {
+  font-family: var(--font-bai-jamjuree) !important;
+}
+
+.ant-btn span, .ant-input input, .ant-select-selector, .ant-form-item-label label, .ant-tabs-tab, .ant-modal-title, .ant-popover-inner, .ant-notification-notice, .ant-message-notice {
+  font-family: var(--font-bai-jamjuree) !important;
+}
+
+/* Swiper components font */
+.swiper-slide, .swiper-slide * {
+  font-family: var(--font-bai-jamjuree) !important;
+}
+
+/* Next.js Image components font */
+.next-image, .next-image * {
+  font-family: var(--font-bai-jamjuree) !important;
+}
+
+/* Remove underline for "ดูทั้งหมด" links only */
+a[href="/notifications"] {
+  text-decoration: none !important;
+}
+
+a[href="/notifications"]:hover {
+  text-decoration: none !important;
+}
+
+
+/* Login modal specific hover effects - keep underlines */
+.login-link {
+  text-decoration: underline;
+  color: red !important;
+  transition: all 0.2s ease;
+}
+
+.login-link:hover {
+  text-decoration: underline;
+  color: red !important;
+  transition: all 0.2s ease;
+}
+
+/* Keep underlines for span elements in login modal */
+.register-link span {
+  text-decoration: underline;
+}
+
+.login-link span {
+  text-decoration: underline;
+}
+
+.forget-link span {
+  text-decoration: underline;
 }
 
 /* Hide scrollbar */
@@ -31,9 +283,8 @@
 
 /* Tag styling */
 .bg-tag {
-  background-color: #ffb9b9; /* สีชมพูอ่อน */
+  background-color: #ffb9b9;; /* สีชมพูอ่อน */
   color: #000; /* สีเทาเข้ม */
-  border: 1px solid #ffb9b9;
   transition: all 0.2s ease;
   white-space: nowrap; /* ป้องกันการขึ้นบรรทัดใหม่ */
   display: inline-block; /* ให้ tag มีขนาดตามเนื้อหา */
@@ -54,13 +305,63 @@
   max-width: 12rem; /* clamp long tags to 192px */
 }
 
+/* Ensure swiper wrapper doesn't exceed container */
+.mySwiper .swiper-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+/* Add padding to prevent last tag from disappearing */
+.mySwiper .swiper-slide:last-child {
+  margin-right: 16px;
+}
+
+.bg-secondary {
+  background-color: #ffb9b9;
+}
+
+.bg-primary {
+  background-color: #dc2626;
+}
+
+.select{
+  width: 100%;
+  padding: 5px 10px;
+  border-radius: 8px;
+}
+
+.form-control, .select{
+  background: #fff;
+  outline: none;
+}
+
 /* Enable scrolling for CategoryTag */
 .mySwiper {
   cursor: grab;
+  touch-action: pan-x;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  max-width: 888px;
 }
 
 .mySwiper:active {
   cursor: grabbing;
+}
+
+/* Force swiper to be draggable even when content is not full */
+.mySwiper .swiper-wrapper {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  min-width: 100%;
+}
+
+/* Ensure slides can be dragged even when not full */
+.mySwiper .swiper-slide {
+  width: auto;
+  flex-shrink: 0;
+  margin: 0 4px;
 }
 
 
@@ -76,4 +377,9 @@
   background-color: red;
   width: 60px;
   border-radius: 60px;
+}
+
+.my-red-tabs .ant-tabs-ink-bar {
+  background: red;
+  height: 3px; /* <--- กำหนดความสูงได้ด้วย */
 }

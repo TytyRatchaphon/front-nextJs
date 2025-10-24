@@ -6,11 +6,12 @@ import 'antd/dist/reset.css';
 import "./globals.css";
 import QueryProvider from "../providers/QueryProvider";
 import { Bai_Jamjuree } from "next/font/google";
-
+import StyledComponentsRegistry from './AntdRegistry';
+import Navbar from "@/components/navbar";
 const baiJamjuree = Bai_Jamjuree({
-  weight: ["400", "500", "600", "700"], // เลือกน้ำหนักที่ต้องการ (500 คือ Medium)
+  weight: ["500"], // ใช้เฉพาะ Medium (500)
   subsets: ["thai", "latin"], // สำคัญมาก: ต้องมี 'thai'
-  variable: "--font-bai-jamjuree", // 3. ตั้งชื่อ CSS Variable
+  variable: "--font-bai-jamjuree", // ตั้งชื่อ CSS Variable
   display: "swap", // ช่วยให้แสดงผลเร็วขึ้น
 });
 
@@ -25,12 +26,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="font-primary font-medium" >
+    <html lang="en" className={`${baiJamjuree.variable} font-bai-jamjuree font-medium`}>
       <body
-        className={`flex flex-col w-full min-h-[100vh] overflow-x-hidden`}>
-        <QueryProvider>
-            {children}
-        </QueryProvider>
+        className={`flex flex-col w-full min-h-[100vh] overflow-x-hidden font-bai-jamjuree font-medium`}>
+        <StyledComponentsRegistry>
+          <QueryProvider>
+              <Navbar />
+              {children}
+          </QueryProvider>
+        </StyledComponentsRegistry>
       </body>
     </html>
   );
