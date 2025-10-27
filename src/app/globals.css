@@ -383,3 +383,15 @@ a[href="/notifications"]:hover {
   background: red;
   height: 3px; /* <--- กำหนดความสูงได้ด้วย */
 }
+/* เปลี่ยนสีเลข Pagination ตอน hover เป็นแดง */
+.ant-pagination-hover-red .ant-pagination-item:hover,
+.ant-pagination-hover-red .ant-pagination-item-active {
+  background-color: white !important;
+  border-color: red !important;
+}
+
+/* ตัวเลขภายใน (active) ให้ขาว */
+.ant-pagination-hover-red .ant-pagination-item-active a,
+.ant-pagination-hover-red .ant-pagination-item:hover a {
+  color: red !important;
+}

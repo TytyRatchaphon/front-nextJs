@@ -2,6 +2,9 @@ import { NewNovelSlider, } from "@/components/ImageSlider";
 import DailyPopup from "@/components/DailyPopup";
 import { BackToTopButton } from "@/components/BackToTopButton";
 import { LoggedInContent } from "@/components/LoggedInContent";
+import Image from "next/image";
+import Link from "next/link";
+
 
 export default function Home() {
 
