@@ -51,7 +51,12 @@ function CardBook({ book }: CardBookProps) {
             }}
           />
           
-          {/* NEW Badge */}
+          {/* End Status Badge - แสดงเมื่อสถานะเป็น "end" */}
+          {book.end === 'end' && (
+            <div className="absolute top-2 right-2 bg-gradient-to-r from-emerald-400 to-teal-500 text-white px-3 py-1 rounded-full text-xs font-medium shadow-md">
+              จบแล้ว
+            </div>
+          )}
         </div>
         
         {/* Content Container */}

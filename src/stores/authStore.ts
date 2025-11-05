@@ -5,6 +5,7 @@ export interface UserData {
   fullname: string;
   email: string;
   role: string;
+  profileImage?: string; // รูปโปรไฟล์ผู้ใช้
 }
 
 interface AuthState {
