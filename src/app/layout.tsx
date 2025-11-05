@@ -31,8 +31,8 @@ export default function RootLayout({
         className={`flex flex-col w-full min-h-[100vh] overflow-x-hidden font-bai-jamjuree font-medium`}>
         <StyledComponentsRegistry>
           <QueryProvider>
-              <Navbar />
-              {children}
+            <Navbar />
+            {children}
           </QueryProvider>
         </StyledComponentsRegistry>
       </body>

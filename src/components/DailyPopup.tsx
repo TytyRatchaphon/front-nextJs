@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect } from 'react';
-import { Modal, Button } from 'antd';
+import { Modal} from 'antd';
 import { CloseCircleFilled } from '@ant-design/icons';
 import { useUIStore } from '@/stores/uiStore';
+import Image from 'next/image';
 
 // --- 1. Import Swiper ---
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -91,10 +92,12 @@ const DailyPromoPopup: React.FC = () => {
                 {/* ===== MODIFIED: ลดความสูงของรูปภาพลง 18px ===== */}
                 <div className="relative h-[472px]">
                   <div className="bg-gradient-to-b from-black opacity-70 h-20 absolute w-full top-0 z-10 ml-1.5 mt-1 rounded-lg"></div>
-                  <img 
+                  <Image
                     src={item.imageUrl}
                     alt={`Promotion ${item.id}`}
                     className="w-full h-full object-cover ml-1 rounded-lg mt-1"
+                    width={392}
+                    height={490}
                   />
                 </div>
                 

@@ -48,3 +48,4 @@ export interface BookTrans {
   createdAt: Date | string; // datetime
   updatedAt: Date | string; // datetime
 }
+

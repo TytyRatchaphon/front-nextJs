@@ -7,7 +7,7 @@ import {
 
 export const useGetBookTrans = () =>{
     return useQuery({
-        queryKey: ["book/getBooks"],
+        queryKey: ["getAllBookHome"],
         queryFn: fetchBookTrans
     });
 };

@@ -140,10 +140,11 @@ export function NewNovelSlider() {
         style={{ aspectRatio: "2.18695 / 1" }} 
       >
         
-        <img
+        <Image
           src="https://img.enjoybook.co/img/user/ejb-profile.png?1760604894709"  
           alt="Loading..."
-          className="w-32 h-32 animate-pulse"  
+          className="w-32 h-32 animate-pulse"
+          layout="fill"
         />
       </div>
   }
@@ -163,7 +164,7 @@ export function NewNovelSlider() {
             freeMode={true}
         >
         {novels?.map((novel: BookTrans) => (
-        <SwiperSlide>
+        <SwiperSlide key={novel.bookID}>
             <div className='swiper-slide items-start SwiperSlide' style={{width: "151.667px", marginRight: "10px"}}>
                 <Link className='flex flex-col cursor-pointer p-2 text-start  hover:text-primary bg-transparent' href={`/book/${novel.bookID}`} style={{width: "100%", height: "auto"}}>
                    <div className='relative' style={{width: "100%", overflow: "visible"}}>

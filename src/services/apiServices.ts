@@ -2,31 +2,20 @@ import apiClient from "./apiClient";
 import type { BookTrans} from "@/types/api";
 
 export const fetchBookTrans = async (): Promise<BookTrans[]> => {
-    try {
-        // ลอง endpoint ต่างๆ
-        const response = await apiClient.get<{ data: BookTrans[] }>("/books");
-        
-        console.log('getBooks API Response:', response.data);
-        
-        // ตรวจสอบว่า data มีอยู่และเป็น array
-        if (!response.data || !Array.isArray(response.data)) {
-            console.warn('API response data is not an array:', response.data);
-            return [];
-        }
-        
-        return response.data;
-    } catch (error) {
-        console.error('Error fetching books:', error);
-        // ลอง endpoint อื่น
-        try {
-            const response2 = await apiClient.get<{ data: BookTrans[] }>("/book/getBooks");
-            console.log('getBooks API Response (fallback):', response2.data);
-            return response2.data.data || [];
-        } catch (error2) {
-            console.error('Fallback also failed:', error2);
-            return [];
-        }
+  try {
+    // เรียก endpoint ใหม่
+    const response = await apiClient.get<{ data: BookTrans[] }>("/getAllBookHome");
+    console.log('getAllBookHome API Response:', response.data);
+    // ตรวจสอบว่า data มีอยู่และเป็น array
+    if (!response.data || !Array.isArray(response.data)) {
+      console.warn('API response data is not an array:', response.data);
+      return [];
     }
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching books:', error);
+    return [];
+  }
 }
 
 export const fetchBookTransById = async (id: string): Promise<BookTrans> => {

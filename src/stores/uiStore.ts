@@ -11,14 +11,14 @@ interface UIState {
   registerAnimationClass: string;
   
   // View modes
-  loginViewMode: 'login' | 'register';
+  loginViewMode: 'login' | 'register' | 'forgot-password';
   
   // Actions
   openLoginModal: () => void;
   closeLoginModal: () => void;
   openRegisterModal: () => void;
   closeRegisterModal: () => void;
-  setLoginViewMode: (mode: 'login' | 'register') => void;
+  setLoginViewMode: (mode: 'login' | 'register' | 'forgot-password') => void;
   setLoginAnimation: (animation: string) => void;
   setRegisterAnimation: (animation: string) => void;
   
@@ -44,7 +44,7 @@ export const useUIStore = create<UIState>((set) => ({
   closeRegisterModal: () => set({ isRegisterModalOpen: false }),
   
   // View mode actions
-  setLoginViewMode: (mode: 'login' | 'register') => 
+  setLoginViewMode: (mode: 'login' | 'register' | 'forgot-password') => 
     set({ loginViewMode: mode }),
   
   // Animation actions

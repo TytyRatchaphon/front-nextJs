@@ -29,11 +29,11 @@ interface FormState {
 }
 
 const initialUserProfile: UserProfileForm = {
-  fullname: "YoungTYEIEEI",
+  fullname: "",
   birthday: "2000-01-01",
   gender: "ชาย",
-  cat1: "โรแมนติก",
-  cat2: "โรแมนติก",
+  cat1: "",
+  cat2: "",
   phone: "",
   des: "",
   address_main: "",

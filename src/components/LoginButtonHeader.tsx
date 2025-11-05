@@ -1,20 +1,21 @@
-// src/app/components/LoginButtonHeader.tsx
-
 "use client"
 
-import React from 'react';
-import { Button, Modal, Form, Input, Checkbox, Divider, message } from 'antd';
+import React, { useState } from 'react';
+import { Button, Modal, Form, Input, Progress, notification, App } from 'antd';
 import type { FormProps } from 'antd';
 import Image from 'next/image';
 import { useMutation } from '@tanstack/react-query';
-import apiClient from '@/services/apiClient';
-import { useAuthStore } from '@/stores/authStore';
+import apiClient, { ApiResponse } from '@/services/apiClient';
+import { useAuthStore, UserData } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
-// import './LoginModal.css'; // อย่าลืม import CSS
 
-// 1. (MODIFIED) เปลี่ยนจาก interface เป็น type และเปลี่ยนชื่อ Field
+// Types
+import LoginFacebook from './LoginFacebook';
+import LoginGoogle from './LoginGoogle';
+import LoginLine from './LoginLine';
+
 type LoginFieldType = {
-  email?: string; // ใช้ email เหมือนเดิมเพื่อให้สอดคล้องกับ UI
+  email?: string;
   password?: string;
 };
 
@@ -24,8 +25,25 @@ type RegisterFieldType = {
   password?: string;
 };
 
+type ForgotPasswordFieldType = {
+  email?: string;
+};
+
+// API Response Types
+// Login response จาก API จะส่ง token มาเป็น string ใน data field
+interface LoginResponse {
+  token?: string;  // สำหรับกรณีที่ data เป็น object
+  email?: string;  // เพิ่ม email field
+}
+
+interface RegisterResponse {
+  message: string;
+  token?: string;
+  email?: string;
+}
 
 const LoginButtonHeader: React.FC = () => {
+  const { message } = App.useApp();
   const { login } = useAuthStore();
   const { 
     isLoginModalOpen, 
@@ -37,69 +55,125 @@ const LoginButtonHeader: React.FC = () => {
     setLoginAnimation 
   } = useUIStore();
 
+  // Notification API
+  const [api, contextHolder] = notification.useNotification();
+
+  // Password strength state
+  const [passwordStrength, setPasswordStrength] = useState<number>(0);
+  
+  // เก็บข้อมูล form สำหรับใช้หลัง login/register สำเร็จ
+  const [loginFormData, setLoginFormData] = useState<LoginFieldType | null>(null);
+  const [registerFormData, setRegisterFormData] = useState<RegisterFieldType | null>(null);
+
+  // Password strength checker
+  const checkPasswordStrength = (password: string): number => {
+    let strength = 0;
+    if (password.length >= 8) strength += 25;
+    if (password.length >= 12) strength += 25;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength += 25;
+    if (/\d/.test(password)) strength += 15;
+    if (/[^a-zA-Z0-9]/.test(password)) strength += 10;
+    return Math.min(strength, 100);
+  };
+
+  const getPasswordColor = (strength: number): string => {
+    if (strength < 40) return '#ff4d4f';
+    if (strength < 70) return '#faad14';
+    return '#52c41a';
+  };
+
   //-------------------- Animation ---------------------------------
   const showModal = () => {
     openLoginModal();
-    setLoginAnimation('fade-in'); // Reset animation ทุกครั้งที่เปิด
+    setLoginAnimation('fade-in');
   };
 
-  const handleViewChange = (newView: 'login' | 'register') => {
-    setLoginAnimation('fade-out'); // เริ่ม Fade out
+  const handleViewChange = (newView: 'login' | 'register' | 'forgot-password') => {
+    setLoginAnimation('fade-out');
     setTimeout(() => {
-      setLoginViewMode(newView); // เปลี่ยน View ตอนที่มองไม่เห็น
-      setLoginAnimation('fade-in'); // เริ่ม Fade in
-    }, 200); // 200ms คือระยะเวลาของ animation
+      setLoginViewMode(newView);
+      setLoginAnimation('fade-in');
+      setPasswordStrength(0); // Reset password strength
+    }, 200);
   };
 
   const handleCancel = () => {
     closeLoginModal();
-    setTimeout(() => setLoginViewMode('login'), 200);
+    setTimeout(() => {
+      setLoginViewMode('login');
+      setPasswordStrength(0);
+    }, 200);
   };
   //-------------------- Animation ---------------------------------
 
   //-------------------- Login / Register --------------------------
-  const loginUser = async (credentials: LoginFieldType) => {
-    // สร้าง Payload ให้ตรงกับที่ API ต้องการ
+  const loginUser = async (credentials: LoginFieldType): Promise<ApiResponse<LoginResponse>> => {
     const apiPayload = {
       email: credentials.email,
-      user_pwd: credentials.password // <-- เปลี่ยนจาก password เป็น user_pwd
+      password: credentials.password
     };
-    // ใช้ Endpoint ที่ถูกต้อง
-    const response = await apiClient.post('/user/login', apiPayload); 
+    console.log('Login Payload:', apiPayload); // Debug log
+    const response = await apiClient.post<ApiResponse<LoginResponse>>('/login', apiPayload); 
     return response.data;
   };
 
-  const registerUser = async (userData: RegisterFieldType) => {
-     // สร้าง Payload ให้ตรงกับที่ API ต้องการ (สมมติว่า Register ใช้ user_pwd เหมือนกัน)
-     const apiPayload = {
-       fullname: userData.fullname,
-       email: userData.email,
-       user_pwd: userData.password // <-- เปลี่ยนจาก password เป็น user_pwd
-     };
-    // ใช้ Endpoint ที่ถูกต้อง (สมมติ)
-    const response = await apiClient.post('/user/register', apiPayload); 
+  const registerUser = async (userData: RegisterFieldType): Promise<ApiResponse<RegisterResponse>> => {
+    const apiPayload = {
+      fullname: userData.fullname,
+      email: userData.email,
+      password: userData.password  // ใช้ password ตรงๆ ตามที่ API ต้องการ
+    };
+    const response = await apiClient.post<ApiResponse<RegisterResponse>>('/signup', apiPayload); 
+    return response.data;
+  };
+
+  const forgotPassword = async (data: ForgotPasswordFieldType): Promise<ApiResponse<any>> => {
+    const apiPayload = {
+      email: data.email
+    };
+    const response = await apiClient.post<ApiResponse<any>>('/forgotpassword', apiPayload); 
     return response.data;
   };
 
   const loginMutation = useMutation({
     mutationFn: loginUser,
-    onSuccess: (responseData) => {
-      // --- Login สำเร็จ ---
-      console.log('API Response Data:', responseData); 
-      message.success(responseData.message || 'เข้าสู่ระบบสำเร็จ!'); 
+    onSuccess: (responseData, variables) => {
+      console.log('✅ API Response Data:', responseData);
+      console.log('📧 Login variables (email/password):', variables);
+      console.log('💾 Stored loginFormData:', loginFormData);
+      message.success('เข้าสู่ระบบสำเร็จ!'); 
       
-      // --- ใช้ Zustand store ---
-      if (responseData.data && responseData.data.token) {
-        const userData = responseData.data;
-        const token = responseData.data.token;
-        login(userData, token);
+      // API ส่ง token มาเป็น string ใน data field โดยตรง
+      if (responseData.data) {
+        const token = typeof responseData.data === 'string' 
+          ? responseData.data 
+          : responseData.data.token;
+        
+        console.log('🔑 Extracted token:', token);
+        
+        if (token) {
+          // ใช้ variables จาก mutation แทน loginFormData เพื่อความแน่ใจ
+          const userData: UserData = {
+            fullname: variables.email?.split('@')[0] || 'User',
+            email: variables.email || 'user@email.com',
+            role: 'user'
+          };
+          console.log('👤 Creating userData:', userData);
+          console.log('🚀 Calling login() with:', { userData, token });
+          login(userData, token);
+          setLoginFormData(null); // Clear form data
+          console.log('✅ Login completed successfully');
+        } else {
+          console.error('❌ No token extracted from response');
+        }
+      } else {
+        console.error('❌ No data field in response:', responseData);
       }
       
       handleCancel(); 
     },
     onError: (error: any) => {
-      // --- เกิด Error (จาก API response หรือ Network) ---
-      console.error('Login API Error:', error);
+      console.error('❌ Login API Error:', error);
       const errorMessage = error.response?.data?.message || error.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
       message.error(errorMessage);
     },
@@ -109,7 +183,31 @@ const LoginButtonHeader: React.FC = () => {
     mutationFn: registerUser,
     onSuccess: (responseData) => {
       message.success(responseData.message || 'สมัครสมาชิกสำเร็จ!');
-      handleViewChange('login'); 
+      
+      // Auto login หลังจาก register สำเร็จ
+      if (responseData.data) {
+        const token = typeof responseData.data === 'string' 
+          ? responseData.data 
+          : responseData.data.token;
+        
+        if (token && registerFormData) {
+          // ใช้ข้อมูลจาก form register ที่เก็บไว้
+          const userData: UserData = {
+            fullname: registerFormData.fullname || 'User',
+            email: registerFormData.email || 'user@email.com',
+            role: 'user'
+          };
+          login(userData, token);
+          message.success('เข้าสู่ระบบอัตโนมัติแล้ว');
+          handleCancel();
+          setRegisterFormData(null); // Clear form data
+        } else {
+          // ถ้าไม่มี token ให้เปลี่ยนไปหน้า login
+          handleViewChange('login');
+        }
+      } else {
+        handleViewChange('login');
+      }
     },
     onError: (error: any) => {
       console.error('Register API Error:', error);
@@ -118,14 +216,45 @@ const LoginButtonHeader: React.FC = () => {
     },
   });
 
+  const forgotPasswordMutation = useMutation({
+    mutationFn: forgotPassword,
+    onSuccess: (responseData, variables) => {
+      // แสดง notification แทน message
+      api.success({
+        message: 'ส่งลิงก์รีเซ็ตรหัสผ่านสำเร็จ',
+        description: `เราได้ส่งลิงก์สำหรับรีเซ็ต Password ไปให้คุณเรียบร้อยแล้ว กรุณาตรวจสอบที่ ${variables.email} อีกครั้ง`,
+        placement: 'topRight',
+        duration: 6,
+      });
+      handleViewChange('login');
+    },
+    onError: (error: any) => {
+      console.error('Forgot Password API Error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'เกิดข้อผิดพลาด';
+      api.error({
+        message: 'เกิดข้อผิดพลาด',
+        description: errorMessage,
+        placement: 'topRight',
+        duration: 4,
+      });
+    },
+  });
+
 
 
   const onLoginFinish: FormProps<LoginFieldType>['onFinish'] = (values) => {
-    loginMutation.mutate(values); // เรียกใช้ mutation ที่สร้างไว้
+    console.log('🔐 Login form submitted:', values);
+    setLoginFormData(values); // เก็บข้อมูล form ไว้ใช้หลัง login สำเร็จ
+    loginMutation.mutate(values);
   };
 
   const onRegisterFinish: FormProps<RegisterFieldType>['onFinish'] = (values) => {
-    registerMutation.mutate(values); // เรียกใช้ mutation ที่สร้างไว้
+    setRegisterFormData(values); // เก็บข้อมูล form ไว้ใช้หลัง register สำเร็จ
+    registerMutation.mutate(values);
+  };
+
+  const onForgotPasswordFinish: FormProps<ForgotPasswordFieldType>['onFinish'] = (values) => {
+    forgotPasswordMutation.mutate(values);
   };
   
   const onFinishFailed = (errorInfo: any) => {
@@ -153,12 +282,22 @@ const LoginButtonHeader: React.FC = () => {
 
   return (
     <>
+      {contextHolder}
       <style>{animationStyles}</style>
       <div 
-        className="text-nowrap text-[15px] lg:text-[17px] leading-6 flex justify-end items-center hover:text-primary cursor-pointer"
+        className="group text-nowrap text-[15px] lg:text-[17px] leading-6 flex justify-end items-center cursor-pointer"
         onClick={showModal}
       >
-        <span>เข้าสู่ระบบ</span>
+        <span className='flex flex-row items-center'>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className='mr-2 transition-colors duration-300' style={{ fill: 'none' }}>
+            <path d="M8.90039 7.55999C9.21039 3.95999 11.0604 2.48999 15.1104 2.48999H15.2404C19.7104 2.48999 21.5004 4.27999 21.5004 8.74999V15.27C21.5004 19.74 19.7104 21.53 15.2404 21.53H15.1104C11.0904 21.53 9.24039 20.08 8.91039 16.54" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" className="transition-colors duration-300 group-hover:stroke-red-600"/>
+            <path d="M2 12H14.88" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" className="transition-colors duration-300 group-hover:stroke-red-600"/>
+            <path d="M12.6504 8.65002L16.0004 12L12.6504 15.35" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" className="transition-colors duration-300 group-hover:stroke-red-600"/>
+          </svg>
+          <span className="text-black transition-colors duration-300 group-hover:text-red-600 font-primary">
+            เข้าสู่ระบบ
+          </span>
+        </span>
       </div>
 
       <Modal
@@ -179,10 +318,13 @@ const LoginButtonHeader: React.FC = () => {
         <div className="grid lg:grid-cols-2 p-0 gap-0">
           {/* คอลัมน์ซ้าย (รูปภาพ) */}
           <div className="hidden lg:block overflow-hidden rounded-l-xl h-[400px] justify-center items-center mt-7">
-            <img 
-              src="https://img.enjoybook.co/img/img_login2025qstOcG71ML0121162832.png?w=3840&q=75" 
+            <Image 
+              src="https://img.enjoybook.co/img/img_login2025qstOcG71ML0121162832.png" 
               alt="Login Visual"
-              className="w-full h-full"  
+              width={400}
+              height={400}
+              className="w-full h-full object-cover"
+              priority
             />
           </div>
           {/* คอลัมน์ขวา (ฟอร์ม) */}
@@ -191,20 +333,15 @@ const LoginButtonHeader: React.FC = () => {
             <div>
               {/* Title */}
               <div className="mb-2">
-                <span className="text-primary font-bold md:text-xl font-primary text-red-600">เข้าสู่ระบบ</span>
+                <span className="text-primary font-bold md:text-xl font-primary text-red-600">
+                  เข้าสู่ระบบ</span>
               </div>
 
               {/* Social Login */}
               <div className="grid grid-cols-3 gap-2">
-                <div className='border border-gray-200 rounded-md py-2 flex justify-center items-center cursor-pointer hover:bg-blue-50'>
-                    <Image src="https://img.enjoybook.co/img/icon-img/social-1.png" alt="" className='inline-block h-[23px] w-[23px] rounded-full ' loading="lazy" width="96" height="96" decoding="async" data-nimg="1" style={{color: "transparent"}} />
-                </div>
-                   <div className='border border-gray-200 rounded-md py-2 flex justify-center items-center cursor-pointer hover:bg-blue-50'>
-                     <Image src="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Ffacebook.63de5bea.png&w=256&q=75" alt="" className='inline-block h-[23px] w-[23px] rounded-full ' loading="lazy" width="96" height="96" decoding="async" data-nimg="1" style={{color: "transparent"}} />
-                </div>
-                   <div className='border border-gray-200 rounded-md py-2 flex justify-center items-center cursor-pointer hover:bg-blue-50'>
-                     <Image src="https://img.enjoybook.co/img/icon-img/social-2.png" alt="" className='inline-block h-[23px] w-[23px] rounded-full ' loading="lazy" width="96" height="96" decoding="async" data-nimg="1" style={{color: "transparent"}} />
-                </div>
+                <LoginFacebook />
+                <LoginGoogle />
+                <LoginLine />
               </div>
 
               {/* Divider */}
@@ -246,7 +383,7 @@ const LoginButtonHeader: React.FC = () => {
                 {/* Forgot Password & Login Button */}
                 <div className="grid grid-cols-2 p-0 ">
                   <div className="flex justify-start items-center">
-                    <a href="" className="text-sm underline text-primary cursor-pointer md:text-xl font-medium font-primary text-red-600 login-link">
+                    <a onClick={() => handleViewChange('forgot-password')} className="text-sm underline text-primary cursor-pointer md:text-xl font-medium font-primary text-red-600 login-link">
                       <span className='font-primary text-red-600 underline'>ลืมรหัสผ่าน</span>
                     </a>
                   </div>
@@ -257,6 +394,8 @@ const LoginButtonHeader: React.FC = () => {
                   </div>
                 </div>
               </Form>
+
+              
             </div>
 
             {/* ส่วนล่างสุด (Sign up & Policy) */}
@@ -278,13 +417,16 @@ const LoginButtonHeader: React.FC = () => {
             </div>
           </div>
         </div>
-        ) : (
+        ) : loginViewMode === 'register' ? (
         <div className="grid lg:grid-cols-2 p-0 gap-0">
             <div className="hidden lg:block overflow-hidden rounded-l-xl">
-              <img 
-                src="https://img.enjoybook.co/img/img_register2025gvOxyaNKLH0121162832.png?w=3840&q=75" 
+              <Image 
+                src="https://img.enjoybook.co/img/img_register2025gvOxyaNKLH0121162832.png" 
                 alt="Register Visual"
-                className="w-full h-full object-cover"  
+                width={400}
+                height={500}
+                className="w-full h-full object-cover"
+                priority
               />
             </div>
             <div className="text-center rounded-l-xl bg-white p-6 flex flex-col justify-between">
@@ -319,13 +461,35 @@ const LoginButtonHeader: React.FC = () => {
                   <Form.Item<RegisterFieldType>
                     label={<span className="text-sm text-black md:text-base text-left block w-full font-primary">รหัสผ่าน</span>}
                     name="password"
-                    rules={[{ required: true, min: 6, message: 'Password must be at least 8 characters!' }]}
+                    rules={[
+                      { required: true, message: 'กรุณากรอกรหัสผ่าน!' },
+                      { min: 8, message: 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร!' }
+                    ]}
                     className="text-left"
                   >
-                    <Input.Password size="middle" />
+                    <Input.Password 
+                      size="middle" 
+                      onChange={(e) => setPasswordStrength(checkPasswordStrength(e.target.value))}
+                    />
                   </Form.Item>
+                  
+                  {/* Password Strength Indicator */}
+                  {passwordStrength > 0 && (
+                    <div className="mb-4 -mt-2">
+                      <Progress 
+                        percent={passwordStrength} 
+                        strokeColor={getPasswordColor(passwordStrength)}
+                        showInfo={false}
+                        size="small"
+                      />
+                      <span className="text-xs" style={{ color: getPasswordColor(passwordStrength) }}>
+                        {passwordStrength < 40 ? 'รหัสผ่านอ่อนแอ' : passwordStrength < 70 ? 'รหัสผ่านปานกลาง' : 'รหัสผ่านแข็งแรง'}
+                      </span>
+                    </div>
+                  )}
+                  
                   <div className="flex flex-col text-center py-4">
-                    <span className="text-sm text-gray-500 font-primary">กดปุ่ม "สมัครสมาชิก" เป็นการยอมรับ</span>
+                    <span className="text-sm text-gray-500 font-primary">กดปุ่ม &quot;สมัครสมาชิก&quot; เป็นการยอมรับ</span>
                     <a href="#" className="text-sm text-primary font-bold cursor-pointer font-primary "><span className='text-red-600 text-bold '>ข้อตกลงการใช้งาน</span></a>
                   </div>
                   <div className="grid grid-cols-2 items-center">
@@ -334,7 +498,81 @@ const LoginButtonHeader: React.FC = () => {
                       <a onClick={() => handleViewChange('login')} className="text-sm underline text-primary cursor-pointer font-primary login-link"><span className='text-red-600 underline'>เข้าสู่ระบบ</span></a>
                     </div>
                     <div className="flex justify-end">
-                      <Button type="primary" htmlType="submit" danger size="large"><span className='font-primary font-medium'>สมัครสมาชิก</span></Button>
+                      <Button 
+                        type="primary" 
+                        htmlType="submit" 
+                        danger 
+                        size="large"
+                        loading={registerMutation.isPending}
+                      >
+                        <span className='font-primary font-medium'>สมัครสมาชิก</span>
+                      </Button>
+                    </div>
+                  </div>
+                </Form>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="grid lg:grid-cols-2 p-0 gap-0">
+            <div className="hidden lg:block overflow-hidden rounded-l-xl h-[400px] justify-center items-center mt-7">
+              <Image 
+                src="https://img.enjoybook.co/img/img_login2025qstOcG71ML0121162832.png" 
+                alt="Forgot Password Visual"
+                width={400}
+                height={400}
+                className="w-full h-full object-cover"
+                priority
+              />
+            </div>
+            <div className="text-center bg-white rounded-r-xl p-6 flex flex-col justify-between">
+              <div>
+                <div className="mb-4">
+                  <span className="text-primary font-bold md:text-xl font-primary text-red-600">
+                    ลืมรหัสผ่าน
+                  </span>
+                  <p className="text-sm text-gray-600 mt-2 font-primary">
+                    กรุณากรอกอีเมลของคุณเพื่อรับลิงก์รีเซ็ตรหัสผ่าน
+                  </p>
+                </div>
+
+                <Form
+                  name="forgot_password_form"
+                  layout="vertical"
+                  onFinish={onForgotPasswordFinish}
+                  onFinishFailed={onFinishFailed}
+                  autoComplete="off"
+                  requiredMark={false}
+                >
+                  <Form.Item<ForgotPasswordFieldType>
+                    label={<span className="text-sm text-black md:text-base text-left block w-full font-medium font-primary">อีเมล</span>}
+                    name="email"
+                    rules={[
+                      { required: true, message: 'กรุณากรอกอีเมล!' },
+                      { type: 'email', message: 'กรุณากรอกอีเมลที่ถูกต้อง!' }
+                    ]}
+                    className='text-left font-primary'
+                  >
+                    <Input size="middle" placeholder="example@email.com" />
+                  </Form.Item>
+
+                  <div className="grid grid-cols-2 p-0 gap-3 mt-5">
+                    <div className="flex justify-start items-center">
+                      <a onClick={() => handleViewChange('login')} className="text-sm underline text-primary cursor-pointer font-primary login-link">
+                        <span className='font-primary text-red-600 underline'>กลับไปเข้าสู่ระบบ</span>
+                      </a>
+                    </div>
+                    <div className="flex justify-end p-0">
+                      <Button 
+                        loading={forgotPasswordMutation.isPending} 
+                        type="primary" 
+                        htmlType="submit" 
+                        danger 
+                        size="large" 
+                        className='font-medium font-primary'
+                      >
+                        <span className='font-primary text-lg'>ส่งลิงก์</span>
+                      </Button>
                     </div>
                   </div>
                 </Form>

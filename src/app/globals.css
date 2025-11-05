@@ -1,5 +1,44 @@
-@import "tailwindcss";
+/* Ant Design Pagination: Red border and number on hover/active */
+.ant-pagination-item {
+  border: 1px solid #d1d5db !important; /* gray-300 */
+  transition: border-color 0.2s, color 0.2s;
+}
+.ant-pagination-item a {
+  color: #111 !important; /* black number */
+  transition: color 0.2s;
+}
+.ant-pagination-item:hover {
+  border-color: #e53935 !important;
+}
+.ant-pagination-item:hover a {
+  color: #e53935 !important;
+}
+.ant-pagination-item-active {
+  border-color: #e53935 !important;
+}
+.ant-pagination-item-active a {
+  color: #e53935 !important;
+}
+.ant-pagination-prev:hover .ant-pagination-item-link, .ant-pagination-next:hover .ant-pagination-item-link {
+  color: #e53935 !important;
+  border-color: #e53935 !important;
+}
 
+/* Override antd App component default styles */
+.ant-app {
+  color: inherit !important;
+}
+
+.ant-app a {
+  color: #000 !important;
+  text-decoration: none;
+}
+
+.ant-app a:hover {
+  color: #e53935 !important;
+}
+
+@import "tailwindcss";
 
 :root {
   --font-primary: "Bai Jamjuree", sans-serif;
