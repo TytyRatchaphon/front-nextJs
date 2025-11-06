@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import 'swiper/css';
-import 'swiper/css/pagination';
-import 'swiper/css/navigation';
-import 'antd/dist/reset.css';
+import "swiper/css";
+import "swiper/css/pagination";
+import "swiper/css/navigation";
+import "antd/dist/reset.css";
 import "./globals.css";
 import QueryProvider from "../providers/QueryProvider";
 import { Bai_Jamjuree } from "next/font/google";
-import StyledComponentsRegistry from './AntdRegistry';
+import StyledComponentsRegistry from "./AntdRegistry";
 import Navbar from "@/components/navbar";
-const baiJamjuree = Bai_Jamjuree({
+ const baiJamjuree = Bai_Jamjuree({
   weight: ["500"], // ใช้เฉพาะ Medium (500)
   subsets: ["thai", "latin"], // สำคัญมาก: ต้องมี 'thai'
   variable: "--font-bai-jamjuree", // ตั้งชื่อ CSS Variable
@@ -26,13 +26,29 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${baiJamjuree.variable} font-bai-jamjuree font-medium`}>
+    <html
+      lang="en"
+      className={`${baiJamjuree.variable} font-bai-jamjuree font-medium`}
+    >
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600&family=Prompt:wght@400;500;600&family=Kanit:wght@400;500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=Mitr:wght@400;500;600&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body
-        className={`flex flex-col w-full min-h-[100vh] overflow-x-hidden font-bai-jamjuree font-medium`}>
+        className={`flex flex-col w-full min-h-[100vh] overflow-x-hidden font-bai-jamjuree font-medium`}
+      >
         <StyledComponentsRegistry>
           <QueryProvider>
-              <Navbar />
-              {children}
+            <Navbar />
+            {children}
           </QueryProvider>
         </StyledComponentsRegistry>
       </body>

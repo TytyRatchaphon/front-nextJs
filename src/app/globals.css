@@ -1,9 +1,8 @@
 @import "tailwindcss";
 
-
 :root {
   --font-primary: "Bai Jamjuree", sans-serif;
-  --font-bai-jamjuree: 'Bai Jamjuree', sans-serif;
+  --font-bai-jamjuree: "Bai Jamjuree", sans-serif;
 }
 
 /* HTML content styling */
@@ -185,54 +184,91 @@
 
 /* Global font for all elements */
 * {
-  font-family: var(--font-bai-jamjuree) !important;
+  font-family: var(--font-bai-jamjuree);
 }
 
 /* Specific font for different elements */
-body, html {
-  font-family: var(--font-bai-jamjuree) !important;
+body,
+html {
+  font-family: var(--font-bai-jamjuree);
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-bai-jamjuree) !important;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-bai-jamjuree);
 }
 
-p, span, div, a, button, input, textarea, select {
-  font-family: var(--font-bai-jamjuree) !important;
+p,
+span,
+div,
+a,
+button,
+input,
+textarea,
+select {
+  font-family: var(--font-bai-jamjuree);
 }
 
 /* Navbar specific font */
-.navbar-link, .navbar-category, .navbar-subcategory, .navbar-button {
-  font-family: var(--font-bai-jamjuree) !important;
+.navbar-link,
+.navbar-category,
+.navbar-subcategory,
+.navbar-button {
+  font-family: var(--font-bai-jamjuree);
 }
 
 /* Button specific font */
 .button-hover {
-  font-family: var(--font-bai-jamjuree) !important;
+  font-family: var(--font-bai-jamjuree);
 }
 
 /* Link specific font */
-.hover-link, .novel-name, .author-name, .category-tag {
-  font-family: var(--font-bai-jamjuree) !important;
+.hover-link,
+.novel-name,
+.author-name,
+.category-tag {
+  font-family: var(--font-bai-jamjuree);
 }
 
 /* Ant Design components font */
-.ant-btn, .ant-input, .ant-select, .ant-form-item-label, .ant-tabs, .ant-modal, .ant-popover, .ant-notification, .ant-message {
-  font-family: var(--font-bai-jamjuree) !important;
+.ant-btn,
+.ant-input,
+.ant-select,
+.ant-form-item-label,
+.ant-tabs,
+.ant-modal,
+.ant-popover,
+.ant-notification,
+.ant-message {
+  font-family: var(--font-bai-jamjuree);
 }
 
-.ant-btn span, .ant-input input, .ant-select-selector, .ant-form-item-label label, .ant-tabs-tab, .ant-modal-title, .ant-popover-inner, .ant-notification-notice, .ant-message-notice {
-  font-family: var(--font-bai-jamjuree) !important;
+.ant-btn span,
+.ant-input input,
+.ant-select-selector,
+.ant-form-item-label label,
+.ant-tabs-tab,
+.ant-modal-title,
+.ant-popover-inner,
+.ant-notification-notice,
+.ant-message-notice {
+  font-family: var(--font-bai-jamjuree);
 }
 
 /* Swiper components font */
-.swiper-slide, .swiper-slide * {
-  font-family: var(--font-bai-jamjuree) !important;
+.swiper-slide,
+.swiper-slide * {
+  font-family: var(--font-bai-jamjuree);
 }
 
 /* Next.js Image components font */
-.next-image, .next-image * {
-  font-family: var(--font-bai-jamjuree) !important;
+.next-image,
+.next-image * {
+  font-family: var(--font-bai-jamjuree);
 }
 
 /* Remove underline for "ดูทั้งหมด" links only */
@@ -243,7 +279,6 @@ a[href="/notifications"] {
 a[href="/notifications"]:hover {
   text-decoration: none !important;
 }
-
 
 /* Login modal specific hover effects - keep underlines */
 .login-link {
@@ -273,17 +308,17 @@ a[href="/notifications"]:hover {
 
 /* Hide scrollbar */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* Internet Explorer 10+ */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none; /* Firefox */
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;  /* Safari and Chrome */
+  display: none; /* Safari and Chrome */
 }
 
 /* Tag styling */
 .bg-tag {
-  background-color: #ffb9b9;; /* สีชมพูอ่อน */
+  background-color: #ffb9b9; /* สีชมพูอ่อน */
   color: #000; /* สีเทาเข้ม */
   transition: all 0.2s ease;
   white-space: nowrap; /* ป้องกันการขึ้นบรรทัดใหม่ */
@@ -324,13 +359,14 @@ a[href="/notifications"]:hover {
   background-color: #dc2626;
 }
 
-.select{
+.select {
   width: 100%;
   padding: 5px 10px;
   border-radius: 8px;
 }
 
-.form-control, .select{
+.form-control,
+.select {
   background: #fff;
   outline: none;
 }
@@ -364,7 +400,6 @@ a[href="/notifications"]:hover {
   margin: 0 4px;
 }
 
-
 .swiper-pagination-bullet {
   width: 8px;
   height: 8px;
@@ -382,4 +417,230 @@ a[href="/notifications"]:hover {
 .my-red-tabs .ant-tabs-ink-bar {
   background: red;
   height: 3px; /* <--- กำหนดความสูงได้ด้วย */
+}
+/* เปลี่ยนสีเลข Pagination ตอน hover เป็นแดง */
+.ant-pagination-hover-red .ant-pagination-item:hover,
+.ant-pagination-hover-red .ant-pagination-item-active {
+  background-color: white !important;
+  border-color: red !important;
+}
+
+/* ตัวเลขภายใน (active) ให้ขาว */
+.ant-pagination-hover-red .ant-pagination-item-active a,
+.ant-pagination-hover-red .ant-pagination-item:hover a {
+  color: red !important;
+}
+
+/* Episode Reading Content Styles */
+.episode-content {
+  font-weight: 400;
+  line-height: 1.8;
+  word-break: break-word;
+  overflow-wrap: break-word;
+
+  /* Prevent text selection and copying */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+
+  /* Prevent context menu */
+  -webkit-touch-callout: none;
+}
+
+/* Allow font family override via inline styles */
+.episode-content-wrapper {
+  font-family: inherit;
+}
+
+.episode-content-wrapper * {
+  font-family: inherit;
+}
+
+.episode-content * {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.episode-content p {
+  margin-bottom: 1.5rem;
+  text-indent: 2rem;
+  line-height: inherit !important;
+  font-size: inherit !important;
+}
+
+.episode-content p:first-child {
+  margin-top: 0;
+}
+
+.episode-content h1,
+.episode-content h2,
+.episode-content h3,
+.episode-content h4,
+.episode-content h5,
+.episode-content h6 {
+  font-weight: 600;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+  text-indent: 0;
+}
+
+.episode-content h1 {
+  font-size: 2em !important;
+}
+
+.episode-content h2 {
+  font-size: 1.75em !important;
+}
+
+.episode-content h3 {
+  font-size: 1.5em !important;
+}
+
+.episode-content strong,
+.episode-content b {
+  font-weight: 600;
+}
+
+.episode-content em,
+.episode-content i {
+  font-style: italic;
+}
+
+.episode-content br {
+  display: block;
+  content: "";
+  margin-bottom: 0.5rem;
+}
+
+.episode-content img {
+  max-width: 100%;
+  height: auto;
+  margin: 2rem auto;
+  display: block;
+  border-radius: 0.5rem;
+}
+
+.episode-content blockquote {
+  border-left: 4px solid #e5e7eb;
+  padding-left: 1rem;
+  margin: 1.5rem 0;
+  font-style: italic;
+  color: #6b7280;
+}
+
+.episode-content hr {
+  margin: 2rem 0;
+  border: none;
+  border-top: 1px solid #e5e7eb;
+}
+
+.episode-content ul,
+.episode-content ol {
+  margin: 1rem 0;
+  padding-left: 2rem;
+}
+
+.episode-content li {
+  margin-bottom: 0.5rem;
+}
+
+.episode-content a {
+  color: #dc2626;
+  text-decoration: underline;
+}
+
+.episode-content a:hover {
+  color: #b91c1c;
+}
+
+/* Text alignment classes */
+.episode-content .ql-align-center,
+.episode-content [style*="text-align: center"] {
+  text-align: center;
+  text-indent: 0;
+}
+
+.episode-content .ql-align-right,
+.episode-content [style*="text-align: right"] {
+  text-align: right;
+  text-indent: 0;
+}
+
+.episode-content .ql-align-justify,
+.episode-content [style*="text-align: justify"] {
+  text-align: justify;
+}
+
+/* 🔒 Protected Content - Advanced Security */
+.protected-content-wrapper {
+  position: relative;
+  pointer-events: auto;
+}
+
+.protected-content-wrapper::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+}
+
+/* Protected word rendering using CSS */
+.protected-word {
+  display: inline;
+  position: relative;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  font-size: inherit !important;
+}
+
+.protected-word::before {
+  content: attr(data-content);
+  display: inline;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
+/* Disable all selection methods */
+.protected-content-wrapper *,
+.protected-content-wrapper *::before,
+.protected-content-wrapper *::after {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+/* Additional protection layers */
+.protected-content-wrapper {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+}
+
+/* Prevent screenshot tools (limited effectiveness) */
+.protected-content-wrapper::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  pointer-events: none;
+  z-index: 999;
 }

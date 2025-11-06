@@ -2,9 +2,43 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 export interface UserData {
+  user_id: number;
+  userID: string;
   fullname: string;
+  writer_name: string | null;
+  phone: string | null;
+  address_main: string | null;
   email: string;
-  role: string;
+  banner: string;
+  img: string;
+  des: string | null;
+  facebook: string | null;
+  twitter: string | null;
+  coin: string;
+  freecoin: string;
+  heart: number;
+  flower: number;
+  coupon: number;
+  exp_point: number;
+  stamp: number;
+  wheel: number;
+  fast_ticket: number;
+  coinIncome: string;
+  gender: string;
+  birthday: string | null;
+  percent: number;
+  percent_donate: number;
+  publish: string;
+  registerDate: string;
+  cat1: number;
+  cat2: number;
+  mail_sub: string;
+  frame_id: number | null;
+  aka_id: number | null;
+  frame: string | null;
+  aka: string | null;
+  iat?: number;
+  role?: string; // เพิ่มเพื่อ backward compatibility
 }
 
 interface AuthState {

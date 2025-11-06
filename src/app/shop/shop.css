@@ -1,0 +1,24 @@
+.shop-tabs .ant-tabs-tab {
+  padding: 8px 1px !important;
+  border-radius: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  margin-right: 8px !important;
+}
+
+.shop-tabs .ant-tabs-tab .ant-tabs-tab-btn {
+  color: #6b7280 !important;
+}
+
+.shop-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #dc2626 !important;
+}
+
+.shop-tabs .ant-tabs-nav {
+  margin-bottom: 0 !important;
+}
+
+.shop-tabs .ant-tabs-ink-bar {
+  background: #dc2626 !important;
+  height: 2px !important;
+}

@@ -1,36 +1,37 @@
 "use client";
 
-import { Button, Popover, Empty, notification} from 'antd';
-import LoginButtonHeader from './LoginButtonHeader';
-import React, { useEffect } from 'react'; 
-import Image from 'next/image';
-import { BellOutlined } from '@ant-design/icons';
-import { useAuthStore } from '@/stores/authStore'; 
+import { Button, Popover, Empty, notification } from "antd";
+import LoginButtonHeader from "./LoginButtonHeader";
+import React, { useEffect, useState } from "react";
+import Image from "next/image";
+import { BellOutlined } from "@ant-design/icons";
+import { useAuthStore } from "@/stores/authStore";
 
 const getLocalStorageItem = (key: string): string | null => {
   // Check if window is defined (ensures code runs only on client)
-  if (typeof window !== 'undefined') { 
+  if (typeof window !== "undefined") {
     return localStorage.getItem(key);
   }
-    return null;
-  };
+  return null;
+};
 
-  const safeJsonParse = (jsonString: string | null): any | null => {
+const safeJsonParse = (jsonString: string | null): any | null => {
   if (!jsonString) return null;
   try {
-      return JSON.parse(jsonString);
+    return JSON.parse(jsonString);
   } catch (error) {
     console.error("Failed to parse JSON from localStorage", error);
     // Optionally remove the invalid item if parsing fails
     // if (typeof window !== 'undefined') {
-    //   localStorage.removeItem('userData'); 
+    //   localStorage.removeItem('userData');
     // }
-      return null;
-    } 
-  };
+    return null;
+  }
+};
 
 function Navbar() {
   const { user, isLoggedIn, hasMounted, logout, setMounted } = useAuthStore();
+  const [searchValue, setSearchValue] = useState("");
 
   useEffect(() => {
     setMounted();
@@ -42,19 +43,34 @@ function Navbar() {
   }
 
   const notificationContent = (
-    <div style={{ width: 300 }}> {/* กำหนดความกว้างให้ Popover */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
-        <a href="/notifications" style={{ fontSize: '12px' }}>
-          <span className='text-black font-primary font-medium'>
-            ดูทั้งหมด
-          </span>
+    <div style={{ width: 300 }}>
+      {" "}
+      {/* กำหนดความกว้างให้ Popover */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          marginBottom: "8px",
+        }}
+      >
+        <a href="/notifications" style={{ fontSize: "12px" }}>
+          <span className="text-black font-primary font-medium">ดูทั้งหมด</span>
         </a>
       </div>
       {/* TODO: ในอนาคตคุณอาจจะ Fetch ข้อมูล Notification มาแสดงที่นี่
         ถ้ามีข้อมูล ก็แสดง List ของ Notification
         ถ้าไม่มี ก็แสดง Empty 
       */}
-      <Empty description={<span className="font-primary font-medium text-black" style={{ fontSize: '14px' }}>No data</span>} />
+      <Empty
+        description={
+          <span
+            className="font-primary font-medium text-black"
+            style={{ fontSize: "14px" }}
+          >
+            No data
+          </span>
+        }
+      />
     </div>
   );
 
@@ -62,84 +78,532 @@ function Navbar() {
   console.log("Navbar rendering - user:", user);
 
   return (
-            <div
-              className="select-none inset-x-0 top-0 z-[1000] flex justify-center items-center h-[80px] header bg-white text-gray-700 sticky shadow-sm"
-              id= "Navbar"
-              style={{
-                width: "100%",
-                backgroundImage: "url('https://img.enjoybook.co/img/')",
-                backgroundSize: "auto",
-                backgroundPosition: "center bottom",
-                backgroundRepeat: "repeat-x",
-                bottom: "0px",
-                alignItems: "flex-end"
-              }}
+    <div
+      className="select-none inset-x-0 top-0 z-[1000] flex justify-center items-center h-[80px] header bg-white text-gray-700 sticky shadow-sm"
+      id="Navbar"
+      style={{
+        width: "100%",
+        backgroundImage: "url('https://img.enjoybook.co/img/')",
+        backgroundSize: "auto",
+        backgroundPosition: "center bottom",
+        backgroundRepeat: "repeat-x",
+        bottom: "0px",
+        alignItems: "flex-end",
+      }}
+    >
+      <div className="flex flex-row items-center justify-between p-3 md:px-5 lg:px-0 gap-3 max-w-[1000px] w-full h-[80px]">
+        <div className="flex flex-row items-center justify-center ">
+          <a className="w-10 lg:w-12 md:ms-[10px]" href="/">
+            <img
+              className="w-full h-auto"
+              src="https://img.enjoybook.co/img/logo2025omxesk8HIC0602112905.png?w=3840&q=75"
+              alt=""
+              loading="lazy"
+              width="1500"
+              height="1500"
+              decoding="async"
+              data-nimg="1"
+              style={{ color: "transparent" }}
+              srcSet="https://img.enjoybook.co/img/logo2025omxesk8HIC0602112905.png?w=1920&q=75 1x, https://img.enjoybook.co/img/logo2025omxesk8HIC0602112905.png?w=3840&q=75 2x"
+            />
+          </a>
+        </div>
+        <div className="hidden lg:flex justify-center w-full lg:gap-x-10 items-center ">
+          <div className="group/main ">
+            <a
+              className="text-[15px] lg:text-[17px] leading-6 flex items-center text-nowrap font-primary navbar-link"
+              href="/"
             >
-              <div className="flex flex-row items-center justify-between p-3 md:px-5 lg:px-0 gap-3 max-w-[1000px] w-full h-[80px]">
-                <div className="flex flex-row items-center justify-center ">
-                  <a className="w-10 lg:w-12 md:ms-[10px]" href="/">
-                    <img className="w-full h-auto" src="https://img.enjoybook.co/img/logo2025omxesk8HIC0602112905.png?w=3840&q=75" alt="" loading="lazy" width="1500" height="1500" decoding="async" data-nimg="1" style={{ color: "transparent" }} srcSet="https://img.enjoybook.co/img/logo2025omxesk8HIC0602112905.png?w=1920&q=75 1x, https://img.enjoybook.co/img/logo2025omxesk8HIC0602112905.png?w=3840&q=75 2x" />
-                  </a>
-                </div>
-                <div className="hidden lg:flex justify-center w-full lg:gap-x-10 items-center ">
-                      <div className="group/main ">
-                        <a className="text-[15px] lg:text-[17px] leading-6 flex items-center text-nowrap font-primary navbar-link" href="/">หน้าแรก</a>
-                      </div>
-                      <div className="group/main "><a className="text-[15px] lg:text-[17px] leading-6 flex items-center text-nowrap navbar-category" href="/cat/dHJhbiwyLG5ldw%3D%3D">เลือกหมวดหมู่<svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 16 16" className="mx-2 " height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M1.553 6.776a.5.5 0 0 1 .67-.223L8 9.44l5.776-2.888a.5.5 0 1 1 .448.894l-6 3a.5.5 0 0 1-.448 0l-6-3a.5.5 0 0 1-.223-.67"></path></svg></a><div className="hidden group-hover/main:block absolute z-10 pt-10 rounded-md ms-[-20px] bg-white"><div className="group/item flex flex-col  shadow-lg"><a className="px-4 py-4 text-sm rounded-md w-[200px] flex flex-row justify-between bg-white hover:bg-gray-100 navbar-subcategory" href="#">นิยายแปล<svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 16 16" className="mx-2 " height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"></path></svg></a><div className="hidden group-hover/item:block ms-[200px] absolute shadow-lg rounded-md bg-white"><div className="grid grid-cols-4 gap-1 min-w-[800px]"><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory" href="/cat/dHJhbiwyMyxuZXc%3D">นิยายแปลจีน</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory" href="/cat/dHJhbiwyNCxuZXc%3D">นิยายแปลเกาหลี</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory" href="/cat/dHJhbiwyNSxuZXc%3D">นิยายแปลญี่ปุ่น</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory" href="/cat/dHJhbiwyNixuZXc%3D">นิยายแปลอังกฤษ</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory" href="/cat/dHJhbiwyNyxuZXc%3D">นิยายแปลอื่นๆ</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory" href="/cat/dHJhbiwyLG5ldw%3D%3D">โรแมนติก</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory" href="/cat/dHJhbiw4LG5ldw%3D%3D">แฟนตาซี</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory" href="/cat/dHJhbiw3LG5ldw%3D%3D">ย้อนเวลา</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory" href="/cat/dHJhbiw1LG5ldw%3D%3D">กีฬา</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory" href="/cat/dHJhbiwyMCxuZXc%3D">Boylove โรมานซ์</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory" href="/cat/dHJhbiwxOCxuZXc%3D">ระบบ</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory" href="/cat/dHJhbiwxOSxuZXc%3D">รักโรมานซ์</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory" href="/cat/dHJhbiwyMSxuZXc%3D">Girl love โรมานซ์</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory" href="/cat/dHJhbiwyMixuZXc%3D">เรื่องสั้น</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory" href="/cat/dHJhbiwxNixuZXc%3D">ย้อนยุค / วินเทจ / โบราณ</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory" href="/cat/dHJhbiw2LG5ldw%3D%3D">ผจญภัย</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory" href="/cat/dHJhbiwxNCxuZXc%3D">Boyslove(BL)</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory" href="/cat/dHJhbiw0LG5ldw%3D%3D">สืบสวนสอบสวน</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory" href="/cat/dHJhbiwzLG5ldw%3D%3D">รักวัยรุ่น</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory" href="/cat/dHJhbiwxNyxuZXc%3D">เกมออนไลน์</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory" href="/cat/dHJhbiwxMyxuZXc%3D">กำลังภายใน</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory" href="/cat/dHJhbiwxNSxuZXc%3D">GirlsLove(GL)</a></div></div></div><div className="group/item flex flex-col  shadow-lg"><a className="px-4 py-4 text-sm rounded-md w-[200px] flex flex-row justify-between bg-white hover:bg-gray-100" href="#">นิยายแต่ง<svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 16 16" className="mx-2 " height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"></path></svg></a><div className="hidden group-hover/item:block ms-[200px] absolute shadow-lg rounded-md bg-white"><div className="grid grid-cols-4 gap-1 min-w-[800px]"><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/d3JpdGUsOCxuZXc%3D">แฟนตาซี</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/d3JpdGUsNyxuZXc%3D">ย้อนเวลา</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/d3JpdGUsNSxuZXc%3D">กีฬา</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/d3JpdGUsMjAsbmV3">Boylove โรมานซ์</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/d3JpdGUsMTgsbmV3">ระบบ</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/d3JpdGUsMTksbmV3">รักโรมานซ์</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/d3JpdGUsMjEsbmV3">Girl love โรมานซ์</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/d3JpdGUsMjIsbmV3">เรื่องสั้น</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/d3JpdGUsNCxuZXc%3D">สืบสวนสอบสวน</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/d3JpdGUsMyxuZXc%3D">รักวัยรุ่น</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/d3JpdGUsMTcsbmV3">เกมออนไลน์</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/d3JpdGUsMTMsbmV3">กำลังภายใน</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/d3JpdGUsMTUsbmV3">GirlsLove(GL)</a></div></div></div><div className="group/item flex flex-col  shadow-lg"><a className="px-4 py-4 text-sm rounded-md w-[200px] flex flex-row justify-between bg-white hover:bg-gray-100" href="#">แฟนฟิค<svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 16 16" className="mx-2 " height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"></path></svg></a><div className="hidden group-hover/item:block ms-[200px] absolute shadow-lg rounded-md bg-white"><div className="grid grid-cols-4 gap-1 min-w-[800px]"><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/ZmFuZmljLDgsbmV3">แฟนตาซี</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/ZmFuZmljLDcsbmV3">ย้อนเวลา</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/ZmFuZmljLDUsbmV3">กีฬา</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/ZmFuZmljLDIwLG5ldw%3D%3D">Boylove โรมานซ์</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/ZmFuZmljLDE4LG5ldw%3D%3D">ระบบ</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/ZmFuZmljLDE5LG5ldw%3D%3D">รักโรมานซ์</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/ZmFuZmljLDIxLG5ldw%3D%3D">Girl love โรมานซ์</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/ZmFuZmljLDIyLG5ldw%3D%3D">เรื่องสั้น</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/ZmFuZmljLDQsbmV3">สืบสวนสอบสวน</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/ZmFuZmljLDMsbmV3">รักวัยรุ่น</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/ZmFuZmljLDE3LG5ldw%3D%3D">เกมออนไลน์</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/ZmFuZmljLDEzLG5ldw%3D%3D">กำลังภายใน</a><a className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100" href="/cat/ZmFuZmljLDE1LG5ldw%3D%3D">GirlsLove(GL)</a></div></div></div></div>
-                      </div>
-                      <div className="group/main "><a className="text-[15px] lg:text-[17px] leading-6 flex items-center text-nowrap navbar-link" href="/campaign">แคมเปญ</a>
-                      </div>
-                      <div className="group/main "><a className="text-[15px] lg:text-[17px] leading-6 flex items-center text-nowrap navbar-link" href="/review">รีวิว</a>
-                      </div>
-                      <div className="group/main "><a className="text-[15px] lg:text-[17px] leading-6 flex items-center text-nowrap navbar-link" href="/article">บทความ</a></div>
-                </div>
-                <div className="hidden lg:flex lg:justify-end items-center ">
-                  <div className="relative rounded-md mx-4 ms-14  justify-center items-center hidden lg:flex">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center justify-center pl-3">
-                      <span className=" text-sm">
-                        <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 16 16" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"></path></svg>
-                      </span>
-                    </div>
-                    <input type="text" className="input block rounded-md border-0 py-1.5 pl-7 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 lg:w-[180px] bg-white" name="search" value=""></input>
+              หน้าแรก
+            </a>
+          </div>
+          <div className="group/main ">
+            <a
+              className="text-[15px] lg:text-[17px] leading-6 flex items-center text-nowrap navbar-category"
+              href="/cat/dHJhbiwyLG5ldw%3D%3D"
+            >
+              เลือกหมวดหมู่
+              <svg
+                stroke="currentColor"
+                fill="currentColor"
+                strokeWidth="0"
+                viewBox="0 0 16 16"
+                className="mx-2 "
+                height="1em"
+                width="1em"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M1.553 6.776a.5.5 0 0 1 .67-.223L8 9.44l5.776-2.888a.5.5 0 1 1 .448.894l-6 3a.5.5 0 0 1-.448 0l-6-3a.5.5 0 0 1-.223-.67"
+                ></path>
+              </svg>
+            </a>
+            <div className="hidden group-hover/main:block absolute z-10 pt-10 rounded-md ms-[-20px] bg-white">
+              <div className="group/item flex flex-col  shadow-lg">
+                <a
+                  className="px-4 py-4 text-sm rounded-md w-[200px] flex flex-row justify-between bg-white hover:bg-gray-100 navbar-subcategory"
+                  href="#"
+                >
+                  นิยายแปล
+                  <svg
+                    stroke="currentColor"
+                    fill="currentColor"
+                    strokeWidth="0"
+                    viewBox="0 0 16 16"
+                    className="mx-2 "
+                    height="1em"
+                    width="1em"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"
+                    ></path>
+                  </svg>
+                </a>
+                <div className="hidden group-hover/item:block ms-[200px] absolute shadow-lg rounded-md bg-white">
+                  <div className="grid grid-cols-4 gap-1 min-w-[800px]">
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory"
+                      href="/cat/dHJhbiwyMyxuZXc%3D"
+                    >
+                      นิยายแปลจีน
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory"
+                      href="/cat/dHJhbiwyNCxuZXc%3D"
+                    >
+                      นิยายแปลเกาหลี
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory"
+                      href="/cat/dHJhbiwyNSxuZXc%3D"
+                    >
+                      นิยายแปลญี่ปุ่น
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory"
+                      href="/cat/dHJhbiwyNixuZXc%3D"
+                    >
+                      นิยายแปลอังกฤษ
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory"
+                      href="/cat/dHJhbiwyNyxuZXc%3D"
+                    >
+                      นิยายแปลอื่นๆ
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory"
+                      href="/cat/dHJhbiwyLG5ldw%3D%3D"
+                    >
+                      โรแมนติก
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory"
+                      href="/cat/dHJhbiw4LG5ldw%3D%3D"
+                    >
+                      แฟนตาซี
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory"
+                      href="/cat/dHJhbiw3LG5ldw%3D%3D"
+                    >
+                      ย้อนเวลา
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory"
+                      href="/cat/dHJhbiw1LG5ldw%3D%3D"
+                    >
+                      กีฬา
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory"
+                      href="/cat/dHJhbiwyMCxuZXc%3D"
+                    >
+                      Boylove โรมานซ์
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory"
+                      href="/cat/dHJhbiwxOCxuZXc%3D"
+                    >
+                      ระบบ
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory"
+                      href="/cat/dHJhbiwxOSxuZXc%3D"
+                    >
+                      รักโรมานซ์
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory"
+                      href="/cat/dHJhbiwyMSxuZXc%3D"
+                    >
+                      Girl love โรมานซ์
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory"
+                      href="/cat/dHJhbiwyMixuZXc%3D"
+                    >
+                      เรื่องสั้น
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory"
+                      href="/cat/dHJhbiwxNixuZXc%3D"
+                    >
+                      ย้อนยุค / วินเทจ / โบราณ
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory"
+                      href="/cat/dHJhbiw2LG5ldw%3D%3D"
+                    >
+                      ผจญภัย
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory"
+                      href="/cat/dHJhbiwxNCxuZXc%3D"
+                    >
+                      Boyslove(BL)
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory"
+                      href="/cat/dHJhbiw0LG5ldw%3D%3D"
+                    >
+                      สืบสวนสอบสวน
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory"
+                      href="/cat/dHJhbiwzLG5ldw%3D%3D"
+                    >
+                      รักวัยรุ่น
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory"
+                      href="/cat/dHJhbiwxNyxuZXc%3D"
+                    >
+                      เกมออนไลน์
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory"
+                      href="/cat/dHJhbiwxMyxuZXc%3D"
+                    >
+                      กำลังภายใน
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100 navbar-subcategory"
+                      href="/cat/dHJhbiwxNSxuZXc%3D"
+                    >
+                      GirlsLove(GL)
+                    </a>
                   </div>
-                  <div className="mx-0 flex justify-center items-center ">
-                    {isLoggedIn && user ? (
-                    <>
-                      <Popover
-                          content = {notificationContent}
-                          trigger="click"
-                          placement='bottomRight'
-                          
-                        >
-                          <div className='hover:text-primary cursor-pointer mr-5 navbar-button'>
-                            <BellOutlined style={{ fontSize: '22.4px' }} />
-                          </div>
-                      </Popover>
-                      <div className="flex items-center gap-x-2 cursor-pointer">
-                        <Image
-                          src={"https://img.enjoybook.co/img/avatar/avatar-default.png"}
-                          alt={user.fullname || 'User Avatar'}
-                          width={32}
-                          height={32}
-                          className="w-8 h-8 rounded-full"
-                          // onError={(e) => { (e.target as HTMLImageElement).src = 'https://img.enjoybook.co/img/avatar/avatar-default.png'; }}
-                        />
-                        <span className="text-sm text-gray-600">{user.fullname}</span>
-                        <Button onClick={logout} className="text-sm text-gray-600 hover:text-red-600 ml-2 navbar-button">
-                              Logout
-                        </Button>
-                      </div>
-                    </>
-                    ) : (
-                      <div className="text-nowrap text-[15px] lg:text-[17px] leading-6 flex justify-end items-center hover:text-primary cursor-pointer navbar-button">
-                        <LoginButtonHeader/>
-                      </div>
-                    )}
+                </div>
+              </div>
+              <div className="group/item flex flex-col  shadow-lg">
+                <a
+                  className="px-4 py-4 text-sm rounded-md w-[200px] flex flex-row justify-between bg-white hover:bg-gray-100"
+                  href="#"
+                >
+                  นิยายแต่ง
+                  <svg
+                    stroke="currentColor"
+                    fill="currentColor"
+                    strokeWidth="0"
+                    viewBox="0 0 16 16"
+                    className="mx-2 "
+                    height="1em"
+                    width="1em"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"
+                    ></path>
+                  </svg>
+                </a>
+                <div className="hidden group-hover/item:block ms-[200px] absolute shadow-lg rounded-md bg-white">
+                  <div className="grid grid-cols-4 gap-1 min-w-[800px]">
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/d3JpdGUsOCxuZXc%3D"
+                    >
+                      แฟนตาซี
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/d3JpdGUsNyxuZXc%3D"
+                    >
+                      ย้อนเวลา
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/d3JpdGUsNSxuZXc%3D"
+                    >
+                      กีฬา
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/d3JpdGUsMjAsbmV3"
+                    >
+                      Boylove โรมานซ์
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/d3JpdGUsMTgsbmV3"
+                    >
+                      ระบบ
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/d3JpdGUsMTksbmV3"
+                    >
+                      รักโรมานซ์
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/d3JpdGUsMjEsbmV3"
+                    >
+                      Girl love โรมานซ์
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/d3JpdGUsMjIsbmV3"
+                    >
+                      เรื่องสั้น
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/d3JpdGUsNCxuZXc%3D"
+                    >
+                      สืบสวนสอบสวน
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/d3JpdGUsMyxuZXc%3D"
+                    >
+                      รักวัยรุ่น
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/d3JpdGUsMTcsbmV3"
+                    >
+                      เกมออนไลน์
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/d3JpdGUsMTMsbmV3"
+                    >
+                      กำลังภายใน
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/d3JpdGUsMTUsbmV3"
+                    >
+                      GirlsLove(GL)
+                    </a>
+                  </div>
+                </div>
+              </div>
+              <div className="group/item flex flex-col  shadow-lg">
+                <a
+                  className="px-4 py-4 text-sm rounded-md w-[200px] flex flex-row justify-between bg-white hover:bg-gray-100"
+                  href="#"
+                >
+                  แฟนฟิค
+                  <svg
+                    stroke="currentColor"
+                    fill="currentColor"
+                    strokeWidth="0"
+                    viewBox="0 0 16 16"
+                    className="mx-2 "
+                    height="1em"
+                    width="1em"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"
+                    ></path>
+                  </svg>
+                </a>
+                <div className="hidden group-hover/item:block ms-[200px] absolute shadow-lg rounded-md bg-white">
+                  <div className="grid grid-cols-4 gap-1 min-w-[800px]">
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/ZmFuZmljLDgsbmV3"
+                    >
+                      แฟนตาซี
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/ZmFuZmljLDcsbmV3"
+                    >
+                      ย้อนเวลา
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/ZmFuZmljLDUsbmV3"
+                    >
+                      กีฬา
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/ZmFuZmljLDIwLG5ldw%3D%3D"
+                    >
+                      Boylove โรมานซ์
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/ZmFuZmljLDE4LG5ldw%3D%3D"
+                    >
+                      ระบบ
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/ZmFuZmljLDE5LG5ldw%3D%3D"
+                    >
+                      รักโรมานซ์
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/ZmFuZmljLDIxLG5ldw%3D%3D"
+                    >
+                      Girl love โรมานซ์
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/ZmFuZmljLDIyLG5ldw%3D%3D"
+                    >
+                      เรื่องสั้น
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/ZmFuZmljLDQsbmV3"
+                    >
+                      สืบสวนสอบสวน
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/ZmFuZmljLDMsbmV3"
+                    >
+                      รักวัยรุ่น
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/ZmFuZmljLDE3LG5ldw%3D%3D"
+                    >
+                      เกมออนไลน์
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/ZmFuZmljLDEzLG5ldw%3D%3D"
+                    >
+                      กำลังภายใน
+                    </a>
+                    <a
+                      className=" px-4 py-4 text-sm rounded-md hover:bg-gray-100"
+                      href="/cat/ZmFuZmljLDE1LG5ldw%3D%3D"
+                    >
+                      GirlsLove(GL)
+                    </a>
                   </div>
                 </div>
               </div>
             </div>
-  )
+          </div>
+          <div className="group/main ">
+            <a
+              className="text-[15px] lg:text-[17px] leading-6 flex items-center text-nowrap navbar-link"
+              href="/campaign"
+            >
+              แคมเปญ
+            </a>
+          </div>
+          <div className="group/main ">
+            <a
+              className="text-[15px] lg:text-[17px] leading-6 flex items-center text-nowrap navbar-link"
+              href="/review"
+            >
+              รีวิว
+            </a>
+          </div>
+          <div className="group/main ">
+            <a
+              className="text-[15px] lg:text-[17px] leading-6 flex items-center text-nowrap navbar-link"
+              href="/article"
+            >
+              บทความ
+            </a>
+          </div>
+        </div>
+        <div className="hidden lg:flex lg:justify-end items-center ">
+          <div className="relative rounded-md mx-4 ms-14  justify-center items-center hidden lg:flex">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center justify-center pl-3">
+              <span className=" text-sm">
+                <svg
+                  stroke="currentColor"
+                  fill="currentColor"
+                  strokeWidth="0"
+                  viewBox="0 0 16 16"
+                  height="1em"
+                  width="1em"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"></path>
+                </svg>
+              </span>
+            </div>
+            <input
+              type="text"
+              className="input block rounded-md border-0 py-1.5 pl-7 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 lg:w-[180px] bg-white"
+              name="search"
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              placeholder="ค้นหา..."
+            />
+          </div>
+          <div className="mx-0 flex justify-center items-center ">
+            {isLoggedIn && user ? (
+              <>
+                <Popover
+                  content={notificationContent}
+                  trigger="click"
+                  placement="bottomRight"
+                >
+                  <div className="hover:text-primary cursor-pointer mr-5 navbar-button">
+                    <BellOutlined style={{ fontSize: "22.4px" }} />
+                  </div>
+                </Popover>
+                <div className="flex items-center gap-x-2 cursor-pointer">
+                  <Image
+                    src={
+                      "https://img.enjoybook.co/img/avatar/avatar-default.png"
+                    }
+                    alt={user.fullname || "User Avatar"}
+                    width={32}
+                    height={32}
+                    className="w-8 h-8 rounded-full"
+                    // onError={(e) => { (e.target as HTMLImageElement).src = 'https://img.enjoybook.co/img/avatar/avatar-default.png'; }}
+                  />
+                  <span className="text-sm text-gray-600">{user.fullname}</span>
+                  <Button
+                    onClick={logout}
+                    className="text-sm text-gray-600 hover:text-red-600 ml-2 navbar-button"
+                  >
+                    Logout
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="text-nowrap text-[15px] lg:text-[17px] leading-6 flex justify-end items-center hover:text-primary cursor-pointer navbar-button">
+                <LoginButtonHeader />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-export default Navbar
+export default Navbar;
