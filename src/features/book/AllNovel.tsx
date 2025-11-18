@@ -1,7 +1,7 @@
 'use client';
 
 import CardBook from '@/components/CardBook';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Pagination, Tabs, Spin, Select } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
@@ -43,9 +43,11 @@ interface ApiResponse {
   };
 }
 
-const fetchBooks = async (page: number, limit: number = 18): Promise<ApiResponse> => {
-  const { data } = await axios.get(`https://rs3xqjb7-3331.asse.devtunnels.ms/getAllBook`, {
-    params: { page, limit }
+const fetchBooks = async (page: number, limit: number = 18, sort?: string): Promise<ApiResponse> => {
+  const params: Record<string, any> = { page, limit };
+  if (sort) params.sort = sort; // send sort param to server if provided
+  const { data } = await axios.get(`http://192.168.220.214:3331/book/search`, {
+    params
   });
   return data;
 };
@@ -53,12 +55,13 @@ const fetchBooks = async (page: number, limit: number = 18): Promise<ApiResponse
 function AllNovel() {
   const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState('all');
-  const [sortOrder, setSortOrder] = useState('latest');
+  // sortOrder values: 'update_at' | 'date_at' | 'view'
+  const [sortOrder, setSortOrder] = useState('update_at');
   const pageSize = 18;
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['books', currentPage, pageSize],
-    queryFn: () => fetchBooks(currentPage, pageSize),
+    queryKey: ['books', currentPage, pageSize, sortOrder],
+    queryFn: () => fetchBooks(currentPage, pageSize, sortOrder),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
@@ -75,6 +78,38 @@ function AllNovel() {
   const books = data?.data?.items || [];
   const total = data?.data?.total || books.length;
 
+  // Memoized sorted books according to selected sortOrder
+  const sortedBooks = useMemo(() => {
+    if (!books || books.length === 0) return [] as Book[];
+    const arr = [...books];
+
+    const parseDate = (s?: string) => {
+      if (!s) return 0;
+      const t = Date.parse(s);
+      return isNaN(t) ? 0 : t;
+    };
+
+    switch (sortOrder) {
+      case 'update_at':
+        // newest update_at first
+        arr.sort((a, b) => parseDate(b.update_at) - parseDate(a.update_at));
+        break;
+      case 'date_at':
+        // newest date_at first
+        arr.sort((a, b) => parseDate(b.date_at) - parseDate(a.date_at));
+        break;
+      case 'view':
+        // highest view first
+        arr.sort((a, b) => (Number(b.view || 0) - Number(a.view || 0)));
+        break;
+      default:
+        // fallback: keep original order
+        break;
+    }
+
+    return arr;
+  }, [books, sortOrder]);
+
   return (
     <div className="w-[1128px] mx-auto px-0 py-6 pt-[100px]">
       <style jsx>{`
@@ -88,6 +123,9 @@ function AllNovel() {
           fill: #dc2626 !important;
         }
         :global(.ant-tabs-tab-active .ant-tabs-tab-btn) {
+          color: #dc2626 !important;
+        }
+        :global(.ant-tabs-tab-active) {
           color: #dc2626 !important;
         }
         :global(.ant-tabs-tab-active svg path) {
@@ -200,12 +238,12 @@ function AllNovel() {
         {/* Sort Dropdown */}
         <Select
           value={sortOrder}
-          onChange={setSortOrder}
-          style={{ width: 120 }}
+          onChange={(val) => { setSortOrder(String(val)); setCurrentPage(1); }}
+          style={{ width: 160 }}
           options={[
-            { value: 'latest', label: 'อัพเดตล่าสุด' },
-            { value: 'Newest', label: 'ใหม่ล่าสุด' },
-            { value: 'Most views', label: 'ยอดชมสูงสุด' },
+            { value: 'update_at', label: 'อัพเดตล่าสุด' },
+            { value: 'date_at', label: 'ใหม่ล่าสุด' },
+            { value: 'view', label: 'ยอดชมสูงสุด' },
           ]}
         />
       </div>
@@ -226,13 +264,49 @@ function AllNovel() {
         <>
           {/* Book Grid - 6 columns, cards 168px each */}
           <div className="flex flex-wrap gap-6 mb-8">
-            {books.length > 0 ? (
-              books.map((book) => (
-                <CardBook 
-                  key={book.book_id} 
-                  book={book}
-                />
-              ))
+            {sortedBooks.length > 0 ? (
+              sortedBooks.map((b) => {
+                // Normalize incoming API book shape to CardBook's expected shape
+                const imageRaw = b.img || b.bgimg || '';
+                const imageUrl = typeof imageRaw === 'string' && imageRaw.startsWith('http')
+                  ? imageRaw
+                  : imageRaw
+                  ? imageRaw
+                  : '';
+
+                const normalized = {
+                  book_id: Number(b.book_id || 0),
+                  bookID: b.bookID?.toString() || String(b.book_id || ''),
+                  type: b.type || '',
+                  img: imageUrl,
+                  name: b.name || b.title || '',
+                  title: b.title || b.name || '',
+                  tag: b.tag || '',
+                  cat1: b.cat1,
+                  cat2: b.cat2,
+                  rate: b.rate,
+                  des: b.des,
+                  user_id: b.user_id,
+                  update_at: b.update_at,
+                  status: b.status,
+                  view: Number(b.view || 0),
+                  // map possible shelf/shelve fields to shelveCount
+                  shelveCount: Number((b as any).shelveCount ?? (b as any).shelfCount ?? (b as any).shelve_count ?? (b as any).shelf_count ?? 0),
+                  date_at: b.date_at,
+                  heart: b.heart ?? 0,
+                  flower: b.flower ?? 0,
+                  end: b.end ?? b.status,
+                  bgimg: b.bgimg,
+                  noti_add: b.noti_add,
+                  accept_conditions: b.accept_conditions,
+                  use_freecoin: b.use_freecoin,
+                  fast_status: b.fast_status,
+                } as any;
+
+                return (
+                  <CardBook key={normalized.book_id || normalized.bookID} book={normalized} />
+                );
+              })
             ) : (
               <div className="w-full text-center text-gray-500 py-8">
                 ไม่พบข้อมูลหนังสือ

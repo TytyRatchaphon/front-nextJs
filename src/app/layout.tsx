@@ -8,6 +8,7 @@ import QueryProvider from "../providers/QueryProvider";
 import { Bai_Jamjuree } from "next/font/google";
 import StyledComponentsRegistry from './AntdRegistry';
 import Navbar from "@/components/navbar";
+import Footer from "@/components/Footer";
 const baiJamjuree = Bai_Jamjuree({
   weight: ["500"], // ใช้เฉพาะ Medium (500)
   subsets: ["thai", "latin"], // สำคัญมาก: ต้องมี 'thai'
@@ -32,7 +33,8 @@ export default function RootLayout({
         <StyledComponentsRegistry>
           <QueryProvider>
             <Navbar />
-            {children}
+              {children}
+            <Footer />
           </QueryProvider>
         </StyledComponentsRegistry>
       </body>

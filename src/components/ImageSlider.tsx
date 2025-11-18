@@ -163,10 +163,12 @@ export function NewNovelSlider() {
             allowTouchMove={true}
             freeMode={true}
         >
-        {novels?.map((novel: BookTrans) => (
-        <SwiperSlide key={novel.bookID}>
+        {novels?.map((novel: BookTrans) => {
+        const novelBookParam = novel.book_id ? String(novel.book_id) : (novel.bookID ? String(novel.bookID) : "");
+        return (
+        <SwiperSlide key={novel.bookID || novelBookParam}>
             <div className='swiper-slide items-start SwiperSlide' style={{width: "151.667px", marginRight: "10px"}}>
-                <Link className='flex flex-col cursor-pointer p-2 text-start  hover:text-primary bg-transparent' href={`/book/${novel.bookID}`} style={{width: "100%", height: "auto"}}>
+                <Link className='flex flex-col cursor-pointer p-2 text-start  hover:text-primary bg-transparent' href={`/book/${novelBookParam}`} style={{width: "100%", height: "auto"}}>
                    <div className='relative' style={{width: "100%", overflow: "visible"}}>
                         <div className='relative' style={{width: "100%"}}>
                             <Image alt="enjoybook" loading="lazy" width="100" height="100" decoding="async" data-nimg="1" style={{color: "transparent", width: "2.5rem", height: "auto", position: "absolute", left: "-6px", top: "0.7rem", zIndex: 10}}   src="https://img.enjoybook.co/img/tag/newTag.png?w=256&amp;q=75">
@@ -187,7 +189,8 @@ export function NewNovelSlider() {
                 </Link> 
             </div>
         </SwiperSlide>
-        ))}
+        );
+        })}
         </Swiper>
     );
 }

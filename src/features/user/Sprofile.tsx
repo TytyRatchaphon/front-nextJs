@@ -10,7 +10,8 @@ import {
   Button, 
   App,
   Spin,
-  Upload 
+  Upload,
+  Modal
 } from 'antd';
 import type { TabsProps, UploadProps } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
@@ -332,7 +333,7 @@ const ChangePasswordForm = () => {
                 htmlType="submit" 
                 loading={loading}
                 disabled={loading}
-                className="font-primary font-medium text-white border-0 hover:opacity-90 transition-all duration-200"
+                className="font-primary font-medium border-0 hover:opacity-90 transition-all duration-200"
                 style={{ 
                   backgroundColor: '#FF0037',
                   borderRadius: '8px',
@@ -340,6 +341,7 @@ const ChangePasswordForm = () => {
                   height: 'auto',
                   fontSize: '16px',
                   fontWeight: 500,
+                  color: '#FFFFFF',
                 }}
               >
                 {loading ? 'กำลังเปลี่ยนรหัสผ่าน...' : 'เปลี่ยนรหัสผ่าน'}
@@ -360,7 +362,97 @@ const onChange = (key: string) => {
 // Profile Picture Component with Upload
 const ProfilePictureTab = () => {
   const { message } = App.useApp();
+  const { token } = useAuthStore(); // ดึง token จาก authStore
   const [previewImage, setPreviewImage] = React.useState<string | null>(null);
+  const [isFrameModalOpen, setIsFrameModalOpen] = React.useState(false);
+  const [frames, setFrames] = React.useState<any[]>([]);
+  const [loadingFrames, setLoadingFrames] = React.useState(false);
+  const [selectedFrame, setSelectedFrame] = React.useState<any>(null);
+
+  // ฟังก์ชันดึงข้อมูลกรอบจาก API
+  const fetchFrames = async () => {
+    if (!token) {
+      message.error('ไม่พบ token กรุณาเข้าสู่ระบบใหม่');
+      return;
+    }
+
+    setLoadingFrames(true);
+    try {
+      console.log('Token:', token ? 'มี token' : 'ไม่มี token');
+      console.log('Calling API via Next.js proxy...');
+      
+      // เรียกผ่าน Next.js API Route (proxy) เพื่อแก้ปัญหา CORS
+      // เพิ่ม timeout เป็น 30 วินาที
+      const response = await axios.get('/api/getframes', {
+        headers: {
+          'Authorization': token,
+        },
+        timeout: 30000, // 30 วินาที
+      });
+      
+      console.log('Full response:', response);
+      console.log('Response data:', response.data);
+      console.log('Response status:', response.data.status);
+      console.log('Response code:', response.data.code);
+      
+      // API ใช้ code: 200 ไม่ใช่ status: "success"
+      if (response.data.code === 200 || response.data.status === 'success') {
+        // ข้อมูลอยู่ที่ response.data.data.frames
+        const framesData = response.data.data?.frames || [];
+        console.log('✅ Extracted frames:', framesData);
+        console.log('✅ Frames count:', framesData.length);
+        
+        if (Array.isArray(framesData) && framesData.length > 0) {
+          setFrames(framesData);
+          message.success(`โหลดข้อมูลกรอบสำเร็จ (${framesData.length} กรอบ)`);
+        } else {
+          console.warn('⚠️ No frames found in response');
+          setFrames([]);
+          message.warning('ไม่พบข้อมูลกรอบ');
+        }
+      } else {
+        console.error('❌ Invalid response status/code');
+      }
+    } catch (error: any) {
+      console.error('Error fetching frames:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      
+      if (error.response?.status === 401) {
+        message.error('การยืนยันตัวตนล้มเหลว กรุณาเข้าสู่ระบบใหม่');
+      } else {
+        message.error(error.response?.data?.message || 'ไม่สามารถโหลดข้อมูลกรอบได้');
+      }
+    } finally {
+      setLoadingFrames(false);
+    }
+  };
+
+  // เปิด Modal และโหลดข้อมูล
+  const handleOpenFrameModal = () => {
+    setIsFrameModalOpen(true);
+    fetchFrames();
+  };
+
+  // เลือกกรอบ
+  const handleSelectFrame = (frame: any) => {
+    console.log('Selected frame:', frame);
+    setSelectedFrame(frame);
+  };
+
+  // ยืนยันการเลือกกรอบ
+  const handleConfirmFrame = () => {
+    console.log('Confirming frame:', selectedFrame);
+    if (selectedFrame) {
+      message.success(`เลือกกรอบ: ${selectedFrame.name || 'ไม่ระบุชื่อ'}`);
+      setIsFrameModalOpen(false);
+    } else if (selectedFrame === null) {
+      message.success('ไม่ใส่กรอบ');
+      setIsFrameModalOpen(false);
+    } else {
+      message.warning('กรุณาเลือกกรอบก่อน');
+    }
+  };
 
   const props: UploadProps = {
     action: 'https://660d2bd96ddfa2943b943748.mockapi.io/api/upload',
@@ -402,9 +494,7 @@ const ProfilePictureTab = () => {
                   <path d="M1.16699 7H12.8337" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </span>}
-              onClick={() => {
-                message.info('เลือกกรอบ - ฟีเจอร์กำลังพัฒนา');
-              }}
+              onClick={handleOpenFrameModal}
               style={{ borderColor: '#FF0037', color: '#FF0037' }}
               className='font-primary text-xs hover:bg-red-50'
             >
@@ -423,23 +513,40 @@ const ProfilePictureTab = () => {
               style={{ borderColor: '#FF0037', color: '#FF0037' }}
               className='font-primary text-xs hover:bg-red-50'
             >
-              เลือกฉาก
+              เลือกฉายา
             </Button>
           </div>
 
           {/* Profile Image */}
           <div className='flex-1 flex items-center justify-center'>
             <div className='relative' style={{ width: '280px', height: '280px' }}>
+              {/* รูปโปรไฟล์ */}
               <div className='w-full h-full rounded-full overflow-hidden border-4 border-gray-300 bg-gray-50 flex items-center justify-center'>
-                <img 
-                  src={previewImage || "https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png"}
+                <Image 
+                  src={previewImage || "/images/ejb.png"}
                   alt="Profile Preview" 
                   style={{ width: '280px', height: '280px', objectFit: 'cover' }}
+                  width={280}
+                  height={280}
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = '/images/default-avatar.png';
                   }}
                 />
               </div>
+              
+              {/* กรอบที่เลือก - ทับบนรูปโปรไฟล์ */}
+              {selectedFrame && (
+                <div className='absolute inset-0 pointer-events-none'>
+                  <Image 
+                    src={selectedFrame.img}
+                    alt={selectedFrame.name}
+                    fill
+                    className='object-contain'
+                    unoptimized={selectedFrame.img?.endsWith('.gif')}
+                    style={{ zIndex: 10 }}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
@@ -472,6 +579,88 @@ const ProfilePictureTab = () => {
             <p className='text-sm font-primary font-semibold text-black'>ฉายา: นักล่าอสูร</p>
           </div>
         </div>
+
+        {/* Frame Selection Modal */}
+        <Modal
+          title={<span className='font-primary text-xl font-bold'>เลือกกรอบ</span>}
+          open={isFrameModalOpen}
+          onCancel={() => setIsFrameModalOpen(false)}
+          footer={[
+            <Button 
+              key="submit" 
+              type="primary"
+              onClick={handleConfirmFrame}
+              className='font-primary font-medium'
+              style={{ 
+                backgroundColor: '#FF0037',
+                borderColor: '#FF0037',
+              }}
+            >
+              ยืนยัน
+            </Button>
+          ]}
+          width={600}
+          centered
+        >
+          {loadingFrames ? (
+            <div className='flex justify-center items-center py-10'>
+              <Spin size="large" />
+            </div>
+          ) : (
+            <div className='grid grid-cols-3 gap-4 py-4'>
+              {/* ไม่ใส่กรอบ */}
+              <div 
+                onClick={() => handleSelectFrame(null)}
+                className={`border-2 rounded-lg p-4 cursor-pointer transition-all duration-200 flex flex-col items-center justify-center h-40 ${
+                  selectedFrame === null ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-400'
+                }`}
+              >
+                <span className='font-primary text-sm text-center'>ไม่ใส่กรอบ</span>
+                {selectedFrame === null && (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 mt-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </div>
+
+              {/* แสดงกรอบจาก API */}
+              {frames.map((frame) => (
+                <div 
+                  key={frame.frame_id}
+                  onClick={() => handleSelectFrame(frame)}
+                  className={`border-2 rounded-lg p-2 cursor-pointer transition-all duration-200 flex flex-col items-center ${
+                    selectedFrame?.frame_id === frame.frame_id ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-400'
+                  }`}
+                >
+                  <div className='relative w-full h-28 mb-2'>
+                    <Image 
+                      src={frame.img }
+                      alt={frame.name}
+                      fill
+                      className='object-contain'
+                      unoptimized={frame.img?.endsWith('.gif')} // ปิด optimization สำหรับ GIF
+                      loading="lazy" // Lazy load เพื่อความเร็ว
+                      quality={75} // ลดคุณภาพเล็กน้อยเพื่อความเร็ว
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/images/ejb.png';
+                      }}
+                    />
+                  </div>
+                  <span className={`font-primary text-xs text-center ${
+                    frame.status === 'active' ? 'text-green-600' : 'text-red-500'
+                  }`}>
+                    {frame.status === 'active' ? 'คุณเป็นเจ้าของ' : 'ไม่ได้เป็นเจ้าของ'}
+                  </span>
+                  {selectedFrame?.frame_id === frame.frame_id && (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 mt-1" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </Modal>
       </div>
     </div>
   );
@@ -495,7 +684,7 @@ const UserInfoTab = () => {
       </div>
 
       {/* Bottom Section - Background Image */}
-      <div className="w-full" style={{ width: '1328px', height: '466px' }}>
+      <div className="w-full" style={{ maxWidth: '1328px', height: '466px' }}>
         <div className="border-2 border-gray-200 rounded-lg p-6 bg-white w-full h-full flex flex-col">
           {/* Header */}
           <div className='w-full text-center mb-4'>
@@ -632,9 +821,9 @@ function Page() {
   }
 
   return (
-    <div className='bg-white'>
+    <div className='bg-white' style={{ overflowX: 'hidden' }}>
         <div className='relative w-[100vw] items-center flex flex-col'>
-            <div className='flex flex-col pt-[100px] min-h-[70vh] lg:px-0 w-full max-w-[1360px] relative mb-10'>
+            <div className='flex flex-col pt-[100px] lg:px-0 w-full max-w-[1360px] relative mb-10' style={{ minHeight: 'calc(100vh - 100px)' }}>
                 <div className='bg-white select-none'>
                     <div className='select-none '>
                         <div className='lg: mt-[-80] py-2'>

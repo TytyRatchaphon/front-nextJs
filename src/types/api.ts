@@ -49,3 +49,136 @@ export interface BookTrans {
   updatedAt: Date | string; // datetime
 }
 
+export interface Episode {
+  ep_id: number;
+  epID: string;
+  name: string;
+  coin: number;
+  freecoin: number;
+  publish_datetime: string;
+  update_at: string;
+  publish: string;
+  view: number;
+  order_by: number;
+  isRead: boolean;
+  isBuy: boolean;
+}
+
+// Episode Group
+export interface EpisodeGroup {
+  group_id: number;
+  groupID: string;
+  name: string;
+  list: Episode[];
+}
+
+// API Response จาก /bookgroup/:bookid
+export interface BookEpisodesResponse {
+  code: number;
+  status: string;
+  message: string;
+  data: {
+    groups: EpisodeGroup[];
+  };
+}
+
+// User Wallet/Coins (จาก user data)
+export interface UserWallet {
+  coin: string;           // เหรียญปกติ (มาเป็น string ต้องแปลงเป็น number)
+  freecoin: string;       // เหรียญฟรี (มาเป็น string ต้องแปลงเป็น number)
+  heart: number;          // หัวใจ
+  flower: number;         // ดอกไม้
+  coupon: number;         // คูปอง
+  exp_point: number;      // แต้มประสบการณ์
+  stamp: number;          // แสตมป์
+  wheel: number;          // วงล้อ
+  fast_ticket: number;    // ตั๋วอ่านเร็ว
+  coinIncome: string;     // รายได้เหรียญ
+}
+
+export type TagType = 'new' | 'bestseller' | 'completed';
+
+// API Response จาก /user/wallet หรือ user profile
+export interface UserWalletResponse {
+  code: number;
+  status: string;
+  message: string;
+  data: UserWallet;
+}
+
+// Episode Content for Reading Page
+export interface EpisodeContent {
+  ep_id: number;
+  epID: string;
+  group_id: number;
+  book_id: number;
+  name: string;
+  coin: number;
+  freecoin: number;
+  content_length: number | null;
+  content_type: string;
+  content: string | null;  // HTML content (deprecated, use 'des' instead)
+  des: string;             // HTML content (main field for content)
+  publish_datetime: string;
+  update_at: string;
+  publish: string;
+  view: number;
+  order_by: number;
+  noti_add: string;
+  isBuy?: boolean;
+  prev_episode?: string;  // epID ของตอนก่อนหน้า
+  next_episode?: string;  // epID ของตอนถัดไป
+  book_name?: string;     // ชื่อหนังสือ (optional)
+  bookID?: string;        // bookID (optional)
+}
+
+// API Response จาก /readep/:episodeId
+export interface EpisodeContentResponse {
+  code: number;
+  status: string;
+  message: string;
+  data: EpisodeContent;
+}
+
+export interface BookDetail {
+  book_id: number;
+  bookID: string;
+  type: string;
+  img: string;
+  name: string;
+  title: string;
+  tag: string[];
+  cat1: number;
+  cat2: number;
+  rate: number;
+  des: string;
+  user_id: number;
+  update_at: string;
+  status: string;
+  view: number;
+  date_at: string;
+  heart: number;
+  flower: number;
+  end: string;
+  bgimg: string;
+  noti_add: string;
+  accept_conditions: string;
+  use_freecoin: number;
+  fast_status: number;
+  'writer.user_id': number;
+  'writer.userID': string;
+  'writer.writer_name': string;
+  'category1.name': string;
+  'category2.name': string;
+  comment: number;
+  chapter: number;
+  shelveCount: number;
+  discount_full_book: number | null;
+}
+
+export interface BookDetailResponse {
+  code: number;
+  status: string;
+  message: string;
+  data: BookDetail;
+}

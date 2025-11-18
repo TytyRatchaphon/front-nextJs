@@ -152,17 +152,35 @@ const LoginButtonHeader: React.FC = () => {
         console.log('🔑 Extracted token:', token);
         
         if (token) {
-          // ใช้ variables จาก mutation แทน loginFormData เพื่อความแน่ใจ
-          const userData: UserData = {
-            fullname: variables.email?.split('@')[0] || 'User',
-            email: variables.email || 'user@email.com',
-            role: 'user'
-          };
-          console.log('👤 Creating userData:', userData);
-          console.log('🚀 Calling login() with:', { userData, token });
-          login(userData, token);
-          setLoginFormData(null); // Clear form data
-          console.log('✅ Login completed successfully');
+          // Decode token เพื่อดึงข้อมูล fullname ที่ถูกต้อง
+          try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(
+              atob(base64)
+                .split('')
+                .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                .join('')
+            );
+            const decoded = JSON.parse(jsonPayload);
+            
+            console.log('🔓 Decoded token:', decoded);
+            
+            const userData: UserData = {
+              fullname: decoded.fullname || 'User',
+              email: decoded.email || variables.email || 'user@email.com',
+              role: decoded.role || 'user'
+            };
+            
+            console.log('👤 Creating userData from token:', userData);
+            console.log('🚀 Calling login() with:', { userData, token });
+            login(userData, token);
+            setLoginFormData(null);
+            console.log('✅ Login completed successfully');
+          } catch (error) {
+            console.error('❌ Error decoding token:', error);
+            message.error('ไม่สามารถอ่านข้อมูลจาก Token ได้');
+          }
         } else {
           console.error('❌ No token extracted from response');
         }
@@ -190,19 +208,35 @@ const LoginButtonHeader: React.FC = () => {
           ? responseData.data 
           : responseData.data.token;
         
-        if (token && registerFormData) {
-          // ใช้ข้อมูลจาก form register ที่เก็บไว้
-          const userData: UserData = {
-            fullname: registerFormData.fullname || 'User',
-            email: registerFormData.email || 'user@email.com',
-            role: 'user'
-          };
-          login(userData, token);
-          message.success('เข้าสู่ระบบอัตโนมัติแล้ว');
-          handleCancel();
-          setRegisterFormData(null); // Clear form data
+        if (token) {
+          // Decode token เพื่อดึงข้อมูลที่ถูกต้อง
+          try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(
+              atob(base64)
+                .split('')
+                .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                .join('')
+            );
+            const decoded = JSON.parse(jsonPayload);
+            
+            const userData: UserData = {
+              fullname: decoded.fullname || 'User',
+              email: decoded.email || 'user@email.com',
+              role: decoded.role || 'user'
+            };
+            
+            login(userData, token);
+            message.success('เข้าสู่ระบบอัตโนมัติแล้ว');
+            handleCancel();
+            setRegisterFormData(null);
+          } catch (error) {
+            console.error('Error decoding token:', error);
+            message.error('ไม่สามารถอ่านข้อมูลจาก Token ได้');
+            handleViewChange('login');
+          }
         } else {
-          // ถ้าไม่มี token ให้เปลี่ยนไปหน้า login
           handleViewChange('login');
         }
       } else {

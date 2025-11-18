@@ -11,6 +11,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**', // อนุญาตทุก path ภายใต้ hostname นี้
       },
+      {
+        protocol: 'https',
+        hostname: 'image.enjoybook.co',
+        port: '',
+        pathname: '/**', // อนุญาต domain สำหรับรูปกรอบ (รวม GIF)
+      },
     ],
   },
 };
