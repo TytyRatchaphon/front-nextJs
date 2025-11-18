@@ -8,35 +8,54 @@ import { useAuthStore } from '@/stores/authStore';
 import { usePathname } from 'next/navigation'; 
 import Link from 'next/link';
 
-const getLocalStorageItem = (key: string): string | null => {
-  // Check if window is defined (ensures code runs only on client)
-  if (typeof window !== 'undefined') { 
-    return localStorage.getItem(key);
-  }
-    return null;
-  };
-
-  // const safeJsonParse = (jsonString: string | null): any | null => {
-  // if (!jsonString) return null;
-  // try {
-  //     return JSON.parse(jsonString);
-  // } catch (error) {
-  //   console.error("Failed to parse JSON from localStorage", error);
-  //   // Optionally remove the invalid item if parsing fails
-  //   // if (typeof window !== 'undefined') {
-  //   //   localStorage.removeItem('userData'); 
-  //   // }
-  //     return null;
-  //   } 
-  // };
-
 function Navbar() {
-  const { user, isLoggedIn, hasMounted, logout, setMounted } = useAuthStore();
+  const { user, isLoggedIn, hasMounted, logout, setMounted, token } = useAuthStore();
   const pathname = usePathname();
+  const [userFullname, setUserFullname] = React.useState<string>('');
+  const [userCoins, setUserCoins] = React.useState({ goldCoins: 0 });
+  const [userFreeCoins, setUserFreeCoins] = React.useState({ freeCoins: 0 });
+  const [userProfileImage, setUserProfileImage] = React.useState<string | null>(null);
+
+  const avatarSrc = userProfileImage ?? user?.profileImage ?? null;
 
   useEffect(() => {
     setMounted();
   }, [setMounted]);
+
+  // Decode token เพื่อดึง fullname
+  useEffect(() => {
+    if (token) {
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split('')
+            .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+            .join('')
+        );
+        const decoded = JSON.parse(jsonPayload);
+        console.log('📛 Navbar - Decoded token:', decoded);
+  console.log('📛 Navbar - Fullname from token:', decoded.fullname);
+  console.log('📛 Navbar - Coins from token:', decoded.coins ?? decoded.coin);
+  console.log('📛 Navbar - Freecoins from token:', decoded.freecoins ?? decoded.freecoin);
+  console.log('📛 Navbar - State before update:', { userCoins, userFreeCoins, userProfileImage });
+  setUserFullname(decoded.fullname || 'User');
+  // token keys may vary: coin / coins, freecoin / freecoins
+  setUserCoins({ goldCoins: parseFloat(String(decoded.coin ?? decoded.coins ?? 0)) || 0 });
+  setUserFreeCoins({ freeCoins: parseFloat(String(decoded.freecoin ?? decoded.freecoins ?? 0)) || 0 });
+  // token may include an `img` or `image` field for profile image
+  const profileFromToken = decoded.img ?? decoded.image ?? decoded.profileImage ?? null;
+  setUserProfileImage(profileFromToken);
+  console.log('📛 Navbar - State after update:', { userCoins, userFreeCoins, userProfileImage });
+      } catch (error) {
+        console.error('❌ Navbar - Error decoding token:', error);
+        setUserFullname(user?.fullname || 'User');
+      }
+    } else {
+      setUserFullname(user?.fullname || 'User');
+    }
+  }, [token, user]);
 
   // Helper function to check if link is active
   const isActive = (path: string) => {
@@ -61,14 +80,14 @@ function Navbar() {
         <div className="flex items-center justify-between h-full px-4">
           {/* User Avatar and Name */}
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-100 overflow-hidden">
-              {user?.profileImage ? (
-                <Image 
-                  src={user.profileImage} 
-                  alt="User Avatar" 
-                  width={32} 
-                  height={32} 
-                  className="w-full h-full object-cover rounded-full" 
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-100 overflow-hidden relative">
+              {avatarSrc ? (
+                <Image
+                  src={avatarSrc}
+                  alt="User Avatar"
+                  fill
+                  sizes="48px"
+                  className="object-cover rounded-full"
                 />
               ) : (
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28" fill="none">
@@ -83,7 +102,7 @@ function Navbar() {
                 </svg>
               )}
             </div>
-            <span className="font-primary text-gray-900 text-base">{user?.fullname || 'User00001'}</span>
+            <span className="font-primary text-gray-900 text-base">{userFullname || 'User00001'}</span>
           </div>
           
           {/* Three dots menu */}
@@ -101,19 +120,19 @@ function Navbar() {
         <div className="flex items-center justify-between px-2">
           {/* Red Coin Card - 78 × 34 */}
           <div className="flex items-center gap-1.5 bg-white rounded-full shadow-sm" style={{ width: '78px', height: '34px', padding: '0 8px' }}>
-              <Image src="/images/money-bag.png" alt="Red Coin" width={24} height={24} />
-            <span className="font-primary text-gray-900 text-sm">95</span>
+              <Image src="/images/money-bag.png" alt="Free coin" width={24} height={24} />
+            <span className="font-primary text-gray-900 text-sm">{userFreeCoins.freeCoins}</span>
           </div>
           
           {/* Gold Coin Card with Plus Button - Combined in white background */}
           <div className="flex items-center gap-1.5 bg-white rounded-full shadow-sm" style={{ width: '108px', height: '32px', padding: '0 4px 0 10px' }}>
               <Image src="/images/e-coin.png" alt="Gold Coin" width={24} height={24}/>
-            <span className="font-primary text-gray-900 text-sm">150</span>
-            <button className="rounded-full flex items-center justify-center hover:opacity-90 transition-opacity flex-shrink-0" style={{ width: '25px', height: '25px', backgroundColor: '#7CB342' }}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10" fill="none">
-                <path d="M5 0.5V9.5M0.5 5H9.5" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </button>
+              <span className="font-primary text-gray-900 text-sm">{userCoins.goldCoins}</span>
+              <button className="rounded-full flex items-center justify-center hover:opacity-90 transition-opacity flex-shrink-0" style={{ width: '25px', height: '25px', backgroundColor: '#7CB342' }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M5 0.5V9.5M0.5 5H9.5" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </button>
           </div>
         </div>
       </div>
@@ -145,7 +164,19 @@ function Navbar() {
         <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 24 24" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path fill="none" d="M0 0h24v24H0z"></path><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"></path></svg>
         <span className="font-primary">ประวัติ</span>
       </Link>
-      <Link href="/sprofile" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
+      <Link href="/" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 18 20" fill="none">
+          <path d="M15 0H3C2.20435 0 1.44129 0.316071 0.87868 0.87868C0.316071 1.44129 0 2.20435 0 3V17C0 17.7956 0.316071 18.5587 0.87868 19.1213C1.44129 19.6839 2.20435 20 3 20H15C15.7956 20 16.5587 19.6839 17.1213 19.1213C17.6839 18.5587 18 17.7956 18 17V3C18 2.20435 17.6839 1.44129 17.1213 0.87868C16.5587 0.316071 15.7956 0 15 0ZM15 18H3C2.73478 18 2.48043 17.8946 2.29289 17.7071C2.10536 17.5196 2 17.2652 2 17V14H4C4.26522 14 4.51957 13.8946 4.70711 13.7071C4.89464 13.5196 5 13.2652 5 13C5 12.7348 4.89464 12.4804 4.70711 12.2929C4.51957 12.1054 4.26522 12 4 12H2V8H4C4.26522 8 4.51957 7.89464 4.70711 7.70711C4.89464 7.51957 5 7.26522 5 7C5 6.73478 4.89464 6.48043 4.70711 6.29289C4.51957 6.10536 4.26522 6 4 6H2V3C2 2.73478 2.10536 2.48043 2.29289 2.29289C2.48043 2.10536 2.73478 2 3 2H15C15.2652 2 15.5196 2.10536 15.7071 2.29289C15.8946 2.48043 16 2.73478 16 3V6H9C8.73478 6 8.48043 6.10536 8.29289 6.29289C8.10536 6.48043 8 6.73478 8 7C8 7.26522 8.10536 7.51957 8.29289 7.70711C8.48043 7.89464 8.73478 8 9 8H16V12H9C8.73478 12 8.48043 12.1054 8.29289 12.2929C8.10536 12.4804 8 12.7348 8 13C8 13.2652 8.10536 13.5196 8.29289 13.7071C8.48043 13.8946 8.73478 14 9 14H16V17C16 17.2652 15.8946 17.5196 15.7071 17.7071C15.5196 17.8946 15.2652 18 15 18Z" fill="#B01F1F"/>
+        </svg>
+        <span className="font-primary">ชั้นหนังสือ</span>
+      </Link>
+      <Link href="/w/mybook" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 18 20" fill="none">
+          <path d="M13 10C13 10.2652 12.8946 10.5196 12.7071 10.7071C12.5196 10.8946 12.2652 11 12 11H6C5.73478 11 5.48043 10.8946 5.29289 10.7071C5.10536 10.5196 5 10.2652 5 10C5 9.73478 5.10536 9.48043 5.29289 9.29289C5.48043 9.10536 5.73478 9 6 9H12C12.2652 9 12.5196 9.10536 12.7071 9.29289C12.8946 9.48043 13 9.73478 13 10ZM9 13H6C5.73478 13 5.48043 13.1054 5.29289 13.2929C5.10536 13.4804 5 13.7348 5 14C5 14.2652 5.10536 14.5196 5.29289 14.7071C5.48043 14.8946 5.73478 15 6 15H9C9.26522 15 9.51957 14.8946 9.70711 14.7071C9.89464 14.5196 10 14.2652 10 14C10 13.7348 9.89464 13.4804 9.70711 13.2929C9.51957 13.1054 9.26522 13 9 13ZM18 3V17C18 17.7956 17.6839 18.5587 17.1213 19.1213C16.5587 19.6839 15.7956 20 15 20H3C2.20435 20 1.44129 19.6839 0.87868 19.1213C0.316071 18.5587 0 17.7956 0 17V3C0 2.20435 0.316071 1.44129 0.87868 0.87868C1.44129 0.316071 2.20435 0 3 0H15C15.7956 0 16.5587 0.316071 17.1213 0.87868C17.6839 1.44129 18 2.20435 18 3ZM11 4C11.2652 4 11.5196 3.89464 11.7071 3.70711C11.8946 3.51957 12 3.26522 12 3V2H6V3C6 3.26522 6.10536 3.51957 6.29289 3.70711C6.48043 3.89464 6.73478 4 7 4H11ZM16 3C16 2.73478 15.8946 2.48043 15.7071 2.29289C15.5196 2.10536 15.2652 2 15 2H14V3C14 3.79565 13.6839 4.55871 13.1213 5.12132C12.5587 5.68393 11.7956 6 11 6H7C6.20435 6 5.44129 5.68393 4.87868 5.12132C4.31607 4.55871 4 3.79565 4 3V2H3C2.73478 2 2.48043 2.10536 2.29289 2.29289C2.10536 2.48043 2 2.73478 2 3V17C2 17.2652 2.10536 17.5196 2.29289 17.7071C2.48043 17.8946 2.73478 18 3 18H15C15.2652 18 15.5196 17.8946 15.7071 17.7071C15.8946 17.5196 16 17.2652 16 17V3Z" fill="#B01F1F"/>
+        </svg>
+        <span className="font-primary">นิยายของฉัน</span>
+      </Link>
+            <Link href="/sprofile" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 18 20" fill="none">
           <path d="M15 0H3C2.20435 0 1.44129 0.316071 0.87868 0.87868C0.316071 1.44129 0 2.20435 0 3V17C0 17.7956 0.316071 18.5587 0.87868 19.1213C1.44129 19.6839 2.20435 20 3 20H15C15.7956 20 16.5587 19.6839 17.1213 19.1213C17.6839 18.5587 18 17.7956 18 17V3C18 2.20435 17.6839 1.44129 17.1213 0.87868C16.5587 0.316071 15.7956 0 15 0ZM15 18H3C2.73478 18 2.48043 17.8946 2.29289 17.7071C2.10536 17.5196 2 17.2652 2 17V14H4C4.26522 14 4.51957 13.8946 4.70711 13.7071C4.89464 13.5196 5 13.2652 5 13C5 12.7348 4.89464 12.4804 4.70711 12.2929C4.51957 12.1054 4.26522 12 4 12H2V8H4C4.26522 8 4.51957 7.89464 4.70711 7.70711C4.89464 7.51957 5 7.26522 5 7C5 6.73478 4.89464 6.48043 4.70711 6.29289C4.51957 6.10536 4.26522 6 4 6H2V3C2 2.73478 2.10536 2.48043 2.29289 2.29289C2.48043 2.10536 2.73478 2 3 2H15C15.2652 2 15.5196 2.10536 15.7071 2.29289C15.8946 2.48043 16 2.73478 16 3V6H9C8.73478 6 8.48043 6.10536 8.29289 6.29289C8.10536 6.48043 8 6.73478 8 7C8 7.26522 8.10536 7.51957 8.29289 7.70711C8.48043 7.89464 8.73478 8 9 8H16V12H9C8.73478 12 8.48043 12.1054 8.29289 12.2929C8.10536 12.4804 8 12.7348 8 13C8 13.2652 8.10536 13.5196 8.29289 13.7071C8.48043 13.8946 8.73478 14 9 14H16V17C16 17.2652 15.8946 17.5196 15.7071 17.7071C15.5196 17.8946 15.2652 18 15 18Z" fill="#B01F1F"/>
         </svg>
@@ -153,21 +184,9 @@ function Navbar() {
       </Link>
       <Link href="/redeem" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 18 20" fill="none">
-          <path d="M15 0H3C2.20435 0 1.44129 0.316071 0.87868 0.87868C0.316071 1.44129 0 2.20435 0 3V17C0 17.7956 0.316071 18.5587 0.87868 19.1213C1.44129 19.6839 2.20435 20 3 20H15C15.7956 20 16.5587 19.6839 17.1213 19.1213C17.6839 18.5587 18 17.7956 18 17V3C18 2.20435 17.6839 1.44129 17.1213 0.87868C16.5587 0.316071 15.7956 0 15 0ZM15 18H3C2.73478 18 2.48043 17.8946 2.29289 17.7071C2.10536 17.5196 2 17.2652 2 17V14H4C4.26522 14 4.51957 13.8946 4.70711 13.7071C4.89464 13.5196 5 13.2652 5 13C5 12.7348 4.89464 12.4804 4.70711 12.2929C4.51957 12.1054 4.26522 12 4 12H2V8H4C4.26522 8 4.51957 7.89464 4.70711 7.70711C4.89464 7.51957 5 7.26522 5 7C5 6.73478 4.89464 6.48043 4.70711 6.29289C4.51957 6.10536 4.26522 6 4 6H2V3C2 2.73478 2.10536 2.48043 2.29289 2.29289C2.48043 2.10536 2.73478 2 3 2H15C15.2652 2 15.5196 2.10536 15.7071 2.29289C15.8946 2.48043 16 2.73478 16 3V6H9C8.73478 6 8.48043 6.10536 8.29289 6.29289C8.10536 6.48043 8 6.73478 8 7C8 7.26522 8.10536 7.51957 8.29289 7.70711C8.48043 7.89464 8.73478 8 9 8H16V12H9C8.73478 12 8.48043 12.1054 8.29289 12.2929C8.10536 12.4804 8 12.7348 8 13C8 13.2652 8.10536 13.5196 8.29289 13.7071C8.48043 13.8946 8.73478 14 9 14H16V17C16 17.2652 15.8946 17.5196 15.7071 17.7071C15.5196 17.8946 15.2652 18 15 18Z" fill="#B01F1F"/>
-        </svg>
-        <span className="font-primary">รหัสแลกรับ</span>
-      </Link>
-      <Link href="/sprofile" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 18 20" fill="none">
-          <path d="M15 0H3C2.20435 0 1.44129 0.316071 0.87868 0.87868C0.316071 1.44129 0 2.20435 0 3V17C0 17.7956 0.316071 18.5587 0.87868 19.1213C1.44129 19.6839 2.20435 20 3 20H15C15.7956 20 16.5587 19.6839 17.1213 19.1213C17.6839 18.5587 18 17.7956 18 17V3C18 2.20435 17.6839 1.44129 17.1213 0.87868C16.5587 0.316071 15.7956 0 15 0ZM15 18H3C2.73478 18 2.48043 17.8946 2.29289 17.7071C2.10536 17.5196 2 17.2652 2 17V14H4C4.26522 14 4.51957 13.8946 4.70711 13.7071C4.89464 13.5196 5 13.2652 5 13C5 12.7348 4.89464 12.4804 4.70711 12.2929C4.51957 12.1054 4.26522 12 4 12H2V8H4C4.26522 8 4.51957 7.89464 4.70711 7.70711C4.89464 7.51957 5 7.26522 5 7C5 6.73478 4.89464 6.48043 4.70711 6.29289C4.51957 6.10536 4.26522 6 4 6H2V3C2 2.73478 2.10536 2.48043 2.29289 2.29289C2.48043 2.10536 2.73478 2 3 2H15C15.2652 2 15.5196 2.10536 15.7071 2.29289C15.8946 2.48043 16 2.73478 16 3V6H9C8.73478 6 8.48043 6.10536 8.29289 6.29289C8.10536 6.48043 8 6.73478 8 7C8 7.26522 8.10536 7.51957 8.29289 7.70711C8.48043 7.89464 8.73478 8 9 8H16V12H9C8.73478 12 8.48043 12.1054 8.29289 12.2929C8.10536 12.4804 8 12.7348 8 13C8 13.2652 8.10536 13.5196 8.29289 13.7071C8.48043 13.8946 8.73478 14 9 14H16V17C16 17.2652 15.8946 17.5196 15.7071 17.7071C15.5196 17.8946 15.2652 18 15 18Z" fill="#B01F1F"/>
-        </svg>
-        <span className="font-primary">ชั้นหนังสือ</span>
-      </Link>
-      <Link href="/sprofile" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="20" viewBox="0 0 18 20" fill="none">
           <path d="M13 10C13 10.2652 12.8946 10.5196 12.7071 10.7071C12.5196 10.8946 12.2652 11 12 11H6C5.73478 11 5.48043 10.8946 5.29289 10.7071C5.10536 10.5196 5 10.2652 5 10C5 9.73478 5.10536 9.48043 5.29289 9.29289C5.48043 9.10536 5.73478 9 6 9H12C12.2652 9 12.5196 9.10536 12.7071 9.29289C12.8946 9.48043 13 9.73478 13 10ZM9 13H6C5.73478 13 5.48043 13.1054 5.29289 13.2929C5.10536 13.4804 5 13.7348 5 14C5 14.2652 5.10536 14.5196 5.29289 14.7071C5.48043 14.8946 5.73478 15 6 15H9C9.26522 15 9.51957 14.8946 9.70711 14.7071C9.89464 14.5196 10 14.2652 10 14C10 13.7348 9.89464 13.4804 9.70711 13.2929C9.51957 13.1054 9.26522 13 9 13ZM18 3V17C18 17.7956 17.6839 18.5587 17.1213 19.1213C16.5587 19.6839 15.7956 20 15 20H3C2.20435 20 1.44129 19.6839 0.87868 19.1213C0.316071 18.5587 0 17.7956 0 17V3C0 2.20435 0.316071 1.44129 0.87868 0.87868C1.44129 0.316071 2.20435 0 3 0H15C15.7956 0 16.5587 0.316071 17.1213 0.87868C17.6839 1.44129 18 2.20435 18 3ZM11 4C11.2652 4 11.5196 3.89464 11.7071 3.70711C11.8946 3.51957 12 3.26522 12 3V2H6V3C6 3.26522 6.10536 3.51957 6.29289 3.70711C6.48043 3.89464 6.73478 4 7 4H11ZM16 3C16 2.73478 15.8946 2.48043 15.7071 2.29289C15.5196 2.10536 15.2652 2 15 2H14V3C14 3.79565 13.6839 4.55871 13.1213 5.12132C12.5587 5.68393 11.7956 6 11 6H7C6.20435 6 5.44129 5.68393 4.87868 5.12132C4.31607 4.55871 4 3.79565 4 3V2H3C2.73478 2 2.48043 2.10536 2.29289 2.29289C2.10536 2.48043 2 2.73478 2 3V17C2 17.2652 2.10536 17.5196 2.29289 17.7071C2.48043 17.8946 2.73478 18 3 18H15C15.2652 18 15.5196 17.8946 15.7071 17.7071C15.8946 17.5196 16 17.2652 16 17V3Z" fill="#B01F1F"/>
         </svg>
-        <span className="font-primary">นิยายของฉัน</span>
+        <span className="font-primary">รหัสแลกรับ</span>
       </Link>
       <Link href="/sprofile" className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 20 18" fill="none">
@@ -249,14 +268,17 @@ function Navbar() {
           <Link href="/news" className={getLinkClasses('/news')}>ข่าวสาร/กิจกรรม</Link>
         </div>
         {/* Right Side: SVG icons and LoginButton */}
-        <div className="flex flex-row gap-x-4 items-center">
-          <span className="text-black hover:text-red-600 transition-colors duration-300 cursor-pointer">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M11 20C15.9706 20 20 15.9706 20 11C20 6.02944 15.9706 2 11 2C6.02944 2 2 6.02944 2 11C2 15.9706 6.02944 20 11 20Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="transition-colors duration-300"/>
-              <path d="M18.9304 20.6898C19.4604 22.2898 20.6704 22.4498 21.6004 21.0498C22.4504 19.7698 21.8904 18.7198 20.3504 18.7198C19.2104 18.7098 18.5704 19.5998 18.9304 20.6898Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="transition-colors duration-300"/>
-            </svg>
-          </span>
+          <div className="flex flex-row gap-x-4 items-center">
+          <Link href="/search" className="mr-2 lg:mr-0">
+            <span className="text-black hover:text-red-600 transition-colors duration-300 cursor-pointer">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M11 20C15.9706 20 20 15.9706 20 11C20 6.02944 15.9706 2 11 2C6.02944 2 2 6.02944 2 11C2 15.9706 6.02944 20 11 20Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="transition-colors duration-300"/>
+                <path d="M18.9304 20.6898C19.4604 22.2898 20.6704 22.4498 21.6004 21.0498C22.4504 19.7698 21.8904 18.7198 20.3504 18.7198C19.2104 18.7098 18.5704 19.5998 18.9304 20.6898Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="transition-colors duration-300"/>
+              </svg>
+            </span>
+          </Link>
           { isLoggedIn && user ? (
+          <Link href="/search" className="mr-2 lg:mr-0">
             <span className="text-black hover:text-red-600 transition-colors duration-300 cursor-pointer">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12.0196 2.91C8.7096 2.91 6.0196 5.6 6.0196 8.91V11.8C6.0196 12.41 5.7596 13.34 5.4496 13.86L4.2996 15.77C3.5896 16.95 4.0796 18.26 5.3796 18.7C9.6896 20.14 14.3396 20.14 18.6496 18.7C19.8596 18.3 20.3896 16.87 19.7296 15.77L18.5796 13.86C18.2796 13.34 18.0196 12.41 18.0196 11.8V8.91C18.0196 5.61 15.3196 2.91 12.0196 2.91Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" className="transition-colors duration-300"/>
@@ -264,6 +286,7 @@ function Navbar() {
                 <path d="M15.0195 19.06C15.0195 20.71 13.6695 22.06 12.0195 22.06C11.1995 22.06 10.4395 21.72 9.89953 21.18C9.35953 20.64 9.01953 19.88 9.01953 19.06" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" className="transition-colors duration-300"/>
               </svg>
             </span>
+          </Link>
           ) : null }
           <div className="text-nowrap text-[15px] lg:text-[17px] leading-6 flex justify-end items-center cursor-pointer navbar-button">
             {isLoggedIn && user ? (
@@ -271,7 +294,7 @@ function Navbar() {
                 content={userMenuContent} 
                 placement="bottomRight" 
                 trigger="click"
-                overlayInnerStyle={{ padding: '8px' }}
+                // overlayInnerStyle={{ padding: '8px' }}
               >
                 <div className="flex items-center gap-2 px-4 py-2 border-2 border-gray-800 rounded-full hover:border-red-600 transition-colors duration-300 h-[48px] cursor-pointer">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

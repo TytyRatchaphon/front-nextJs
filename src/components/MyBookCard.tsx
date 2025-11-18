@@ -24,7 +24,7 @@ interface CardBookProps {
   book: Partial<Book>;
 }
 
-function CardBook({ book }: CardBookProps) {
+function MyCardBook({ book }: CardBookProps) {
   
   const [imgError, setImgError] = React.useState(false);
 
@@ -76,7 +76,8 @@ function CardBook({ book }: CardBookProps) {
   const bookParam = book.book_id ? String(book.book_id) : (book.bookID && String(book.bookID).trim() !== "" ? String(book.bookID) : "");
 
   return (
-  <Link href={`/book/${encodeURIComponent(bookParam)}`} className="block w-[168px] h-[355px] flex-shrink-0">
+    // /${encodeURIComponent(bookParam)}
+  <Link href={`/w/b`} className="block w-[168px] h-[355px] flex-shrink-0">
       <div className="flex flex-col w-full h-full rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
         {/* Image Container */}
         <div className="relative w-full">
@@ -150,4 +151,4 @@ function CardBook({ book }: CardBookProps) {
   );
 }
 
-export default CardBook
+export default MyCardBook

@@ -75,10 +75,10 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
       };
       
       console.log('📤 POST Payload:', payload);
-      console.log('📤 POST URL:', `http://192.168.220.194:3331/resetpassword/${token}`);
+      console.log('📤 POST URL:', `http://192.168.220.214:3331/resetpassword/${token}`);
       
       const response = await axios.post(
-        `http://192.168.220.194:3331/resetpassword/${token}`,
+        `http://192.168.220.214:3331/resetpassword/${token}`,
         payload
       );
 
@@ -88,7 +88,7 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
       // Auto-login หลังจาก reset password สำเร็จ
       try {
         const loginResponse = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.220.194:3331'}/login`,
+          `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.220.214:3331'}/login`,
           {
             email: values.email,
             password: values.password,

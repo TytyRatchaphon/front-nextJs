@@ -5,6 +5,7 @@ export interface UserData {
   fullname: string;
   email: string;
   role: string;
+  writer_name?: string | null; // เพิ่ม writer_name
   profileImage?: string; // รูปโปรไฟล์ผู้ใช้
 }
 
@@ -18,6 +19,7 @@ interface AuthState {
   login: (userData: UserData, token: string) => void;
   logout: () => void;
   setMounted: () => void;
+  updateToken: (newToken: string) => void; // เพิ่มฟังก์ชัน update token
   
   // Computed
   isAuthenticated: boolean;
@@ -58,6 +60,48 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem('userData');
         set({ user: null, token: null, isLoggedIn: false });
         window.location.reload();
+      },
+      
+      updateToken: (newToken: string) => {
+        console.log('🔄 Updating token...');
+        console.log('Old token:', get().token);
+        console.log('New token:', newToken);
+
+        // Update token in state and mark as logged in
+        set({ token: newToken, isLoggedIn: true });
+
+        // Update token in localStorage
+        localStorage.setItem('authToken', newToken);
+        
+        // Decode and update user data from new token
+        try {
+          const base64Url = newToken.split('.')[1];
+          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+          const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+          }).join(''));
+          
+          const decodedToken = JSON.parse(jsonPayload);
+          console.log('Decoded new token:', decodedToken);
+          
+          // Update user data with writer_name from new token
+          const currentUser = get().user;
+          if (currentUser) {
+            const updatedUser = {
+              ...currentUser,
+              writer_name: decodedToken.writer_name,
+              fullname: decodedToken.fullname || currentUser.fullname,
+              email: decodedToken.email || currentUser.email,
+            };
+            set({ user: updatedUser });
+            localStorage.setItem('userData', JSON.stringify(updatedUser));
+            console.log('✅ User data updated:', updatedUser);
+          }
+        } catch (error) {
+          console.error('❌ Error decoding token:', error);
+        }
+        
+        console.log('✅ Token updated successfully');
       },
       
       setMounted: () => {

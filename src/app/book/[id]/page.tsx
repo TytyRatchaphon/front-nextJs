@@ -1,15 +1,7 @@
-import BookDetailClient from './BookDetailClient';
+import BookDetailClient from "../../../components/BookDetailClient";
 
-// Tell Next.js not to pre-render any static paths
-export async function generateStaticParams() {
-  return [];
-}
-
-interface PageProps {
-  params: Promise<{ id: string }>;
-}
-
-export default async function Page({ params }: PageProps) {
-  const { id } = await params;
-  return <BookDetailClient id={id} />;
+export default async function BookDetailPage({ params }: { params: { id: string } | Promise<{ id: string }> }) {
+  // Next.js may provide params as a promise in some environments — await to be safe
+  const { id: bookId } = await params;
+  return <BookDetailClient bookId={bookId} />;
 }

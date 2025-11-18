@@ -513,7 +513,7 @@ const ProfilePictureTab = () => {
               style={{ borderColor: '#FF0037', color: '#FF0037' }}
               className='font-primary text-xs hover:bg-red-50'
             >
-              เลือกฉาก
+              เลือกฉายา
             </Button>
           </div>
 
@@ -522,10 +522,12 @@ const ProfilePictureTab = () => {
             <div className='relative' style={{ width: '280px', height: '280px' }}>
               {/* รูปโปรไฟล์ */}
               <div className='w-full h-full rounded-full overflow-hidden border-4 border-gray-300 bg-gray-50 flex items-center justify-center'>
-                <img 
-                  src={previewImage || "https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png"}
+                <Image 
+                  src={previewImage || "/images/ejb.png"}
                   alt="Profile Preview" 
                   style={{ width: '280px', height: '280px', objectFit: 'cover' }}
+                  width={280}
+                  height={280}
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = '/images/default-avatar.png';
                   }}
@@ -632,7 +634,7 @@ const ProfilePictureTab = () => {
                 >
                   <div className='relative w-full h-28 mb-2'>
                     <Image 
-                      src={frame.img || '/images/default-frame.png'}
+                      src={frame.img }
                       alt={frame.name}
                       fill
                       className='object-contain'
@@ -640,7 +642,7 @@ const ProfilePictureTab = () => {
                       loading="lazy" // Lazy load เพื่อความเร็ว
                       quality={75} // ลดคุณภาพเล็กน้อยเพื่อความเร็ว
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/images/default-frame.png';
+                        (e.target as HTMLImageElement).src = '/images/ejb.png';
                       }}
                     />
                   </div>
