@@ -50,6 +50,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   const openLoginModal = useUIStore((s) => s.openLoginModal);
   const queryClient = useQueryClient();
   const [messageApi, messageContextHolder] = message.useMessage();
+  const [modalApi, modalContextHolder] = Modal.useModal();
   const [buyLoading, setBuyLoading] = useState(false);
   const [userCoinCount, setUserCoinCount] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -77,6 +78,92 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       setExpandedGroups(map);
     }
     setIsModalOpen(true);
+  };
+
+  const handleBuyAllClick = async () => {
+    if (buyLoading) return;
+    if (!isLoggedIn) {
+      openLoginModal();
+      return;
+    }
+    if (!bookId) {
+      messageApi.error('ไม่พบข้อมูลหนังสือ');
+      return;
+    }
+
+    try {
+      setBuyLoading(true);
+      // Fetch episodes (not relying on query which is enabled only when modal opens)
+      const epsData: any = await fetchBookEpisodes(String(bookId));
+      const groups = epsData?.groups ?? [];
+      const selectableIds: number[] = [];
+      let total = 0;
+      for (const g of groups) {
+        for (const ep of g.list) {
+          if (ep.coin > 0 && !ep.isBuy) {
+            selectableIds.push(Number(ep.ep_id));
+            total += Number(ep.coin || 0);
+          }
+        }
+      }
+
+      if (selectableIds.length === 0) {
+        messageApi.info('ไม่มีตอนที่ต้องชำระเงินให้ซื้อทั้งหมด');
+        setBuyLoading(false);
+        return;
+      }
+
+      modalApi.confirm({
+        title: 'ยืนยันการซื้อ',
+        content: (
+          <div>
+            <div>คุณต้องการซื้อทั้งเรื่องหรือไม่?</div>
+            <div className="mt-2">ตอนที่ต้องซื้อ: <b>{selectableIds.length} ตอน</b></div>
+            <div className="flex" >รวมยอด: <b className="text-red-600 flex mr-2">{total.toLocaleString()} {" "}</b><Image  src="/images/e-coin.png" alt="Coin" width={24} height={24} /></div>
+          </div>
+        ),
+        okText: 'ยืนยัน',
+        cancelText: 'ยกเลิก',
+        onOk: async () => {
+          try {
+            const payload = { eps: selectableIds.map((id) => Number(id)), payWith: 'coin' };
+            const res = await apiClient.post(`/buy/eps`, payload);
+            if (res?.data?.code === 200) {
+              const respMsg = res.data?.message || 'ซื้อสำเร็จ!';
+              messageApi.success(respMsg);
+
+              const maybeToken = res?.data?.data?.token ?? res?.data?.token ?? res?.data?.data?.authToken ?? res?.data?.data?.accessToken;
+              if (maybeToken && typeof updateToken === 'function') {
+                try {
+                  updateToken(String(maybeToken));
+                } catch (err) {
+                  console.warn('Failed to update token from purchase response', err);
+                }
+              }
+
+              await queryClient.invalidateQueries({ queryKey: ["bookEpisodes", String(bookId ?? "")] });
+              await queryClient.invalidateQueries({ queryKey: ["bookDetail", String(bookId ?? "")] });
+            } else {
+              const errMsg = res?.data?.message || 'ไม่สามารถทำการซื้อได้';
+              messageApi.error(errMsg);
+            }
+          } catch (err: any) {
+            console.error('Buy all failed', err);
+            const msg = err?.response?.data?.message || err?.message || 'เกิดข้อผิดพลาดขณะซื้อ';
+            messageApi.error(msg);
+          } finally {
+            setBuyLoading(false);
+          }
+        },
+        onCancel: () => {
+          setBuyLoading(false);
+        }
+      });
+    } catch (err) {
+      console.error('Preparing buy all failed', err);
+      messageApi.error('เกิดข้อผิดพลาด ขณะเตรียมการซื้อ');
+      setBuyLoading(false);
+    }
   };
 
   const closeModal = () => {
@@ -174,20 +261,24 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
           <h3 className="text-xl font-extrabold text-gray-900">ซื้อหลายตอน</h3>
           <div className="relative">
             <Pill className="pr-10">
-              <span className="w-5 h-5 rounded-full bg-yellow-400/90 ring-2 ring-yellow-200 text-white grid place-items-center text-[12px] font-extrabold">
-                ฿
-              </span>
+              <Image
+                src="/images/e-coin.png"
+                alt="Coin"
+                width={20}
+                height={20}
+              />
               <span className="font-semibold text-gray-900">{(userCoinCount != null ? userCoinCount : (book.remaining_paid_total ?? book.price ?? 0)).toLocaleString()}</span>
             </Pill>
             <button
               aria-label="เพิ่มเหรียญ"
-              className="absolute -right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-green-500 text-white grid place-items-center shadow"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-green-500 text-white grid place-items-center shadow"
             >
-              <span className="text-xl leading-none">+</span>
+              <span className="text-xl leading-none mb-1">+</span>
             </button>
           </div>
         </div>
 
+        {modalContextHolder}
         <div className="px-5 pb-5">
           {Number(book.remaining_paid_count ?? 0) === 0 ? (
             <div className="px-5 pb-5">
@@ -202,15 +293,19 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
               </p>
 
               {/* Price box */}
-              <div className="rounded-2xl bg-gradient-to-b from-gray-100 to-gray-200 border border-gray-200 shadow-inner px-5 py-3 mb-4">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={handleBuyAllClick}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { handleBuyAllClick(); } }}
+                className="rounded-2xl bg-gradient-to-b from-gray-100 to-gray-200 border border-gray-200 shadow-inner px-5 py-3 mb-4 cursor-pointer hover:shadow-md hover:border-gray-300 transition-all"
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-[14px] font-bold text-gray-800">
                       เหมาทั้งเรื่อง
                     </span>
-                    <span className="w-5 h-5 rounded-full bg-yellow-400/90 ring-2 ring-yellow-200 text-white grid place-items-center text-[12px] font-extrabold">
-                      ฿
-                    </span>
+                    <Image src="/images/e-coin.png" alt="Coin" width={20} height={20} />
                   </div>
                   <div className="flex items-baseline gap-3">
                     <span className="text-2xl leading-none font-extrabold text-red-600">
@@ -379,8 +474,26 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                   </div>
                 )}
                 <style jsx global>{`
-                  .book-select-modal .ant-checkbox-inner { border-color: #e11d48; }
-                  .book-select-modal .ant-checkbox-checked .ant-checkbox-inner { background: #e11d48; border-color: #e11d48; }
+                  .book-select-modal .ant-checkbox-inner { border-color: #e11d48; transition: border-color .12s, background-color .12s; }
+                  /* Hover on wrapper or checkbox itself */
+                  .book-select-modal .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+                  .book-select-modal .ant-checkbox:hover .ant-checkbox-inner {
+                    border-color: #e11d48 !important;
+                  }
+                  /* Focused input (keyboard) */
+                  .book-select-modal .ant-checkbox-input:focus + .ant-checkbox-inner {
+                    border-color: #e11d48 !important;
+                    box-shadow: none !important;
+                  }
+                  /* Checked state should use red instead of default blue */
+                  .book-select-modal .ant-checkbox-checked .ant-checkbox-inner {
+                    background: #e11d48 !important;
+                    border-color: #e11d48 !important;
+                  }
+                  /* Ensure check mark is visible on red background */
+                  .book-select-modal .ant-checkbox-checked .ant-checkbox-inner::after {
+                    border-color: #fff !important;
+                  }
                   .book-select-modal .ant-modal-content { border-radius: 8px; }
                   .book-select-modal .ant-modal-body { padding: 0 24px 24px 24px; }
                 `}</style>

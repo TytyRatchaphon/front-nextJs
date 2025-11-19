@@ -5,7 +5,7 @@ interface Props {
   params: { bookID: string }
 }
 
-export default function Page({ params }: Props) {
-  const { bookID } = params
+export default async function Page({ params }: Props) {
+  const { bookID } = await params
   return <EditMyBook bookId={bookID} />
 }
