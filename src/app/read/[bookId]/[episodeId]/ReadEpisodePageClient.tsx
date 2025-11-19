@@ -11,14 +11,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Spin, Alert, Button, Dropdown, Popover } from "antd";
 import type { MenuProps } from "antd";
 // import parse from "html-react-parser";
-import { SearchBanner } from "@/components/Banner";
 import { BackToTopButton } from "@/components/BackToTopButton";
 import ProtectedContent from "@/components/ProtectedContent";
 
-import {
-  fetchBookDetail,
-  fetchBookEpisodes as fetchBookEpisodesAPI,
-} from "@/services/apiServices";
+
 import apiClient from "@/services/apiClient";
 
 // ... (API function fetchEpisodeContent เหมือนเดิม) ...

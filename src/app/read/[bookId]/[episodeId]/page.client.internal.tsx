@@ -4,11 +4,10 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
-import { Spin, Alert, Button, Dropdown, Popover } from "antd";
+import { Spin, Alert, Button, Dropdown, Popover, Modal } from "antd";
 import { message } from "antd";
 import type { MenuProps } from "antd";
 // import parse from "html-react-parser";
-import { SearchBanner } from "@/components/Banner";
 import { BackToTopButton } from "@/components/BackToTopButton";
 import ProtectedContent from "@/components/ProtectedContent";
 import Image from "next/image";
@@ -247,7 +246,60 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
 //   const [lineHeight, setLineHeight] = useState("relaxed");
   const [prevEpisode, setPrevEpisode] = useState<string | null>(null);
   const [nextEpisode, setNextEpisode] = useState<string | null>(null);
+  // Confirmation modal state for purchases
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmMethod, setConfirmMethod] = useState<"coin" | "freecoin" | null>(null);
+  const [confirmAmount, setConfirmAmount] = useState<number | null>(null);
+  const [buyLoading, setBuyLoading] = useState(false);
+  const [cancelHover, setCancelHover] = useState(false);
   const [, setPrevEpisodeData] = useState<any>(null);
+
+  const openConfirm = (method: "coin" | "freecoin", amount?: number | null) => {
+    setConfirmMethod(method);
+    setConfirmAmount(typeof amount === 'number' ? amount : null);
+    setConfirmOpen(true);
+  };
+
+  const handleBuy = async (method: "coin" | "freecoin") => {
+    if (!isLoggedIn) {
+      openLoginModal();
+      return;
+    }
+
+    try {
+      setBuyLoading(true);
+      const ep = episode as any;
+      const epId = String(ep?.ep_id ?? ep?.epID ?? episodeId);
+      const payload = { eps: [Number(epId)], payWith: method };
+      const res = await apiClient.post(`/buy/eps`, payload);
+      if (res?.data?.code === 200) {
+          const respMsg = res.data?.message || "ซื้อสำเร็จ! กำลังอัปเดตเนื้อหา...";
+          messageApi.success(respMsg);
+
+        // If backend returned a token (session refresh / upgraded user), apply it
+        const maybeToken = res?.data?.data?.token ?? res?.data?.token ?? res?.data?.data?.authToken ?? res?.data?.data?.accessToken;
+        if (maybeToken && typeof updateToken === 'function') {
+          try {
+            updateToken(String(maybeToken));
+            console.log('Purchase response included token — auth updated');
+          } catch (e) {
+            console.warn('Failed to update token from purchase response', e);
+          }
+        }
+
+        setConfirmOpen(false);
+        await queryClient.invalidateQueries({ queryKey: ["episodeContent", episodeId] });
+        await queryClient.invalidateQueries({ queryKey: ["bookEpisodes", bookId] });
+      } else {
+        messageApi.error(res?.data?.message || "ซื้อไม่สำเร็จ");
+      }
+    } catch (err) {
+      console.error("Buy error:", err);
+      messageApi.error("เกิดข้อผิดพลาดในการซื้อ กรุณาลองใหม่");
+    } finally {
+      setBuyLoading(false);
+    }
+  };
   const [, setNextEpisodeData] = useState<any>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<number, boolean>>({});
@@ -300,36 +352,44 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     staleTime: 10 * 60 * 1000,
   });
 
+  
+
   const queryClient = useQueryClient();
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const openLoginModal = useUIStore((s) => s.openLoginModal);
+  const updateToken = useAuthStore((s) => s.updateToken);
+  const [messageApi, messageContextHolder] = message.useMessage();
+
+  // Ensure book episodes are fetched as early as possible to allow name lookup
+  useEffect(() => {
+    if (!bookId) return;
+    try {
+      const key = ["bookEpisodes", bookId];
+      const existing = queryClient.getQueryData(key);
+      if (!existing) {
+        queryClient.prefetchQuery({ queryKey: key, queryFn: () => fetchBookEpisodes(bookId) }).then(() => {
+          console.debug('ReadEpisodePage: prefetch bookEpisodes (early) completed', bookId);
+        }).catch((err) => {
+          console.warn('ReadEpisodePage: prefetch bookEpisodes (early) failed', err);
+        });
+      }
+    } catch (err) {
+      console.warn('ReadEpisodePage: error during early prefetch bookEpisodes', err);
+    }
+  }, [bookId, queryClient]);
 
   function PurchaseFallback() {
     const ep = episode as any;
 
-    const handleBuy = async (method: "coin" | "freecoin") => {
-      if (!isLoggedIn) {
-        openLoginModal();
-        return;
-      }
+    // Use the outer `openConfirm` helper to show confirmation modal
 
-      try {
-        const epId = String(ep?.ep_id ?? ep?.epID ?? episodeId);
-        const payload = { eps: [Number(epId)], payWith: method };
-        const res = await apiClient.post(`/buy/eps`, payload);
-        if (res?.data?.code === 200) {
-          const respMsg = res.data?.message || "ซื้อสำเร็จ! กำลังอัปเดตเนื้อหา...";
-          message.success(respMsg);
-          await queryClient.invalidateQueries({ queryKey: ["episodeContent", episodeId] });
-          await queryClient.invalidateQueries({ queryKey: ["bookEpisodes", bookId] });
-        } else {
-          message.error(res?.data?.message || "ซื้อไม่สำเร็จ");
-        }
-      } catch (err) {
-        console.error("Buy error:", err);
-        message.error("เกิดข้อผิดพลาดในการซื้อ กรุณาลองใหม่");
-      }
-    };
+    // Determine whether freecoin (ถุงเงิน) is allowed.
+    // Priority: episode.use_freecoin -> bookDetail.use_freecoin -> default allow both
+    const bookUseFreecoin = (bookDetail as any)?.use_freecoin;
+    const epUseFreecoin = ep?.use_freecoin;
+    const canUseFreecoin = epUseFreecoin !== undefined && epUseFreecoin !== null
+      ? Number(epUseFreecoin) === 1
+      : (bookUseFreecoin !== undefined && bookUseFreecoin !== null ? Number(bookUseFreecoin) === 1 : true);
 
     return (
       <div className="text-center py-12">
@@ -337,12 +397,14 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
         <p className="text-sm text-gray-500 mb-4">ตอนนี้ยังไม่มีเนื้อหา หากต้องการอ่าน กรุณาซื้อ</p>
 
         <div className="flex items-center justify-center gap-3">
-          <button onClick={() => handleBuy("freecoin")} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg">
+          {canUseFreecoin && (
+            <button onClick={() => openConfirm("freecoin", ep?.freecoin ?? null)} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg">
               <Image src="/images/money-bag.png" alt="Coin Icon" width={20} height={20} />
-            ซื้อด้วยถุงเงิน {ep?.coin ? `(${ep.coin})` : ""}
-          </button>
+              ซื้อด้วยถุงเงิน {ep?.freecoin ? `(${ep.freecoin})` : ""}
+            </button>
+          )}
 
-          <button onClick={() => handleBuy("coin")} className="flex items-center gap-2 px-4 py-2 bg-yellow-400 text-black rounded-lg">
+          <button onClick={() => openConfirm("coin", ep?.coin ?? null)} className={`flex items-center gap-2 px-4 py-2 ${canUseFreecoin ? 'bg-yellow-400 text-black' : 'bg-red-600 text-white'} rounded-lg`}>
             <Image src="/images/e-coin.png" alt="Coin Icon" width={20} height={20} />
             ซื้อด้วยเหรียญ {ep?.coin ? `(${ep.coin})` : ""}
           </button>
@@ -360,6 +422,57 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     enabled: !!bookId,
     staleTime: 10 * 60 * 1000,
   });
+
+  // Compute final episode title: prefer fields from `episode`, else lookup `allEpisodes` by id
+  const computedEpisodeTitle = useMemo(() => {
+    const ep: any = episode;
+    const pickFromEpisode = () => {
+      if (!ep) return "";
+      const candidates = [ep.name];
+      for (const c of candidates) {
+        if (c !== undefined && c !== null && String(c).trim() !== "") return String(c).trim();
+      }
+      return "";
+    };
+
+    const fromEpisode = pickFromEpisode();
+    if (fromEpisode) return fromEpisode;
+
+    // fallback: try to find the episode in allEpisodes groups
+    try {
+      if (allEpisodes && Array.isArray(allEpisodes)) {
+        const flat: any[] = allEpisodes;
+        // some endpoints return grouped structure; handle both shapes
+        // If flat looks like groups structure: { groups: [...] }
+        if ((flat as any).groups) {
+          const groups = (flat as any).groups as any[];
+          for (const g of groups) {
+            if (g.list && Array.isArray(g.list)) {
+              for (const it of g.list) {
+                const idShort = String(it.ep_id ?? it.epID ?? "");
+                if (idShort && (idShort === String(ep?.ep_id ?? ep?.epID ?? episodeId))) {
+                  return it.name || it.title || "";
+                }
+              }
+            }
+          }
+        } else if (Array.isArray(flat)) {
+          for (const it of flat) {
+            const idShort = String(it.ep_id ?? it.epID ?? "");
+            if (idShort && (idShort === String(ep?.ep_id ?? ep?.epID ?? episodeId))) {
+              return it.name || it.title || "";
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("computedEpisodeTitle lookup error:", err);
+    }
+
+    // last resort: use epID/ep_id if present
+    if (ep) return String(ep.epID ?? ep.ep_id ?? "");
+    return "";
+  }, [episode, allEpisodes, episodeId]);
 
   const { prevIdFromList, nextIdFromList } = useMemo(() => {
     if (!allEpisodes || !Array.isArray(allEpisodes) || !episodeId) {
@@ -942,6 +1055,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
       onCut={(e) => e.preventDefault()}
       onContextMenu={(e) => e.preventDefault()}
     >
+      {messageContextHolder}
       {isSidebarOpen && (
         <>
           <div className="fixed inset-0 bg-black bg-opacity-50 z-[60]" onClick={() => setIsSidebarOpen(false)} />
@@ -1024,7 +1138,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
               </svg>
             </button>
 
-            <h1 className="text-sm font-medium truncate mx-4 flex-1 text-center">{episode?.name || ""}</h1>
+            <h1 className="text-sm font-medium truncate mx-4 flex-1 text-center">{computedEpisodeTitle || ""}</h1>
 
             <div className="flex items-center gap-1">
               <Dropdown menu={{ items: fontSizeMenu }} placement="bottomRight">
@@ -1097,6 +1211,35 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
       </div>
 
       <BackToTopButton />
+      <Modal
+        open={confirmOpen}
+        onCancel={() => setConfirmOpen(false)}
+        title={<div className="text-center text-lg font-medium">ยืนยันการซื้อ</div>}
+        footer={[
+          <Button
+            key="cancel"
+            onClick={() => setConfirmOpen(false)}
+            disabled={buyLoading}
+            className="transition-colors"
+            onMouseEnter={() => setCancelHover(true)}
+            onMouseLeave={() => setCancelHover(false)}
+            style={{ borderColor: cancelHover ? '#dc2626' : 'transparent', color: cancelHover ? '#dc2626' : undefined }}
+          >
+            ยกเลิก
+          </Button>,
+          <Button key="confirm" type="primary" danger loading={buyLoading} onClick={() => { if (confirmMethod) handleBuy(confirmMethod); }}>
+            {confirmMethod === 'coin' ? 'ยืนยันซื้อด้วยเหรียญ' : 'ยืนยันซื้อด้วยถุงเงิน'}
+          </Button>,
+        ]}
+      >
+        <div className="space-y-2 text-center">
+          <div className="text-base font-semibold text-gray-700">{computedEpisodeTitle || 'ตอนนี้'}</div>
+          <div className="text-sm text-red-600 font-medium flex items-center justify-center gap-2">
+            <Image src="/images/e-coin.png" alt="เหรียญ" width={18} height={18} />
+            <span>{confirmAmount != null ? confirmAmount : '---'}</span>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

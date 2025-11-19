@@ -381,7 +381,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
       <main className="max-w-[1255px] mx-auto px-4 sm:px-6 py-4 sm:py-6">
         {/* Mobile Only: BookInfoCard แสดงด้านบนก่อน (ซ่อนบน desktop) */}
         <div className="lg:hidden mb-4">
-          <BookInfoCard book={book} />
+          <BookInfoCard book={book} bookId={String((bookDetail as any)?.book_id ?? bookId)} />
         </div>
 
         <div className="flex flex-col lg:flex-row gap-4 sm:gap-6">
@@ -402,7 +402,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
 
           {/* Right Sidebar - ซ่อนบนมือถือ, แสดงบน desktop */}
           <div className="hidden lg:block lg:w-80 lg:flex-shrink-0">
-            <BookInfoCard book={book} />
+            <BookInfoCard book={book} bookId={String((bookDetail as any)?.book_id ?? bookId)} />
           </div>
         </div>
       </main>

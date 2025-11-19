@@ -1,6 +1,7 @@
-import Image from 'next/image';
-import Link from 'next/link'
+"use client"
 import React from 'react'
+import Image from 'next/image';
+import { useRouter } from 'next/navigation'
 
 interface Book {
   book_id?: number;
@@ -72,12 +73,27 @@ function MyCardBook({ book }: CardBookProps) {
 
   const ended = isEndedValue(book.end) || isEndedValue(book.status) || isEndedValue(book.finished) || isEndedValue(book.is_end) || isEndedValue(book.isFinished) || isEndedValue(book.finish) || isEndedValue(book.ended) || isEndedValue(book.end_status) || isEndedValue(book.publish_status) || isEndedValue(book.status_id) || isEndedValue(book.status_code) || isEndedValue(book.complete) || isEndedValue(book.is_complete) || isEndedValue(book.finish_status);
   
-  // Prefer the short numeric `book_id` when available; fall back to the string `bookID`.
-  const bookParam = book.book_id ? String(book.book_id) : (book.bookID && String(book.bookID).trim() !== "" ? String(book.bookID) : "");
+  // Prefer the short numeric `book_id` when available; fall back to the long string `bookID`.
+  const bookParam = book.book_id ? String(book.book_id) : (book.bookID && String(book.bookID).trim() !== "" ? String(book.bookID) : "")
+
+  const router = useRouter();
+
+  const handleOpen = () => {
+    if (bookParam) {
+      try {
+        sessionStorage.setItem(`editBook_${bookParam}`, JSON.stringify(book));
+      } catch (e) {
+        console.warn('Failed to save editBook to sessionStorage', e);
+      }
+      router.push(`/w/b/${encodeURIComponent(bookParam)}`);
+      return;
+    }
+    // fallback navigate to list edit page
+    router.push('/w/b');
+  }
 
   return (
-    // /${encodeURIComponent(bookParam)}
-  <Link href={`/w/b`} className="block w-[168px] h-[355px] flex-shrink-0">
+    <div onClick={handleOpen} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter') handleOpen() }} className="block w-[168px] h-[355px] flex-shrink-0">
       <div className="flex flex-col w-full h-full rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
         {/* Image Container */}
         <div className="relative w-full">
@@ -147,7 +163,7 @@ function MyCardBook({ book }: CardBookProps) {
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
 

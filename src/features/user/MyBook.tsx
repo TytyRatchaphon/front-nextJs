@@ -1236,7 +1236,7 @@ function MyBook() {
               แจ้งถอนเงิน
             </Button>
             
-            <span className='text-sm text-gray-400'>*ยอดขั้นต่ำที่สามารถถอนเงิน {minBaht ?? 100} บาท*</span>
+            <span className='text-sm text-red-600'>*ยอดขั้นต่ำที่สามารถถอนเงิน {minBaht ?? 100} บาท*</span>
             
             <div className='flex gap-4 ml-auto'>
               <Link href="/howto/howincome" className='inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-800'>
