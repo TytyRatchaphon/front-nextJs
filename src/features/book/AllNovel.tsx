@@ -54,7 +54,7 @@ const fetchBooks = async (page: number, limit: number = 18, sort?: string): Prom
 
 function AllNovel() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [activeTab, setActiveTab] = useState('all');
+  const [, setActiveTab] = useState('all');
   // sortOrder values: 'update_at' | 'date_at' | 'view'
   const [sortOrder, setSortOrder] = useState('update_at');
   const pageSize = 18;
@@ -293,6 +293,8 @@ function AllNovel() {
                   // map possible shelf/shelve fields to shelveCount
                   shelveCount: Number((b as any).shelveCount ?? (b as any).shelfCount ?? (b as any).shelve_count ?? (b as any).shelf_count ?? 0),
                   date_at: b.date_at,
+                  // chapter count: support multiple possible field names from API
+                  chapter: Number((b as any).chapter ?? (b as any).chapters ?? (b as any).chapter_count ?? 0),
                   heart: b.heart ?? 0,
                   flower: b.flower ?? 0,
                   end: b.end ?? b.status,

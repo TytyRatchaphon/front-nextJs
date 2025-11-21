@@ -34,7 +34,7 @@ function SearchBar({ onSearch }: SearchBarProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("date_at");
-  const [order, setOrder] = useState("DESC");
+  const [order] = useState("DESC");
 
   const [selectedFilters, setSelectedFilters] = useState<SelectedFilters>({
     categories: [],
@@ -56,7 +56,7 @@ function SearchBar({ onSearch }: SearchBarProps) {
     const fetchCategories = async () => {
       try {
         setIsLoadingCategories(true);
-        const response = await fetch("https://rs3xqjb7-3331.asse.devtunnels.ms/category");
+        const response = await fetch("http://192.168.220.214:3331/category");
 
         if (!response.ok) {
           throw new Error("Failed to fetch categories");
@@ -167,22 +167,6 @@ function SearchBar({ onSearch }: SearchBarProps) {
     });
   }, []);
 
-  const handleStatusChange = useCallback((value: string) => {
-    setSelectedFilters((prev) => {
-      const currentList = prev.status;
-      if (currentList.includes(value)) {
-        return {
-          ...prev,
-          status: currentList.filter((item) => item !== value),
-        };
-      } else {
-        return {
-          ...prev,
-          status: [...currentList, value],
-        };
-      }
-    });
-  }, []);
 
   const handleEndChange = useCallback((value: string) => {
     setSelectedFilters((prev) => ({

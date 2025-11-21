@@ -34,7 +34,7 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
   const { message } = App.useApp();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState('');
+  const [, setEmail] = useState('');
   const [form] = Form.useForm();
   const { login } = useAuthStore();
   const [token, setToken] = useState('');

@@ -150,13 +150,12 @@ export default function ReadEpisodePageClient({
   const [fontSize, setFontSize] = useState("base");
   const [fontFamily, setFontFamily] = useState("sarabun");
   const [bgColor, setBgColor] = useState("white");
-  const [lineHeight, setLineHeight] = useState("relaxed");
   const [prevEpisode, setPrevEpisode] = useState<string | null>(null);
   const [nextEpisode, setNextEpisode] = useState<string | null>(null);
-  const [prevEpisodeData, setPrevEpisodeData] = useState<any>(null);
-  const [nextEpisodeData, setNextEpisodeData] = useState<any>(null);
+  const [, setPrevEpisodeData] = useState<any>(null);
+  const [, setNextEpisodeData] = useState<any>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState<Record<number, boolean>>(
+  const [expandedGroups] = useState<Record<number, boolean>>(
     {}
   );
   const [isListPopoverOpen, setIsListPopoverOpen] = useState(false);
@@ -628,7 +627,6 @@ export default function ReadEpisodePageClient({
                         <div className="divide-y divide-gray-50">
                           {group.list.map((ep: any) => {
                             // ... (โค้ด map, isCurrentEpisode, JSX ทั้งหมดเหมือนเดิม) ...
-                            const isCurrentEpisode = String(ep.ep_id ?? ep.epID) === String(episodeId);
                             return (
                               <button
                                 key={ep.ep_id}

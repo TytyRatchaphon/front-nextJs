@@ -15,10 +15,10 @@ import {
   fetchBookEpisodes,
   // fetchUserWallet,
 } from "@/services/apiServices";
-import { Spin, Alert, Button, message } from "antd";
+import { Spin, Alert } from "antd";
 import Link from "next/link";
 import { useAuthStore } from "@/stores/authStore";
-import type { Episode } from "@/types/api";
+// import type { Episode } from "@/types/api";
 
 const tabs = ["แนะแนวเรื่อง", "สารบัญ", "ความคิดเห็น"] as const;
 type TabKey = (typeof tabs)[number];
@@ -28,7 +28,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
   const [expandedGroups, setExpandedGroups] = useState<Record<number, boolean>>({});
 //   const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
 
-  const { isLoggedIn } = useAuthStore();
+  useAuthStore();
 
   // เรียก API ด้วย React Query - Book Detail
   const {

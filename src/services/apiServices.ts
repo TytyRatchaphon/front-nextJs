@@ -173,17 +173,281 @@ export const fetchBookEpisodes = async (bookId: string | number) => {
   }
 };
 
+export const fetchBookGroups = async (bookId: string | number) => {
+  try {
+    console.log('🔍 fetchBookGroups for', bookId);
+    const response = await apiClient.get(`/user/managebook/${bookId}/groups`);
+    console.log('🔍 BookGroups API Response:', response.data);
+    // Normalize backend shapes:
+    // - { code:200, data: [group, ...] }
+    // - { code:200, data: { groups: [...] } }
+    // - legacy: response.data may already be the array
+    const payload = response.data?.data ?? response.data
+    if (Array.isArray(payload)) return payload
+    if (payload && Array.isArray((payload as any).groups)) return (payload as any).groups
+    if (payload && Array.isArray((payload as any).data)) return (payload as any).data
+    return []
+  } catch (error: any) {
+    console.error('❌ Error fetching book groups:', error?.response?.data ?? error.message ?? error);
+    throw error;
+  }
+}
+
+export const createGroup = async (bookId: string | number, name: string) => {
+  try {
+    console.log('🔍 createGroup for book', bookId, 'name:', name)
+    const payload = { book_id: String(bookId), name }
+    const resp = await apiClient.post('/user/managebook/group', payload)
+    console.log('🔍 createGroup response:', resp.status, resp.data)
+    return resp.data
+  } catch (err: any) {
+    console.error('❌ createGroup failed:', err?.response?.data ?? err.message ?? err)
+    throw err
+  }
+}
+
+export const fetchGroupEpisodes = async (groupId: string | number) => {
+  try {
+    console.log('🔍 fetchGroupEpisodes for group', groupId);
+    const response = await apiClient.get(`/user/managebook/group/${groupId}/eps`);
+    console.log('🔍 GroupEpisodes API Response:', response.data);
+    // Normalize possible shapes:
+    // - { code:200, data: [ep1, ep2] }
+    // - { code:200, data: { episodes: [...] } }
+    // - { code:200, data: { list: [...] } }
+    const payload = response.data?.data ?? response.data
+    if (Array.isArray(payload)) return { episodes: payload }
+    if (payload && Array.isArray((payload as any).episodes)) return { episodes: (payload as any).episodes }
+    if (payload && Array.isArray((payload as any).list)) return { episodes: (payload as any).list }
+    // fallback: if response.data.data.data is present and is array
+    const alt = (response.data && (response.data as any).data) ?? null
+    if (Array.isArray(alt)) return { episodes: alt }
+    return { episodes: [] };
+  } catch (error: any) {
+    console.error('❌ Error fetching group episodes:', error?.response?.data ?? error.message ?? error);
+    throw error;
+  }
+}
+
+export const updateEpisodesPrice = async (epIds: (string | number)[] | string, coin: number) => {
+  try {
+    // Backend expects a comma-separated string in `ep_ids` (per Postman screenshot)
+    const idsCsv = Array.isArray(epIds) ? epIds.map(String).join(',') : String(epIds)
+    const payload = { ep_ids: idsCsv, coin }
+    console.log('🔍 updateEpisodesPrice payload:', payload)
+    const resp = await apiClient.put('/user/managebook/eps/price', payload)
+    console.log('🔍 updateEpisodesPrice response:', resp.status, resp.data)
+    return resp.data
+  } catch (err: any) {
+    console.error('❌ updateEpisodesPrice failed:', err?.response?.data ?? err.message ?? err)
+    throw err
+  }
+}
+
+export const fetchUserShelve = async () => {
+  try {
+    console.log('🔍 fetchUserShelve')
+    const resp = await apiClient.get('/user/getbookshelve')
+    console.log('🔍 fetchUserShelve response:', resp.status, resp.data)
+    const payload = resp.data?.data ?? resp.data
+    if (Array.isArray(payload)) return payload
+    // sometimes backend returns { code, data: [...] }
+    if (payload && Array.isArray((payload as any).books)) return (payload as any).books
+    return []
+  } catch (err: any) {
+    console.error('❌ fetchUserShelve failed:', err?.response?.data ?? err.message ?? err)
+    throw err
+  }
+}
+
+export const fetchUserShelveContinue = async (userId?: string | number) => {
+  try {
+    const idSegment = userId ? `/${String(userId)}` : ''
+    console.log('🔍 fetchUserShelveContinue for', idSegment)
+    const resp = await apiClient.get(`/user/getbookshelvecontinue${idSegment}`)
+    console.log('🔍 fetchUserShelveContinue response:', resp.status, resp.data)
+    const payload = resp.data?.data ?? resp.data
+    if (Array.isArray(payload)) return payload
+    if (payload && Array.isArray((payload as any).books)) return (payload as any).books
+    return []
+  } catch (err: any) {
+    console.error('❌ fetchUserShelveContinue failed:', err?.response?.data ?? err.message ?? err)
+    throw err
+  }
+}
+
+export const fetchUserShelveBuy = async (userId?: string | number) => {
+  try {
+    console.log('🔍 fetchUserShelveBuy', userId ?? '')
+    const resp = await apiClient.get('/user/getbookshelvebuy')
+    console.log('🔍 fetchUserShelveBuy response:', resp.status, resp.data)
+    const payload = resp.data?.data ?? resp.data
+    if (Array.isArray(payload)) return payload
+    if (payload && Array.isArray((payload as any).books)) return (payload as any).books
+    return []
+  } catch (err: any) {
+    console.error('❌ fetchUserShelveBuy failed:', err?.response?.data ?? err.message ?? err)
+    throw err
+  }
+}
+
+export const redeemCode = async (code: string) => {
+  try {
+    // Backend expects key `redeemCode` in the request body (see Postman)
+    console.log('🔍 redeemCode payload (redeemCode):', code)
+    const payload = { redeemCode: code }
+    const resp = await apiClient.post('/user/redeem', payload)
+    console.log('🔍 redeemCode response:', resp.status, resp.data)
+    return resp.data
+  } catch (err: any) {
+    console.error('❌ redeemCode failed:', err?.response?.data ?? err.message ?? err)
+    throw err
+  }
+}
+
+export const deleteGroupEpisode = async (episodeId: string | number, groupId?: string | number) => {
+  // Try a few plausible endpoints to reduce 404s caused by inconsistent backend paths
+  const endpoints: string[] = []
+
+  // If a groupId is provided, try group-scoped delete paths first
+  if (groupId) {
+    endpoints.push(`/user/managebook/group/${groupId}/eps/${episodeId}`)
+    endpoints.push(`/user/managebook/group/${groupId}/ep/${episodeId}`)
+    endpoints.push(`/user/managebook/${groupId}/eps/${episodeId}`)
+    endpoints.push(`/user/managebook/${groupId}/ep/${episodeId}`)
+  }
+
+  // General fallbacks
+  endpoints.push(`/user/managebook/eps/${episodeId}`)
+  endpoints.push(`/user/managebook/ep/${episodeId}`)
+  endpoints.push(`/user/managebook/episode/${episodeId}`)
+  endpoints.push(`/episode/${episodeId}`)
+
+  let lastErr: any = null
+  for (const path of endpoints) {
+    try {
+      console.log('🔍 deleteGroupEpisode trying', path)
+      const response = await apiClient.delete(path)
+      console.log('🔍 deleteGroupEpisode API Response for', path, response.data)
+      return response.data
+    } catch (error: any) {
+      lastErr = error
+      console.warn('⚠️ deleteGroupEpisode path failed:', path, error?.response?.status ?? error?.message ?? error)
+      // continue trying other paths
+    }
+  }
+  // As a last resort, try sending DELETE with a request body (some servers expect payload)
+  try {
+    console.log('🔍 deleteGroupEpisode trying DELETE with body payload')
+    const response = await apiClient.delete('/user/managebook/eps', { data: { episodeId, groupId } })
+    console.log('🔍 deleteGroupEpisode API Response for body-delete', response.data)
+    return response.data
+  } catch (error: any) {
+    lastErr = error
+    console.warn('⚠️ deleteGroupEpisode body-delete failed:', error?.response?.status ?? error?.message ?? error)
+  }
+
+  // Some backends expose a specific '/eps/delete' action route (seen in your screenshot).
+  // Try DELETE with body first, then POST to that path.
+  try {
+    console.log('🔍 deleteGroupEpisode trying DELETE /user/managebook/eps/delete with body')
+    const response = await apiClient.delete('/user/managebook/eps/delete', { data: { episodeId, groupId } })
+    console.log('🔍 deleteGroupEpisode API Response for eps/delete (DELETE)', response.data)
+    return response.data
+  } catch (error: any) {
+    lastErr = error
+    console.warn('⚠️ deleteGroupEpisode eps/delete (DELETE) failed:', error?.response?.status ?? error?.message ?? error)
+  }
+
+  try {
+    console.log('🔍 deleteGroupEpisode trying POST /user/managebook/eps/delete with body')
+    // Try several common payload shapes to match backend expectations
+    const payloadVariants = [
+      { episodeId, groupId },
+      { id: episodeId, groupId },
+      { episode_id: episodeId, groupId },
+      { eps_id: episodeId, groupId },
+      { ep_id: episodeId, groupId },
+      { episodeId },
+      { id: episodeId },
+      { episode_id: episodeId },
+    ]
+
+    for (const body of payloadVariants) {
+      try {
+        console.log('🔍 deleteGroupEpisode trying POST /user/managebook/eps/delete with body:', body)
+        const response = await apiClient.post('/user/managebook/eps/delete', body)
+        console.log('🔍 deleteGroupEpisode API Response for eps/delete (POST)', response.data)
+        return response.data
+      } catch (err: any) {
+        lastErr = err
+        console.warn('⚠️ eps/delete (POST) payload failed:', body, err?.response?.status ?? err?.message ?? err)
+        // try next payload shape
+      }
+    }
+  } catch (error: any) {
+    lastErr = error
+    console.warn('⚠️ deleteGroupEpisode eps/delete (POST) failed:', error?.response?.status ?? error?.message ?? error)
+  }
+
+  // Some clients / Postman were using PUT with key `ep_ids` (string or CSV). Try that exact shape.
+  try {
+    console.log('🔍 deleteGroupEpisode trying PUT /user/managebook/eps/delete with ep_ids variants')
+    const epIdsString = String(episodeId)
+    const putVariants = [
+      { ep_ids: epIdsString },
+      { ep_ids: [episodeId] },
+      { ep_ids: epIdsString, group_id: groupId },
+      { ep_ids: epIdsString, groupId },
+    ]
+
+    for (const body of putVariants) {
+      try {
+        console.log('🔍 deleteGroupEpisode trying PUT /user/managebook/eps/delete with body:', body)
+        const resp = await apiClient.put('/user/managebook/eps/delete', body)
+        console.log('🔍 deleteGroupEpisode API Response for eps/delete (PUT)', resp.status, resp.data)
+        return resp.data
+      } catch (err: any) {
+        lastErr = err
+        console.warn('⚠️ eps/delete (PUT) payload failed:', body, err?.response?.status ?? err?.message ?? err)
+      }
+    }
+  } catch (err: any) {
+    lastErr = err
+    console.warn('⚠️ deleteGroupEpisode eps/delete (PUT) failed:', err?.response?.status ?? err?.message ?? err)
+  }
+
+  console.error('❌ Error deleting group episode (all tried endpoints failed):', lastErr?.response?.data ?? lastErr?.message ?? lastErr)
+  throw lastErr
+}
+
 export const fetchBookDetail = async (bookId: string): Promise<BookDetail> => {
   try {
+    // Try new management API first (/user/managebook/:id/detail)
+    try {
+      const resp = await apiClient.get(`/user/managebook/${bookId}/detail`);
+      console.log('🔍 BookDetail (managebook) API Response:', resp.data);
+      if (resp?.data) {
+        // some backends return { code, data } others return data directly
+        const payload = resp.data.data ?? resp.data;
+        if (payload) {
+          console.log('✅ Book detail loaded from managebook:', payload.name ?? payload.title ?? bookId);
+          return payload as BookDetail;
+        }
+      }
+      // if that endpoint didn't return expected data, fallthrough to legacy
+    } catch (err: any) {
+      console.warn('managebook detail endpoint failed, falling back to legacy /bookdetail:', err?.message ?? err);
+    }
+
+    // Fallback to legacy endpoint
     const response = await apiClient.get<BookDetailResponse>(`/bookdetail/${bookId}`);
-    
-    console.log('🔍 BookDetail API Response:', response.data);
-    
+    console.log('🔍 BookDetail (legacy) API Response:', response.data);
     if (response.data && response.data.data) {
-      console.log('✅ Book detail loaded:', response.data.data.name);
+      console.log('✅ Book detail loaded (legacy):', response.data.data.name);
       return response.data.data;
     }
-    
+
     throw new Error('ไม่พบข้อมูลหนังสือ');
   } catch (error) {
     console.error('❌ Error fetching book detail:', error);

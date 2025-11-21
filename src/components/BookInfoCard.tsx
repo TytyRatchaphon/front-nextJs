@@ -44,7 +44,7 @@ const Pill = ({
 );
 
 const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
-  const [heartQty, setHeartQty] = useState<number>(0);
+  const [heartQty] = useState<number>(0);
   const [roseQty, setRoseQty] = useState<number>(10);
   const { token, isLoggedIn, updateToken } = useAuthStore();
   const openLoginModal = useUIStore((s) => s.openLoginModal);
@@ -93,7 +93,6 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
 
     try {
       setBuyLoading(true);
-      // Fetch episodes (not relying on query which is enabled only when modal opens)
       const epsData: any = await fetchBookEpisodes(String(bookId));
       const groups = epsData?.groups ?? [];
       const selectableIds: number[] = [];
@@ -119,7 +118,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
           <div>
             <div>คุณต้องการซื้อทั้งเรื่องหรือไม่?</div>
             <div className="mt-2">ตอนที่ต้องซื้อ: <b>{selectableIds.length} ตอน</b></div>
-            <div className="flex" >รวมยอด: <b className="text-red-600 flex mr-2">{total.toLocaleString()} {" "}</b><Image  src="/images/e-coin.png" alt="Coin" width={24} height={24} /></div>
+            <div className="flex">รวมยอด: <b className="text-red-600 flex mr-2">{total.toLocaleString()}</b><Image src="/images/e-coin.png" alt="Coin" width={24} height={24} /></div>
           </div>
         ),
         okText: 'ยืนยัน',
@@ -157,7 +156,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
         },
         onCancel: () => {
           setBuyLoading(false);
-        }
+        },
       });
     } catch (err) {
       console.error('Preparing buy all failed', err);
@@ -260,37 +259,56 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
         <div className="px-5 pt-5 pb-2 flex items-center justify-between">
           <h3 className="text-xl font-extrabold text-gray-900">ซื้อหลายตอน</h3>
           <div className="relative">
-            <Pill className="pr-10">
-              <Image
-                src="/images/e-coin.png"
-                alt="Coin"
-                width={20}
-                height={20}
-              />
-              <span className="font-semibold text-gray-900">{(userCoinCount != null ? userCoinCount : (book.remaining_paid_total ?? book.price ?? 0)).toLocaleString()}</span>
-            </Pill>
-            <button
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => { if (!isLoggedIn) openLoginModal(); }}
+              onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') && !isLoggedIn) openLoginModal(); }}
+              className={`inline-block`}
+            >
+              {isLoggedIn ? (
+                <Pill className="pr-10">
+                  <Image
+                    src="/images/e-coin.png"
+                    alt="Coin"
+                    width={20}
+                    height={20}
+                  />
+                  <span className="font-semibold text-gray-900">{(userCoinCount != null ? userCoinCount : (book.remaining_paid_total ?? book.price ?? 0)).toLocaleString()}</span>
+                </Pill>
+              ) : (
+                <Pill className="px-6 bg-gray-50 border-dashed border-gray-200 text-gray-600 cursor-pointer justify-center">
+                  <span className="text-sm font-medium">เข้าสู่ระบบ</span>
+                </Pill>
+              )}
+            </div>
+            {isLoggedIn && (
+                          <button
               aria-label="เพิ่มเหรียญ"
+              onClick={() => { if (!isLoggedIn) openLoginModal(); }}
               className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-green-500 text-white grid place-items-center shadow"
             >
               <span className="text-xl leading-none mb-1">+</span>
             </button>
+            )}
           </div>
         </div>
 
         {modalContextHolder}
         <div className="px-5 pb-5">
-          {Number(book.remaining_paid_count ?? 0) === 0 ? (
+          {isLoggedIn && Number(book.remaining_paid_count ?? 0) === 0 ? (
             <div className="px-5 pb-5">
               <p className="text-[14px] text-gray-800 mb-3 font-semibold">คุณเป็นเจ้าของนิยายนี้ทั้งหมดแล้ว</p>
             </div>
           ) : (
             <>
               {/* Ownership Status */}
-              <p className="text-[14px] text-gray-800 mb-3">
-                คุณยังไม่ได้เป็นเจ้าของอีก{" "}
-                <span className="text-red-600 font-semibold">{book.remaining_paid_count ?? 0} ตอน</span>
-              </p>
+              {isLoggedIn && (
+                <p className="text-[14px] text-gray-800 mb-3">
+                  คุณยังไม่ได้เป็นเจ้าของอีก{" "}
+                  <span className="text-red-600 font-semibold">{book.remaining_paid_count ?? 0} ตอน</span>
+                </p>
+              )}
 
               {/* Price box */}
               <div
@@ -337,6 +355,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                       <Button type="primary" danger loading={buyLoading} disabled={selectedSummary.count === 0} onClick={async () => {
                         // Perform batch buy
                         if (!isLoggedIn) {
+                          // Close select modal then prompt login
+                          setIsModalOpen(false);
+                          setSelectedEpisodeIds([]);
                           openLoginModal();
                           return;
                         }

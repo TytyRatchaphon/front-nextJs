@@ -172,8 +172,6 @@ export default function ProtectedContent({
     });
 
     // ป้องกัน DOM methods
-    const originalQuerySelector = container.querySelector;
-    const originalQuerySelectorAll = container.querySelectorAll;
 
     container.querySelector = function () {
       return null;

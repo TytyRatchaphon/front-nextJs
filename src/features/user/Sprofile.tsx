@@ -29,7 +29,7 @@ const { Option } = Select;
 const UserInfoForm = () => {
   const { message } = App.useApp();
   const [form] = Form.useForm();
-  const { userProfileForm, updateUserProfile, setFormErrors, clearFormErrors } = useFormStore();
+  const { userProfileForm, updateUserProfile } = useFormStore();
   const { user } = useAuthStore(); // ดึง user จาก authStore
 
   // CSS ClassName ที่ใช้ซ้ำๆ จาก HTML ของคุณ
@@ -382,6 +382,7 @@ const ProfilePictureTab = () => {
       console.log('Calling API via Next.js proxy...');
       
       // เรียกผ่าน Next.js API Route (proxy) เพื่อแก้ปัญหา CORS
+      // Next.js route is `src/app/api/getframes/route.ts` so the path is /api/getframes
       // เพิ่ม timeout เป็น 30 วินาที
       const response = await axios.get('/api/getframes', {
         headers: {

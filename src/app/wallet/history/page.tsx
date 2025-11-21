@@ -1,9 +1,9 @@
 import React from 'react'
-import EditMyBook from '@/features/user/EditMyBook'
+import History from '@/features/user/History'
 
 function page() {
   return (
-    <EditMyBook />
+    <History />
   )
 }
 

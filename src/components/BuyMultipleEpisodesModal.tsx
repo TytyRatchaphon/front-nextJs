@@ -2,7 +2,6 @@
 
 import { Modal, Checkbox, Button, Radio, Space, Divider } from "antd";
 import { useState, useMemo } from "react";
-import Image from "next/image";
 import type { Episode } from "@/types/api";
 
 interface BuyMultipleEpisodesModalProps {

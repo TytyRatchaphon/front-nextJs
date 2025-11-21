@@ -1,12 +1,14 @@
 "use client";
 
+import React from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay, Pagination, Navigation, A11y, FreeMode } from 'swiper/modules';
+import { Autoplay, Pagination, Navigation, A11y, FreeMode, Scrollbar, Mousewheel } from 'swiper/modules';
 import Image from 'next/image';
 import Link from 'next/link';  
 
 import 'swiper/css';
 import 'swiper/css/free-mode';
+import 'swiper/css/scrollbar';
 
 import{
     useGetBookTrans
@@ -195,6 +197,38 @@ export function NewNovelSlider() {
     );
 }
 
+export function TagSwiper({ tags, classImport = 'inline-block bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm' }: { tags: string[]; classImport?: string }) {
+    if (!tags || tags.length === 0) return null;
+
+    // const handleClick = (item: string) => {
+    //     const q = item.replace('#', '');
+    //     // navigate via window to keep it simple in this component
+    //     window.location.href = `/search/${encodeURIComponent(q)}`;
+    // }
+
+    return (
+        <div className='w-full my-1 overflow-auto no-scrollbar py-1'>
+            <Swiper
+                slidesPerView={'auto'}
+                freeMode={true}
+                mousewheel={true}
+                modules={[FreeMode, Scrollbar, Mousewheel]}
+                className="mySwiper swiper ps-10" 
+                direction={'horizontal'} 
+                width={100}
+            >
+                {tags.map((item, i) => (
+                    <SwiperSlide key={i} className='w-[auto] mx-1'>
+                        <span className={classImport}>
+                            {item}
+                        </span>
+                    </SwiperSlide>
+                ))}
+            </Swiper>
+        </div>
+    );
+}
+
 // export function ExclusiveNovelSlider() {
 //     const { data:exclusiveNovels, isLoading, error } = useGetExclusiveNovels();
   
@@ -261,77 +295,3 @@ export function NewNovelSlider() {
 // }
 
 
-// ฟังก์ชันสำหรับแยก tags จาก string
-const parseTags = (tagString: string | null | undefined): string[] => {
-    if (!tagString) return [];
-    
-    // แยกด้วย comma หรือ semicolon หรือ pipe
-    return tagString
-        .split(/[,;|]/)
-        .map(tag => tag.trim())
-        .filter(tag => tag.length > 0);
-};
-
-export function CategoryTag({ tags }: { tags?: string | null }) {
-    const tagList = parseTags(tags);
-    
-    // ถ้าไม่มี tags หรือ tags เป็น null/undefined ให้แสดง default
-    if (!tags || tagList.length === 0) {
-        return (
-            <Swiper
-            modules={[FreeMode]}
-            slidesPerView={1.5}
-            spaceBetween={-2}
-            freeMode={true}
-            allowTouchMove={true}
-            grabCursor={true}
-            className="mySwiper ps-10"
-            >
-                <SwiperSlide style={{ width: 'auto' }}>
-                        <span className='text-[14px] text-black bg-tag px-4 py-1 rounded-full lg:my-2'>
-                            ไม่มีหมวดหมู่
-                        </span>
-                </SwiperSlide>
-            </Swiper>
-        );
-    }
-    
-    return (
-        <Swiper
-            modules={[FreeMode]}
-            slidesPerView="auto"
-            spaceBetween={8}
-            freeMode={true}
-            allowTouchMove={true}
-            grabCursor={true}
-            resistance={false}
-            resistanceRatio={0}
-            watchSlidesProgress={true}
-            slidesOffsetBefore={8}
-            slidesOffsetAfter={8}
-            simulateTouch={true}
-            touchStartPreventDefault={false}
-            passiveListeners={false}
-            touchMoveStopPropagation={false}
-            touchReleaseOnEdges={false}
-            threshold={5}
-            longSwipes={true}
-            longSwipesRatio={0.5}
-            longSwipesMs={300}
-            centeredSlides={false}
-            centeredSlidesBounds={false}
-            slidesPerGroup={1}
-            slidesPerGroupSkip={0}
-            slidesPerGroupAuto={false}
-            className="mySwiper ps-10"
-            >
-            {tagList.map((tag, index) => (
-                <SwiperSlide key={index} style={{ width: 'auto' }}>
-                      <span className='text-[14px] text-black bg-tag px-4 py-1 rounded-full lg:my-2'>
-                          {tag}
-                            </span>
-        </SwiperSlide>
-        ))}
-        </Swiper>
-    );
-}

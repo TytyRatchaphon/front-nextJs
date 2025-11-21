@@ -5,7 +5,7 @@ import Image from 'next/image';
 import dayjs from 'dayjs';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Tabs, Input, Select, Button, DatePicker, Table, Pagination, Card, Upload, notification, Modal, InputNumber, Spin, Tag } from 'antd';
+import { Tabs, Input, Select, Button, DatePicker, Table, Pagination, Upload, notification, Modal, InputNumber, Spin, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
@@ -84,7 +84,7 @@ function MyBook() {
 
 
   
-  const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+  // const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   
   // State for sales report tab
   // Default to start of current month -> now so initial query covers the month to date
@@ -92,17 +92,11 @@ function MyBook() {
   const [currentPage, setCurrentPage] = useState(1);
   
   // State for withdrawal tab
-  const [withdrawalAmount, setWithdrawalAmount] = useState('');
   const [bankName, setBankName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [accountName, setAccountName] = useState('');
-  const [withdrawalTab, setWithdrawalTab] = useState('1');
   const [accountCardTab, setAccountCardTab] = useState('info');
-  const [slipFile, setSlipFile] = useState<File | null>(null);
-  const [slipFileName, setSlipFileName] = useState('');
-  const [bankCertFile, setBankCertFile] = useState<File | null>(null);
   const [bankCertFileName, setBankCertFileName] = useState('');
-  const [idCardFile, setIdCardFile] = useState<File | null>(null);
   const [idCardFileName, setIdCardFileName] = useState('');
   const [idNumber, setIdNumber] = useState('');
   const [address, setAddress] = useState('');
@@ -128,7 +122,7 @@ function MyBook() {
   const [exporting, setExporting] = useState(false);
 
   // Fetch withdraw settings (min_baht, vat, service)
-  const { data: withdrawSetting = null, isLoading: isLoadingWithdrawSetting } = useQuery({
+  const { data: withdrawSetting = null } = useQuery({
     queryKey: ['withdrawSetting'],
     queryFn: async () => {
       try {
@@ -619,7 +613,7 @@ function MyBook() {
   }, [salesDateRange]);
 
   // Sales report - fetch from backend and map to table
-  const { data: salesResponse = null, isLoading: isLoadingSales, error: salesError, refetch: refetchSales } = useQuery({
+  const { data: salesResponse = null, isLoading: isLoadingSales, refetch: refetchSales } = useQuery({
     queryKey: ['salesReport', formattedSalesRange[0], formattedSalesRange[1]],
     queryFn: async () => {
       try {
@@ -768,7 +762,7 @@ function MyBook() {
   const [booksPage, setBooksPage] = React.useState<number>(1);
   const booksLimit = 12;
   // Keep the raw response so we can read pagination totals
-  const { data: myBooksResponse = null, isLoading: isLoadingMyBooks, error: myBooksError } = useQuery({
+  const { data: myBooksResponse = null, isLoading: isLoadingMyBooks } = useQuery({
     queryKey: ['myBooks', booksPage, booksLimit],
     queryFn: async () => {
       const res = await apiClient.get('/user/mybook/search', { params: { page: booksPage, limit: booksLimit } });
@@ -1286,7 +1280,7 @@ function MyBook() {
                             <div className='flex items-center gap-3'>
                               <Upload
                                 beforeUpload={(file) => {
-                                  setIdCardFile(file);
+                                  // setIdCardFile(file);
                                   setIdCardFileName(file.name);
                                   return false;
                                 }}
@@ -1308,7 +1302,7 @@ function MyBook() {
                                     className='text-red-500 hover:text-red-700'
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setIdCardFile(null);
+                                      // setIdCardFile(null);
                                       setIdCardFileName('');
                                     }}
                                   >
@@ -1367,7 +1361,7 @@ function MyBook() {
                             <div className='flex items-center gap-3'>
                               <Upload
                                 beforeUpload={(file) => {
-                                  setBankCertFile(file);
+                                  // setBankCertFile(file);
                                   setBankCertFileName(file.name);
                                   return false;
                                 }}
@@ -1389,7 +1383,7 @@ function MyBook() {
                                     className='text-red-500 hover:text-red-700'
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setBankCertFile(null);
+                                      // setBankCertFile(null);
                                       setBankCertFileName('');
                                     }}
                                   >

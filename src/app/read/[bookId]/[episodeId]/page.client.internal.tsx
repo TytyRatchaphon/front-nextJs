@@ -14,7 +14,6 @@ import Image from "next/image";
 
 import {
   fetchBookDetail,
-  fetchBookEpisodes as fetchBookEpisodesAPI,
 } from "@/services/apiServices";
 import apiClient from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
@@ -144,7 +143,6 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   // We remove the 'sticky' class and set position to static on mount,
   // and restore previous classes/styles on unmount to avoid side effects.
   useEffect(() => {
-    const prevChildStyles: Array<{ el: HTMLElement; color: string; borderColor: string }> = [];
     try {
       const styleId = "no-sticky-navbar-style";
       // Inject CSS override to force Navbar non-sticky (highest priority)
@@ -295,7 +293,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
       }
     } catch (err) {
       console.error("Buy error:", err);
-      messageApi.error("เกิดข้อผิดพลาดในการซื้อ กรุณาลองใหม่");
+      messageApi.error("ยอดเหรียญไม่เพียงพอ");
     } finally {
       setBuyLoading(false);
     }

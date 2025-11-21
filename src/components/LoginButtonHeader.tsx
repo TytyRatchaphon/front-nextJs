@@ -63,7 +63,7 @@ const LoginButtonHeader: React.FC = () => {
   
   // เก็บข้อมูล form สำหรับใช้หลัง login/register สำเร็จ
   const [loginFormData, setLoginFormData] = useState<LoginFieldType | null>(null);
-  const [registerFormData, setRegisterFormData] = useState<RegisterFieldType | null>(null);
+  const [, setRegisterFormData] = useState<RegisterFieldType | null>(null);
 
   // Password strength checker
   const checkPasswordStrength = (password: string): number => {

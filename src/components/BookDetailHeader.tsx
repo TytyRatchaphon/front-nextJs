@@ -23,15 +23,8 @@ interface BookDetailHeaderProps {
 }
 
 const BookDetailHeader = ({ book }: BookDetailHeaderProps) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const showModal = () => {
-    setIsModalOpen(true);
-  };
 
-  const handleCancel = () => {
-    setIsModalOpen(false);
-  };
 
   // สร้าง URL รูปภาพที่สมบูรณ์
   const coverImageUrl = book.cover

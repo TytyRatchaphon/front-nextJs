@@ -403,6 +403,34 @@ a[href="/notifications"]:hover {
   margin: 0 4px;
 }
 
+/* Force confirm dialog cancel button to use red styling (text + border + hover BG)
+   This overrides Ant Design defaults when we need the cancel action to appear 'destructive' */
+.ant-modal-confirm .ant-modal-confirm-btns .ant-btn:nth-child(1) {
+  color: #dc2626 !important;
+  border-color: #dc2626 !important;
+}
+.ant-modal-confirm .ant-modal-confirm-btns .ant-btn:nth-child(1):hover {
+  background-color: rgba(220,38,38,0.06) !important;
+  border-color: #dc2626 !important;
+  color: #dc2626 !important;
+  box-shadow: none !important;
+}
+
+/* Episode modal: force SVG icons to become red on button hover */
+.ant-modal .ejb-episode-row button:hover svg,
+.ant-modal .ejb-episode-row button:hover svg *,
+.ant-modal .ejb-episode-row button:hover path,
+.ant-modal .ejb-episode-row button:hover circle {
+  fill: #dc2626 !important;
+  stroke: #dc2626 !important;
+  color: #dc2626 !important;
+}
+
+.ant-modal .ejb-episode-row button svg,
+.ant-modal .ejb-episode-row button svg * {
+  transition: fill 0.15s ease, stroke 0.15s ease, color 0.15s ease;
+}
+
 
 .swiper-pagination-bullet {
   width: 8px;

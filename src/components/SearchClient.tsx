@@ -147,7 +147,6 @@ export default function SearchClient() {
   }, [apiResponse]);
 
   const total = apiResponse?.total || 0;
-  const totalPages = Math.ceil(total / pageSize);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);

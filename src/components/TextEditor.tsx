@@ -17,7 +17,7 @@ type TextEditorProps = {
   onInit?: (editor: any) => void;
 };
 
-const TextEditor = ({ value, onChange, height, onBlur, onInit }: TextEditorProps) => {
+const TextEditor = ({ value, onChange, height, onInit }: TextEditorProps) => {
   const editorRef = useRef<any>(null);
   const scriptLoadedRef = useRef(false);
   const [isEditorReady, setIsEditorReady] = useState(false);
@@ -107,8 +107,6 @@ const TextEditor = ({ value, onChange, height, onBlur, onInit }: TextEditorProps
               const container = sel.startContainer;
               const offset = sel.startOffset;
               if (container.nodeType === Node.TEXT_NODE && offset > 0) {
-                const text = container.nodeValue;
-                const charToDelete = text.charAt(offset - 1);
                 // You can use editor.fire('DeletedChar', { char: charToDelete }) if needed
               }
             }
