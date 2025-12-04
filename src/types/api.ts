@@ -25,6 +25,7 @@ export interface BookTrans {
   bookID: string;
   type: string;
   img: string;
+  img_full: string;
   name: string;
   title: string;
   tag: string[];
@@ -171,6 +172,7 @@ export interface BookDetail {
   bookID: string;
   type: string;
   img: string;
+  img_full: string;
   name: string;
   title: string;
   tag: string[];

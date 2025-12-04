@@ -697,22 +697,27 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-xl font-extrabold text-gray-900">ส่งของขวัญ</h3>
             <div className="flex items-center gap-2">
-              <Pill>
-                <Image
-                  src="/images/rose.png"
-                  alt="rose"
-                  width={18}
-                  height={18}
-                />
-                <span className="font-semibold text-gray-900">580</span>
-                <Image
-                  src="/images/heart.png"
-                  alt="heart"
-                  width={18}
-                  height={18}
-                />
-                <span className="font-semibold text-gray-900">320</span>
-              </Pill>
+              <div className="h-10 px-4 rounded-full border border-gray-200 bg-white shadow-sm flex items-center gap-4">
+                <div className="flex items-center gap-1.5">
+                  <Image
+                    src="/images/rose.png"
+                    alt="rose"
+                    width={20}
+                    height={20}
+                  />
+                  <span className="font-semibold text-gray-900 text-base">580</span>
+                </div>
+                <div className="w-px h-4 bg-gray-200"></div>
+                <div className="flex items-center gap-1.5">
+                  <Image
+                    src="/images/heart.png"
+                    alt="heart"
+                    width={20}
+                    height={20}
+                  />
+                  <span className="font-semibold text-gray-900 text-base">320</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -720,48 +725,39 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
           <div className="flex items-stretch gap-3">
             {/* Item 1: heart (flex item) */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between bg-white rounded-full border border-gray-200 h-10 px-3">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Image src="/images/heart.png" alt="heart" width={20} height={20} />
-                </div>
-                <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
-                  <input
-                    type="number"
-                    min={0}
-                    value={heartQty}
-                    disabled
-                    className="w-12 h-8 rounded-full border border-gray-200 bg-gray-100 text-gray-500 text-center text-sm px-2"
-                    readOnly
-                  />
-                  <button
-                    disabled
-                    aria-disabled
-                    className="h-8 px-3 rounded-full bg-gray-200 text-gray-500 text-sm grid place-items-center"
-                  >
-                    ส่ง
-                  </button>
-                </div>
+              <div className="flex items-center justify-between bg-white rounded-full border border-gray-200 h-12 pl-4 pr-1.5 shadow-sm">
+                <Image src="/images/heart.png" alt="heart" width={24} height={24} />
+                <input
+                  type="number"
+                  min={0}
+                  value={heartQty}
+                  disabled
+                  className="w-full bg-transparent text-center font-bold text-lg text-gray-900 focus:outline-none px-2"
+                  readOnly
+                />
+                <button
+                  disabled
+                  className="h-9 px-5 rounded-full bg-gray-300 text-white text-sm font-bold shadow-sm shrink-0"
+                >
+                  ส่ง
+                </button>
               </div>
             </div>
 
             {/* Item 2: rose (flex item) */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between bg-white rounded-full border border-gray-200 h-10 px-3">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Image src="/images/rose.png" alt="rose" width={20} height={20} />
-                </div>
-                <div className="flex items-center gap-2 shrink-0 whitespace-nowrap">
-                  <input
-                    type="number"
-                    min={1}
-                    value={roseQty}
-                    onChange={(e) => setRoseQty(parseInt(e.target.value || "0"))}
-                    className="w-12 h-8 rounded-full border border-gray-200 bg-white text-gray-900 text-center text-sm px-2"
-                  />
-                  <button className="h-8 px-3 rounded-full bg-red-600 text-white text-sm font-semibold shadow hover:bg-red-700 transition-colors">
-                    ส่ง
-                  </button>
-                </div>
+              <div className="flex items-center justify-between bg-white rounded-full border border-gray-200 h-12 pl-4 pr-1.5 shadow-sm">
+                <Image src="/images/rose.png" alt="rose" width={24} height={24} />
+                <input
+                  type="number"
+                  min={1}
+                  value={roseQty}
+                  onChange={(e) => setRoseQty(parseInt(e.target.value || "0"))}
+                  className="w-full bg-transparent text-center font-bold text-lg text-gray-900 focus:outline-none px-2"
+                />
+                <button className="h-9 px-5 rounded-full bg-[#D10023] text-white text-sm font-bold shadow-sm hover:bg-[#b0001d] transition-colors shrink-0">
+                  ส่ง
+                </button>
               </div>
             </div>
           </div>

@@ -152,10 +152,10 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
 
   // สร้าง URL รูปภาพที่สมบูรณ์
   const coverImageUrl = book.cover
-    ? book.cover.startsWith("http")
-      ? book.cover
-      : `https://img.enjoybook.co/img/book/tn/${book.cover}`
-    : "/assets/enjoycover.png";
+    ? book.cover.trim().startsWith("http")
+      ? book.cover.trim()
+      : `https://img.enjoybook.co/img/book/tn/${book.cover.trim()}`
+    : "/images/enjoycover.png";
 
   return (
     <div className="relative w-full -mx-4 sm:-mx-6 px-4 sm:px-6">
@@ -441,7 +441,7 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
                         year: "numeric",
                         month: "long",
                         day: "numeric",
-                      })
+                        })
                     : "-"}
                 </span>
               </div>

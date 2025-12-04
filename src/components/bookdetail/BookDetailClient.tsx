@@ -79,7 +79,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
         id: bookDetail.book_id,
         // ใช้ค่าจาก API หรือถ้าไม่มีให้ใช้จากการเช็คใน shelf (ใช้ || เพื่อให้ถ้าอันไหนเป็น true ก็ให้เป็น true)
         isAddedToShelf: (bookDetail as any).isAddedToShelf || bookDetail.isFollowing || isInShelf,
-        cover: bookDetail.img,
+        cover: bookDetail.img || bookDetail.img_full,
         title: bookDetail.name,
         tag: (bookDetail as any).category1?.name || bookDetail["category1.name"],
         category2: (bookDetail as any).category2?.name || bookDetail["category2.name"],

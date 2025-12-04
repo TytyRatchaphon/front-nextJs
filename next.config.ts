@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
         hostname: 'img.enjoybook.co',
         port: '',
         pathname: '**', // อนุญาตทุก path ภายใต้ hostname นี้
+      },
+      {
+        protocol: 'https',
+        hostname: 'image.enjoybook.co',
+        port: '',
+        pathname: '**',
       }
     ],
   },

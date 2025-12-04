@@ -1,3 +1,4 @@
+'use client'
 import React from 'react';
 
 export default function BookDetail() {
@@ -7,3 +8,4 @@ export default function BookDetail() {
     </div>
   );
 }
+  
