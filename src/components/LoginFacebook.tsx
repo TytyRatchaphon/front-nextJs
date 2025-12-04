@@ -12,11 +12,11 @@ const LoginFacebook = () => {
   const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { login } = useAuthStore();
+  const { login, updateToken } = useAuthStore();
   const { closeLoginModal } = useUIStore();
 
   const FACEBOOK_APP_ID = process.env.NEXT_PUBLIC_FACEBOOK_ID || '1223450826239717';
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.220.194:3331';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.220.214:3331';
 
   const handleFacebookLogin = () => {
     setLoading(true);
@@ -98,24 +98,41 @@ const LoginFacebook = () => {
       if (response.data && response.data.data) {
         const userData = response.data.data;
         
-        // Backend ส่ง userProfile มา
-        const userInfo = {
-          fullname: userData.fullname || userData.name || 'Facebook User',
-          email: userData.email || 'user@facebook.local',
-          role: userData.role || 'user',
-          userId: userData.user_id || userData.userID
+        let token = '';
+        let userInfo = {
+          fullname: 'Facebook User',
+          email: 'user@facebook.local',
+          role: 'user',
+          userId: ''
         };
 
-        // ตรวจสอบ token จากหลายแหล่ง
-        const token = userData.token || 
-                     userData.pws || 
-                     response.headers?.authorization || 
-                     response.headers?.['x-auth-token'];
+        // Check if userData is the token string itself
+        if (typeof userData === 'string') {
+          token = userData;
+        } else {
+          // Backend ส่ง userProfile มา
+          userInfo = {
+            fullname: userData.fullname || userData.name || 'Facebook User',
+            email: userData.email || 'user@facebook.local',
+            role: userData.role || 'user',
+            userId: userData.user_id || userData.userID
+          };
+
+          // ตรวจสอบ token จากหลายแหล่ง
+          token = userData.token || 
+                       userData.pws || 
+                       response.headers?.authorization || 
+                       response.headers?.['x-auth-token'];
+        }
 
         console.log('🔑 Token found:', token ? 'Yes' : 'No');
 
         if (token) {
           login(userInfo, token);
+          
+          // Update user data from token payload immediately
+          updateToken(token);
+
           message.success('เข้าสู่ระบบผ่าน Facebook สำเร็จ!');
           
           // ปิด Modal
@@ -146,10 +163,11 @@ const LoginFacebook = () => {
     >
       <Image
         className="inline-block h-[23px] w-[23px] rounded-full"
-        src="https://img.enjoybook.co/img/icon-img/social-1.png"
+        src="/images/social-1.png"
         alt="Facebook Login"
         width={23}
         height={23}
+        unoptimized
       />
     </div>
   );

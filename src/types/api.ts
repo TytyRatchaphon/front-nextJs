@@ -21,32 +21,46 @@ export enum BookType {
 }
 
 export interface BookTrans {
-  book_id: number; // int(10), AUTO_INCREMENT
-  bookID: string; // varchar(100)
-  type: BookType; // enum(...)
-  img: string; // varchar(255)
-  name: string; // varchar(255)
-  title: string; // text
-  tag: string; // text
-  cat1: number; // tinyint(4)
-  cat2: number; // tinyint(4)
-  rate: number; // tinyint(4)
-  des: string | null; // text, Nullable
-  user_id: number; // int(11)
-  status: BookStatus; // enum(...)
-  view: number; // int(11)
-  dateAt: Date | string | null; // datetime, Nullable (จาก 'date_at')
-  updateAt: Date | string | null; // datetime, Nullable (จาก 'update_at')
-  heart: number; // int(11)
-  flower: number; // int(11)
-  end: BookCompletion; // enum(...)
-  bgimg: string | null; // varchar(255), Nullable
-  notiAdd: 'yes' | 'no'; // enum('yes','no') (จาก 'noti_add')
-  acceptConditions: string | null; // varchar(20), Nullable (จาก 'accept_conditions')
-  userFreecoin: number | null; // tinyint(4), Nullable (จาก 'user_freecoin')
-  fastStatus: number; // tinyint(4) (จาก 'fast_status')
-  createdAt: Date | string; // datetime
-  updatedAt: Date | string; // datetime
+  book_id: number;
+  bookID: string;
+  type: string;
+  img: string;
+  name: string;
+  title: string;
+  tag: string[];
+  cat1: number;
+  cat2: number;
+  rate: number;
+  des: string;
+  user_id: number;
+  update_at: string;
+  status: string;
+  view: number;
+  date_at: string;
+  heart: number;
+  flower: number;
+  end: string;
+  bgimg: string;
+  noti_add: string;
+  accept_conditions: string;
+  use_freecoin: number;
+  fast_status: number;
+  'writer.user_id': number;
+  'writer.userID': string;
+  'writer.writer_name': string;
+  'category1.name': string;
+  'category2.name': string;
+  comment: number;
+  chapter: number;
+  shelveCount: number;
+  discount_full_book: DiscountFullBook | null;
+  remaining_paid_count: number;
+  remaining_paid_total: number;
+  remaining_paid_total_discount: number;
+  remaining_promo_count: number;
+  remaining_promo_total: number;
+  remaining_promo_total_discount: number;
+  isFollowing: boolean;
 }
 
 export interface Episode {
@@ -140,6 +154,18 @@ export interface EpisodeContentResponse {
   data: EpisodeContent;
 }
 
+export interface DiscountFullBook {
+  dfb_id: number;
+  subject: string;
+  book_id: number;
+  groupIDs: string;
+  start_date: string;
+  end_date: string;
+  update_at: string;
+  discount_percent: number;
+  status: string;
+}
+
 export interface BookDetail {
   book_id: number;
   bookID: string;
@@ -173,7 +199,14 @@ export interface BookDetail {
   comment: number;
   chapter: number;
   shelveCount: number;
-  discount_full_book: number | null;
+  discount_full_book: DiscountFullBook | null;
+  remaining_paid_count: number;
+  remaining_paid_total: number;
+  remaining_paid_total_discount: number;
+  remaining_promo_count: number;
+  remaining_promo_total: number;
+  remaining_promo_total_discount: number;
+  isFollowing: boolean;
 }
 
 export interface BookDetailResponse {
@@ -182,3 +215,4 @@ export interface BookDetailResponse {
   message: string;
   data: BookDetail;
 }
+

@@ -18,7 +18,7 @@ const LoginGoogle = () => {
   const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { login } = useAuthStore();
+  const { login, updateToken } = useAuthStore();
   const { closeLoginModal } = useUIStore();
 
   const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '639784580623-vcqnb3bqkkt04s4597u6hqmdbmhv0vie.apps.googleusercontent.com';
@@ -115,24 +115,41 @@ const LoginGoogle = () => {
       if (response.data && response.data.data) {
         const userData = response.data.data;
 
-        // Backend ส่ง userProfile มา
-        const userInfo = {
-          fullname: userData.fullname || userData.name || 'Google User',
-          email: userData.email || 'user@google.com',
-          role: userData.role || 'user',
-          userId: userData.user_id || userData.userID
+        let token = '';
+        let userInfo = {
+          fullname: 'Google User',
+          email: 'user@google.com',
+          role: 'user',
+          userId: ''
         };
 
-        // ตรวจสอบ token จากหลายแหล่ง
-        const token = userData.token || 
-                     userData.pws || 
-                     response.headers?.authorization || 
-                     response.headers?.['x-auth-token'];
+        // Check if userData is the token string itself
+        if (typeof userData === 'string') {
+          token = userData;
+        } else {
+          // Backend ส่ง userProfile มา
+          userInfo = {
+            fullname: userData.fullname || userData.name || 'Google User',
+            email: userData.email || 'user@google.com',
+            role: userData.role || 'user',
+            userId: userData.user_id || userData.userID
+          };
+
+          // ตรวจสอบ token จากหลายแหล่ง
+          token = userData.token || 
+                       userData.pws || 
+                       response.headers?.authorization || 
+                       response.headers?.['x-auth-token'];
+        }
 
         console.log('🔑 Token found:', token ? 'Yes' : 'No');
 
         if (token) {
           login(userInfo, token);
+          
+          // Update user data from token payload immediately
+          updateToken(token);
+
           message.success('เข้าสู่ระบบผ่าน Google สำเร็จ!');
 
           // ปิด Modal

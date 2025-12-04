@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-interface UserProfileForm {
+export interface UserProfileForm {
   fullname: string;
   birthday: string;
   gender: string;
@@ -12,6 +12,9 @@ interface UserProfileForm {
   address_main: string;
   facebook: string;
   twitter: string;
+  img?: string | null;           // รูปโปรไฟล์
+  frame_id?: number | null;      // ID กรอบ
+  aka_id?: number | null;        // ID อักษรแสดงชื่อ
 }
 
 interface FormState {
@@ -28,7 +31,7 @@ interface FormState {
   resetUserProfile: () => void;
 }
 
-const initialUserProfile: UserProfileForm = {
+export const initialUserProfile: UserProfileForm = {
   fullname: "",
   birthday: "2000-01-01",
   gender: "ชาย",
@@ -39,6 +42,8 @@ const initialUserProfile: UserProfileForm = {
   address_main: "",
   facebook: "",
   twitter: "",
+  frame_id: null,
+  aka_id: null,
 };
 
 export const useFormStore = create<FormState>()(

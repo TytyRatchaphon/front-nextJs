@@ -1,11 +1,15 @@
-"use client"
+﻿"use client"
 import React, { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
-import { Image as AntdImage, Spin, Modal, Popconfirm, message, Empty, Dropdown, Select } from 'antd'
+import { Image as AntdImage, Spin, Modal, Popconfirm, message, Empty, Dropdown, Select, DatePicker, InputNumber, Popover } from 'antd'
+import dayjs from 'dayjs'
 import type { BookDetail } from '@/types/api'
 import { TagSwiper } from '@/components/ImageSlider'
-import { fetchBookDetail, fetchBookGroups, fetchGroupEpisodes, deleteGroupEpisode, createGroup, updateEpisodesPrice } from '@/services/apiServices'
+import { fetchBookDetail, fetchBookGroups, fetchGroupEpisodes, deleteGroupEpisode, createGroup, updateEpisodesPrice, updateGroup, createPromotion, deletePromotion, updatePromotion } from '@/services/apiServices'
 import Image from 'next/image'
+
+
 
 const ActionButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & {
 	variant?: 'danger' | 'ghost'
@@ -20,6 +24,7 @@ const ActionButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & {
 }
 
 export default function EditMyBook({ book: initialBook, bookId }: { book?: Partial<BookDetail> | null; bookId?: string | null }) {
+	const router = useRouter()
 	const [book, setBook] = useState<Partial<BookDetail> | null>(initialBook || null)
 	const [, setDataSource] = useState<'prop' | 'session' | 'api' | 'none'>(initialBook ? 'prop' : 'none')
 	const [debugOpen, setDebugOpen] = useState(false)
@@ -118,6 +123,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 	const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
 
 	// Add-group modal state
+	const [editingGroup, setEditingGroup] = useState<{ id: string | number, name: string } | null>(null);
 	const [addGroupModalOpen, setAddGroupModalOpen] = useState(false)
 	const [newGroupName, setNewGroupName] = useState('')
 	const [creatingGroup, setCreatingGroup] = useState(false)
@@ -150,6 +156,18 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 		setSelectedGroupId(null);
 	}
 
+	const handleOpenEditGroup = (group: any) => {
+        setEditingGroup({ id: group.group_id, name: group.name }); // เซ็ต ID และชื่อเดิม
+        setNewGroupName(group.name || ''); // เอาชื่อเดิมใส่ใน input
+        setNewGroupError(null);
+        setAddGroupModalOpen(true);
+    }
+	const handleOpenAddGroup = () => {
+        setEditingGroup(null); // เคลียร์สถานะแก้ไข
+        setNewGroupName('');
+        setNewGroupError(null);
+        setAddGroupModalOpen(true);
+    }
 	// Fetch episodes for selected group
 	const groupEpisodesQuery = useQuery({
 		queryKey: ['groupEps', String(selectedGroupId ?? '')],
@@ -175,6 +193,132 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 	const [priceSelected, setPriceSelected] = useState<number | null>(null)
 	const [priceSubmitting, setPriceSubmitting] = useState(false)
 	const [modalSelectedEpIds, setModalSelectedEpIds] = useState<string[]>([])
+
+    // Promotion Modal State
+    const [promoModalOpen, setPromoModalOpen] = useState(false)
+    const [promoName, setPromoName] = useState('')
+    const [promoDiscount, setPromoDiscount] = useState<number | null>(null)
+    const [promoStart, setPromoStart] = useState<dayjs.Dayjs | null>(null)
+    const [promoEnd, setPromoEnd] = useState<dayjs.Dayjs | null>(null)
+    const [promoSelectedGroups, setPromoSelectedGroups] = useState<string[]>([])
+    const [creatingPromo, setCreatingPromo] = useState(false)
+    const [openPromoId, setOpenPromoId] = useState<string | number | null>(null)
+    const [editingPromoId, setEditingPromoId] = useState<number | null>(null)
+
+    const handleDeletePromotion = async (id: string | number) => {
+        try {
+            await deletePromotion(id)
+            messageApi.success('ลบโปรโมชั่นเรียบร้อย')
+            setOpenPromoId(null)
+            query.refetch()
+        } catch (e: any) {
+            console.error('deletePromotion error', e)
+            messageApi.error(e?.response?.data?.message ?? 'ไม่สามารถลบโปรโมชั่นได้')
+        }
+    }
+
+    const handleOpenEditPromotion = (promo: any) => {
+        setEditingPromoId(promo.id)
+        setPromoName(promo.name)
+        // Assuming promo object has discount, start, end, and groups info
+        // We might need to parse the date strings back to dayjs objects
+        // And ensure we have the group IDs.
+        // Since the display object might not have all details, we might need to rely on what we have
+        // or fetch details if necessary. For now, let's try to map what we have.
+        
+        // Note: The display object structure for promos might vary.
+        // Based on the list rendering:
+        // id: dfb.dfb_id, name: dfb.subject, start: ..., end: ...
+        
+        // We need to parse the date string 'DD/MM/YYYY HH:mm' back to dayjs
+        // Or if we have the raw object, use that.
+        // The list rendering creates a new object. Let's try to pass the raw object if possible or parse.
+        
+        // Let's try to parse the date string from the list item
+        const parseDate = (dateStr: string) => dayjs(dateStr, 'DD/MM/YYYY HH:mm')
+        
+        setPromoStart(parseDate(promo.start))
+        setPromoEnd(parseDate(promo.end))
+        
+        // For discount and groups, we might need to check if they are available in the list item
+        // The current list item construction in the render loop:
+        // { id, name, start, end } -> missing discount and groups
+        
+        // We need to improve the list rendering to include these fields or find the raw object.
+        // Let's look at where the list is generated.
+        // It comes from `(display as any).promos` or `(display as any).discount_full_book`.
+        
+        // I will modify the list generation to include raw data.
+        
+        setPromoDiscount(promo.discount_percent)
+        // For groups, if it's a book-wide discount (discount_full_book), it might apply to all or specific groups.
+        // The API payload for create uses `group_ids`.
+        // If we don't have group info in the list item, we might default to empty or try to find it.
+        // For `discount_full_book`, it usually applies to the book, but the API requires groupIDs.
+        // Let's assume we can get it from the raw object.
+        
+        if (promo.groupIDs) {
+             setPromoSelectedGroups(String(promo.groupIDs).split(','))
+        } else if (promo.group_ids) {
+             setPromoSelectedGroups(String(promo.group_ids).split(','))
+        } else {
+            setPromoSelectedGroups([])
+        }
+
+        setPromoModalOpen(true)
+    }
+
+    const handleCreatePromotion = async () => {
+        if (!promoName.trim()) return messageApi.error('กรุณากรอกชื่อโปรโมชั่น')
+        if (!promoDiscount) return messageApi.error('กรุณากรอกส่วนลด')
+        if (!promoStart || !promoEnd) return messageApi.error('กรุณาเลือกวันเวลา')
+        if (promoSelectedGroups.length === 0) return messageApi.error('กรุณาเลือกกลุ่มหนังสือ')
+
+        try {
+            setCreatingPromo(true)
+            
+            if (editingPromoId) {
+                // Update existing promotion
+                const payload = {
+                    dfb_id: editingPromoId,
+                    groupIDs: promoSelectedGroups.join(','),
+                    subject: promoName,
+                    start_date: promoStart.format('YYYY/MM/DD HH:mm'),
+                    end_date: promoEnd.format('YYYY/MM/DD HH:mm'),
+                    discount_percent: promoDiscount
+                }
+                await updatePromotion(payload)
+                messageApi.success('แก้ไขโปรโมชั่นเรียบร้อย')
+            } else {
+                // Create new promotion
+                const payload = {
+                    group_ids: promoSelectedGroups.join(','),
+                    subject: promoName,
+                    start_date: promoStart.format('YYYY/MM/DD HH:mm'),
+                    end_date: promoEnd.format('YYYY/MM/DD HH:mm'),
+                    discount_percent: promoDiscount
+                }
+                await createPromotion(payload)
+                messageApi.success('สร้างโปรโมชั่นเรียบร้อย')
+            }
+            
+            setPromoModalOpen(false)
+            // Reset form
+            setPromoName('')
+            setPromoDiscount(null)
+            setPromoStart(null)
+            setPromoEnd(null)
+            setPromoSelectedGroups([])
+            setEditingPromoId(null)
+            // Refresh data
+            query.refetch()
+        } catch (e: any) {
+            console.error('create/update Promotion error', e)
+            messageApi.error(e?.response?.data?.message ?? 'ไม่สามารถบันทึกโปรโมชั่นได้')
+        } finally {
+            setCreatingPromo(false)
+        }
+    }
 
 	const handleDeleteEpisode = async (episodeId: string | number) => {
 		try {
@@ -372,6 +516,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 		)
 	}
 
+	
 
 		// Debug panel UI
 		const debugData = {
@@ -402,7 +547,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 				open={addGroupModalOpen}
 				onCancel={() => setAddGroupModalOpen(false)}
 				footer={null}
-				title="เพิ่มเล่มนิยาย"
+				title={editingGroup ? "แก้ไขชื่อเล่ม" : "เพิ่มเล่มนิยาย"}
 				centered
 			>
 				<div className="py-4">
@@ -426,14 +571,22 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 								const err = validateGroupName(trimmed)
 								setNewGroupError(err)
 								if (err) return messageApi.error(err)
-								if (!bookId) return messageApi.error('ไม่พบ bookId')
 								try {
 									setCreatingGroup(true)
-									await createGroup(String(bookId), trimmed)
-									messageApi.success('สร้างเล่มเรียบร้อย')
+									if (editingGroup) {
+                                        // ✨ โหมดแก้ไข: ยิง API Update
+                                        await updateGroup(editingGroup.id, trimmed)
+                                        messageApi.success('แก้ไขชื่อเล่มเรียบร้อย')
+                                    } else {
+                                        // ✨ โหมดเพิ่มใหม่: ยิง API Create (เหมือนเดิม)
+                                        if (!bookId) return messageApi.error('ไม่พบ bookId')
+                                        await createGroup(String(bookId), trimmed)
+                                        messageApi.success('สร้างเล่มเรียบร้อย')
+                                    }
 									setAddGroupModalOpen(false)
 									setNewGroupName('')
 									setNewGroupError(null)
+									setEditingGroup(null)
 									groupsQuery.refetch()
 								} catch (e: any) {
 									console.error('createGroup failed', e)
@@ -446,7 +599,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 							className="bg-rose-600 text-white px-6 py-2 rounded disabled:opacity-50 hover:bg-rose-700 transition-colors"
 							style={{ color: '#ffffff' }}
 						>
-							{creatingGroup ? 'กำลังสร้าง...' : 'ตกลง'}
+							{creatingGroup ? 'กำลังบันทึก...' : 'ตกลง'}
 						</button>
 						</div>
 				</div>
@@ -516,9 +669,10 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 					</button>
 				</div>
 			</Modal>
+			
 			<div className="flex items-start gap-6">
 				<AntdImage
-					src="/images/ejb.png"
+					src={(display as any).img}
 					alt="cover"
 					width={144}
 					preview={{
@@ -528,7 +682,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 				/>
 				<div className="flex-1">
 					<h1 className="text-2xl font-bold text-black leading-tight truncate">{getBookName(display) || 'ไม่ระบุชื่อหนังสือ'}</h1>
-					<div className="text-lg text-black mt-6">โดย : {(display as any).author ?? (display as any).writer_fullname ?? 'ไม่ระบุ'}</div>
+					<div className="text-lg text-black mt-6">โดย : {(display as any).writer?.writer_name ?? 'ไม่ระบุ'}</div>
 					{(display as any).title || (display as any).title ? (
 						<div className="text-lg text-black mt-6 max-w-2xl">{(display as any).title ?? (display as any).title}</div>
 					) : null}
@@ -558,7 +712,17 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 			<section className="mb-8">
 				<div className="flex items-center justify-between">
 					<h2 className="font-semibold">รายละเอียด</h2>
-					<ActionButton>แก้ไข</ActionButton>
+					<ActionButton 
+                        onClick={() => {
+                            if (bookId) {
+                                router.push(`/w/edit/${bookId}`);
+                            } else {
+                                messageApi.error('ไม่พบ ID หนังสือ');
+                            }
+                        }}
+                    >
+                        แก้ไข
+                    </ActionButton>
 				</div>
 				<p className="text-gray-700 mt-4">{(display as any).title ?? (display as any).title}</p>
 			</section>
@@ -662,7 +826,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 												placement="top"
 											>
 												<button title="ลบ" className="text-gray-400 hover:text-rose-600 p-0 transition-colors">
-												{deletingId === (rawId ?? id) ? <Spin size="small" /> : (
+													{deletingId === (rawId ?? id) ? <Spin size="small" /> : (
 														<svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 16 16" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5m-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5M4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06m6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528M8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5"></path></svg>
 													)}
 												</button>
@@ -670,12 +834,23 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 											{/* status text */}
 											<div className={statusClass}>{statusLabel}</div>
 											{/* edit link */}
-											<button className="text-gray-600 hover:text-rose-600 text-sm flex items-center gap-1 transition-colors">
-												<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-												<path d="M12.146 3.146a.5.5 0 0 1 .708 0l.999.999a.5.5 0 0 1 0 .708l-7.439 7.439a.5.5 0 0 1-.233.13l-3 1a.5.5 0 0 1-.63-.63l1-3a.5.5 0 0 1 .13-.233l7.439-7.439z"/>
-												</svg>
-												<span className="text-sm">แก้ไข</span>
-											</button>
+											<button 
+                                                className="text-gray-600 hover:text-rose-600 text-sm flex items-center gap-1 transition-colors"
+                                                onClick={() => {
+                                                                            // ใช้ rawId ที่ดึงมารอไว้แล้ว (ep_id)
+                                                    const targetId = rawId ?? id;
+                                                        if (targetId) {
+                                                            	router.push(`/w/echapter/${targetId}`);
+                                                                    } else {
+                                                                        messageApi.error('ไม่พบ ID ตอน');
+                                                                    }
+                                                                    }}
+                                                                >
+                                                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                                 <path d="M12.146 3.146a.5.5 0 0 1 .708 0l.999.999a.5.5 0 0 1 0 .708l-7.439 7.439a.5.5 0 0 1-.233.13l-3 1a.5.5 0 0 1-.63-.63l1-3a.5.5 0 0 1 .13-.233l7.439-7.439z"/>
+                                                  </svg>
+                                                  <span className="text-sm">แก้ไข</span>
+                                            </button>
 											{/* coin pill */}
 											<div className='flex gap-2'>
 												<span>
@@ -703,35 +878,39 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 								const getVisibleIds = () => allIds
 
 								const handleMenuClick = ({ key }: any) => {
+									// ✨ แก้ไข: ดึง ID จาก selectedIds (แปลง Set เป็น Array) แทนการดึงทั้งหมด
+									const selectedIdArray = Array.from(selectedIds);
+
 									if (key === 'deleteAll') {
-										const ids = getVisibleIds()
-										if (!ids || ids.length === 0) {
-											messageApi.info('ไม่มีตอนที่เผยแพร่ให้ลบ')
+										// เช็คว่ามีการเลือกรายการหรือไม่
+										if (selectedIdArray.length === 0) {
+											messageApi.info('กรุณาเลือกตอนที่ต้องการลบก่อน')
 											return
 										}
-										// confirm then run bulk delete with provided ids (use modal instance)
+
+										// confirm then run bulk delete with SELECTED ids
 										modalApi.confirm({
-											title: `ยืนยันการลบ ${ids.length} ตอนทั้งหมด?`,
+											title: `ยืนยันการลบ ${selectedIdArray.length} ตอนที่เลือก?`, // ปรับข้อความให้ชัดเจน
 											onOk: async () => {
-												await handleBulkDelete(ids)
+												await handleBulkDelete(selectedIdArray) // ส่งเฉพาะ ID ที่เลือกไปลบ
 											},
 											okText: 'ลบเลย',
 											cancelText: 'ยกเลิก',
 											okButtonProps: { danger: true },
 											cancelButtonProps: {
-												// force red text + subtle red hover background; use inline style for reliability
 												style: { color: '#dc2626' },
 												className: '!text-rose-600 hover:!bg-rose-50'
 											}
 										})
 									} else if (key === 'editPrice') {
-										const ids = getVisibleIds()
-										if (!ids || ids.length === 0) {
-											messageApi.info('ไม่มีตอนที่เผยแพร่')
+										// แก้ไขส่วนนี้ด้วย เพื่อให้แก้ไขราคาเฉพาะอันที่เลือก
+										if (selectedIdArray.length === 0) {
+											messageApi.info('กรุณาเลือกตอนที่ต้องการแก้ไขราคาก่อน')
 											return
 										}
-										// open bulk price modal and pass ids
-										setModalSelectedEpIds(ids.map((x: any) => String(x)))
+										
+										// open bulk price modal and pass SELECTED ids
+										setModalSelectedEpIds(selectedIdArray.map((x: any) => String(x)))
 										setPriceSelected(null)
 										setPriceModalOpen(true)
 									}
@@ -788,7 +967,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 						<h3 className="font-semibold">สารบัญ</h3>
 						<div className="text-sm text-gray-500 mt-1">{(display as any)?.total_groups ?? groupsQuery.data?.length ?? 0} เล่ม / {computedVisibleEps} ตอน</div>
 					</div>
-					<ActionButton variant="danger" onClick={() => setAddGroupModalOpen(true)}>เพิ่มเล่ม</ActionButton>
+					<ActionButton variant="danger" onClick={handleOpenAddGroup}>เพิ่มเล่ม</ActionButton>
 				</div>
 				<div className="px-0">
 					{groupsQuery.isLoading ? (
@@ -803,19 +982,26 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 								<li key={g.group_id} className="flex items-center justify-between px-4 py-4 bg-white">
 									<div className="flex-1 min-w-0">
 										<div className="text-gray-900 font-medium truncate">{g.name}</div>
-										<div className="text-xs text-gray-500 mt-1">กลุ่ม #{g.group_id} • ราคา: {g.coin ?? 0}</div>
+										<div className="text-xs text-gray-500 mt-1">กลุ่ม #{g.group_id}</div>
 									</div>
 									<div className="flex items-center gap-4">
 										<button title="ลบ" className="text-gray-500 hover:text-gray-800 p-2">
 											<svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 5.5v6h1v-6h-1zm3 0v6h1v-6h-1z"/><path d="M14 3.5h-3.5l-1-1h-5l-1 1H2v1h12v-1z"/></svg>
 										</button>
-										<ActionButton variant="danger">
+										<ActionButton variant="danger" onClick={() => handleOpenEditGroup(g)}>
 											<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12.146 3.146a.5.5 0 0 1 .708 0l.999.999a.5.5 0 0 1 0 .708l-7.439 7.439a.5.5 0 0 1-.233.13l-3 1a.5.5 0 0 1-.63-.63l1-3a.5.5 0 0 1 .13-.233l7.439-7.439z"/></svg>
 											<span className="text-sm">แก้ไข</span>
 										</ActionButton>
-										<button style={{ color: '#ffffff' }} className="ml-2 bg-rose-600 text-white px-4 py-1 rounded-md text-sm">เพิ่มตอน</button>
+										<button 
+											style={{ color: '#ffffff' }} 
+											className="ml-2 bg-rose-600 text-white px-4 py-1 rounded-md text-sm"
+											// เพิ่ม onClick ตรงนี้ เพื่อสั่งให้เปลี่ยนหน้าไปตาม group_id
+											onClick={() => router.push(`/w/nchapter/${g.group_id}`)}
+										>
+											เพิ่มตอน
+										</button>
 										<button aria-label={`เปิดตอนของกลุ่ม ${g.group_id}`} onClick={() => openGroupModal(g.group_id)} className="ml-3 p-2 text-gray-400 hover:bg-gray-50 rounded">
-											<svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 16 16" className="text-2xl" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5"></path><path d="M2.242 2.194a.27.27 0 0 1 .516 0l.162.53c.035.115.14.194.258.194h.551c.259 0 .37.333.164.493l-.468.363a.28.28 0 0 0-.094.3l.173.569c.078.256-.213.462-.423.3l-.417-.324a.27.27 0 0 0-.328 0l-.417.323c-.21.163-.5-.043-.423-.299l.173-.57a.28.28 0 0 0-.094-.299l-.468-.363c-.206-.16-.095-.493.164-.493h.55a.27.27 0 0 0 .259-.194zm0 4a.27.27 0 0 1 .516 0l.162.53c.035.115.14.194.258.194h.551c.259 0 .37.333.164.493l-.468.363a.28.28 0 0 0-.094.3l.173.569c.078.255-.213.462-.423.3l-.417-.324a.27.27 0 0 0-.328 0l-.417.323c-.21.163-.5-.043-.423-.299l.173-.57a.28.28 0 0 0-.094-.299l-.468-.363c-.206-.16-.095-.493.164-.493h.55a.27.27 0 0 0 .259-.194zm0 4a.27.27 0 0 1 .516 0l.162.53c.035.115.14.194.258.194h.551c.259 0 .37.333.164.493l-.468.363a.28.28 0 0 0-.094.3l.173.569c.078.255-.213.462-.423.3l-.417-.324a.27.27 0 0 0-.328 0l-.417.323c-.21.163-.5-.043-.423-.299l.173-.57a.28.28 0 0 0-.094-.299l-.468-.363c-.206-.16-.095-.493.164-.493h.55a.27.27 0 0 0 .259-.194z"></path></svg>
+											<svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 16 16" className="text-2xl" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2"></path><path d="M2.242 2.194a.27.27 0 0 1 .516 0l.162.53c.035.115.14.194.258.194h.551c.259 0 .37.333.164.493l-.468.363a.28.28 0 0 0-.094.3l.173.569c.078.256-.213.462-.423.3l-.417-.324a.27.27 0 0 0-.328 0l-.417.323c-.21.163-.5-.043-.423-.299l.173-.57a.28.28 0 0 0-.094-.299l-.468-.363c-.206-.16-.095-.493.164-.493h.55a.27.27 0 0 0 .259-.194zm0 4a.27.27 0 0 1 .516 0l.162.53c.035.115.14.194.258.194h.551c.259 0 .37.333.164.493l-.468.363a.28.28 0 0 0-.094.3l.173.569c.078.255-.213.462-.423.3l-.417-.324a.27.27 0 0 0-.328 0l-.417.323c-.21.163-.5-.043-.423-.299l.173-.57a.28.28 0 0 0-.094-.299l-.468-.363c-.206-.16-.095-.493.164-.493h.55a.27.27 0 0 0 .259-.194z"></path></svg>
 										</button>
 									</div>
 								</li>
@@ -843,26 +1029,172 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 			<section className="mb-8 bg-white border rounded">
 				<div className="flex items-center justify-between px-4 py-3 border-b">
 					<h3 className="font-semibold">จัดการโปรโมชั่น</h3>
-					<ActionButton variant="danger">เพิ่มโปรโมชั่น</ActionButton>
+					<ActionButton variant="danger" onClick={() => setPromoModalOpen(true)}>เพิ่มโปรโมชั่น</ActionButton>
 				</div>
 				<ul>
-					{((display as any).promos ?? []).map((p: any) => (
-						<li key={p.id} className="flex items-center justify-between px-4 py-3">
-							<div className="text-gray-800">{p.name}</div>
-							<div className="flex items-center gap-4 text-sm text-gray-500">
-								<div className="text-right">
-									<div>{p.start}</div>
-									<div>{p.end}</div>
+					{/* Support both legacy 'promos' array and new 'discount_full_book' object */}
+					{(() => {
+						const promos = (display as any).promos ?? []
+						const dfb = (display as any).discount_full_book
+						
+						const items = [...promos]
+						if (dfb) {
+							items.push({
+								id: dfb.dfb_id,
+								name: dfb.subject,
+								start: dayjs(dfb.start_date).format('DD/MM/YYYY HH:mm'),
+								end: dayjs(dfb.end_date).format('DD/MM/YYYY HH:mm'),
+                                // Pass raw data for editing
+                                discount_percent: dfb.discount_percent,
+                                groupIDs: dfb.groupIDs ?? dfb.group_ids,
+                                raw: dfb
+							})
+						}
+
+						if (items.length === 0) {
+							return <li className="px-4 py-3 text-gray-500 text-sm">ไม่มีโปรโมชั่น</li>
+						}
+
+						return items.map((p: any) => (
+							<li key={p.id} className="flex items-center justify-between px-4 py-3 border-b last:border-b-0">
+								<div className="text-gray-800 font-medium">{p.name}</div>
+								<div className="flex items-center gap-4 text-sm text-gray-500">
+									<div className="text-right">
+										<div>{p.start}</div>
+										<div>{p.end}</div>
+									</div>
+									<div className="flex items-center gap-2">
+										<Popover
+											open={openPromoId === p.id}
+											onOpenChange={(visible) => setOpenPromoId(visible ? p.id : null)}
+											content={
+												<div className="flex flex-col gap-3 p-3 bg-white rounded-md min-w-[160px]">
+													<div className="text-sm text-gray-800 font-medium text-center">ยืนยันการลบโปรโมชั่น?</div>
+													<div className="flex items-center justify-center gap-2">
+														<button
+															onClick={() => setOpenPromoId(null)}
+															className="px-3 py-1 rounded text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-200 transition-colors border border-gray-300"
+														>
+															ยกเลิก
+														</button>
+														<button
+															onClick={() => handleDeletePromotion(p.id)}
+															className="bg-rose-600 text-white px-3 py-1 rounded text-sm hover:bg-rose-700 transition-colors border border-rose-600"
+														>
+															ลบ
+														</button>
+													</div>
+												</div>
+											}
+											trigger="click"
+											placement="topRight"
+											overlayInnerStyle={{ padding: 0, backgroundColor: 'transparent' }}
+										>
+											<button title="ลบ" className="text-gray-400 hover:text-gray-700">🗑️</button>
+										</Popover>
+										<button 
+                                            title="แก้ไข" 
+                                            className="text-gray-400 hover:text-gray-700"
+                                            onClick={() => handleOpenEditPromotion(p)}
+                                        >
+                                            ✏️
+                                        </button>
+									</div>
 								</div>
-								<div className="flex items-center gap-2">
-									<button title="ลบ" className="text-gray-400 hover:text-gray-700">🗑️</button>
-									<button title="แก้ไข" className="text-gray-400 hover:text-gray-700">✏️</button>
-								</div>
-							</div>
-						</li>
-					))}
+							</li>
+						))
+					})()}
 				</ul>
 			</section>
+
+			{/* Add Promotion Modal */}
+			<Modal
+				open={promoModalOpen}
+				onCancel={() => {
+                    setPromoModalOpen(false)
+                    setEditingPromoId(null)
+                    setPromoName('')
+                    setPromoDiscount(null)
+                    setPromoStart(null)
+                    setPromoEnd(null)
+                    setPromoSelectedGroups([])
+                }}
+				footer={null}
+				title={editingPromoId ? "แก้ไขโปรโมชั่น" : "เพิ่มโปรโมชั่น"}
+				centered
+			>
+				<div className="py-4 space-y-4">
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-1">ชื่อโปรโมชั่น</label>
+						<input
+							type="text"
+							className="w-full border rounded px-3 py-2"
+							placeholder="ชื่อโปรโมชั่น"
+							value={promoName}
+							onChange={(e) => setPromoName(e.target.value)}
+						/>
+					</div>
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-1">ส่วนลด (%)</label>
+						<InputNumber
+							min={1}
+							max={100}
+							className="w-full"
+							placeholder="ระบุส่วนลด %"
+							value={promoDiscount}
+							onChange={(val) => setPromoDiscount(val)}
+						/>
+					</div>
+					<div className="grid grid-cols-2 gap-4">
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-1">วันเริ่มต้น</label>
+							<DatePicker
+								showTime
+								format="YYYY-MM-DD HH:mm"
+								className="w-full"
+								placeholder="เลือกวันเริ่มต้น"
+								value={promoStart}
+								onChange={(val) => setPromoStart(val)}
+							/>
+						</div>
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-1">วันสิ้นสุด</label>
+							<DatePicker
+								showTime
+								format="YYYY-MM-DD HH:mm"
+								className="w-full"
+								placeholder="เลือกวันสิ้นสุด"
+								value={promoEnd}
+								onChange={(val) => setPromoEnd(val)}
+							/>
+						</div>
+					</div>
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-1">เลือกกลุ่มหนังสือ</label>
+						<Select
+							mode="multiple"
+							className="w-full"
+							placeholder="เลือกกลุ่มหนังสือ"
+							value={promoSelectedGroups}
+							onChange={(val) => setPromoSelectedGroups(val)}
+							options={(groupsQuery.data ?? []).map((g: any) => ({
+								label: g.name,
+								value: String(g.group_id)
+							}))}
+						/>
+					</div>
+					<div className="flex justify-center mt-6">
+						<button
+							onClick={handleCreatePromotion}
+							disabled={creatingPromo}
+							className="bg-rose-600 text-white px-6 py-2 rounded disabled:opacity-50 hover:bg-rose-700 transition-colors"
+							style={{ color: '#ffffff' }}
+						>
+							{creatingPromo ? 'กำลังบันทึก...' : 'บันทึกโปรโมชั่น'}
+						</button>
+					</div>
+				</div>
+			</Modal>
 		</div>
 	)
 }

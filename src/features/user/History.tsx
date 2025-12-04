@@ -4,8 +4,8 @@ import React from 'react'
 import { Card, Tabs, Table, Empty, Spin, message, Collapse } from 'antd'
 import apiClient from '@/services/apiClient'
 import { useQuery } from '@tanstack/react-query'
-import { get_date } from '@/utils/dateUtils'
-import { StoreBanner } from '@/components/Banner'
+import { get_date as use_date } from '@/utils/dateUtils'
+import { StoreBanner } from '@/components/home/Banner'
 
 function History() {
   const [activeKey, setActiveKey] = React.useState<string>('1')
@@ -173,8 +173,13 @@ function History() {
       ? container.history
       : []
 
+    const getRedeemDate = (it: any) => {
+      const d = use_date(it.use_date)
+      if (d) return d
+    }
+
     return list.map((it: any, idx: number) => ({
-      date: get_date(it.get_date ?? it.date ?? it.created_at),
+      date: getRedeemDate(it),
       code: it.redeemCode ?? it.code ?? it.redeem_code ?? it.code ?? '',
       name: it.name ?? it.productName ?? it.rewardName ?? it.title ?? it.rawName ?? '',
       unit: it.unit ?? it.amount ?? it.coin ?? it.qty ?? it.quantity ?? '',
@@ -197,7 +202,7 @@ function History() {
       : []
 
     return list.map((it: any, idx: number) => ({
-      date: it.date ? new Date(it.date).toLocaleString() : it.get_date ? new Date(it.get_date).toLocaleString() : '',
+      date: it.date ? new Date(it.date).toLocaleString() : it.get_date ? use_date(it.get_date) : '',
       gift_type: it.gift_type ?? it.type ?? '',
       gift_value: it.gift_value ?? it.value ?? it.qty ?? '',
       raw: it,
@@ -298,7 +303,7 @@ function History() {
       : []
 
     return list.map((it: any, idx: number) => ({
-      date: it.get_date ? get_date(it.get_date) : it.date ? new Date(it.date).toLocaleString() : it.update_at ? new Date(it.update_at).toLocaleString() : '',
+      date: it.get_date ? use_date(it.get_date) : it.date ? new Date(it.date).toLocaleString() : it.update_at ? new Date(it.update_at).toLocaleString() : '',
       detail: it.name_gift ?? (it.Gift && Array.isArray(it.Gift) && it.Gift[0]?.name_gift) ?? '-',
       status: it.status ?? '',
       extra: '-',

@@ -10,7 +10,7 @@ export interface ApiResponse<T = any> {
 
 //สร้าง  BaseUrl ไว้ส่วนกลางจะได้ไม่ต้องเขียนใหม่
 const apiClient = axios.create({
-    baseURL : "http://192.168.220.214:3331",
+    baseURL : process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.220.214:3331',
     headers : {
         "Content-Type" : "application/json",
     },

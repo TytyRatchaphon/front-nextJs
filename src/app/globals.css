@@ -450,3 +450,38 @@ a[href="/notifications"]:hover {
   background: red;
   height: 3px; /* <--- กำหนดความสูงได้ด้วย */
 }
+
+/* Check mark appear animation used in weekly login banner */
+@keyframes check-pop {
+  0% {
+    transform: translate(-50%, -50%) scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: translate(-50%, -50%) scale(1.08);
+    opacity: 1;
+  }
+  80% {
+    transform: translate(-50%, -50%) scale(0.96);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+.check-appear {
+  animation: check-pop 420ms cubic-bezier(.2,.9,.3,1) both;
+  will-change: transform, opacity;
+}
+
+/* Slight delay variant for staggered grid */
+.check-appear[data-delay] {
+  animation-delay: attr(data-delay ms, 0ms);
+}
+
+/* Fallback simple fade if animation unsupported */
+.check-appear-fade {
+  transition: opacity 260ms ease, transform 260ms ease;
+  opacity: 1;
+}

@@ -45,12 +45,18 @@ const fetchEpisodeContent = async (ep_id: string) => {
 
     throw new Error(data?.message || "ไม่พบข้อมูลตอน");
   } catch (err: any) {
-    console.error("❌ fetchEpisodeContent error:", err?.response?.data || err.message || err);
-    if (err?.response?.data) {
-      const d = err.response.data;
-      throw new Error(d.message || `ไม่สามารถดึงข้อมูลตอนได้ (${err.response.status})`);
+    const status = err?.response?.status;
+    const errorData = err?.response?.data;
+    
+    console.error(`❌ fetchEpisodeContent error [${status}]:`, errorData || err.message || err);
+
+    if (errorData) {
+      // Handle case where errorData is an object with message
+      const msg = errorData.message || (typeof errorData === 'string' ? errorData : `ไม่สามารถดึงข้อมูลตอนได้ (${status})`);
+      throw new Error(msg);
     }
-    throw err;
+    
+    throw new Error(err.message || "เกิดข้อผิดพลาดในการเชื่อมต่อ");
   }
 };
 
@@ -251,6 +257,10 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   const [buyLoading, setBuyLoading] = useState(false);
   const [cancelHover, setCancelHover] = useState(false);
   const [, setPrevEpisodeData] = useState<any>(null);
+  const isMatch = (ep: any, targetId: string) => {
+  const target = String(targetId);
+    return String(ep?.ep_id ?? "") === target || String(ep?.epID ?? "") === target;
+  };
 
   const openConfirm = (method: "coin" | "freecoin", amount?: number | null) => {
     setConfirmMethod(method);
@@ -357,7 +367,6 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   const openLoginModal = useUIStore((s) => s.openLoginModal);
   const updateToken = useAuthStore((s) => s.updateToken);
   const [messageApi, messageContextHolder] = message.useMessage();
-
   // Ensure book episodes are fetched as early as possible to allow name lookup
   useEffect(() => {
     if (!bookId) return;
@@ -411,113 +420,97 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     );
   }
 
-  const { data: allEpisodes, error: episodesError } = useQuery({
-    queryKey: ["bookEpisodes", bookId],
-    queryFn: () => {
-      console.log("🔍 fetchBookEpisodes called with bookId:", bookId);
-      return fetchBookEpisodes(bookId);
-    },
-    enabled: !!bookId,
-    staleTime: 10 * 60 * 1000,
-  });
-
-  // Compute final episode title: prefer fields from `episode`, else lookup `allEpisodes` by id
-  const computedEpisodeTitle = useMemo(() => {
-    const ep: any = episode;
-    const pickFromEpisode = () => {
-      if (!ep) return "";
-      const candidates = [ep.name];
-      for (const c of candidates) {
-        if (c !== undefined && c !== null && String(c).trim() !== "") return String(c).trim();
-      }
-      return "";
-    };
-
-    const fromEpisode = pickFromEpisode();
-    if (fromEpisode) return fromEpisode;
-
-    // fallback: try to find the episode in allEpisodes groups
-    try {
-      if (allEpisodes && Array.isArray(allEpisodes)) {
-        const flat: any[] = allEpisodes;
-        // some endpoints return grouped structure; handle both shapes
-        // If flat looks like groups structure: { groups: [...] }
-        if ((flat as any).groups) {
-          const groups = (flat as any).groups as any[];
-          for (const g of groups) {
-            if (g.list && Array.isArray(g.list)) {
-              for (const it of g.list) {
-                const idShort = String(it.ep_id ?? it.epID ?? "");
-                if (idShort && (idShort === String(ep?.ep_id ?? ep?.epID ?? episodeId))) {
-                  return it.name || it.title || "";
-                }
-              }
-            }
-          }
-        } else if (Array.isArray(flat)) {
-          for (const it of flat) {
-            const idShort = String(it.ep_id ?? it.epID ?? "");
-            if (idShort && (idShort === String(ep?.ep_id ?? ep?.epID ?? episodeId))) {
-              return it.name || it.title || "";
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.warn("computedEpisodeTitle lookup error:", err);
-    }
-
-    // last resort: use epID/ep_id if present
-    if (ep) return String(ep.epID ?? ep.ep_id ?? "");
-    return "";
-  }, [episode, allEpisodes, episodeId]);
-
-  const { prevIdFromList, nextIdFromList } = useMemo(() => {
-    if (!allEpisodes || !Array.isArray(allEpisodes) || !episodeId) {
-      return { prevIdFromList: null, nextIdFromList: null };
-    }
-
-    const idx = allEpisodes.findIndex((ep: any) => {
-      const short = ep.ep_id != null ? String(ep.ep_id) : null;
-      const long = ep.epID != null ? String(ep.epID) : null;
-      return long === episodeId || short === episodeId;
+  const { 
+      data: allEpisodes, 
+      error: episodesError, 
+      isLoading: isListLoading // <--- เพิ่มตรงนี้สำคัญมาก!
+    } = useQuery({
+      queryKey: ["bookEpisodes", bookId],
+      queryFn: () => {
+        console.log("🔍 fetchBookEpisodes called with bookId:", bookId);
+        return fetchBookEpisodes(bookId);
+      },
+      enabled: !!bookId,
+      staleTime: 10 * 60 * 1000,
     });
 
-    if (idx === -1) return { prevIdFromList: null, nextIdFromList: null };
+  // Compute final episode title: prefer fields from `episode`, else lookup `allEpisodes` by id
+  // 2. Logic การหาชื่อตอนที่ปรับปรุงแล้ว
+// --- รวม Logic การคำนวณทั้งหมดไว้ใน useMemo เดียว (เพื่อความชัวร์) ---
+  const { displayTitle, prevEpId, nextEpId } = useMemo(() => {
+    // ค่า Default
+    const result = { 
+        displayTitle: "", 
+        prevEpId: null as string | null, 
+        nextEpId: null as string | null 
+    };
 
-    const prev = idx > 0 ? allEpisodes[idx - 1] : null;
-    const next = idx < allEpisodes.length - 1 ? allEpisodes[idx + 1] : null;
-
-    const prevId = prev ? String(prev.ep_id ?? prev.epID) : null;
-    const nextId = next ? String(next.ep_id ?? next.epID) : null;
-
-    console.log("useMemo neighbor ids:", { idx, prevId, nextId });
-    return { prevIdFromList: prevId, nextIdFromList: nextId };
-  }, [allEpisodes, episodeId]);
-
-  const getAdjacentId = (direction: "prev" | "next") => {
-    try {
-      // Compute adjacent episode ID directly from the latest `allEpisodes` and `episodeId`.
-      if (!allEpisodes || !Array.isArray(allEpisodes) || !episodeId) return null;
-
-      const idx = allEpisodes.findIndex((ep: any) => {
-        const short = ep.ep_id != null ? String(ep.ep_id) : null;
-        const long = ep.epID != null ? String(ep.epID) : null;
-        return long === episodeId || short === episodeId;
-      });
-
-      if (idx === -1) return null;
-
-      const adjIndex = direction === "prev" ? idx - 1 : idx + 1;
-      if (adjIndex < 0 || adjIndex >= allEpisodes.length) return null;
-
-      const adj = allEpisodes[adjIndex];
-      return adj ? String(adj.ep_id ?? adj.epID) : null;
-    } catch (err) {
-      console.error("getAdjacentId error:", err);
-      return null;
+    // 1. เช็คว่ากำลังโหลด List อยู่ไหม?
+    if (isListLoading) {
+        result.displayTitle = "กำลังโหลด...";
+        return result;
     }
-  };
+
+    // 2. แปลง List เป็น Flat Array (เพื่อให้หาง่ายๆ)
+    let flatList: any[] = [];
+    if (allEpisodes) {
+        if ((allEpisodes as any).groups && Array.isArray((allEpisodes as any).groups)) {
+            (allEpisodes as any).groups.forEach((g: any) => {
+                if (g.list) flatList.push(...g.list);
+            });
+        } else if (Array.isArray(allEpisodes)) {
+            flatList = allEpisodes;
+        }
+    }
+
+    // 3. หา Index ของตอนปัจจุบัน (Smart Match: เช็คทั้งตัวเลขและรหัส)
+    // ถ้า List ยังไม่มา flatList จะว่าง -> currentIndex = -1
+    let currentIndex = flatList.findIndex((ep: any) => isMatch(ep, episodeId));
+
+    // Fallback: ถ้าหาไม่เจอ ลองใช้ ID จาก Content มาช่วยหา
+    if (currentIndex === -1 && episode) {
+        const ep = episode as any;
+        if (ep.ep_id) currentIndex = flatList.findIndex((x: any) => isMatch(x, String(ep.ep_id)));
+        if (currentIndex === -1 && ep.epID) currentIndex = flatList.findIndex((x: any) => isMatch(x, String(ep.epID)));
+    }
+
+    // 4. คำนวณข้อมูล (ถ้าเจอตำแหน่ง)
+    if (currentIndex !== -1) {
+        // 4.1 ชื่อตอนจาก List (แม่นยำที่สุด)
+        result.displayTitle = flatList[currentIndex].name?.trim();
+
+        // 4.2 ปุ่มก่อนหน้า
+        if (currentIndex > 0) {
+            const prev = flatList[currentIndex - 1];
+            result.prevEpId = String(prev.ep_id || prev.epID);
+        }
+
+        // 4.3 ปุ่มถัดไป
+        if (currentIndex < flatList.length - 1) {
+            const next = flatList[currentIndex + 1];
+            result.nextEpId = String(next.ep_id || next.epID);
+        }
+    } else {
+        // 5. ถ้าไม่เจอใน List เลย (Fallback Title)
+        const ep = episode as any;
+        if (ep) {
+            // พยายามหาชื่อจาก Content
+            const candidates = [ep.name, ep.title];
+            for (const c of candidates) {
+                if (c && String(c).trim() !== "" && !String(c).startsWith("EP20")) {
+                    result.displayTitle = String(c).trim();
+                    break;
+                }
+            }
+            // ถ้าไม่มีชื่อจริงๆ ให้โชว์ ID
+            if (!result.displayTitle) {
+                result.displayTitle = String(ep.ep_id ?? ep.epID ?? "");
+            }
+        }
+    }
+
+    return result;
+  }, [allEpisodes, episode, episodeId, isListLoading]);
 
   useEffect(() => {
     if (episodesError) {
@@ -546,31 +539,8 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     }
   }, [bookId, queryClient]);
 
-  // Prefetch adjacent episode content (prev/next) when we have candidate IDs
-  useEffect(() => {
-    const idsToPrefetch: string[] = [];
-    if (prevIdFromList) idsToPrefetch.push(prevIdFromList);
-    if (nextIdFromList) idsToPrefetch.push(nextIdFromList);
-    if (prevEpisode) idsToPrefetch.push(prevEpisode);
-    if (nextEpisode) idsToPrefetch.push(nextEpisode);
 
-    idsToPrefetch.forEach((id) => {
-      if (!id) return;
-      const key = ["episodeContent", id];
-      try {
-        const has = queryClient.getQueryData(key);
-        if (!has) {
-          queryClient.prefetchQuery({ queryKey: key, queryFn: () => fetchEpisodeContent(id) }).then(() => {
-            console.debug("ReadEpisodePage: prefetched episodeContent ->", id);
-          }).catch((err) => {
-            console.warn("ReadEpisodePage: prefetch episodeContent failed for", id, err);
-          });
-        }
-      } catch (err) {
-        console.warn("ReadEpisodePage: error during prefetch episodeContent", id, err);
-      }
-    });
-  }, [prevIdFromList, nextIdFromList, prevEpisode, nextEpisode, queryClient]);
+
 
   const { data: episodesData } = useQuery({
     queryKey: ["bookEpisodesGroups", bookId],
@@ -602,87 +572,6 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
       });
     }
   }, [episode]);
-
-  useEffect(() => {
-    console.log("🔄 Navigation effect triggered");
-    console.log("allEpisodes:", allEpisodes?.length || 0);
-    console.log("episodeId:", episodeId);
-
-    if (!allEpisodes || !Array.isArray(allEpisodes) || allEpisodes.length === 0) {
-      console.warn("⚠️ No episodes data or not an array");
-      return;
-    }
-
-    if (!episodeId) {
-      console.warn("⚠️ No episodeId");
-      return;
-    }
-
-    console.log("🔍 Finding navigation for episode:", episodeId);
-    console.log("📚 Total episodes:", allEpisodes.length);
-    console.log("📝 First 3 epIDs:", allEpisodes.slice(0, 3).map((e: any) => e.epID));
-
-    const currentIndex = allEpisodes.findIndex((ep: any) => {
-      const short = ep.ep_id != null ? String(ep.ep_id) : null;
-      const long = ep.epID != null ? String(ep.epID) : null;
-      return long === episodeId || short === episodeId;
-    });
-
-    console.log("📍 Current index:", currentIndex);
-
-    if (currentIndex !== -1) {
-      const currentEp = allEpisodes[currentIndex];
-      console.log("📖 Current episode:", {
-        name: currentEp.name,
-        epID: currentEp.epID,
-        group: currentEp._groupName,
-        groupIndex: currentEp._groupIndex,
-        order: currentEp.order_by,
-      });
-
-      if (currentIndex > 0) {
-        const prevEp = allEpisodes[currentIndex - 1];
-        const prevId = String(prevEp.ep_id ?? prevEp.epID);
-        console.log("⬅️ Setting prevEpisode ->", prevId, prevEp);
-        setPrevEpisode(prevId);
-        setPrevEpisodeData(prevEp);
-        console.log("⬅️ Prev episode:", {
-          ep_id: prevEp.ep_id,
-          epID: prevEp.epID,
-          name: prevEp.name,
-          group: prevEp._groupName,
-          sameGroup: prevEp._groupIndex === currentEp._groupIndex,
-        });
-      } else {
-        setPrevEpisode(null);
-        setPrevEpisodeData(null);
-        console.log("⬅️ No prev episode (first episode)");
-      }
-
-      if (currentIndex < allEpisodes.length - 1) {
-        const nextEp = allEpisodes[currentIndex + 1];
-        const nextId = String(nextEp.ep_id ?? nextEp.epID);
-        console.log("➡️ Setting nextEpisode ->", nextId, nextEp);
-        setNextEpisode(nextId);
-        setNextEpisodeData(nextEp);
-        console.log("➡️ Next episode:", {
-          ep_id: nextEp.ep_id,
-          epID: nextEp.epID,
-          name: nextEp.name,
-          group: nextEp._groupName,
-          sameGroup: nextEp._groupIndex === currentEp._groupIndex,
-        });
-      } else {
-        setNextEpisode(null);
-        setNextEpisodeData(null);
-        console.log("➡️ No next episode (last episode)");
-      }
-    } else {
-      console.error("❌ Current episode not found in list!");
-      console.error("Looking for epID:", episodeId);
-      console.error("Available epIDs:", allEpisodes.map((ep: any) => ep.epID));
-    }
-  }, [allEpisodes, episodeId]);
 
   useEffect(() => {
     const disableRightClick = (e: MouseEvent) => {
@@ -1136,7 +1025,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
               </svg>
             </button>
 
-            <h1 className="text-sm font-medium truncate mx-4 flex-1 text-center">{computedEpisodeTitle || ""}</h1>
+            <h1 className="text-sm font-medium truncate mx-4 flex-1 text-center">{displayTitle || ""}</h1>
 
             <div className="flex items-center gap-1">
               <Dropdown menu={{ items: fontSizeMenu }} placement="bottomRight">
@@ -1186,8 +1075,20 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
       <div className={`sticky bottom-0 border-t border-gray-100 ${currentBg?.bg} backdrop-blur-sm z-[90]`} style={{ zIndex: 90 }}>
         <div className="max-w-3xl mx-auto px-4 py-3">
           <div className="flex items-center gap-2">
-            <button className={`flex-1 py-3 rounded-lg text-sm font-semibold transition-all ${!getAdjacentId("prev") ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-red-600 hover:bg-red-700 active:scale-95"}`} style={{ color: !getAdjacentId("prev") ? "#000000" : "#ffffff", textShadow: !getAdjacentId("prev") ? undefined : "0 1px 2px rgba(0,0,0,0.3)" }} onClick={() => { const target = getAdjacentId("prev"); console.log("Prev button clicked, target:", target); if (target && bookId) { router.push(`/read/${bookId}/${String(target)}`); } }}>← ก่อนหน้า</button>
+            
+            {/* ปุ่มก่อนหน้า */}
+            <button 
+                className={`flex-1 py-3 rounded-lg text-sm font-semibold transition-all ${!prevEpId ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-red-600 hover:bg-red-700 active:scale-95"}`} 
+                style={{ color: !prevEpId ? "#000000" : "#ffffff", textShadow: !prevEpId ? undefined : "0 1px 2px rgba(0,0,0,0.3)" }} 
+                disabled={!prevEpId}
+                onClick={() => { 
+                    if (prevEpId && bookId) router.push(`/read/${bookId}/${prevEpId}`); 
+                }}
+            >
+                ← ก่อนหน้า
+            </button>
 
+            {/* ปุ่มสารบัญ (เหมือนเดิม) */}
             <Popover
               placement="top"
               title={<div className="text-sm font-semibold">สารบัญ</div>}
@@ -1203,12 +1104,23 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
               </button>
             </Popover>
 
-            <button className={`flex-1 py-3 rounded-lg text-sm font-semibold transition-all ${!getAdjacentId("next") ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-red-600 hover:bg-red-700 active:scale-95"}`} style={{ color: !getAdjacentId("next") ? undefined : "#ffffff", textShadow: !getAdjacentId("next") ? undefined : "0 1px 2px rgba(0,0,0,0.3)" }} onClick={() => { const target = getAdjacentId("next"); console.log("Next button clicked, target:", target); if (target && bookId) { router.push(`/read/${bookId}/${String(target)}`); } }}>ถัดไป →</button>
+            {/* ปุ่มถัดไป */}
+            <button 
+                className={`flex-1 py-3 rounded-lg text-sm font-semibold transition-all ${!nextEpId ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-red-600 hover:bg-red-700 active:scale-95"}`} 
+                style={{ color: !nextEpId ? undefined : "#ffffff", textShadow: !nextEpId ? undefined : "0 1px 2px rgba(0,0,0,0.3)" }} 
+                disabled={!nextEpId}
+                onClick={() => { 
+                    if (nextEpId && bookId) router.push(`/read/${bookId}/${nextEpId}`); 
+                }}
+            >
+                ถัดไป →
+            </button>
+
           </div>
         </div>
       </div>
 
-      <BackToTopButton />
+      <BackToTopButton /> 
       <Modal
         open={confirmOpen}
         onCancel={() => setConfirmOpen(false)}
@@ -1231,7 +1143,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
         ]}
       >
         <div className="space-y-2 text-center">
-          <div className="text-base font-semibold text-gray-700">{computedEpisodeTitle || 'ตอนนี้'}</div>
+          <div className="text-base font-semibold text-gray-700">{displayTitle || 'ตอนนี้'}</div>
           <div className="text-sm text-red-600 font-medium flex items-center justify-center gap-2">
             <Image src="/images/e-coin.png" alt="เหรียญ" width={18} height={18} />
             <span>{confirmAmount != null ? confirmAmount : '---'}</span>

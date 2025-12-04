@@ -76,7 +76,7 @@ function CardBook({ book }: CardBookProps) {
   const bookParam = book.book_id ? String(book.book_id) : (book.bookID && String(book.bookID).trim() !== "" ? String(book.bookID) : "");
 
   // Episode id for read route: prefer numeric `ep_id`, then `epID`/`epId`.
-  const epParam = (book.ep_id ?? book.epID ?? book.epId ?? book.epid ?? book.epIdStr ?? '')
+  const epParam = (book.last_read_ep_id ?? book.ep_id ?? book.epID ?? book.epId ?? book.epid ?? book.epIdStr ?? '')
   const epParamStr = epParam !== undefined && epParam !== null ? String(epParam) : ''
 
   // Episode display name from API (many responses use `epName` or `ep_name`)

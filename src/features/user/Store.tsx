@@ -1,6 +1,6 @@
 'use client'
 
-import { StoreBanner } from '@/components/Banner'
+import { StoreBanner } from '@/components/home/Banner'
 import React from 'react'
 import Image from 'next/image'
 import { Tabs } from 'antd'
@@ -24,6 +24,7 @@ const MOCK_ITEMS: StoreItem[] = [
 
 function Store() {
   return (
+
     <div className="pb-20">
       <StoreBanner />
 
@@ -32,6 +33,9 @@ function Store() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* Main coin pill */}
+            <div>
+              <h1>ยังไม่มีข้อมูลใน BackEnd ครับ อันนี้ Mock เอา</h1>
+            </div>
             <div className="flex items-center gap-1.5 bg-white rounded-full shadow-sm" style={{ width: '108px', height: '32px', padding: '0 4px 0 10px' }}>
               <Image src="/images/e-coin.png" alt="Gold Coin" width={24} height={24}/>
               <span className="font-primary text-gray-900 text-sm">120</span>

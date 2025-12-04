@@ -1,6 +1,6 @@
 // import Image from "next/image";
-import SearchClient from "@/components/SearchClient";
-import { SearchBanner } from "@/components/Banner";
+import SearchClient from "@/components/search/SearchClient";
+import { SearchBanner } from "@/components/home/Banner";
 
 export default function SearchPage() {
   return (

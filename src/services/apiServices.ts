@@ -1,12 +1,46 @@
 import apiClient from "./apiClient";
+import axios from 'axios';
+import Cookies from 'js-cookie';
 import type { BookTrans, BookDetail, BookDetailResponse} from "@/types/api";
+
+export interface Slide {
+  banner_id: number;
+  name: string;
+  img: string;
+  type_link: string;
+  ref_id: string;
+  order_by: number;
+  status: string;
+  click: number;
+  start_date: string;
+  end_date: string;
+  update_at: string;
+}
+
+export interface HomeDataResponse {
+  code: number;
+  status: string;
+  message: string;
+  data: {
+    slides: Slide[];
+  };
+}
+
+export const fetchHomeData = async (): Promise<HomeDataResponse | null> => {
+  try {
+    const response = await apiClient.get<HomeDataResponse>("/getAllBookHome");
+    console.log('getAllBookHome API Response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching home data:', error);
+    return null;
+  }
+}
 
 export const fetchBookTrans = async (): Promise<BookTrans[]> => {
   try {
-    // เรียก endpoint ใหม่
     const response = await apiClient.get<{ data: BookTrans[] }>("/getAllBookHome");
     console.log('getAllBookHome API Response:', response.data);
-    // ตรวจสอบว่า data มีอยู่และเป็น array
     if (!response.data || !Array.isArray(response.data)) {
       console.warn('API response data is not an array:', response.data);
       return [];
@@ -21,7 +55,6 @@ export const fetchBookTrans = async (): Promise<BookTrans[]> => {
 export const fetchBookTransById = async (id: string): Promise<BookTrans> => {
   try {
     const response = await apiClient.get(`/book/${id}`);
-    
     console.log('API Response for /book/:id:', response.data);
     
     // ตรวจสอบ response structure
@@ -193,18 +226,7 @@ export const fetchBookGroups = async (bookId: string | number) => {
   }
 }
 
-export const createGroup = async (bookId: string | number, name: string) => {
-  try {
-    console.log('🔍 createGroup for book', bookId, 'name:', name)
-    const payload = { book_id: String(bookId), name }
-    const resp = await apiClient.post('/user/managebook/group', payload)
-    console.log('🔍 createGroup response:', resp.status, resp.data)
-    return resp.data
-  } catch (err: any) {
-    console.error('❌ createGroup failed:', err?.response?.data ?? err.message ?? err)
-    throw err
-  }
-}
+
 
 export const fetchGroupEpisodes = async (groupId: string | number) => {
   try {
@@ -425,7 +447,7 @@ export const fetchBookDetail = async (bookId: string): Promise<BookDetail> => {
   try {
     // Try new management API first (/user/managebook/:id/detail)
     try {
-      const resp = await apiClient.get(`/user/managebook/${bookId}/detail`);
+      const resp = await apiClient.get(`/bookdetail/${bookId}`);
       console.log('🔍 BookDetail (managebook) API Response:', resp.data);
       if (resp?.data) {
         // some backends return { code, data } others return data directly
@@ -455,39 +477,167 @@ export const fetchBookDetail = async (bookId: string): Promise<BookDetail> => {
   }
 };
 
-// export const fetchUserWallet = async () => {
-//   try {
-//     const token = localStorage.getItem('authToken');
-//     if (!token) {
-//       throw new Error('ไม่พบ token กรุณาเข้าสู่ระบบ');
-//     }
+export const fetchMyBookDetail = async (bookId: string): Promise<BookDetail> => {
+  try {
+    // Try new management API first (/user/managebook/:id/detail)
+    try {
+      const resp = await apiClient.get(`/bookdetail/${bookId}`);
+      console.log('🔍 BookDetail (managebook) API Response:', resp.data);
+      if (resp?.data) {
+        // some backends return { code, data } others return data directly
+        const payload = resp.data.data ?? resp.data;
+        if (payload) {
+          console.log('✅ Book detail loaded from managebook:', payload.name ?? payload.title ?? bookId);
+          return payload as BookDetail;
+        }
+      }
+      // if that endpoint didn't return expected data, fallthrough to legacy
+    } catch (err: any) {
+      console.warn('managebook detail endpoint failed, falling back to legacy /bookdetail:', err?.message ?? err);
+    }
+
+    // Fallback to legacy endpoint
+    const response = await apiClient.get<BookDetailResponse>(`/bookdetail/${bookId}`);
+    console.log('🔍 BookDetail (legacy) API Response:', response.data);
+    if (response.data && response.data.data) {
+      console.log('✅ Book detail loaded (legacy):', response.data.data.name);
+      return response.data.data;
+    }
+
+    throw new Error('ไม่พบข้อมูลหนังสือ');
+  } catch (error) {
+    console.error('❌ Error fetching book detail:', error);
+    throw error;
+  }
+};
+
+export const updateGroup = async (groupId: string | number, name: string) => {
+    // 1. ดึง Token: หาจากทุกที่ที่เป็นไปได้ (Cookies หรือ LocalStorage)
+    const rawToken = Cookies.get('token') 
+                  || localStorage.getItem('token') 
+                  || localStorage.getItem('authToken');
     
-//     // ดึงข้อมูล user profile ซึ่งจะรวม wallet ด้วย
-//     const response = await apiClient.get('/user/profile');
-    
-//     console.log('💰 User Profile/Wallet Response:', response.data);
-    
-//     if (response.data && response.data.code === 200 && response.data.data) {
-//       const userData = response.data.data;
-      
-//       // แปลง coin และ freecoin จาก string เป็น number
-//       return {
-//         coin: parseFloat(userData.coin) || 0,
-//         freecoin: parseFloat(userData.freecoin) || 0,
-//         heart: userData.heart || 0,
-//         flower: userData.flower || 0,
-//         coupon: userData.coupon || 0,
-//         exp_point: userData.exp_point || 0,
-//         stamp: userData.stamp || 0,
-//         wheel: userData.wheel || 0,
-//         fast_ticket: userData.fast_ticket || 0,
-//         coinIncome: parseFloat(userData.coinIncome) || 0,
-//       };
-//     }
-    
-//     throw new Error('ไม่สามารถดึงข้อมูล wallet ได้');
-//   } catch (error) {
-//     console.error('❌ Error fetching user wallet:', error);
-//     throw error;
-//   }
-// };
+    // 2. ล้าง Token: ถ้ามีเครื่องหมาย " ติดมา ให้เอาออก
+    const token = rawToken ? rawToken.replace(/^['"]+|['"]+$/g, '') : '';
+
+    if (!token) {
+        throw new Error("ไม่พบ Token สำหรับเข้าสู่ระบบ");
+    }
+
+    // 3. ยิง Request
+    const response = await axios.put(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/managebook/group/update`,
+        {
+            group_id: Number(groupId), // แปลงเป็นตัวเลขให้ชัวร์
+            name: name
+        },
+        {
+            headers: {
+                'Content-Type': 'application/json',
+                // ส่ง Token ไป (ถ้า API ปกติต้องมี Bearer ก็เติม `Bearer ${token}` แต่ถ้าส่งเพียวๆ ก็ใส่ token)
+                'Authorization': token 
+            }
+        }
+    );
+
+    return response.data;
+};
+
+export const createGroup = async (bookId: string | number, name: string) => {
+  try {
+    console.log('🔍 createGroup for book', bookId, 'name:', name)
+    const payload = { book_id: String(bookId), name }
+    const resp = await apiClient.post('/user/managebook/group', payload)
+    console.log('🔍 createGroup response:', resp.status, resp.data)
+    return resp.data
+  } catch (err: any) {
+    console.error('❌ createGroup failed:', err?.response?.data ?? err.message ?? err)
+    throw err
+  }
+}
+
+export const getBankList = async () => {
+  try {
+    const response = await apiClient.get('/user/bank_list');
+    return response.data?.data ?? [];
+  } catch (error: any) {
+    console.error('Error fetching bank list:', error);
+    throw error;
+  }
+};
+
+export const updateBankIdCardAccount = async (formData: FormData) => {
+  try {
+    const response = await apiClient.post('/user/bank_idcard_account', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error('Error updating bank account info:', error);
+    throw error;
+  }
+};
+
+export const getBankIdCardAccount = async () => {
+  try {
+    const response = await apiClient.get('/user/bank_idcard_account');
+    return response.data;
+  } catch (error: any) {
+    console.error('Error fetching bank account info:', error);
+    throw error;
+  }
+};
+
+export const createPromotion = async (payload: {
+  group_ids: string;
+  subject: string;
+  start_date: string;
+  end_date: string;
+  discount_percent: string | number;
+}) => {
+  try {
+    console.log('🔍 createPromotion payload:', payload);
+    const response = await apiClient.post('/user/managebook/groups/promotion', payload);
+    console.log('🔍 createPromotion response:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error creating promotion:', error);
+    throw error;
+  }
+};
+
+export const updatePromotion = async (payload: {
+  dfb_id: number;
+  groupIDs: string;
+  subject: string;
+  start_date: string;
+  end_date: string;
+  discount_percent: string | number;
+}) => {
+  try {
+    console.log('🔍 updatePromotion payload:', payload);
+    const response = await apiClient.put('/user/managebook/groups/promotion', payload);
+    console.log('🔍 updatePromotion response:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error updating promotion:', error);
+    throw error;
+  }
+};
+
+export const deletePromotion = async (dfbId: string | number) => {
+  try {
+    console.log('🔍 deletePromotion id:', dfbId);
+    // Backend expects DELETE with body { dfb_id: ... }
+    const response = await apiClient.delete('/user/managebook/groups/promotion', {
+      data: { dfb_id: Number(dfbId) }
+    });
+    console.log('🔍 deletePromotion response:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error deleting promotion:', error);
+    throw error;
+  }
+};

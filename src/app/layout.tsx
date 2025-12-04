@@ -7,7 +7,7 @@ import "./globals.css";
 import QueryProvider from "../providers/QueryProvider";
 import { Bai_Jamjuree } from "next/font/google";
 import StyledComponentsRegistry from './AntdRegistry';
-import Navbar from "@/components/navbar";
+import Navbar from "@/components/navbar/navbar";
 import Footer from "@/components/Footer";
 const baiJamjuree = Bai_Jamjuree({
   weight: ["500"], // ใช้เฉพาะ Medium (500)

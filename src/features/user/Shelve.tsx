@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Tabs, Spin, Empty } from 'antd';
 import type { TabsProps } from 'antd';
-import CardBook from '@/components/CardBook';
+import CardBook from '@/components/novel/CardBook';
 import ContinueCardBook from '@/components/ContinueCardbook';
 import { useQuery } from '@tanstack/react-query';
 import { fetchUserShelve, fetchUserShelveContinue, fetchUserShelveBuy } from '@/services/apiServices';
@@ -111,8 +111,15 @@ function Shelve() {
                   shelveCount: Number(b.shelveCount ?? b.shelf_count ?? 0),
                   end: b.end ?? b.status ?? '',
                   // episode fields for ContinueCardBook
-                  ep_id: b.ep_id ?? b.epID ?? b.epId ?? b.epid ?? b.epIDStr ?? b.epIDStr ?? b.ep_id,
-                  epName: b.epName ?? b.ep_name ?? b.epname ?? '',
+                  ep_id: b.last_read_ep_id ?? b.ep_id ?? b.epID ?? b.epId ?? b.epid ?? b.epIDStr ?? b.epIDStr ?? b.ep_id,
+                  epName: b.epName ?? b.ep_name ?? b.epname ?? b.last_read_ep_name ?? '',
+                  last_read_at: b.last_read_at,
+                  isBestSeller: b.isBestSeller,
+                  isNew: b.isNew,
+                  isNewEp: b.isNewEp,
+                  discount: b.discount,
+                  img_full: b.img_full,
+                  status: b.status,
                 }
                 return <ContinueCardBook key={`${mapped.book_id ?? mapped.bookID}-${mapped.ep_id ?? '0'}`} book={mapped} />;
               })}

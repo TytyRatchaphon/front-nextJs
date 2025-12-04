@@ -56,7 +56,7 @@ function MyCardBook({ book }: CardBookProps) {
   const imageUrl = book.img
     ? (typeof book.img === 'string' && book.img.startsWith('http')
         ? book.img
-        : `https://img.enjoybook.co/img/book/tn/${book.img}`)
+        : `https://image.enjoybook.co/enjoybook.image/testminio/book_thumbnail/${book.img}`)
     : "/images/ejb.png";
 
   // Normalize and detect various "ended" values from different APIs

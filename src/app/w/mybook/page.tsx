@@ -1,5 +1,5 @@
 import React from 'react'
-import MyBook from '@/features/user/MyBook'
+import MyBook from '@/features/mybook/MyBook'
 
 function page() {
   return (
