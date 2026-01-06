@@ -3,9 +3,11 @@
 import React, { useId } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Scrollbar, A11y, EffectFade, FreeMode } from 'swiper/modules';
-import CardBook from '../novel/CardBook';
+import CardBook from '../novelCard/CardBook';
 import Image from 'next/image';
 import parse from 'html-react-parser';
+
+import Link from 'next/link';
 
 // Import Swiper styles
 import 'swiper/css';
@@ -19,40 +21,41 @@ interface BookSwiperProps {
   books: any[];
   title?: string;
   icon?: string;
+  link?: string;
 }
 
-export default function BookSwiper({ books, title, icon }: BookSwiperProps) {
+export default function BookSwiper({ books, title, icon, link }: BookSwiperProps) {
   const prevRef = React.useRef<HTMLButtonElement>(null);
   const nextRef = React.useRef<HTMLButtonElement>(null);
 
   const breakpoints = {
     320: {
-      slidesPerView: 2.2,
+      slidesPerView: 'auto' as const,
       spaceBetween: 10,
     },
     640: {
-      slidesPerView: 3.2,
+      slidesPerView: 'auto' as const,
       spaceBetween: 15,
     },
     768: {
-      slidesPerView: 4.2,
+      slidesPerView: 'auto' as const,
       spaceBetween: 20,
     },
     1024: {
-      slidesPerView: 5.2,
+      slidesPerView: 'auto' as const,
       spaceBetween: 20,
     },
     1280: {
-      slidesPerView: 6.2,
+      slidesPerView: 'auto' as const,
       spaceBetween: 20,
     },
   };
 
   return (
     <div className="w-full relative group/swiper py-4">
-      <div className="flex items-center gap-3 mb-4 px-4">
+      <div className="flex items-center gap-3 mb-4 px-4 bg-white/50 backdrop-blur-sm rounded-lg p-2">
         {icon && (
-          <div className="relative w-10 h-10 flex-shrink-0 rounded-full overflow-hidden -translate-y-1">
+          <div className="relative w-10 h-10 flex-shrink-0 rounded-full overflow-hidden">
              <Image 
                src={icon} 
                alt={title || 'icon'} 
@@ -63,9 +66,18 @@ export default function BookSwiper({ books, title, icon }: BookSwiperProps) {
           </div>
         )}
         {title && (
-          <div className="h-10 flex items-center">
+          <div className="h-10 flex items-center translate-y-4">
             <h2 className="text-2xl font-bold [&_*]:m-0 leading-none">{parse(title)}</h2>
           </div>
+        )}
+        
+        {link && (
+          <Link href={link} className="ml-auto text-red-500 hover:text-red-600 text-sm font-medium flex items-center gap-1">
+            ดูทั้งหมด 
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </Link>
         )}
       </div>
       

@@ -1,6 +1,6 @@
 'use client';
 
-import { BackToTopButton } from '@/components/BackToTopButton'
+import { BackToTopButton } from '@/components/utility/BackToTopButton'
 import { AllNovelBanner } from '@/components/home/Banner'
 import AllNovel from '@/features/book/AllNovel'
 import React from 'react'

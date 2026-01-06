@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Input, Select, Button } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
-import MyCardBook from '@/components/MyBookCard';
+import MyBookCardNew from '@/components/novelCard/MyBookCardNew';
 
 const { Option } = Select;
 
@@ -66,7 +66,7 @@ const MyBookListTab: React.FC<MyBookListTabProps> = ({ myBooks, isLoadingMyBooks
           ))
         ) : (Array.isArray(myBooks) && myBooks.length > 0) ? (
           myBooks.map((book: any) => (
-            <MyCardBook key={book.book_id ?? book.id ?? book._id} book={book} />
+            <MyBookCardNew key={book.book_id ?? book.id ?? book._id} book={book} />
           ))
         ) : (
           <div className='col-span-full text-center text-gray-500 py-8'>ยังไม่มีนิยาย</div>

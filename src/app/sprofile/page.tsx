@@ -1,6 +1,6 @@
 import React from 'react'
 import SprofilePage from '@/features/user/Sprofile'
-import { BackToTopButton } from '@/components/BackToTopButton'
+import { BackToTopButton } from '@/components/utility/BackToTopButton'
 
 function page() {
   return (

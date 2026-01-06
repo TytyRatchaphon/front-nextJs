@@ -9,11 +9,20 @@ import { fetchBookEpisodes } from "@/services/apiServices";
 import apiClient from "@/services/apiClient";
 import { useQueryClient } from '@tanstack/react-query';
 import { useUIStore } from '@/stores/uiStore';
+import { Minus, Plus } from "lucide-react";
+import GifLoader from '@/components/utility/GifLoader';
+import SuccessAnimation from '@/components/utility/SuccessAnimation';
 
 type Book = {
   cover: string;
   title: string;
-  author: string;
+  author?: string;
+  writer?: {
+    user_id: number;
+    writer_name: string;
+    img: string;
+    isFollowing?: boolean;
+  } | null;
   price?: number;
   remaining_paid_total?: number;
   remaining_paid_count?: number;
@@ -29,7 +38,20 @@ type Book = {
     percent: number;
     price: number;
   };
+  fastTicket?: {
+    can_buy: boolean;
+    user_ticket_balance: number;
+    ep_count: number;
+    remaining_count: number;
+    remaining_total: number;
+    web_enabled: boolean;
+    book_enabled: boolean;
+  };
 };
+
+const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
+  return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
+}
 
 const CountdownTimer = ({ endDate }: { endDate: string }) => {
   const [timeLeft, setTimeLeft] = useState<{
@@ -106,17 +128,20 @@ const Pill = ({
 );
 
 const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
-  const [heartQty] = useState<number>(0);
-  const [roseQty, setRoseQty] = useState<number>(10);
+  const [heartQty, setHeartQty] = useState<number>(0);
+  const [roseQty, setRoseQty] = useState<number>(0);
   const { token, isLoggedIn, updateToken } = useAuthStore();
   const openLoginModal = useUIStore((s) => s.openLoginModal);
   const queryClient = useQueryClient();
   const { message: messageApi, modal: modalApi, notification: notificationApi } = App.useApp();
   const [buyLoading, setBuyLoading] = useState(false);
   const [userCoinCount, setUserCoinCount] = useState<number | null>(null);
+  const [userFlowerCount, setUserFlowerCount] = useState<number | null>(null);
+  const [userHeartCount, setUserHeartCount] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEpisodeIds, setSelectedEpisodeIds] = useState<number[]>([]);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [showSuccess, setShowSuccess] = useState(false);
 
   // Fetch episodes when modal opens
   const queryResult: any = useQuery({
@@ -169,11 +194,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
           const res = await apiClient.post(`/buy/groupPromotion`, payload);
           if (res?.data?.code === 200) {
             const respMsg = res.data?.message || 'ซื้อโปรโมชั่นสำเร็จ!';
-            notificationApi.success({
-              message: 'สำเร็จ',
-              description: respMsg,
-              placement: 'topRight',
-            });
+            console.log('Purchase Promotion Success: triggering animation');
+            setShowSuccess(true);
+            console.log('showSuccess state set to true');
 
             const maybeToken = res?.data?.data?.token ?? res?.data?.token ?? res?.data?.data?.authToken ?? res?.data?.data?.accessToken;
             if (maybeToken && typeof updateToken === 'function') {
@@ -183,9 +206,6 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                 console.warn('Failed to update token from purchase response', err);
               }
             }
-
-            await queryClient.invalidateQueries({ queryKey: ["bookEpisodes", String(bookId ?? "")] });
-            await queryClient.invalidateQueries({ queryKey: ["bookDetail", String(bookId ?? "")] });
           } else {
             const errMsg = res?.data?.message || 'ไม่สามารถทำการซื้อได้';
             messageApi.error(errMsg);
@@ -247,17 +267,16 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
         ),
         okText: 'ยืนยัน',
         cancelText: 'ยกเลิก',
+        okButtonProps: { className: '!bg-red-600 hover:!bg-red-700 !border-red-600 !text-white' },
         onOk: async () => {
           try {
             const payload = { eps: selectableIds.map((id) => Number(id)), payWith: 'coin' };
             const res = await apiClient.post(`/buy/eps`, payload);
             if (res?.data?.code === 200) {
               const respMsg = res.data?.message || 'ซื้อสำเร็จ!';
-              notificationApi.success({
-                message: 'สำเร็จ',
-                description: respMsg,
-                placement: 'topRight',
-              });
+              console.log('Purchase All Success: triggering animation');
+              setShowSuccess(true);
+              console.log('showSuccess state set to true');
 
               const maybeToken = res?.data?.data?.token ?? res?.data?.token ?? res?.data?.data?.authToken ?? res?.data?.data?.accessToken;
               if (maybeToken && typeof updateToken === 'function') {
@@ -267,9 +286,6 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                   console.warn('Failed to update token from purchase response', err);
                 }
               }
-
-              await queryClient.invalidateQueries({ queryKey: ["bookEpisodes", String(bookId ?? "")] });
-              await queryClient.invalidateQueries({ queryKey: ["bookDetail", String(bookId ?? "")] });
             } else {
               const errMsg = res?.data?.message || 'ไม่สามารถทำการซื้อได้';
               messageApi.error(errMsg);
@@ -357,6 +373,8 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   useEffect(() => {
     if (!token) {
       setUserCoinCount(null);
+      setUserFlowerCount(null);
+      setUserHeartCount(null);
       return;
     }
 
@@ -370,13 +388,111 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
           .join("")
       );
       const decoded = JSON.parse(jsonPayload);
+
       const coins = decoded.coin ?? decoded.coins ?? decoded.goldCoins ?? decoded.gold_coin ?? 0;
       setUserCoinCount(Number(coins) || 0);
+
+      const flowers = decoded.flower ?? decoded.flowers ?? 0;
+      setUserFlowerCount(Number(flowers) || 0);
+
+      const hearts = decoded.heart ?? decoded.hearts ?? 0;
+      setUserHeartCount(Number(hearts) || 0);
+
     } catch (e) {
-      console.warn("Failed to decode token for coin count", e);
+      console.warn("Failed to decode token for coin/gift count", e);
       setUserCoinCount(null);
+      setUserFlowerCount(null);
+      setUserHeartCount(null);
     }
   }, [token]);
+
+  const handleSendGift = async (sendType: 'heart' | 'flower', amount: number) => {
+    if (!isLoggedIn) {
+      openLoginModal();
+      return;
+    }
+    if (amount <= 0) return;
+
+    try {
+      const payload = {
+        sendType,
+        amount,
+        book_id: bookId,
+      };
+      const res = await apiClient.post('/user/sendGift', payload);
+      if (res?.data?.code === 200) {
+        notificationApi.success({
+          message: 'สำเร็จ',
+          description: 'ส่งของขวัญสำเร็จแล้ว',
+          placement: 'topRight',
+          icon: <div className="text-green-500">🎁</div>,
+        });
+
+        // Reset quantity
+        if (sendType === 'heart') setHeartQty(0);
+        else setRoseQty(0);
+
+        // Update user balance if token is returned
+        const responseData = res?.data?.data;
+        const maybeToken = typeof responseData === 'string' ? responseData : (responseData?.token ?? res?.data?.token);
+
+        if (maybeToken && typeof updateToken === 'function') {
+          updateToken(String(maybeToken));
+        }
+      } else {
+        messageApi.error(res?.data?.message || 'ส่งของขวัญไม่สำเร็จ');
+      }
+    } catch (err: any) {
+      console.error('Send gift failed', err);
+      messageApi.error(err?.response?.data?.message || 'เกิดข้อผิดพลาดขณะส่งของขวัญ');
+    }
+  };
+
+  // Helper for Stepper
+  const Stepper = ({ value, onChange, min = 0 }: { value: number, onChange: (val: number) => void, min?: number }) => (
+    <div className="flex items-center border border-gray-200 rounded-lg bg-gray-50 h-8 w-fit mx-auto">
+      <button
+        onClick={() => onChange(Math.max(min, value - 1))}
+        className="w-8 h-full flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-l-lg transition-colors"
+        disabled={value <= min}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      </button>
+      <input
+        type="number"
+        value={value}
+        onChange={(e) => {
+          const val = parseInt(e.target.value);
+          if (!isNaN(val)) onChange(val);
+          else onChange(min);
+        }}
+        className="w-12 h-full text-center bg-transparent border-x border-gray-200 text-sm font-semibold text-gray-900 focus:outline-none no-spinners"
+      />
+      <button
+        onClick={() => onChange(value + 1)}
+        className="w-8 h-full flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-r-lg transition-colors"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      </button>
+      <style jsx global>{`
+        .no-spinners::-webkit-outer-spin-button,
+        .no-spinners::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          appearance: none;
+          margin: 0;
+        }
+        .no-spinners {
+          -moz-appearance: textfield;
+          appearance: textfield;
+        }
+      `}</style>
+    </div>
+  );
 
   return (
     <aside className="w-full">
@@ -400,6 +516,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                     alt="Coin"
                     width={20}
                     height={20}
+                    loader={imageLoader}
                   />
                   <span className="font-semibold text-gray-900">{(userCoinCount != null ? userCoinCount : (book.remaining_paid_total ?? book.price ?? 0)).toLocaleString()}</span>
                 </Pill>
@@ -410,13 +527,13 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
               )}
             </div>
             {isLoggedIn && (
-                          <button
-              aria-label="เพิ่มเหรียญ"
-              onClick={() => { if (!isLoggedIn) openLoginModal(); }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-green-500 text-white grid place-items-center shadow"
-            >
-              <span className="text-xl leading-none mb-1">+</span>
-            </button>
+              <button
+                aria-label="เพิ่มเหรียญ"
+                onClick={() => { if (!isLoggedIn) openLoginModal(); }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-green-500 text-white grid place-items-center shadow"
+              >
+                <span className="text-xl leading-none mb-1">+</span>
+              </button>
             )}
           </div>
         </div>
@@ -449,12 +566,12 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                         ลด {book.promotion.percent}%
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center justify-between mt-3 mb-2 pt-3 border-t border-white/20">
                       <div className="text-xs opacity-90 drop-shadow-sm">เหลือเวลาอีก</div>
                       <CountdownTimer endDate={book.promotion.endDate} />
                     </div>
-                    
+
                     <button
                       onClick={handleBuyPromotion}
                       disabled={buyLoading}
@@ -465,7 +582,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                           <span className="text-lg !text-red-600 ">ซื้อราคาโปรโมชั่น</span>
                           <div className="flex items-center gap- bg-red-50 px-3 py-1 rounded-full border border-red-100 group-hover:bg-red-100 transition-colors">
                             <span className="!text-red-600 font-extrabold text-base">{book.promotion.price.toLocaleString()}</span>
-                            <Image src="/images/e-coin.png" alt="Coin" width={18} height={18} className="drop-shadow-sm" />
+                            <Image src="/images/e-coin.png" alt="Coin" width={18} height={18} className="drop-shadow-sm" loader={imageLoader} />
                           </div>
                         </>
                       )}
@@ -487,7 +604,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                     <span className="text-[14px] font-bold text-gray-800">
                       เหมาทั้งเรื่อง
                     </span>
-                    <Image src="/images/e-coin.png" alt="Coin" width={20} height={20} />
+                    <Image src="/images/e-coin.png" alt="Coin" width={20} height={20} loader={imageLoader} />
                   </div>
                   <div className="flex items-baseline gap-3">
                     <span className="text-2xl leading-none font-extrabold text-red-600">
@@ -531,11 +648,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                           const res = await apiClient.post(`/buy/eps`, payload);
                           if (res?.data?.code === 200) {
                             const respMsg = res.data?.message || "ซื้อสำเร็จ! กำลังอัปเดตเนื้อหา...";
-                            notificationApi.success({
-                              message: 'สำเร็จ',
-                              description: respMsg,
-                              placement: 'topRight',
-                            });
+                            console.log('Purchase Selection Success: triggering animation');
+                            setShowSuccess(true);
+                            console.log('showSuccess state set to true');
 
                             const maybeToken = res?.data?.data?.token ?? res?.data?.token ?? res?.data?.data?.authToken ?? res?.data?.data?.accessToken;
                             if (maybeToken && typeof updateToken === 'function') {
@@ -546,10 +661,6 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                                 console.warn('Failed to update token from purchase response', err);
                               }
                             }
-
-                            // Invalidate queries to refresh UI
-                            await queryClient.invalidateQueries({ queryKey: ["bookEpisodes", String(bookId ?? "")] });
-                            await queryClient.invalidateQueries({ queryKey: ["bookDetail", String(bookId ?? "")] });
 
                             closeModal();
                             setSelectedEpisodeIds([]);
@@ -574,9 +685,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                 centered
               >
                 {isFetching ? (
-                  <div className="flex justify-center py-12">
-                    <Spin />
-                  </div>
+                  <GifLoader className="py-12" />
                 ) : (
                   <div>
                     {/* Top select-all banner */}
@@ -644,7 +753,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                                       <div className="flex items-center gap-3">
                                         {episode.coin > 0 ? (
                                           <div className="flex items-center gap-1">
-                                            <Image src="/images/e-coin.png" alt="coin" width={16} height={16} />
+                                            <Image src="/images/e-coin.png" alt="coin" width={16} height={16} loader={imageLoader} />
                                             <span className="text-sm font-semibold text-orange-600">{episode.coin}</span>
                                           </div>
                                         ) : (
@@ -663,29 +772,23 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                   </div>
                 )}
                 <style jsx global>{`
-                  .book-select-modal .ant-checkbox-inner { border-color: #e11d48; transition: border-color .12s, background-color .12s; }
-                  /* Hover on wrapper or checkbox itself */
-                  .book-select-modal .ant-checkbox-wrapper:hover .ant-checkbox-inner,
-                  .book-select-modal .ant-checkbox:hover .ant-checkbox-inner {
-                    border-color: #e11d48 !important;
-                  }
-                  /* Focused input (keyboard) */
-                  .book-select-modal .ant-checkbox-input:focus + .ant-checkbox-inner {
-                    border-color: #e11d48 !important;
-                    box-shadow: none !important;
-                  }
-                  /* Checked state should use red instead of default blue */
-                  .book-select-modal .ant-checkbox-checked .ant-checkbox-inner {
-                    background: #e11d48 !important;
-                    border-color: #e11d48 !important;
-                  }
-                  /* Ensure check mark is visible on red background */
-                  .book-select-modal .ant-checkbox-checked .ant-checkbox-inner::after {
-                    border-color: #fff !important;
-                  }
-                  .book-select-modal .ant-modal-content { border-radius: 8px; }
-                  .book-select-modal .ant-modal-body { padding: 0 24px 24px 24px; }
-                `}</style>
+          .book-select-modal .ant-checkbox-inner { border-color: #e11d48; transition: border-color .12s, background-color .12s; }
+          /* Hover on wrapper or checkbox itself */
+          .book-select-modal .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+          .book-select-modal .ant-checkbox:hover .ant-checkbox-inner {
+            border-color: #e11d48 !important;
+          }
+          /* Focused input (keyboard) */
+          .book-select-modal .ant-checkbox-input:focus + .ant-checkbox-inner {
+            border-color: #e11d48 !important;
+            box-shadow: none !important;
+          }
+          /* Checked state should use red instead of default blue */
+          .book-select-modal .ant-checkbox-checked .ant-checkbox-inner {
+            background-color: #e11d48 !important;
+            border-color: #e11d48 !important;
+          }
+        `}</style>
               </Modal>
             </>
           )}
@@ -694,76 +797,78 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
           <div className="my-5 border-t border-gray-200" />
 
           {/* Gift header with stats pills */}
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-extrabold text-gray-900">ส่งของขวัญ</h3>
-            <div className="flex items-center gap-2">
-              <div className="h-10 px-4 rounded-full border border-gray-200 bg-white shadow-sm flex items-center gap-4">
-                <div className="flex items-center gap-1.5">
-                  <Image
-                    src="/images/rose.png"
-                    alt="rose"
-                    width={20}
-                    height={20}
-                  />
-                  <span className="font-semibold text-gray-900 text-base">580</span>
-                </div>
-                <div className="w-px h-4 bg-gray-200"></div>
-                <div className="flex items-center gap-1.5">
-                  <Image
-                    src="/images/heart.png"
-                    alt="heart"
-                    width={20}
-                    height={20}
-                  />
-                  <span className="font-semibold text-gray-900 text-base">320</span>
-                </div>
+            <div className="flex items-center gap-3 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
+              <div className="flex items-center gap-1.5">
+                <Image src="/images/rose.png" alt="rose" width={16} height={16} loader={imageLoader} />
+                <span className="text-sm font-bold text-gray-700">{userFlowerCount !== null ? userFlowerCount.toLocaleString() : 0}</span>
+              </div>
+              <div className="w-px h-3 bg-gray-300"></div>
+              <div className="flex items-center gap-1.5">
+                <Image src="/images/heart.png" alt="heart" width={16} height={16} loader={imageLoader} />
+                <span className="text-sm font-bold text-gray-700">{userHeartCount !== null ? userHeartCount.toLocaleString() : 0}</span>
               </div>
             </div>
           </div>
 
-          {/* Gift rows - place items side-by-side */}
-          <div className="flex items-stretch gap-3">
-            {/* Item 1: heart (flex item) */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between bg-white rounded-full border border-gray-200 h-12 pl-4 pr-1.5 shadow-sm">
-                <Image src="/images/heart.png" alt="heart" width={24} height={24} />
-                <input
-                  type="number"
-                  min={0}
-                  value={heartQty}
-                  disabled
-                  className="w-full bg-transparent text-center font-bold text-lg text-gray-900 focus:outline-none px-2"
-                  readOnly
-                />
-                <button
-                  disabled
-                  className="h-9 px-5 rounded-full bg-gray-300 text-white text-sm font-bold shadow-sm shrink-0"
-                >
-                  ส่ง
-                </button>
+          {/* Gift Cards Grid */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Heart Card */}
+            <div className="rounded-xl border border-gray-200 p-3 flex flex-col items-center bg-white shadow-sm hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 relative mb-2">
+                <Image src="/images/heart40.png" alt="heart" fill className="object-contain" loader={imageLoader} />
               </div>
+              <div className=" text-gray-900 mb-1">ส่งหัวใจ</div>
+
+              <div className="w-full mb-3">
+                <Stepper value={heartQty} onChange={setHeartQty} min={0} />
+              </div>
+
+              <button
+                disabled={heartQty === 0}
+                onClick={() => handleSendGift('heart', heartQty)}
+                className={`w-full h-9 rounded-lg text-sm transition-all ${heartQty > 0
+                  ? "bg-gradient-to-r from-red-600 to-pink-600 !text-white shadow hover:opacity-90"
+                  : "bg-gray-100 text-black cursor-not-allowed"
+                  }`}
+              >
+                ส่ง
+              </button>
             </div>
 
-            {/* Item 2: rose (flex item) */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between bg-white rounded-full border border-gray-200 h-12 pl-4 pr-1.5 shadow-sm">
-                <Image src="/images/rose.png" alt="rose" width={24} height={24} />
-                <input
-                  type="number"
-                  min={1}
-                  value={roseQty}
-                  onChange={(e) => setRoseQty(parseInt(e.target.value || "0"))}
-                  className="w-full bg-transparent text-center font-bold text-lg text-gray-900 focus:outline-none px-2"
-                />
-                <button className="h-9 px-5 rounded-full bg-[#D10023] text-white text-sm font-bold shadow-sm hover:bg-[#b0001d] transition-colors shrink-0">
-                  ส่ง
-                </button>
+            {/* Rose Card */}
+            <div className="rounded-xl border border-gray-200 p-3 flex flex-col items-center bg-white shadow-sm hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 relative mb-2">
+                <Image src="/images/rose.png" alt="rose" fill className="object-contain" loader={imageLoader} />
               </div>
+              <div className=" text-gray-900 mb-1">ส่งกุหลาบ</div>
+
+
+              <div className="w-full mb-3">
+                <Stepper value={roseQty} onChange={setRoseQty} min={0} />
+              </div>
+
+              <button
+                disabled={roseQty === 0}
+                onClick={() => handleSendGift('flower', roseQty)}
+                className={`w-full h-9 rounded-lg text-sm transition-all ${roseQty > 0
+                  ? "bg-gradient-to-r from-red-600 to-pink-600 !text-white shadow hover:opacity-90"
+                  : "bg-gray-100 text-black cursor-not-allowed"
+                  }`}
+              >
+                ส่ง
+              </button>
             </div>
           </div>
-        </div>
-      </div>
-    </aside>
+        </div >
+      </div >
+      {showSuccess && <SuccessAnimation onComplete={async () => {
+        setShowSuccess(false);
+        await queryClient.invalidateQueries({ queryKey: ["bookEpisodes", String(bookId ?? "")] });
+        await queryClient.invalidateQueries({ queryKey: ["bookDetail", String(bookId ?? "")] });
+      }} />}
+    </aside >
   );
 };
 export default BookInfoCard;

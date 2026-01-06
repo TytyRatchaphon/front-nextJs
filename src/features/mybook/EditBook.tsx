@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from "react";
-import { Checkbox, Form, Input, Select, Spin, Modal, notification } from "antd";
+import { Checkbox, Form, Input, Select, Modal, notification } from "antd";
 import type { CheckboxChangeEvent } from "antd/es/checkbox";
 // import Cookies from "js-cookie";
 import { useParams, useRouter } from "next/navigation";
@@ -11,6 +11,7 @@ import TextEditorTiny from "@/components/editor/TextEditorTiny";
 import UploadCropBook from "@/components/upload/UploadBook";
 import UploadCropBookBanner from "@/components/upload/UploadCropBookBanner";
 import apiClient from "@/services/apiClient";
+import GifLoader from '@/components/utility/GifLoader';
 
 // --- Constant Data ---
 const novelType = [
@@ -266,7 +267,10 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
     return (
         <div className="my-10 max-w-5xl mx-auto px-6">
             {contextHolder}
-            <Spin spinning={spinLoading}>
+            {spinLoading ? (
+                <GifLoader />
+            ) : (
+                <>
                 <Form
                     name="formEditBook"
                     autoComplete="off"
@@ -428,15 +432,25 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                             </div>
 
                             <div className="flex justify-center items-center mb-3">
-                                <Checkbox id="accept_conditions" checked={acceptBookCon} onChange={handleCheckboxChange}>
-                                    <label htmlFor="accept_conditions">ยอมรับ </label>
+                                <Checkbox 
+                                    id="accept_conditions" 
+                                    checked={acceptBookCon} 
+                                    onChange={handleCheckboxChange}
+                                    className="[&_.ant-checkbox-checked_.ant-checkbox-inner]:!bg-red-500 [&_.ant-checkbox-checked_.ant-checkbox-inner]:!border-red-500 [&_.ant-checkbox-wrapper:hover_.ant-checkbox-inner]:!border-red-500 [&_.ant-checkbox:hover_.ant-checkbox-inner]:!border-red-500"
+                                >
+                                    <label htmlFor="accept_conditions" className="cursor-pointer">ยอมรับ </label>
                                 </Checkbox>
                                 <span onClick={() => setOpenModal(true)} className="text-primary font-bold cursor-pointer">เงื่อนไขการใช้บริการ</span>
                             </div>
 
                             <div className='grid grid-cols-1 p-0 '>
                                 <div className='flex justify-center p-0'>
-                                    <button className='text-md text-white bg-primary py-1 hover:border-secondary hover:bg-secondary hover:text-primary focus:outline-none fontFam md:text-xl' type="submit">บันทึกการแก้ไข</button> {/* เปลี่ยน Button Text */}
+                                    <button 
+                                        className='!text-white bg-red-500 px-12 py-2.5 rounded-full shadow-md hover:shadow-lg hover:bg-red-600 transition-all duration-300 transform hover:scale-105 font-bold text-lg tracking-wide' 
+                                        type="submit"
+                                    >
+                                        บันทึกการแก้ไข
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -448,8 +462,8 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                         <div dangerouslySetInnerHTML={{ __html: website?.book_conditions || '' }} />
                     </div>
                 </Modal>
-
-            </Spin>
+                </>
+            )}
         </div>
     )
 }

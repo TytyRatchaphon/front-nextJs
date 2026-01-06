@@ -1,13 +1,14 @@
 ﻿"use client"
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { Image as AntdImage, Spin, Modal, Popconfirm, message, Empty, Dropdown, Select, DatePicker, InputNumber, Popover } from 'antd'
 import dayjs from 'dayjs'
 import type { BookDetail } from '@/types/api'
-import { TagSwiper } from '@/components/ImageSlider'
-import { fetchBookDetail, fetchBookGroups, fetchGroupEpisodes, deleteGroupEpisode, createGroup, updateEpisodesPrice, updateGroup, createPromotion, deletePromotion, updatePromotion } from '@/services/apiServices'
+import { TagSwiper } from '@/components/swiper/ImageSlider'
+import { fetchBookDetail, fetchBookGroups, fetchGroupEpisodes, deleteGroupEpisode, createGroup, updateEpisodesPrice, updateGroup, createPromotion, deletePromotion, updatePromotion, createGroupEpisodePromotion, deleteGroupEpisodePromotion, fetchBookPurchaseDetails } from '@/services/apiServices'
 import Image from 'next/image'
+import GifLoader from '@/components/utility/GifLoader'
 
 
 
@@ -118,6 +119,18 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
     enabled: !!bookId,
   });
 
+  // Fetch purchase details
+  const purchaseQuery = useQuery({
+    queryKey: ['bookPurchaseDetails', String(bookId ?? '')],
+    queryFn: async () => {
+      if (!bookId) return null;
+      return await fetchBookPurchaseDetails(String(bookId));
+    },
+    enabled: !!bookId,
+  });
+
+
+
 	// Group episodes modal state
 	const [selectedGroupId, setSelectedGroupId] = useState<string | number | null>(null);
 	const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
@@ -204,6 +217,14 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
     const [creatingPromo, setCreatingPromo] = useState(false)
     const [openPromoId, setOpenPromoId] = useState<string | number | null>(null)
     const [editingPromoId, setEditingPromoId] = useState<number | null>(null)
+
+    // Episode Promotion Modal State
+    const [promoEpModalOpen, setPromoEpModalOpen] = useState(false)
+    const [cancelPromoEpModalOpen, setCancelPromoEpModalOpen] = useState(false)
+    const [promoDiscountPrice, setPromoDiscountPrice] = useState<number>(0)
+    const [promoStartDate, setPromoStartDate] = useState<dayjs.Dayjs | null>(dayjs())
+    const [promoEndDate, setPromoEndDate] = useState<dayjs.Dayjs | null>(dayjs().add(1, 'day'))
+    const [promoEpSubmitting, setPromoEpSubmitting] = useState(false)
 
     const handleDeletePromotion = async (id: string | number) => {
         try {
@@ -364,6 +385,91 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 		}
 	}
 
+	// Bulk Set Promotion Handler
+    const handleBulkSetPromotion = async () => {
+        const ids = Array.from(selectedIds)
+        if (ids.length === 0) return messageApi.error('กรุณาเลือกตอนที่ต้องการตั้งค่า')
+        if (!promoDiscountPrice) return messageApi.error('กรุณาระบุราคาโปรโมชั่น')
+        if (!promoStartDate || !promoEndDate) return messageApi.error('กรุณาระบุช่วงเวลา')
+
+        try {
+            setPromoEpSubmitting(true)
+            const payload = {
+                ep_ids: ids.join(','),
+                start_date: promoStartDate.format('YYYY/MM/DD HH:mm'),
+                end_date: promoEndDate.format('YYYY/MM/DD HH:mm'),
+                discount_price: promoDiscountPrice
+            }
+            await createGroupEpisodePromotion(payload)
+            messageApi.success('ตั้งค่าโปรโมชั่นเรียบร้อย')
+            setPromoEpModalOpen(false)
+            groupEpisodesQuery.refetch()
+            setSelectedIds(new Set())
+            setSelectAllChecked(false)
+        } catch (e: any) {
+            console.error('set promotion error', e)
+            messageApi.error(e?.response?.data?.message ?? 'ไม่สามารถตั้งค่าโปรโมชั่นได้')
+        } finally {
+            setPromoEpSubmitting(false)
+        }
+    }
+
+    // Bulk Cancel Promotion Handler
+    const handleBulkCancelPromotion = async () => {
+        const selectedEpIds = Array.from(selectedIds)
+        if (selectedEpIds.length === 0) return messageApi.error('กรุณาเลือกตอนที่ต้องการยกเลิก')
+        
+        // Normalize data source to find episodes
+        const rawPayload = groupEpisodesQuery.data ?? []
+        let episodesRaw: any[] = []
+        if (Array.isArray(rawPayload)) episodesRaw = rawPayload
+        else if (rawPayload && Array.isArray((rawPayload as any).episodes)) episodesRaw = (rawPayload as any).episodes
+        else if (rawPayload && Array.isArray((rawPayload as any).list)) episodesRaw = (rawPayload as any).list
+        else if (rawPayload && Array.isArray((rawPayload as any).data)) episodesRaw = (rawPayload as any).data
+
+        // Map selected Episode IDs to Promotion IDs
+        const promoIds: string[] = []
+        selectedEpIds.forEach(epKey => {
+            // Find the episode object
+            const ep = episodesRaw.find((e: any, idx: number) => {
+                 const rid = e.ep_id ?? e.epID ?? e.episode_id ?? e.id ?? e.eid
+                 const canonicalKey = String(rid ?? `ep_${String(selectedGroupId ?? 'g')}_${idx}`)
+                 return canonicalKey === epKey
+            })
+            
+            // Extract promotion ID
+            if (ep && Array.isArray(ep.promotions) && ep.promotions.length > 0) {
+                 const active = ep.promotions[0]
+                 if (active && active.id) {
+                     promoIds.push(String(active.id))
+                 }
+            }
+        })
+
+        if (promoIds.length === 0) {
+             // Case where selected episodes don't have active promotions
+             // Depending on UX, we might just close modal or warn. 
+             // Warnings seems safer.
+             return messageApi.error('ไม่พบโปรโมชั่นในตอนที่เลือก')
+        }
+
+        try {
+            setPromoEpSubmitting(true)
+            // The API expects a JSON body with keys "ids" that is a comma-separated string of PROMOTION IDs
+            await deleteGroupEpisodePromotion(promoIds.join(','))
+            messageApi.success('ยกเลิกโปรโมชั่นเรียบร้อย')
+            setCancelPromoEpModalOpen(false)
+            groupEpisodesQuery.refetch()
+            setSelectedIds(new Set())
+            setSelectAllChecked(false)
+        } catch (e: any) {
+            console.error('cancel promotion error', e)
+            messageApi.error(e?.response?.data?.message ?? 'ไม่สามารถยกเลิกโปรโมชั่นได้')
+        } finally {
+            setPromoEpSubmitting(false)
+        }
+    }
+
 	const handleBulkDelete = async (idsArg?: (string | number)[]) => {
 		const ids = (idsArg && idsArg.length > 0) ? idsArg.map((x) => String(x)) : Array.from(selectedIds)
 		if (!ids || ids.length === 0) return
@@ -397,7 +503,23 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 	}
 
 	// No mock fallback: require real data (from prop, sessionStorage or API)
-	const display = book
+    // Derive display state by merging book state with purchase details
+    const display = useMemo(() => {
+        if (!book) return book;
+        const details = purchaseQuery.data;
+        if (!details) return book;
+
+        return {
+            ...book,
+            discount_full_book: details.discount_full_book || book.discount_full_book,
+            remaining_paid_count: details.remaining_paid_count ?? book.remaining_paid_count,
+            remaining_paid_total: details.remaining_paid_total ?? book.remaining_paid_total,
+            remaining_paid_total_discount: details.remaining_paid_total_discount ?? book.remaining_paid_total_discount,
+            remaining_promo_count: details.remaining_promo_count ?? book.remaining_promo_count,
+            remaining_promo_total: details.remaining_promo_total ?? book.remaining_promo_total,
+            remaining_promo_total_discount: details.remaining_promo_total_discount ?? book.remaining_promo_total_discount,
+        };
+    }, [book, purchaseQuery.data]);
 
 	// Compute episode count that excludes private/draft/unlisted when possible.
 	// Use state + effect so we can optionally fetch per-group episodes when groups don't include lists.
@@ -505,14 +627,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 	// While no book data, show a loading indicator (avoid using mock values)
 	if (!display) {
 		return (
-			<div className="max-w-5xl mx-auto py-10 px-6">
-				<div className="flex items-center justify-center py-24">
-					<div className="flex flex-col items-center">
-						<Spin />
-						<div className="text-sm text-gray-600 mt-2">กำลังโหลดข้อมูล...</div>
-					</div>
-				</div>
-			</div>
+			<GifLoader />
 		)
 	}
 
@@ -670,48 +785,147 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 				</div>
 			</Modal>
 			
-			<div className="flex items-start gap-6">
+            {/* Set Episode Promotion Modal */}
+            <Modal
+                open={promoEpModalOpen}
+                onCancel={() => setPromoEpModalOpen(false)}
+                footer={null}
+                centered
+                width={700}
+                title={<div className="text-center text-amber-500 font-semibold text-lg">ตั้งราคาโปรโมชั่น</div>}
+            >
+                <div className="py-2">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div>
+                            <label className="block text-sm text-gray-700 mb-1">ราคาโปรโมชั่น</label>
+                            <Select
+                                className="w-full"
+                                placeholder="เลือกราคา"
+                                value={promoDiscountPrice}
+                                onChange={(v) => setPromoDiscountPrice(v)}
+                                options={Array.from({ length: 100 }, (_, i) => ({ value: i + 1, label: `${i + 1}` }))}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-700 mb-1">วันที่เริ่มต้น</label>
+                            <DatePicker
+                                className="w-full"
+                                placeholder="เลือกวันที่"
+                                value={promoStartDate}
+                                onChange={(date) => setPromoStartDate(date)}
+                                format="YYYY-MM-DD"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-700 mb-1">วันที่สิ้นสุด</label>
+                            <DatePicker
+                                className="w-full"
+                                placeholder="เลือกวันที่"
+                                value={promoEndDate}
+                                onChange={(date) => setPromoEndDate(date)}
+                                format="YYYY-MM-DD"
+                            />
+                        </div>
+                    </div>
+                    <div className="flex justify-center">
+                        <button
+                            onClick={handleBulkSetPromotion}
+                            disabled={promoEpSubmitting}
+                            className="bg-rose-600 text-white px-8 py-2 rounded-full hover:bg-rose-700 transition-colors shadow-sm disabled:opacity-50"
+                        >
+                            {promoEpSubmitting ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Cancel Episode Promotion Confirmation Modal */}
+            <Modal
+                open={cancelPromoEpModalOpen}
+                onCancel={() => setCancelPromoEpModalOpen(false)}
+                footer={null}
+                centered
+                width={500}
+            >
+                <div className="py-6 flex flex-col items-center text-center">
+                     <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 16 16" height="3em" width="3em" xmlns="http://www.w3.org/2000/svg" className="text-amber-500 mb-4">
+                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                        <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"/>
+                    </svg>
+                    <h3 className="text-gray-800 font-medium text-lg mb-6">ยืนยันการยกเลิกส่วนลดตอนที่เลือกทั้งหมดหรือไม่</h3>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setCancelPromoEpModalOpen(false)}
+                            className="px-6 py-2 rounded border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
+                        >
+                            ไม่ใช่
+                        </button>
+                        <button
+                            onClick={handleBulkCancelPromotion}
+                            disabled={promoEpSubmitting}
+                            className="px-6 py-2 rounded bg-rose-600 text-white hover:bg-rose-700 transition-colors shadow-sm disabled:opacity-50"
+                        >
+                            {promoEpSubmitting ? 'กำลังยกเลิก...' : 'ใช่ ยกเลิกเลย'}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+			
+			{/* Header Section */}
+			<div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm mb-8 flex flex-col md:flex-row gap-8 items-start">
 				<AntdImage
 					src={(display as any).img}
 					alt="cover"
-					width={144}
+					width={160}
 					preview={{
 						mask: <div className="text-white">preview</div>,
 					}}
-					className="rounded-lg shadow-lg object-cover border"
+					className="rounded-lg shadow-md object-cover border border-gray-100"
 				/>
-				<div className="flex-1">
-					<h1 className="text-2xl font-bold text-black leading-tight truncate">{getBookName(display) || 'ไม่ระบุชื่อหนังสือ'}</h1>
-					<div className="text-lg text-black mt-6">โดย : {(display as any).writer?.writer_name ?? 'ไม่ระบุ'}</div>
-					{(display as any).title || (display as any).title ? (
-						<div className="text-lg text-black mt-6 max-w-2xl">{(display as any).title ?? (display as any).title}</div>
-					) : null}
-					<div className="flex items-center gap-4 text-sm text-gray-600 mt-13">
-						<div className='flex items-center gap-2'>
-							<svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 16 16" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+				<div className="flex-1 min-w-0">
+					<h1 className="text-3xl font-bold text-gray-900 leading-tight mb-3">
+                        {getBookName(display) || 'ไม่ระบุชื่อหนังสือ'}
+                    </h1>
+					<div className="text-lg text-gray-600 mb-6 flex items-center gap-2">
+                        <span className="font-medium text-gray-900">โดย:</span> 
+                        {(display as any).writer?.writer_name ?? 'ไม่ระบุ'}
+                    </div>
+					
+                    {((display as any).title || (display as any).title) && (
+						<div className="text-gray-600 mb-8 max-w-3xl leading-relaxed">
+                            {(display as any).title ?? (display as any).title}
+                        </div>
+					)}
+					
+					<div className="flex flex-wrap items-center gap-4">
+						<div className='flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100 text-gray-600 text-sm font-medium'>
+							<svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 16 16" height="1.1em" width="1.1em" xmlns="http://www.w3.org/2000/svg" className="text-rose-500">
 								<path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"></path>
 								<path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"></path>
 							</svg>	
-							{(display as any).view ?? (display as any).views}</div>
-						<div className='flex items-center gap-2'> 
-							<svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 16 16" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+							{((display as any).view ?? (display as any).views)?.toLocaleString()} วิว
+                        </div>
+						<div className='flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100 text-gray-600 text-sm font-medium'> 
+							<svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 16 16" height="1.1em" width="1.1em" xmlns="http://www.w3.org/2000/svg" className="text-rose-500">
 									<path fillRule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2"></path>
 							</svg> 
-							{(display as any).total_eps ?? (display as any).total_eps}</div>
-						<div className='flex items-center gap-2'>
-							<svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 16 16" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+							{((display as any).total_eps ?? (display as any).total_eps)?.toLocaleString()} ตอน
+                        </div>
+						<div className='flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100 text-gray-600 text-sm font-medium'>
+							<svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 16 16" height="1.1em" width="1.1em" xmlns="http://www.w3.org/2000/svg" className="text-rose-500">
 								<path d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783"></path>
 							</svg> 
-							{(display as any).total_groups ?? (display as any).total_groups}</div>
+							{((display as any).total_groups ?? (display as any).total_groups)?.toLocaleString()} เล่ม
+                        </div>
 					</div>
 				</div>
 			</div>
 
 			<hr className="my-8" />
 
-			<section className="mb-8">
-				<div className="flex items-center justify-between">
-					<h2 className="font-semibold">รายละเอียด</h2>
+			<section className="mb-8 bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
+				<div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">
+					<h2 className="font-semibold text-lg text-gray-800">รายละเอียด</h2>
 					<ActionButton 
                         onClick={() => {
                             if (bookId) {
@@ -724,7 +938,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
                         แก้ไข
                     </ActionButton>
 				</div>
-				<p className="text-gray-700 mt-4">{(display as any).title ?? (display as any).title}</p>
+				<p className="text-gray-700 leading-relaxed text-base">{(display as any).title ?? (display as any).title}</p>
 			</section>
 
 			{/* Group episodes modal */}
@@ -852,12 +1066,48 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
                                                   <span className="text-sm">แก้ไข</span>
                                             </button>
 											{/* coin pill */}
-											<div className='flex gap-2'>
-												<span>
-													<Image src="/images/e-coin.png" alt="Coin" width={24} height={24} />
-												</span>
-												{coin === 0 ? 'อ่านฟรี' : `${coin} `}
-											</div>
+                                            {(() => {
+                                                const regularPrice = coin ?? 0
+                                                let promoPrice = ep.discount_price ?? ep.promotion_price ?? ep.price_promotion
+                                                let activePromo: any = null
+
+                                                // Check nested promotions array from user debug data
+                                                if (Array.isArray(ep.promotions) && ep.promotions.length > 0) {
+                                                    activePromo = ep.promotions[0]
+                                                    if (activePromo && typeof activePromo.discount_price === 'number') {
+                                                        promoPrice = activePromo.discount_price
+                                                    }
+                                                }
+
+                                                const hasPromo = typeof promoPrice === 'number' && promoPrice < regularPrice && promoPrice >= 0
+
+                                                if (hasPromo) {
+                                                    return (
+                                                        <div className='flex flex-col items-end gap-1'>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="bg-rose-50 text-rose-600 text-[10px] px-1.5 py-0.5 rounded border border-rose-100 font-bold tracking-wide">SALE</span>
+                                                                <span className="text-xs text-gray-400 line-through decoration-gray-300">{regularPrice}</span>
+                                                                <span className="text-lg font-bold text-rose-600 leading-none">{promoPrice}</span>
+                                                                <Image src="/images/e-coin.png" alt="Coin" width={18} height={18} className="opacity-90" />
+                                                            </div>
+                                                            {activePromo && (
+                                                                <div className="flex items-center gap-1 text-[10px] text-gray-400 font-light">
+                                                                    <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                                                    <span>{dayjs(activePromo.start_date).format('DD/MM/YY HH:mm')} - {dayjs(activePromo.end_date).format('DD/MM/YY HH:mm')}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )
+                                                }
+                                                return (
+                                                    <div className='flex items-center gap-2'>
+                                                        <span>
+                                                            <Image src="/images/e-coin.png" alt="Coin" width={24} height={24} />
+                                                        </span>
+                                                        {regularPrice === 0 ? <span className="text-emerald-600 font-medium">อ่านฟรี</span> : <span className="font-medium text-gray-700">{regularPrice}</span>}
+                                                    </div>
+                                                )
+                                            })()}
 									</div>
 								</div>
 							)
@@ -913,12 +1163,20 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 										setModalSelectedEpIds(selectedIdArray.map((x: any) => String(x)))
 										setPriceSelected(null)
 										setPriceModalOpen(true)
-									}
+									} else if (key === 'set_promotion') {
+                                        if (selectedIdArray.length === 0) return messageApi.info('กรุณาเลือกตอนที่ต้องการตั้งค่าส่วนลด')
+                                        setPromoEpModalOpen(true)
+                                    } else if (key === 'cancel_promotion') {
+                                        if (selectedIdArray.length === 0) return messageApi.info('กรุณาเลือกตอนที่ต้องการยกเลิกส่วนลด')
+                                        setCancelPromoEpModalOpen(true)
+                                    }
 								}
 
 								const items = [
 									{ key: 'editPrice', label: 'แก้ไขราคาเลือกทั้งหมด' },
-									{ key: 'deleteAll', label: 'ลบเลือกทั้งหมด' },
+                                    { key: 'set_promotion', label: 'ตั้งค่าส่วนลด' },
+                                    { key: 'cancel_promotion', label: 'ยกเลิกส่วนลดที่เลือกทั้งหมด', danger: true },
+									{ key: 'deleteAll', label: 'ลบเลือกทั้งหมด', danger: true },
 								]
 
 								return (
@@ -943,12 +1201,12 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 				)}
 			</Modal>
 
-			<section className="mb-8">
-				<h3 className="font-semibold mb-3 rounded-">Tag</h3>
+			<section className="mb-8 bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
+				<h3 className="font-semibold mb-4 text-gray-800 text-lg">Tag</h3>
 				<div className="flex flex-wrap gap-2">
 					{(() => {
 						const raw = (display as any).tag ?? (display as any).tags
-						if (!raw) return null
+						if (!raw) return <span className="text-gray-400 italic">ไม่มีแท็ก</span>
 						let arr: string[] = []
 						if (Array.isArray(raw)) {
 							arr = raw
@@ -961,10 +1219,10 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 				</div>
 			</section>
 
-			<section className="mb-8 bg-gray-50 rounded">
-				<div className="flex items-start justify-between px-4 py-3 border-b">
+			<section className="mb-8 bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
+				<div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-white">
 					<div>
-						<h3 className="font-semibold">สารบัญ</h3>
+						<h3 className="font-semibold text-lg text-gray-800">สารบัญ</h3>
 						<div className="text-sm text-gray-500 mt-1">{(display as any)?.total_groups ?? groupsQuery.data?.length ?? 0} เล่ม / {computedVisibleEps} ตอน</div>
 					</div>
 					<ActionButton variant="danger" onClick={handleOpenAddGroup}>เพิ่มเล่ม</ActionButton>
@@ -986,7 +1244,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 									</div>
 									<div className="flex items-center gap-4">
 										<button title="ลบ" className="text-gray-500 hover:text-gray-800 p-2">
-											<svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M5.5 5.5v6h1v-6h-1zm3 0v6h1v-6h-1z"/><path d="M14 3.5h-3.5l-1-1h-5l-1 1H2v1h12v-1z"/></svg>
+											<svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 16 16" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5m-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5M4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06m6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528M8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5"></path></svg>
 										</button>
 										<ActionButton variant="danger" onClick={() => handleOpenEditGroup(g)}>
 											<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12.146 3.146a.5.5 0 0 1 .708 0l.999.999a.5.5 0 0 1 0 .708l-7.439 7.439a.5.5 0 0 1-.233.13l-3 1a.5.5 0 0 1-.63-.63l1-3a.5.5 0 0 1 .13-.233l7.439-7.439z"/></svg>
@@ -1001,7 +1259,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 											เพิ่มตอน
 										</button>
 										<button aria-label={`เปิดตอนของกลุ่ม ${g.group_id}`} onClick={() => openGroupModal(g.group_id)} className="ml-3 p-2 text-gray-400 hover:bg-gray-50 rounded">
-											<svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 16 16" className="text-2xl" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2"></path><path d="M2.242 2.194a.27.27 0 0 1 .516 0l.162.53c.035.115.14.194.258.194h.551c.259 0 .37.333.164.493l-.468.363a.28.28 0 0 0-.094.3l.173.569c.078.256-.213.462-.423.3l-.417-.324a.27.27 0 0 0-.328 0l-.417.323c-.21.163-.5-.043-.423-.299l.173-.57a.28.28 0 0 0-.094-.299l-.468-.363c-.206-.16-.095-.493.164-.493h.55a.27.27 0 0 0 .259-.194zm0 4a.27.27 0 0 1 .516 0l.162.53c.035.115.14.194.258.194h.551c.259 0 .37.333.164.493l-.468.363a.28.28 0 0 0-.094.3l.173.569c.078.255-.213.462-.423.3l-.417-.324a.27.27 0 0 0-.328 0l-.417.323c-.21.163-.5-.043-.423-.299l.173-.57a.28.28 0 0 0-.094-.299l-.468-.363c-.206-.16-.095-.493.164-.493h.55a.27.27 0 0 0 .259-.194z"></path></svg>
+										<svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 16 16" className="text-2xl" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5"></path><path d="M2.242 2.194a.27.27 0 0 1 .516 0l.162.53c.035.115.14.194.258.194h.551c.259 0 .37.333.164.493l-.468.363a.28.28 0 0 0-.094.3l.173.569c.078.256-.213.462-.423.3l-.417-.324a.27.27 0 0 0-.328 0l-.417.323c-.21.163-.5-.043-.423-.299l.173-.57a.28.28 0 0 0-.094-.299l-.468-.363c-.206-.16-.095-.493.164-.493h.55a.27.27 0 0 0 .259-.194zm0 4a.27.27 0 0 1 .516 0l.162.53c.035.115.14.194.258.194h.551c.259 0 .37.333.164.493l-.468.363a.28.28 0 0 0-.094.3l.173.569c.078.255-.213.462-.423.3l-.417-.324a.27.27 0 0 0-.328 0l-.417.323c-.21.163-.5-.043-.423-.299l.173-.57a.28.28 0 0 0-.094-.299l-.468-.363c-.206-.16-.095-.493.164-.493h.55a.27.27 0 0 0 .259-.194zm0 4a.27.27 0 0 1 .516 0l.162.53c.035.115.14.194.258.194h.551c.259 0 .37.333.164.493l-.468.363a.28.28 0 0 0-.094.3l.173.569c.078.255-.213.462-.423.3l-.417-.324a.27.27 0 0 0-.328 0l-.417.323c-.21.163-.5-.043-.423-.299l.173-.57a.28.28 0 0 0-.094-.299l-.468-.363c-.206-.16-.095-.493.164-.493h.55a.27.27 0 0 0 .259-.194z"></path></svg>
 										</button>
 									</div>
 								</li>
@@ -1011,40 +1269,25 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 				</div>
 			</section>
 
-			{/* Debug inspector (toggleable) */}
-			<div className="mt-6">
-				<button
-					className="text-xs text-gray-600 underline"
-					onClick={() => setDebugOpen((s) => !s)}
-				>
-					{debugOpen ? 'ซ่อน debug' : 'แสดง debug'}
-				</button>
-				{debugOpen && (
-					<div className="mt-2 p-3 bg-gray-50 border rounded text-xs text-gray-700">
-						<pre className="whitespace-pre-wrap max-h-72 overflow-auto">{JSON.stringify(debugData, null, 2)}</pre>
-					</div>
-				)}
-			</div>
 
-			<section className="mb-8 bg-white border rounded">
-				<div className="flex items-center justify-between px-4 py-3 border-b">
+
+			<section className="mb-8 bg-white border border-gray-100 rounded shadow-sm">
+				<div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
 					<h3 className="font-semibold">จัดการโปรโมชั่น</h3>
 					<ActionButton variant="danger" onClick={() => setPromoModalOpen(true)}>เพิ่มโปรโมชั่น</ActionButton>
 				</div>
-				<ul>
-					{/* Support both legacy 'promos' array and new 'discount_full_book' object */}
+				<div className="p-4">
 					{(() => {
 						const promos = (display as any).promos ?? []
 						const dfb = (display as any).discount_full_book
 						
 						const items = [...promos]
-						if (dfb) {
-							items.push({
+						if (dfb) { 
+							items.push({ 
 								id: dfb.dfb_id,
 								name: dfb.subject,
 								start: dayjs(dfb.start_date).format('DD/MM/YYYY HH:mm'),
 								end: dayjs(dfb.end_date).format('DD/MM/YYYY HH:mm'),
-                                // Pass raw data for editing
                                 discount_percent: dfb.discount_percent,
                                 groupIDs: dfb.groupIDs ?? dfb.group_ids,
                                 raw: dfb
@@ -1052,59 +1295,90 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 						}
 
 						if (items.length === 0) {
-							return <li className="px-4 py-3 text-gray-500 text-sm">ไม่มีโปรโมชั่น</li>
+							return (
+								<div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+									<p>ยังไม่มีโปรโมชั่น</p>
+									<p className="text-xs mt-1">คลิก "เพิ่มโปรโมชั่น" เพื่อเริ่มสร้างโปรโมชั่นใหม่</p>
+								</div>
+							)
 						}
 
-						return items.map((p: any) => (
-							<li key={p.id} className="flex items-center justify-between px-4 py-3 border-b last:border-b-0">
-								<div className="text-gray-800 font-medium">{p.name}</div>
-								<div className="flex items-center gap-4 text-sm text-gray-500">
-									<div className="text-right">
-										<div>{p.start}</div>
-										<div>{p.end}</div>
-									</div>
-									<div className="flex items-center gap-2">
-										<Popover
-											open={openPromoId === p.id}
-											onOpenChange={(visible) => setOpenPromoId(visible ? p.id : null)}
-											content={
-												<div className="flex flex-col gap-3 p-3 bg-white rounded-md min-w-[160px]">
-													<div className="text-sm text-gray-800 font-medium text-center">ยืนยันการลบโปรโมชั่น?</div>
-													<div className="flex items-center justify-center gap-2">
-														<button
-															onClick={() => setOpenPromoId(null)}
-															className="px-3 py-1 rounded text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-200 transition-colors border border-gray-300"
-														>
-															ยกเลิก
-														</button>
-														<button
-															onClick={() => handleDeletePromotion(p.id)}
-															className="bg-rose-600 text-white px-3 py-1 rounded text-sm hover:bg-rose-700 transition-colors border border-rose-600"
-														>
-															ลบ
-														</button>
+						return (
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								{items.map((p: any) => (
+									<div key={p.id} className="group relative bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-all hover:border-rose-200">
+										<div className="flex justify-between items-start mb-2">
+											<div className="bg-rose-50 text-rose-600 rounded-lg p-2.5">
+												<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+													<path d="M12 2L2 7L12 12L22 7L12 2Z"stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+													<path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+													<path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+												</svg>
+											</div>
+											{p.discount_percent && (
+												<span className="bg-rose-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-sm">
+													-{p.discount_percent}%
+												</span>
+											)}
+										</div>
+										
+										<h4 className="font-bold text-gray-800 text-lg mb-1 truncate pr-8">{p.name}</h4>
+										
+										<div className="text-sm text-gray-500 space-y-1 mt-3">
+											<div className="flex items-center gap-2">
+												<span className="text-xs font-semibold bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">เริ่ม</span>
+												{p.start}
+											</div>
+											<div className="flex items-center gap-2">
+												<span className="text-xs font-semibold bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">สิ้นสุด</span>
+												{p.end}
+											</div>
+										</div>
+
+										<div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+											<button 
+												onClick={() => handleOpenEditPromotion(p)}
+												className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+												title="แก้ไข"
+											>
+												<svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 16 16" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M12.146 3.146a.5.5 0 0 1 .708 0l.999.999a.5.5 0 0 1 0 .708l-7.439 7.439a.5.5 0 0 1-.233.13l-3 1a.5.5 0 0 1-.63-.63l1-3a.5.5 0 0 1 .13-.233l7.439-7.439z"/></svg>
+											</button>
+											<Popover
+												open={openPromoId === p.id}
+												onOpenChange={(visible) => setOpenPromoId(visible ? p.id : null)}
+												content={
+													<div className="flex flex-col gap-3 p-3 bg-white rounded-md min-w-[160px]">
+														<div className="text-sm text-gray-800 font-medium text-center">ยืนยันการลบ?</div>
+														<div className="flex items-center justify-center gap-2">
+															<button
+																onClick={() => setOpenPromoId(null)}
+																className="px-3 py-1 rounded text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-200 border"
+															>
+																ยกเลิก
+															</button>
+															<button
+																onClick={() => handleDeletePromotion(p.id)}
+																className="bg-rose-600 text-white px-3 py-1 rounded text-sm hover:bg-rose-700 border border-rose-600"
+															>
+																ลบ
+															</button>
+														</div>
 													</div>
-												</div>
-											}
-											trigger="click"
-											placement="topRight"
-											overlayInnerStyle={{ padding: 0, backgroundColor: 'transparent' }}
-										>
-											<button title="ลบ" className="text-gray-400 hover:text-gray-700">🗑️</button>
-										</Popover>
-										<button 
-                                            title="แก้ไข" 
-                                            className="text-gray-400 hover:text-gray-700"
-                                            onClick={() => handleOpenEditPromotion(p)}
-                                        >
-                                            ✏️
-                                        </button>
+												}
+												trigger="click"
+												placement="topRight"
+											>
+												<button className="p-1.5 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-full transition-colors" title="ลบ">
+													<svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 16 16" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5m-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5M4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06m6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528M8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5"></path></svg>
+												</button>
+											</Popover>
+										</div>
 									</div>
-								</div>
-							</li>
-						))
+								))}
+							</div>
+						)
 					})()}
-				</ul>
+				</div>
 			</section>
 
 			{/* Add Promotion Modal */}

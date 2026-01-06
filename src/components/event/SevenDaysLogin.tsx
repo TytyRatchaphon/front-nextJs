@@ -25,6 +25,9 @@ const fetchWeeklyLogin = async (token?: string | null) : Promise<LoginStatus> =>
   // axios throws for non-2xx, so if we get here assume data present
   return res.data?.data ?? {}
 }
+const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
+  return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
+}
 
 function SevenDaysLogin() {
   const { user, token, updateToken } = useAuthStore()
@@ -115,93 +118,263 @@ function SevenDaysLogin() {
     // ensure latest data
     try { queryClient.invalidateQueries({ queryKey: ['weekly-login'] }) } catch (e) {}
   }
+  /* 
+  // =================================================================================================
+  // � OLD SPLIT IMPLEMENTATION (Commented out as requested)
+  // =================================================================================================
   return (
-    <div style={{ maxWidth: '100%', display: 'flex', justifyContent: 'center', padding: 12 }}>
-      <div style={{ position: 'relative', width: 1040, maxWidth: '100%' }}>
-        {/* Main banner */}
-        <Image src="/images/checkin.png" alt="checkin" width={1040} height={352} priority style={{ display: 'block', width: '100%', height: 'auto' }} />
-
-        {/* Overlay: 2 rows x 3 columns of day images */}
-        <div style={{
-          position: 'absolute',
-          left: '4%',
-          top: '32%',
-          width: 260,
-          height: 180,
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gridTemplateRows: 'repeat(2, 1fr)',
-          gap: 16,
-          pointerEvents: 'none',
-        }}>
+    <div className="w-full flex justify-center px-4 py-3 bg-white md:bg-transparent">
+      
+      <div className="hidden md:block relative w-full max-w-[1040px]">
+        <Image 
+          src="/images/checkin.png" 
+          alt="checkin" 
+          width={1040} 
+          height={352} 
+          priority 
+          className="w-full h-auto rounded-xl block" 
+        />
+        <div className="absolute left-[4%] top-[32%] w-[25%] h-[51%] grid grid-cols-3 grid-rows-2 gap-[5%] pointer-events-none">
           {[...Array(6)].map((_, i) => {
             const day = i + 1
-            // Mark checked when the day is strictly less than currentRewardDay
-            // or when it's the currentRewardDay and the user has already checked in today.
             const isChecked = (day < currentRewardDay) || (day === currentRewardDay && checkedToday)
             return (
-              <div key={i} style={{ width: 80, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                <Image src={`/images/day${day}.png`} alt={`day-${day}`} width={80} height={80} style={{ objectFit: 'contain' }} />
+              <div key={i} className="w-full h-full flex items-center justify-center relative">
+                <div className="relative w-full h-full">
+                    <Image src={`/images/day${day}.png`} alt={`day-${day}`} fill className="object-contain" />
+                </div>
                 {isChecked && (
-                  <div className="check-appear" style={{ position: 'absolute', left: '50%', top: '50%', width: 94, height: 94, transform: 'translate(-50%, -50%)', pointerEvents: 'none' }}>
-                    <Image src="/images/check.png" alt={`checked-${day}`} fill style={{ objectFit: 'contain' }} />
+                  <div className="check-appear absolute left-1/2 top-1/2 w-[120%] h-[120%] -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                    <Image src="/images/check.png" alt={`checked-${day}`} fill className="object-contain" />
                   </div>
                 )}
               </div>
             )
           })}
         </div>
-
-        {/* Day7 image to the right of the grid */}
-        <div style={{
-          position: 'absolute',
-          left: 'calc(4% + 300px)',
-          top: '36%',
-          width: 140,
-          height: 140,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          pointerEvents: 'none',
-        }}>
-          <div style={{ position: 'relative', width: 140, height: 140 }}>
-            <Image src="/images/day7.png" alt="day-7" width={140} height={140} style={{ objectFit: 'contain' }} />
+        <div className="absolute left-[33%] top-[36%] w-[13.5%] h-[40%] flex items-center justify-center pointer-events-none">
+          <div className="relative w-full h-full">
+            <Image src="/images/day7.png" alt="day-7" fill className="object-contain" />
             {((currentRewardDay > 7) || (currentRewardDay === 7 && checkedToday)) && (
-              <div className="check-appear" style={{ position: 'absolute', left: '50%', top: '50%', width: 154, height: 154, transform: 'translate(-50%, -50%)', pointerEvents: 'none' }}>
-                <Image src="/images/check.png" alt="checked-7" fill style={{ objectFit: 'contain' }} />
+              <div className="check-appear absolute left-1/2 top-1/2 w-[110%] h-[110%] -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                <Image src="/images/check.png" alt="checked-7" fill className="object-contain" />
               </div>
             )}
           </div>
         </div>
-
-        {/* Check-in button (green circle) */}
-        <div style={{ position: 'absolute', right: '3%', top: '75%', transform: 'translateY(-50%)', pointerEvents: 'auto' }}>
+        <div className="absolute right-[3%] top-[75%] -translate-y-1/2 pointer-events-auto w-[14.5%] aspect-square">
           <Button
             type="primary"
-            shape="round"
-            size="large"
+            shape="circle"
             disabled={checkedToday}
+            className="w-full h-full flex items-center justify-center p-0 border-none shadow-md overflow-hidden"
             style={{
               background: checkedToday ? '#9ca3af' : '#2fb37b',
-              borderColor: checkedToday ? '#9ca3af' : '#2fb37b',
-              width: 150,
-              height: 150,
-              borderRadius: '50%',
-              padding: 0,
-              cursor: checkedToday ? 'default' : 'pointer'
             }}
             loading={confirmLoading}
             onClick={handleCheckin}
           >
-            <div style={{ color: 'white', fontSize: 18, fontWeight: 700 }}>{checkedToday ? 'เช็คอินแล้ว' : 'เช็คอิน'}</div>
+            <div className="text-white font-bold text-[clamp(9px,2vw,18px)] leading-tight px-1 text-center">
+               {checkedToday ? 'เช็คอินแล้ว' : 'เช็คอิน'}
+            </div>
           </Button>
         </div>
-        {/* Reward Modal */}
+      </div>
+
+      <div className="md:hidden w-full flex flex-col gap-5">
+        <div className="relative w-full rounded-2xl overflow-hidden shadow-lg bg-gradient-to-r from-red-600 to-red-500 p-6 flex flex-col items-center text-white">
+           <div className="font-bold text-2xl mb-1">เช็คอินประจำวัน</div>
+           <div className="text-red-100 text-sm">รับของรางวัลสุดพิเศษฟรีทุกวัน!</div>
+           <div className="mt-6 w-full">
+             <Button
+                type="default" 
+                size="large"
+                loading={confirmLoading}
+                onClick={handleCheckin}
+                disabled={checkedToday}
+                className={`w-full h-12 rounded-full font-bold text-lg border-none transition-all duration-300 ${
+                    checkedToday 
+                    ? 'bg-white/20 text-white cursor-not-allowed' 
+                    : 'bg-white text-red-600 hover:bg-gray-100 shadow-lg hover:shadow-xl hover:-translate-y-0.5'
+                }`}
+             >
+                {checkedToday ? '✅ เช็คอินเรียบร้อย' : 'กดเช็คอินวันนี้'}
+             </Button>
+           </div>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+           {[...Array(6)].map((_, i) => {
+               const day = i + 1;
+               const isChecked = day < currentRewardDay || (day === currentRewardDay && checkedToday);
+               const isToday = day === currentRewardDay && !checkedToday;
+               return (
+                   <div 
+                      key={day} 
+                      className={`
+                        relative flex flex-col items-center justify-center p-2 rounded-xl border-2 transition-all duration-300 aspect-[4/5]
+                        ${isChecked ? 'bg-green-50 border-green-200' : isToday ? 'bg-white border-red-500 shadow-md scale-105 z-10' : 'bg-gray-50 border-transparent opacity-70'}
+                      `}
+                   >
+                      <div className="text-xs font-bold text-gray-500 mb-1">DAY {day}</div>
+                      <div className="relative w-12 h-12 mb-1">
+                          <Image src={`/images/day${day}.png`} alt={`day-${day}`} fill className="object-contain" />
+                      </div>
+                      {isChecked && (
+                          <div className="absolute inset-0 bg-green-500/10 rounded-xl flex items-center justify-center">
+                              <div className="bg-white rounded-full p-1 shadow-sm">
+                                  <Image src="/images/check.png" alt="checked" width={24} height={24} />
+                              </div>
+                          </div>
+                      )}
+                   </div>
+               )
+           })}
+        </div>
+        <div className={`
+             relative w-full rounded-2xl p-4 flex items-center gap-4 transition-all duration-300 border-2
+             ${(currentRewardDay > 7 || (currentRewardDay === 7 && checkedToday)) 
+                ? 'bg-green-50 border-green-200' 
+                : (currentRewardDay === 7) 
+                    ? 'bg-white border-yellow-400 shadow-lg ring-4 ring-yellow-100' 
+                    : 'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200'
+             }
+        `}>
+             <div className="shrink-0 relative w-20 h-20">
+                 <Image src="/images/day7.png" alt="day-7" fill className="object-contain" />
+             </div>
+             <div className="flex-1">
+                 <div className="font-bold text-gray-800 text-lg">DAY 7</div>
+                 <div className="text-sm text-gray-600">รางวัลพิเศษรอคุณอยู่!</div>
+             </div>
+             {(currentRewardDay > 7 || (currentRewardDay === 7 && checkedToday)) ? (
+                  <div className="bg-green-100 text-green-700 font-bold px-3 py-1 rounded-full text-sm">
+                      รับแล้ว
+                  </div>
+             ) : (
+                  <div className="bg-yellow-100 text-yellow-700 font-bold px-3 py-1 rounded-full text-sm animate-pulse">
+                      เร็วๆนี้
+                  </div>
+             )}
+        </div>
+      </div>
         <Modal open={modalVisible} onOk={handleModalOk} onCancel={() => setModalVisible(false)} okText="ตกลง" cancelText="ยกเลิก" title="คุณได้รับ">
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: 8 }}>
             <Image src="/images/coupon.png" alt="coupon" width={40} height={40} style={{ objectFit: 'contain' }} />
             <div style={{ fontSize: 18, fontWeight: 700 }}>จำนวน {rewardUnit ?? '-'} ลูก</div>
           </div>
+        </Modal>
+      </div>
+
+  )
+  */
+
+  // =================================================================================================
+  // ✨ NEW UNIFIED UI (Modern Card Grid for All Devices)
+  // =================================================================================================
+  return (
+    <div className="w-full flex justify-center px-4 py-6">
+      <div className="w-full max-w-[1040px] flex flex-col gap-6 md:gap-8">
+        
+        {/* Header / Title */}
+        <div className="relative w-full rounded-3xl overflow-hidden shadow-xl bg-gradient-to-r from-red-600 via-red-500 to-orange-500 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between text-white gap-6">
+           <div className="text-center md:text-left z-10">
+               <h2 className="font-bold text-2xl md:text-3xl mb-2 drop-shadow-md">เช็คอินประจำวัน</h2>
+               <p className="text-red-100 text-sm md:text-lg opacity-90">รับของรางวัลสุดพิเศษฟรีทุกวัน เพียงแค่เข้าใช้งาน!</p>
+           </div>
+           
+           {/* Check-in Button */}
+           <div className="z-10 w-full md:w-auto">
+             <Button
+                type="default" 
+                size="large"
+                loading={confirmLoading}
+                onClick={handleCheckin}
+                disabled={checkedToday}
+                className={`w-full md:w-48 h-12 md:h-14 rounded-full font-bold text-lg hover:!text-red-600 hover:!border-red-600 transition-all duration-300 transform ${
+                    checkedToday 
+                    ? 'bg-white/20 text-white cursor-not-allowed' 
+                    : 'bg-white text-red-600 hover:bg-gray-100 shadow-lg hover:shadow-2xl hover:-translate-y-1'
+                }`}
+             >
+                {checkedToday ? '✔  เรียบร้อย' : 'กดเช็คอิน'}
+             </Button>
+           </div>
+
+           {/* Decorative Background Elements */}
+           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+           <div className="absolute bottom-0 left-0 w-48 h-48 bg-yellow-400/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/4 pointer-events-none" />
+        </div>
+
+        {/* Days Grid: 7 Cols on Desktop, 3 Cols on Mobile */}
+        <div className="grid grid-cols-3 md:grid-cols-7 gap-3 md:gap-4">
+           {[...Array(7)].map((_, i) => {
+               const day = i + 1;
+               const isRewardDay = day === 7;
+               const isChecked = day < currentRewardDay || (day === currentRewardDay && checkedToday);
+               const isToday = day === currentRewardDay && !checkedToday;
+               
+               // Image Sizing
+               const imgSize = isRewardDay ? 60 : 48;
+
+               return (
+                   <div 
+                      key={day} 
+                      className={`
+                        group relative flex flex-col items-center justify-center p-3 md:p-4 rounded-2xl border-2 transition-all duration-300
+                        ${isRewardDay ? 'col-span-3 md:col-span-1 aspect-auto md:aspect-[4/5]' : 'aspect-[4/5]'}
+                        ${isChecked 
+                            ? 'bg-green-50 border-green-200' 
+                            : isToday 
+                                ? 'bg-white border-red-500 shadow-lg scale-105 z-10 ring-4 ring-red-50' 
+                                : 'bg-white border-gray-100 hover:border-red-200 hover:shadow-md'
+                        }
+                      `}
+                   >
+                      <div className={`font-bold text-sm mb-2 ${isChecked ? 'text-green-600' : isToday ? 'text-red-600' : 'text-gray-400'}`}>
+                          DAY {day}
+                      </div>
+
+                      <div className={`relative transition-transform duration-300 ${isToday ? 'scale-110' : 'group-hover:scale-110'}`} style={{ width: imgSize, height: imgSize }}>
+                          <Image src={`/images/day${day}.png`} alt={`day-${day}`} fill className="object-contain" />
+                      </div>
+
+                      {/* Status Indicator Overlay */}
+                      {isChecked && (
+                          <div className="absolute inset-0 bg-green-500/10 rounded-2xl flex items-center justify-center backdrop-blur-[1px]">
+                              <div className="bg-white rounded-full p-1.5 shadow-md">
+                                  <Image src="/images/check.png" alt="checked" width={24} height={24} />
+                              </div>
+                          </div>
+                      )}
+                      
+                      {/* Reward Label for Day 7 */}
+                      {isRewardDay && (
+                          <div className="mt-2 text-xs font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full">
+                              BIG REWARD
+                          </div>
+                      )}
+                   </div>
+               )
+           })}
+        </div>
+
+        {/* Modal Logic (Keep as is) */}
+        <Modal open={modalVisible} onOk={handleModalOk} onCancel={() => setModalVisible(false)} centered footer={null} width={320} className="checkin-modal">
+             <div className="flex flex-col items-center justify-center p-6 gap-4 text-center">
+                <div className="w-24 h-24 relative animate-bounce">
+                    <Image src="/images/coupon.png" loader={imageLoader} alt="coupon" fill className="object-contain" />
+                </div>
+                <div>
+                     <h3 className="text-2xl font-bold text-gray-800 m-0">ยินดีด้วย!</h3>
+                     <p className="text-gray-500 mt-2">คุณได้รับกาชาปอง</p>
+                </div>
+                <div className="text-4xl font-black text-red-500 my-2">
+                    {rewardUnit ?? 1} <span className="text-lg text-gray-400 font-medium">ลูก</span>
+                </div>
+                <Button type="primary" size="large" onClick={handleModalOk} className="w-full !bg-red-600 hover:!bg-red-700 h-10 rounded-full font-bold">
+                    ตกลง
+                </Button>
+             </div>
         </Modal>
       </div>
     </div>

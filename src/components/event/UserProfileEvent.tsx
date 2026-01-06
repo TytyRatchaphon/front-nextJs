@@ -4,6 +4,11 @@ import React, { useEffect, useState } from 'react' // เพิ่ม useEffect,
 import NextImage from 'next/image'
 import { Image as AntdImage } from 'antd'
 import { useAuthStore } from '@/stores/authStore'
+import { useWebsiteStore } from '@/stores/websiteStore'
+
+const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
+  return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
+}
 
 type Props = {
   avatar?: string | null
@@ -16,6 +21,7 @@ type Props = {
   coins?: number
   freecoins?: number
 }
+
 
 const iconStyle = 'w-8 h-8 md:w-10 md:h-10'
 
@@ -32,6 +38,7 @@ export default function UserProfileEvent({
 }: Props) {
   const { user, token, updateToken } = useAuthStore();
   const [isMounted, setIsMounted] = useState(false);
+  const {settings} = useWebsiteStore(); 
 
   // 2. เพิ่ม useEffect เพื่อ Force Update ข้อมูลจาก Token ตอนโหลดหน้า
   useEffect(() => {
@@ -63,16 +70,7 @@ export default function UserProfileEvent({
   const finalFreecoins = user?.freecoin ?? freecoins ?? 0;
   return (
     <div
-      className="bg-white rounded-xl flex items-center gap-4 md:gap-6"
-      style={{
-        width: '1040px',
-        maxWidth: '100%',
-        height: '164px',
-        padding: '18px 28px',
-        margin: '0 auto',
-        boxShadow: '0 6px 18px rgba(0,0,0,0.08)',
-        border: '1px solid rgba(0,0,0,0.04)',
-      }}
+      className="bg-white rounded-xl flex flex-col md:flex-row items-center gap-6 w-full max-w-[1040px] mx-auto p-5 md:px-7 md:py-[18px] shadow-[0_6px_18px_rgba(0,0,0,0.08)] border border-[rgba(0,0,0,0.04)] h-auto min-h-[164px]"
     >
       {/* ... (ส่วนแสดงผลเหมือนเดิมทุกอย่าง) ... */}
       <div className="flex-shrink-0">
@@ -87,51 +85,51 @@ export default function UserProfileEvent({
         </div>
       </div>
 
-      <div className="flex-1">
-        <div className="flex items-center justify-between gap-4">
-          <div>
+      <div className="flex-1 w-full">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="text-center md:text-left">
             <div className="text-lg md:text-xl font-semibold text-gray-800">{finalName}</div>
             <div className="text-sm md:text-base text-gray-500">{finalEmail}</div>
           </div>
 
-          <div className="flex items-center gap-16">
+          <div className="grid grid-cols-3 gap-y-6 gap-x-4 md:flex md:items-center md:gap-8 lg:gap-16 place-items-center w-full md:w-auto">
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-center justify-center">
-                <NextImage src="/images/coin.png" alt="coin" width={40} height={40}  sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} />
+                <NextImage src={settings?.coin || '/images/coin.png'} alt="coin" width={40} height={40}  sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} />
               </div>
               <div className="text-black  text-sm md:text-base mt-1">{finalCoins}</div>
             </div>
 
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-center justify-center">
-                <NextImage src="/images/freecoin.png" alt="freecoin" width={40} height={40}  sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} />
+                <NextImage src={settings?.freecoin || '/images/freecoin.png'} alt="freecoin" width={40} height={40}  sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} />
               </div>
               <div className="text-black  text-sm md:text-base mt-1">{finalFreecoins}</div>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-center justify-center">
-                <NextImage src="/images/userstamp.png" alt="stamp" width={40} height={40}  sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} />
+                <NextImage src={settings?.stamp || '/images/userstamp.png'} alt="stamp" width={40} height={40}  sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} />
               </div>
               <div className="text-black  text-sm md:text-base mt-1">{finalStamps}</div>
             </div>
 
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-center justify-center">
-                <NextImage src="/images/flower.png" alt="flower" width={40} height={40}  sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} />
+                <NextImage src={settings?.flower || '/images/flower.png'} alt="flower" width={40} height={40}  sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} />
               </div>
               <div className="text-black  text-sm md:text-base mt-1">{finalFlowers}</div>
             </div>
 
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-center justify-center">
-                <NextImage src="/images/heart40.png" alt="heart" width={40} height={40}  sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} />
+                <NextImage src={settings?.heart || '/images/heart40.png'} alt="heart" width={40} height={40}  sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} />
               </div>
               <div className="text-black  text-sm md:text-base mt-1">{finalHearts}</div>
             </div>
 
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-center justify-center">
-                <NextImage src="/images/coupon.png" alt="coupon" width={40} height={40}  sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} />
+                <NextImage src={settings?.coupon || '/images/coupon.png'} alt="coupon" width={40} height={40}  sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} />
               </div>
               <div className="text-black  text-sm md:text-base mt-1">{finalCoupons}</div>
             </div>

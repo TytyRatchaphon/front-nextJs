@@ -34,7 +34,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
-  ],
+, "src/features/campaign/CampaignDetail.tsx"  ],
   "exclude": [
     "node_modules"
   ]

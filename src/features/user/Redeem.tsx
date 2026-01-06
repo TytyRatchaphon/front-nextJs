@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useAuthStore } from '@/stores/authStore'
 import { notification } from 'antd' 
 import { redeemCode } from '@/services/apiServices'
+import { useWebsiteStore } from '@/stores/websiteStore';
 
 function Redeem() {
     const [code, setCode] = useState('')
@@ -87,12 +88,14 @@ function Redeem() {
         }
     }
 
+    const {settings} = useWebsiteStore(); 
+    
   return (
     <div className='min-h-screen' style={{ backgroundColor: '#FFF7F7' }}>
         {/* Background Section */}
         <div className='relative w-full h-[400px]'>
             <Image 
-                src="https://img.enjoybook.co/img/redeembg.png" 
+                src={settings?.redeembg || '/images/redeembg.png'} 
                 alt="Redeem Background" 
                 fill
                 className='object-cover'
@@ -107,7 +110,7 @@ function Redeem() {
                 {/* Header with Logo */}
                 <div className='flex items-center justify-center gap-2 mb-6'>
                     <Image 
-                        src="https://img.enjoybook.co/img/logo2025omxesk8HIC0602112905.png" 
+                        src={settings?.logo || '/images/logo.png'} 
                         alt="Logo" 
                         width={24} 
                         height={24}
@@ -121,7 +124,7 @@ function Redeem() {
                     {/* Gold Coin */}
                     <div className='flex items-center gap-2'>
                         <Image 
-                            src="https://img.enjoybook.co/img/coin2025of4oReSgpR0109170013.png" 
+                            src={settings?.coin || '/images/e-coin.png'} 
                             alt="Gold Coin" 
                             width={20} 
                             height={20}
@@ -133,7 +136,7 @@ function Redeem() {
                     {/* Red Coin */}
                     <div className='flex items-center gap-2'>
                         <Image 
-                            src="https://img.enjoybook.co/img/freecoinEJB2024KwnlwebuY1pjqzSXy7es1224140652.png" 
+                            src={settings?.freecoin || '/images/money-bag.png'} 
                             alt="Red Coin" 
                             width={20} 
                             height={20}

@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { Select, Button, DatePicker, Spin } from 'antd';
+import { Select, Button, DatePicker } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import GifLoader from '@/components/utility/GifLoader';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -165,7 +166,7 @@ const MyBookStatsTab: React.FC<MyBookStatsTabProps> = ({ myBooks, token }) => {
             {!statsSearched ? (
               <div className='text-center text-gray-500 py-16'>กรุณากดค้นหาเพื่อแสดงกราฟ</div>
             ) : isLoadingBookStats ? (
-              <div className='flex items-center justify-center h-96'><Spin /></div>
+              <GifLoader className="h-96" width={100} height={100} />
             ) : statsChartData && statsChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={400}>
                 <LineChart data={statsChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>

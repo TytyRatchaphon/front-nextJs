@@ -1,5 +1,6 @@
 "use client";
 
+import '@ant-design/v5-patch-for-react-19'; // Patch for Next.js 15 / React 19
 import React from 'react';
 import { App, ConfigProvider } from 'antd';
 import { createCache, extractStyle, StyleProvider } from '@ant-design/cssinjs';

@@ -7,6 +7,7 @@ import type { TabsProps } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
+import { fetchUserMyBookInfo, fetchUserMyBooks } from '@/services/apiServices';
 
 import MyBookHeader from '../../components/myBook/MyBookHeader';
 import MyBookListTab from '../../components/myBook/MyBookListTab';
@@ -66,6 +67,8 @@ function MyBook() {
   }, [token]);
 
   const [coinIncome, setCoinIncome] = useState<string | number>('');
+  const [userProfileImage, setUserProfileImage] = useState<string | null>(null);
+  const [userTotalFollowers, setUserTotalFollowers] = useState<number | null>(null);
 
   // Set user data when component mounts
   useEffect(() => {
@@ -74,6 +77,9 @@ function MyBook() {
         const raw = (user as any).coinIncome;
         const parsed = Number(raw);
         setCoinIncome(Number.isFinite(parsed) ? parsed : String(raw));
+      }
+      if ((user as any).totalFollowers !== undefined) {
+         setUserTotalFollowers((user as any).totalFollowers);
       }
     }
   }, [user]);
@@ -96,6 +102,16 @@ function MyBook() {
         const parsed = Number(decodedToken.coinIncome);
         setCoinIncome(Number.isFinite(parsed) ? parsed : String(decodedToken.coinIncome));
       }
+
+      // Extract profile image from token
+      if (decodedToken.profile_image || decodedToken.img || decodedToken.profileImage) {
+        setUserProfileImage(decodedToken.profile_image || decodedToken.img || decodedToken.profileImage);
+      }
+      
+      // Extract total followers from token
+      if (decodedToken.totalFollowers !== undefined && decodedToken.totalFollowers !== null) {
+          setUserTotalFollowers(Number(decodedToken.totalFollowers));
+      }
     } catch (e) {
       // ignore decode errors
       console.debug('Prefill token decode failed', e);
@@ -108,10 +124,7 @@ function MyBook() {
   // Keep the raw response so we can read pagination totals
   const { data: myBooksResponse = null, isLoading: isLoadingMyBooks } = useQuery({
     queryKey: ['myBooks', booksPage, booksLimit],
-    queryFn: async () => {
-      const res = await apiClient.get('/user/mybook/search', { params: { page: booksPage, limit: booksLimit } });
-      return res.data;
-    },
+    queryFn: () => fetchUserMyBooks(booksPage, booksLimit),
     enabled: !!token,
   });
 
@@ -204,6 +217,12 @@ function MyBook() {
     },
   ], [myBooks, isLoadingMyBooks, token, coinIncome, setCoinIncome, updateToken, user, isWriter]);
 
+  const { data: writerInfoData } = useQuery({
+    queryKey: ['writerInfo'],
+    queryFn: fetchUserMyBookInfo,
+    enabled: !!token && isWriter,
+  });
+
   // Show loading or nothing while checking auth
   if (!isLoggedIn || !token) {
     return null; // or return a loading spinner
@@ -226,9 +245,11 @@ function MyBook() {
         {/* User Profile Header */}
         <MyBookHeader 
           user={user} 
-          coinIncome={coinIncome} 
-          myBooksTotal={myBooksTotal} 
+          coinIncome={(writerInfoData as any)?.data?.withdrawable_amount ?? coinIncome} 
+          myBooksTotal={(writerInfoData as any)?.data?.total_books ?? myBooksTotal} 
           myBooksCount={Array.isArray(myBooks) ? myBooks.length : 0}
+          tokenProfileImage={userProfileImage}
+          tokenTotalFollowers={(writerInfoData as any)?.data?.total_followers ?? userTotalFollowers}
         />
 
         {/* Tabs */}
@@ -246,7 +267,8 @@ function MyBook() {
           color: #dc2626 !important;
         }
         :global(.ant-tabs-tab:hover svg path) {
-          fill: #dc2626 !important;
+          stroke: #dc2626 !important;
+          fill: none !important;
         }
         :global(.ant-tabs-tab:hover svg line) {
           stroke: #dc2626 !important;
@@ -261,7 +283,8 @@ function MyBook() {
           color: #dc2626 !important;
         }
         :global(.ant-tabs-tab-active svg path) {
-          fill: #dc2626 !important;
+          stroke: #dc2626 !important;
+          fill: none !important;
         }
         :global(.ant-tabs-tab-active svg line) {
           stroke: #dc2626 !important;

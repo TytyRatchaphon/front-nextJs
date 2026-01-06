@@ -15,7 +15,7 @@ interface TextEditorTinyProps {
 const TextEditorTiny: React.FC<TextEditorTinyProps> = ({ 
   value, 
   onChange, 
-  height, 
+  height = 400, // Default height
   onBlur, 
   contentSelected 
 }) => {
@@ -24,12 +24,14 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
   const indexRef = useRef<any>(contentSelected);
   const scriptLoadedRef = useRef<boolean>(false);
   const [isEditorReady, setIsEditorReady] = useState<boolean>(false);
+  
+  // Use a unique ID for each instance
+  const [editorId] = useState(() => `tiny-editor-${Math.random().toString(36).substr(2, 9)}`);
 
   useEffect(() => {
     indexRef.current = contentSelected;
   }, [contentSelected]);
 
-  // ... (ส่วน Fonts เหมือนเดิม)
   const thaiFonts = [
     'Anakotmai', 'Athiti', 'Chakra Petch', 'Chonburi', 'Itim', 'K2D', 'Kanit',
     'Mali', 'Mitr', 'Niramit', 'Noto Sans Thai', 'Noto Serif Thai', 'Pattaya',
@@ -38,6 +40,7 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
 
   const familyQuery = thaiFonts.map(f => f.replace(/ /g, '+')).join('&family=');
   const importUrl = `https://fonts.googleapis.com/css2?family=${familyQuery}&display=swap&subset=thai`;
+  // Add Sarabun explicitly if not in list, though it is there.
   const fontFormats = thaiFonts.map(f => `${f}='${f}',sans-serif`).join(';');
 
   // ฟังก์ชันสำหรับ initialize TinyMCE
@@ -45,16 +48,18 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
     // ใช้ (window as any).tinymce แทน window.tinymce
     if ((window as any).tinymce) {
       
-      if ((window as any).tinymce.get('my-editor')) {
-        (window as any).tinymce.get('my-editor').remove();
+      const existingEditor = (window as any).tinymce.get(editorId);
+      if (existingEditor) {
+        existingEditor.remove();
       }
 
       // สร้าง editor ใหม่
       (window as any).tinymce.init({
-        selector: '#my-editor',
+        selector: `#${editorId}`,
         license_key: 'gpl',
         height: height,
         menubar: false,
+        promotion: false, // Hide upgrade button
         plugins: [
           'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
           'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
@@ -81,6 +86,11 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
           editor.on('init', () => {
             editorRef.current = editor;
             setIsEditorReady(true);
+            
+            // Set initial content if value exists
+            if (value) {
+                editor.setContent(value);
+            }
           });
 
           editor.addShortcut('ctrl+h', 'Open replace dialog', () => {
@@ -106,7 +116,6 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
   // Load TinyMCE script เมื่อ component mount
   useEffect(() => {
     if (!scriptLoadedRef.current) {
-      // ใช้ (window as any) ตรงนี้ด้วย
       if ((window as any).tinymce) {
         initializeTinyMCE();
         scriptLoadedRef.current = true;
@@ -128,30 +137,29 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
     }
 
     return () => {
-      // ใช้ (window as any) ตรงนี้ด้วย
         try {
             if ((window as any).tinymce) {
-                const editor = (window as any).tinymce.get('my-editor');
+                const editor = (window as any).tinymce.get(editorId);
                 if (editor) {
                     editor.remove();
                 }
             }
         } catch (err) {
-            // ดัก Error ไว้ไม่ให้แอปพัง กรณีที่ Node หายไปแล้ว
             console.warn("TinyMCE remove skipped:", err);
         }
+        setIsEditorReady(false);
     };
   }, []);
 
   useEffect(() => {
-    if (isEditorReady && editorRef.current && value !== editorRef.current.getContent()) {
+    if (isEditorReady && editorRef.current && value !== undefined && value !== editorRef.current.getContent()) {
       editorRef.current.setContent(value || '');
     }
   }, [value, isEditorReady]);
 
   return (
     <div>
-      <textarea id="my-editor" />
+      <textarea id={editorId} style={{ visibility: 'hidden' }} />
     </div>
   );
 };

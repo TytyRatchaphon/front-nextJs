@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Button, Tabs, Upload, Input, Select, Table, Tag, Modal, InputNumber, Spin, notification } from 'antd';
+import { Button, Tabs, Upload, Input, Select, Table, Tag, Modal, InputNumber, notification } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
-import { getBankList, updateBankIdCardAccount, getBankIdCardAccount } from '@/services/apiServices';
+import { getBankList, updateBankIdCardAccount, getBankIdCardAccount, postWriterWithdraw, fetchWriterWithdrawHistory, fetchWriterWithdrawSetting } from '@/services/apiServices';
+import GifLoader from '@/components/utility/GifLoader';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -47,7 +48,7 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
   const { data: accountInfo } = useQuery({
     queryKey: ['accountInfo'],
     queryFn: getBankIdCardAccount,
-    enabled: !!token, // Only fetch if token exists
+    enabled: !!token, 
   });
 
   useEffect(() => {
@@ -116,8 +117,8 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
     queryKey: ['withdrawSetting'],
     queryFn: async () => {
       try {
-        const res = await apiClient.get('/user/withdraw/setting');
-        return res.data?.data ?? res.data ?? null;
+        const res = await fetchWriterWithdrawSetting();
+        return res?.data ?? res ?? null;
       } catch (e) {
         console.error('Error fetching withdraw settings', e);
         return null;
@@ -144,14 +145,7 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
   // Withdraw history
   const { data: withdrawHistory = [], isLoading: isLoadingWithdrawHistory, error: withdrawHistoryError, refetch: refetchWithdrawHistory } = useQuery({
     queryKey: ['withdrawHistory'],
-    queryFn: async () => {
-      const res = await apiClient.get('/user/withdraw');
-      const d = res.data;
-      if (!d) return [];
-      if (Array.isArray(d)) return d;
-      if (d.data && Array.isArray(d.data)) return d.data;
-      return d.items ?? [];
-    },
+    queryFn: fetchWriterWithdrawHistory,
     enabled: !!token,
   });
 
@@ -173,10 +167,10 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
 
     setWithdrawLoading(true);
     try {
-      const payload = { amount };
-      const res = await apiClient.post('/user/withdraw', payload);
+      const res = await postWriterWithdraw(amount);
       const data = res.data;
       if (data && (data.code === 200 || data.status === 'success')) {
+// ...
         const tax = +((amount * (vatPercent / 100))).toFixed(2);
         const service = Number(serviceFee || 0);
         const receive = +(amount - tax - service).toFixed(2);
@@ -558,9 +552,7 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
             children: (
               <div className='p-6'>
                 {isLoadingWithdrawHistory ? (
-                  <div className='flex items-center justify-center py-12'>
-                    <Spin />
-                  </div>
+                  <GifLoader className="py-12" width={100} height={100} />
                 ) : withdrawHistoryError ? (
                   <div className='text-center text-red-500'>เกิดข้อผิดพลาดในการโหลดประวัติ</div>
                 ) : Array.isArray(withdrawHistory) && withdrawHistory.length > 0 ? (

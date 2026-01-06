@@ -10,17 +10,20 @@ export interface ApiResponse<T = any> {
 
 //สร้าง  BaseUrl ไว้ส่วนกลางจะได้ไม่ต้องเขียนใหม่
 const apiClient = axios.create({
-    baseURL : process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.220.214:3331',
+    baseURL : process.env.NEXT_PUBLIC_API_BASE_URL,
     headers : {
         "Content-Type" : "application/json",
     },
 });
 
+console.log('[DEBUG] API Client Base URL:', apiClient.defaults.baseURL);
+
 // Request Interceptor - เพิ่ม token ใน header
 apiClient.interceptors.request.use(
     (config) => {
     // Log method/url and request body (headers may be augmented below)
-    console.log('🔵 REQUEST:', config.method?.toUpperCase(), config.url);
+    const fullUrl = `${config.baseURL || ''}${config.url}`;
+    console.log('🔵 REQUEST:', config.method?.toUpperCase(), fullUrl);
     console.log(' Request Data:', config.data);
         
         // เช็คว่าอยู่ใน browser environment

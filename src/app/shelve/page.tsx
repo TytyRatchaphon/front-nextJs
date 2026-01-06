@@ -1,10 +1,12 @@
-import React from 'react'
+import React, { Suspense } from 'react'
 import Shelve from '@/features/user/Shelve'
 
 function page() {
   return (
     <div>
-      <Shelve />
+      <Suspense fallback={<div className="min-h-screen bg-white" />}>
+        <Shelve />
+      </Suspense>
     </div>
   )
 }

@@ -19,7 +19,8 @@
 .ant-pagination-item-active a {
   color: #e53935 !important;
 }
-.ant-pagination-prev:hover .ant-pagination-item-link, .ant-pagination-next:hover .ant-pagination-item-link {
+.ant-pagination-prev:hover .ant-pagination-item-link,
+.ant-pagination-next:hover .ant-pagination-item-link {
   color: #e53935 !important;
   border-color: #e53935 !important;
 }
@@ -40,9 +41,22 @@
 
 @import "tailwindcss";
 
+@layer utilities {
+  .no-spinners::-webkit-outer-spin-button,
+  .no-spinners::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+  }
+  .no-spinners {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+}
+
 :root {
   --font-primary: "Bai Jamjuree", sans-serif;
-  --font-bai-jamjuree: 'Bai Jamjuree', sans-serif;
+  --font-bai-jamjuree: "Bai Jamjuree", sans-serif;
 }
 
 /* HTML content styling */
@@ -228,20 +242,36 @@
 }
 
 /* Specific font for different elements */
-body, html {
+body,
+html {
   font-family: var(--font-bai-jamjuree) !important;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-bai-jamjuree) !important;
 }
 
-p, span, div, a, button, input, textarea, select {
+p,
+span,
+div,
+a,
+button,
+input,
+textarea,
+select {
   font-family: var(--font-bai-jamjuree) !important;
 }
 
 /* Navbar specific font */
-.navbar-link, .navbar-category, .navbar-subcategory, .navbar-button {
+.navbar-link,
+.navbar-category,
+.navbar-subcategory,
+.navbar-button {
   font-family: var(--font-bai-jamjuree) !important;
 }
 
@@ -251,26 +281,47 @@ p, span, div, a, button, input, textarea, select {
 }
 
 /* Link specific font */
-.hover-link, .novel-name, .author-name, .category-tag {
+.hover-link,
+.novel-name,
+.author-name,
+.category-tag {
   font-family: var(--font-bai-jamjuree) !important;
 }
 
 /* Ant Design components font */
-.ant-btn, .ant-input, .ant-select, .ant-form-item-label, .ant-tabs, .ant-modal, .ant-popover, .ant-notification, .ant-message {
+.ant-btn,
+.ant-input,
+.ant-select,
+.ant-form-item-label,
+.ant-tabs,
+.ant-modal,
+.ant-popover,
+.ant-notification,
+.ant-message {
   font-family: var(--font-bai-jamjuree) !important;
 }
 
-.ant-btn span, .ant-input input, .ant-select-selector, .ant-form-item-label label, .ant-tabs-tab, .ant-modal-title, .ant-popover-inner, .ant-notification-notice, .ant-message-notice {
+.ant-btn span,
+.ant-input input,
+.ant-select-selector,
+.ant-form-item-label label,
+.ant-tabs-tab,
+.ant-modal-title,
+.ant-popover-inner,
+.ant-notification-notice,
+.ant-message-notice {
   font-family: var(--font-bai-jamjuree) !important;
 }
 
 /* Swiper components font */
-.swiper-slide, .swiper-slide * {
+.swiper-slide,
+.swiper-slide * {
   font-family: var(--font-bai-jamjuree) !important;
 }
 
 /* Next.js Image components font */
-.next-image, .next-image * {
+.next-image,
+.next-image * {
   font-family: var(--font-bai-jamjuree) !important;
 }
 
@@ -282,7 +333,6 @@ a[href="/notifications"] {
 a[href="/notifications"]:hover {
   text-decoration: none !important;
 }
-
 
 /* Login modal specific hover effects - keep underlines */
 .login-link {
@@ -312,17 +362,17 @@ a[href="/notifications"]:hover {
 
 /* Hide scrollbar */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* Internet Explorer 10+ */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none; /* Firefox */
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;  /* Safari and Chrome */
+  display: none; /* Safari and Chrome */
 }
 
 /* Tag styling */
 .bg-tag {
-  background-color: #ffb9b9;; /* สีชมพูอ่อน */
+  background-color: #ffb9b9; /* สีชมพูอ่อน */
   color: #000; /* สีเทาเข้ม */
   transition: all 0.2s ease;
   white-space: nowrap; /* ป้องกันการขึ้นบรรทัดใหม่ */
@@ -363,13 +413,14 @@ a[href="/notifications"]:hover {
   background-color: #dc2626;
 }
 
-.select{
+.select {
   width: 100%;
   padding: 5px 10px;
   border-radius: 8px;
 }
 
-.form-control, .select{
+.form-control,
+.select {
   background: #fff;
   outline: none;
 }
@@ -410,7 +461,7 @@ a[href="/notifications"]:hover {
   border-color: #dc2626 !important;
 }
 .ant-modal-confirm .ant-modal-confirm-btns .ant-btn:nth-child(1):hover {
-  background-color: rgba(220,38,38,0.06) !important;
+  background-color: rgba(220, 38, 38, 0.06) !important;
   border-color: #dc2626 !important;
   color: #dc2626 !important;
   box-shadow: none !important;
@@ -430,7 +481,6 @@ a[href="/notifications"]:hover {
 .ant-modal .ejb-episode-row button svg * {
   transition: fill 0.15s ease, stroke 0.15s ease, color 0.15s ease;
 }
-
 
 .swiper-pagination-bullet {
   width: 8px;
@@ -471,7 +521,7 @@ a[href="/notifications"]:hover {
 }
 
 .check-appear {
-  animation: check-pop 420ms cubic-bezier(.2,.9,.3,1) both;
+  animation: check-pop 420ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
   will-change: transform, opacity;
 }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from "react";
-import { Form, Input, Select, Spin, DatePicker, notification, Modal } from "antd";
+import { Form, Input, Select, DatePicker, notification, Modal } from "antd";
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import axios from "axios"; 
@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 
 // Import TextEditor
 import TextEditorTiny from "@/components/editor/TextEditorTiny";
+import GifLoader from '@/components/utility/GifLoader';
 
 dayjs.extend(customParseFormat);
 
@@ -197,7 +198,9 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
             </Modal>
 
             <div className="max-w-[840px] mx-auto px-4">
-                <Spin spinning={spinLoading}>
+                {spinLoading ? (
+                    <GifLoader />
+                ) : (
                     <Form
                         name="formEditChapter"
                         autoComplete="off"
@@ -262,10 +265,8 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
                                     <div className="h-[400px]">
                                         <Form.Item name='detail'>
                                             <TextEditorTiny 
-                                                // ต้องมั่นใจว่า TextEditor รับ value และ onChange ถูกต้อง
-                                                value={formEditChapter.getFieldValue('detail')}
-                                                onChange={(content: string) => formEditChapter.setFieldsValue({ detail: content })} 
                                                 height={400}
+                                                onChange={() => {}}
                                             />
                                         </Form.Item>
                                     </div>
@@ -289,7 +290,7 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
                             </div> 
                         </div>
                     </Form>
-                </Spin>
+                )}
             </div>
         </div>
     )

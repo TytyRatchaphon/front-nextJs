@@ -1,19 +1,26 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
-import { Spin, Alert, Button, Dropdown, Popover, Modal } from "antd";
+import { Alert, Button, Dropdown, Popover, Modal } from "antd";
 import { message } from "antd";
 import type { MenuProps } from "antd";
-// import parse from "html-react-parser";
-import { BackToTopButton } from "@/components/BackToTopButton";
-import ProtectedContent from "@/components/ProtectedContent";
+import parse from "html-react-parser";
+import { BackToTopButton } from "@/components/utility/BackToTopButton";
+import Link from "next/link";
+import GifLoader from '@/components/utility/GifLoader';
+import EpisodeCommentSection from "@/components/bookdetail/EpisodeCommentSection";
 import Image from "next/image";
+import { modifiedHtml } from "@/utils/htmlUtils";
+import { detectExtension } from "@/utils/securityUtils";
+import { useWebsiteStore } from '@/stores/websiteStore';
 
 import {
   fetchBookDetail,
+  syncReadingProgress,
+  updateReadingProgress,
 } from "@/services/apiServices";
 import apiClient from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
@@ -47,7 +54,7 @@ const fetchEpisodeContent = async (ep_id: string) => {
   } catch (err: any) {
     const status = err?.response?.status;
     const errorData = err?.response?.data;
-    
+
     console.error(`❌ fetchEpisodeContent error [${status}]:`, errorData || err.message || err);
 
     if (errorData) {
@@ -55,10 +62,14 @@ const fetchEpisodeContent = async (ep_id: string) => {
       const msg = errorData.message || (typeof errorData === 'string' ? errorData : `ไม่สามารถดึงข้อมูลตอนได้ (${status})`);
       throw new Error(msg);
     }
-    
+
     throw new Error(err.message || "เกิดข้อผิดพลาดในการเชื่อมต่อ");
   }
 };
+
+const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
+  return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
+}
 
 // API function สำหรับดึงรายการตอนทั้งหมด (เพื่อหา prev/next)
 const fetchBookEpisodes = async (bookId: number | string) => {
@@ -112,27 +123,30 @@ const fontSizes = [
 
 // ตั้งค่าสีพื้นหลัง
 const bgColors = [
-  { key: "white", label: "สว่าง", bg: "bg-white", text: "text-gray-900" },
-  { key: "sepia", label: "สีเซเปีย", bg: "bg-amber-50", text: "text-gray-900" },
-  { key: "dark", label: "มืด", bg: "bg-gray-900", text: "text-gray-100" },
-  { key: "black", label: "ดำ", bg: "bg-black", text: "text-white" },
+  { key: "white", label: "ปกติ", bg: "bg-[#f1f1f1]", paper: "bg-white", text: "text-black", border: "#e5e7eb" },
+  { key: "sepia", label: "สีเซเปีย", bg: "bg-[#f9f2de]", paper: "bg-[#fdfaee]", text: "text-black", border: "#e6dbc4" },
+  { key: "dark", label: "มืด", bg: "bg-black", paper: "bg-[#1c1c1e]", text: "text-white", border: "#333333" },
 ];
 
 // ตั้งค่าฟอนต์ (5 แบบที่แตกต่างชัดแต่อ่านง่าย)
 const fontFamilies = [
-  { key: "sarabun", label: "Sarabun", family: "'Sarabun', sans-serif" },
-  { key: "prompt", label: "Prompt", family: "'Prompt', sans-serif" },
-  { key: "kanit", label: "Kanit", family: "'Kanit', sans-serif" },
+  { key: "sarabun", label: "Sarabun", family: "var(--font-sarabun), sans-serif" },
+  { key: "prompt", label: "Prompt", family: "var(--font-prompt), sans-serif" },
+  { key: "kanit", label: "Kanit", family: "var(--font-kanit), sans-serif" },
   {
     key: "ibm-plex",
     label: "IBM Plex Sans Thai",
-    family: "'IBM Plex Sans Thai', sans-serif",
+    family: "var(--font-ibm-plex-sans-thai), sans-serif",
   },
-  { key: "mitr", label: "Mitr", family: "'Mitr', sans-serif" },
+  { key: "mitr", label: "Mitr", family: "var(--font-mitr), sans-serif" },
 ];
 
 export default function ReadEpisodePage({ bookId, episodeId }: Props) {
+  const { settings } = useWebsiteStore();
   const router = useRouter();
+  const { user } = useAuthStore();
+  const [isFocused, setIsFocused] = useState(true);
+  const [showNav, setShowNav] = useState(false);
 
   console.log(
     "🎯 ReadEpisodePage render - bookId:",
@@ -145,6 +159,107 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     console.log("🎯 Page loaded with bookId:", bookId, "episodeId:", episodeId);
   }, [bookId, episodeId]);
 
+  // Reading Progress Sync
+  // Reading Progress Sync
+  const isInitialSyncDone = useRef(false);
+  const contentRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const syncProgress = async () => {
+      if (!episodeId || !user || isInitialSyncDone.current) return;
+
+      try {
+        const res = await syncReadingProgress(episodeId);
+        if (res && res.status === 'success' && res.progress > 0) {
+          // Small delay to ensure content layout is stable
+          setTimeout(() => {
+            if (contentRef.current) {
+              const element = contentRef.current;
+              const elementTop = element.getBoundingClientRect().top + window.scrollY;
+              const elementHeight = element.scrollHeight;
+              const windowHeight = window.innerHeight;
+
+              // Calculate target scroll position relative to the element
+              // Progress is 0.0 - 1.0 within the element's scrollable area
+              // Scrollable area = elementHeight - windowHeight (roughly)
+              // But simpler: just map progress to the element's height relative to top
+
+              // If progress is 0, we are at elementTop.
+              // If progress is 1, we are at elementTop + elementHeight - windowHeight.
+
+              const totalScrollable = elementHeight - windowHeight;
+              const targetScroll = elementTop + (res.progress * totalScrollable);
+
+              console.log('📜 Scrolling to:', targetScroll, '(Progress:', res.progress, ')');
+              window.scrollTo({ top: targetScroll, behavior: 'smooth' });
+            }
+          }, 500);
+        }
+        isInitialSyncDone.current = true;
+      } catch (err) {
+        console.error('Failed to sync reading progress', err);
+      }
+    };
+
+    // Reset flag when episodeId changes
+    if (episodeId) {
+      isInitialSyncDone.current = false;
+      syncProgress();
+    }
+  }, [episodeId, user]);
+
+  // Scroll Update Tracking
+  useEffect(() => {
+
+    if (!episodeId || !user) {
+      return;
+    }
+
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    const handleScroll = () => {
+      //   console.log("📜 Scroll event fired"); // Very spammy, uncomment if needed
+      if (timeoutId) return;
+
+      timeoutId = setTimeout(async () => {
+        if (contentRef.current) {
+          const element = contentRef.current;
+          const rect = element.getBoundingClientRect();
+          const elementTop = rect.top + window.scrollY; // Absolute top position
+          const elementHeight = element.scrollHeight;
+          const windowHeight = window.innerHeight;
+          const scrollY = window.scrollY;
+
+          // Calculate progress
+          const totalScrollable = elementHeight - windowHeight;
+
+          // If content is shorter than window, progress is always 1 (or 0?) -> Let's say 1 if finished.
+          if (totalScrollable <= 0) {
+            await updateReadingProgress(bookId, episodeId, 1);
+            timeoutId = null;
+            return;
+          }
+
+          const relativeScroll = scrollY - elementTop;
+          const progress = Math.min(Math.max(relativeScroll / totalScrollable, 0), 1);
+          const formattedProgress = Number(progress.toFixed(4));
+
+          await updateReadingProgress(bookId, episodeId, formattedProgress);
+        } else {
+          console.warn("⚠️ contentRef is null");
+        }
+        timeoutId = null;
+      }, 2000); // Update every 2 seconds max
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [episodeId, user]);
+
+
   // Disable the global Navbar's sticky behavior on this page only.
   // We remove the 'sticky' class and set position to static on mount,
   // and restore previous classes/styles on unmount to avoid side effects.
@@ -156,7 +271,12 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
       if (!styleEl) {
         styleEl = document.createElement("style");
         styleEl.id = styleId;
-        styleEl.innerHTML = `#Navbar { position: static !important; top: auto !important; }`;
+        // Inject CSS override to force Navbar non-sticky (highest priority) and keep it at top
+        styleEl.innerHTML = `
+          #GlobalNavbarWrapper, #Navbar, nav, header { position: relative !important; top: auto !important; width: 100%; z-index: 40; }
+          /* Ensure the reader header sticks */
+          .reader-sticky-header { position: sticky !important; top: 0 !important; z-index: 100 !important; }
+        `;
         document.head.appendChild(styleEl);
       }
 
@@ -247,7 +367,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     // run only on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-//   const [lineHeight, setLineHeight] = useState("relaxed");
+  //   const [lineHeight, setLineHeight] = useState("relaxed");
   const [prevEpisode, setPrevEpisode] = useState<string | null>(null);
   const [nextEpisode, setNextEpisode] = useState<string | null>(null);
   // Confirmation modal state for purchases
@@ -256,9 +376,69 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   const [confirmAmount, setConfirmAmount] = useState<number | null>(null);
   const [buyLoading, setBuyLoading] = useState(false);
   const [cancelHover, setCancelHover] = useState(false);
+
+  // Auto Scroll State
+  const [isAutoScroll, setIsAutoScroll] = useState(false);
+  const [scrollSpeed, setScrollSpeed] = useState(0.3); // 0.3 = Very Slow (Default)
+
+  // Accumulator for sub-pixel scrolling
+  const scrollAccumulator = useRef(0);
+
+  useEffect(() => {
+    let animationFrameId: number;
+
+    const autoScroll = () => {
+      // Use contentRef for reliable content height stop (End of Story)
+      if (contentRef.current) {
+        const element = contentRef.current;
+        // Calculate the bottom position of the content relative to the document
+        // buffer of 2px to ensure it stops just right
+        const contentBottom = element.getBoundingClientRect().bottom + window.scrollY;
+        const stopPosition = contentBottom - window.innerHeight;
+
+        if (window.scrollY >= stopPosition - 1) {
+          setIsAutoScroll(false);
+          return;
+        }
+      } else {
+        // Fallback to document height if ref is missing
+        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+        if (window.scrollY >= maxScroll - 1) {
+          setIsAutoScroll(false);
+          return;
+        }
+      }
+
+      // Check if we reached the bottom by calculating progress
+      // const updatedProgress = window.scrollY / maxScroll;
+      // if (updatedProgress >= 1) ... (Removed old logic)
+
+      // Accumulate scroll delta
+      scrollAccumulator.current += scrollSpeed;
+
+      // Only scroll if we have at least 1 pixel to move
+      if (scrollAccumulator.current >= 1) {
+        const pixelsToScroll = Math.floor(scrollAccumulator.current);
+        window.scrollBy(0, pixelsToScroll);
+        scrollAccumulator.current -= pixelsToScroll;
+      }
+
+      animationFrameId = requestAnimationFrame(autoScroll);
+    };
+
+    if (isAutoScroll) {
+      // Reset accumulator on start
+      scrollAccumulator.current = 0;
+      animationFrameId = requestAnimationFrame(autoScroll);
+    }
+
+    return () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    };
+  }, [isAutoScroll, scrollSpeed]);
   const [, setPrevEpisodeData] = useState<any>(null);
   const isMatch = (ep: any, targetId: string) => {
-  const target = String(targetId);
+    const target = String(targetId);
     return String(ep?.ep_id ?? "") === target || String(ep?.epID ?? "") === target;
   };
 
@@ -281,8 +461,8 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
       const payload = { eps: [Number(epId)], payWith: method };
       const res = await apiClient.post(`/buy/eps`, payload);
       if (res?.data?.code === 200) {
-          const respMsg = res.data?.message || "ซื้อสำเร็จ! กำลังอัปเดตเนื้อหา...";
-          messageApi.success(respMsg);
+        const respMsg = res.data?.message || "ซื้อสำเร็จ! กำลังอัปเดตเนื้อหา...";
+        messageApi.success(respMsg);
 
         // If backend returned a token (session refresh / upgraded user), apply it
         const maybeToken = res?.data?.data?.token ?? res?.data?.token ?? res?.data?.data?.authToken ?? res?.data?.data?.accessToken;
@@ -360,7 +540,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     staleTime: 10 * 60 * 1000,
   });
 
-  
+
 
   const queryClient = useQueryClient();
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
@@ -398,69 +578,82 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
       ? Number(epUseFreecoin) === 1
       : (bookUseFreecoin !== undefined && bookUseFreecoin !== null ? Number(bookUseFreecoin) === 1 : true);
 
+    const hasDiscount = ep?.coin_discount !== null && ep?.coin_discount !== undefined;
+    const coinPrice = hasDiscount ? ep.coin_discount : ep?.coin;
+
     return (
       <div className="text-center py-12">
-        <Image src="/images/unlock.png" alt="No Content" width={100} height={100} className="justify-center mx-auto" />
+        <Image src={settings?.img_buyep || '/images/unlock.png'} alt="No Content" width={100} height={100} loader={imageLoader} className="justify-center mx-auto" />
         <p className="text-sm text-gray-500 mb-4">ตอนนี้ยังไม่มีเนื้อหา หากต้องการอ่าน กรุณาซื้อ</p>
 
         <div className="flex items-center justify-center gap-3">
           {canUseFreecoin && (
             <button onClick={() => openConfirm("freecoin", ep?.freecoin ?? null)} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg">
-              <Image src="/images/money-bag.png" alt="Coin Icon" width={20} height={20} />
+              <Image src={settings?.freecoin || '/images/money-bag.png'} alt="Coin Icon" width={20} height={20} loader={imageLoader} />
               ซื้อด้วยถุงเงิน {ep?.freecoin ? `(${ep.freecoin})` : ""}
             </button>
           )}
 
-          <button onClick={() => openConfirm("coin", ep?.coin ?? null)} className={`flex items-center gap-2 px-4 py-2 ${canUseFreecoin ? 'bg-yellow-400 text-black' : 'bg-red-600 text-white'} rounded-lg`}>
-            <Image src="/images/e-coin.png" alt="Coin Icon" width={20} height={20} />
-            ซื้อด้วยเหรียญ {ep?.coin ? `(${ep.coin})` : ""}
+          <button onClick={() => openConfirm("coin", coinPrice)} className={`flex items-center gap-2 px-4 py-2 ${canUseFreecoin ? 'bg-yellow-400 text-black' : 'bg-red-600 text-white'} rounded-lg`}>
+            <Image src={settings?.coin || '/images/e-coin.png'} alt="Coin Icon" width={20} height={20} loader={imageLoader} />
+            <div className="flex items-center gap-1">
+              <span>ซื้อด้วยเหรียญ</span>
+              {hasDiscount ? (
+                <>
+                  <span className="line-through opacity-60 text-xs">({ep?.coin})</span>
+                  <span className="font-bold">({ep.coin_discount})</span>
+                </>
+              ) : (
+                <span>{ep?.coin ? `(${ep.coin})` : ""}</span>
+              )}
+            </div>
           </button>
         </div>
       </div>
     );
   }
 
-  const { 
-      data: allEpisodes, 
-      error: episodesError, 
-      isLoading: isListLoading // <--- เพิ่มตรงนี้สำคัญมาก!
-    } = useQuery({
-      queryKey: ["bookEpisodes", bookId],
-      queryFn: () => {
-        console.log("🔍 fetchBookEpisodes called with bookId:", bookId);
-        return fetchBookEpisodes(bookId);
-      },
-      enabled: !!bookId,
-      staleTime: 10 * 60 * 1000,
-    });
+  const {
+    data: allEpisodes,
+    error: episodesError,
+    isLoading: isListLoading
+  } = useQuery({
+    queryKey: ["bookEpisodes", bookId],
+    queryFn: () => {
+      console.log("🔍 fetchBookEpisodes called with bookId:", bookId);
+      return fetchBookEpisodes(bookId);
+    },
+    enabled: !!bookId,
+    staleTime: 10 * 60 * 1000,
+  });
 
   // Compute final episode title: prefer fields from `episode`, else lookup `allEpisodes` by id
   // 2. Logic การหาชื่อตอนที่ปรับปรุงแล้ว
-// --- รวม Logic การคำนวณทั้งหมดไว้ใน useMemo เดียว (เพื่อความชัวร์) ---
+  // --- รวม Logic การคำนวณทั้งหมดไว้ใน useMemo เดียว (เพื่อความชัวร์) ---
   const { displayTitle, prevEpId, nextEpId } = useMemo(() => {
     // ค่า Default
-    const result = { 
-        displayTitle: "", 
-        prevEpId: null as string | null, 
-        nextEpId: null as string | null 
+    const result = {
+      displayTitle: "",
+      prevEpId: null as string | null,
+      nextEpId: null as string | null
     };
 
     // 1. เช็คว่ากำลังโหลด List อยู่ไหม?
     if (isListLoading) {
-        result.displayTitle = "กำลังโหลด...";
-        return result;
+      result.displayTitle = "กำลังโหลด...";
+      return result;
     }
 
     // 2. แปลง List เป็น Flat Array (เพื่อให้หาง่ายๆ)
     let flatList: any[] = [];
     if (allEpisodes) {
-        if ((allEpisodes as any).groups && Array.isArray((allEpisodes as any).groups)) {
-            (allEpisodes as any).groups.forEach((g: any) => {
-                if (g.list) flatList.push(...g.list);
-            });
-        } else if (Array.isArray(allEpisodes)) {
-            flatList = allEpisodes;
-        }
+      if ((allEpisodes as any).groups && Array.isArray((allEpisodes as any).groups)) {
+        (allEpisodes as any).groups.forEach((g: any) => {
+          if (g.list) flatList.push(...g.list);
+        });
+      } else if (Array.isArray(allEpisodes)) {
+        flatList = allEpisodes;
+      }
     }
 
     // 3. หา Index ของตอนปัจจุบัน (Smart Match: เช็คทั้งตัวเลขและรหัส)
@@ -469,44 +662,44 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
 
     // Fallback: ถ้าหาไม่เจอ ลองใช้ ID จาก Content มาช่วยหา
     if (currentIndex === -1 && episode) {
-        const ep = episode as any;
-        if (ep.ep_id) currentIndex = flatList.findIndex((x: any) => isMatch(x, String(ep.ep_id)));
-        if (currentIndex === -1 && ep.epID) currentIndex = flatList.findIndex((x: any) => isMatch(x, String(ep.epID)));
+      const ep = episode as any;
+      if (ep.ep_id) currentIndex = flatList.findIndex((x: any) => isMatch(x, String(ep.ep_id)));
+      if (currentIndex === -1 && ep.epID) currentIndex = flatList.findIndex((x: any) => isMatch(x, String(ep.epID)));
     }
 
     // 4. คำนวณข้อมูล (ถ้าเจอตำแหน่ง)
     if (currentIndex !== -1) {
-        // 4.1 ชื่อตอนจาก List (แม่นยำที่สุด)
-        result.displayTitle = flatList[currentIndex].name?.trim();
+      // 4.1 ชื่อตอนจาก List (แม่นยำที่สุด)
+      result.displayTitle = flatList[currentIndex].name?.trim();
 
-        // 4.2 ปุ่มก่อนหน้า
-        if (currentIndex > 0) {
-            const prev = flatList[currentIndex - 1];
-            result.prevEpId = String(prev.ep_id || prev.epID);
-        }
+      // 4.2 ปุ่มก่อนหน้า
+      if (currentIndex > 0) {
+        const prev = flatList[currentIndex - 1];
+        result.prevEpId = String(prev.ep_id || prev.epID);
+      }
 
-        // 4.3 ปุ่มถัดไป
-        if (currentIndex < flatList.length - 1) {
-            const next = flatList[currentIndex + 1];
-            result.nextEpId = String(next.ep_id || next.epID);
-        }
+      // 4.3 ปุ่มถัดไป
+      if (currentIndex < flatList.length - 1) {
+        const next = flatList[currentIndex + 1];
+        result.nextEpId = String(next.ep_id || next.epID);
+      }
     } else {
-        // 5. ถ้าไม่เจอใน List เลย (Fallback Title)
-        const ep = episode as any;
-        if (ep) {
-            // พยายามหาชื่อจาก Content
-            const candidates = [ep.name, ep.title];
-            for (const c of candidates) {
-                if (c && String(c).trim() !== "" && !String(c).startsWith("EP20")) {
-                    result.displayTitle = String(c).trim();
-                    break;
-                }
-            }
-            // ถ้าไม่มีชื่อจริงๆ ให้โชว์ ID
-            if (!result.displayTitle) {
-                result.displayTitle = String(ep.ep_id ?? ep.epID ?? "");
-            }
+      // 5. ถ้าไม่เจอใน List เลย (Fallback Title)
+      const ep = episode as any;
+      if (ep) {
+        // พยายามหาชื่อจาก Content
+        const candidates = [ep.name, ep.title];
+        for (const c of candidates) {
+          if (c && String(c).trim() !== "" && !String(c).startsWith("EP20")) {
+            result.displayTitle = String(c).trim();
+            break;
+          }
         }
+        // ถ้าไม่มีชื่อจริงๆ ให้โชว์ ID
+        if (!result.displayTitle) {
+          result.displayTitle = String(ep.ep_id ?? ep.epID ?? "");
+        }
+      }
     }
 
     return result;
@@ -573,11 +766,23 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     }
   }, [episode]);
 
+  // Set Document Title
+  useEffect(() => {
+    if (bookDetail?.title) {
+      if (displayTitle) {
+        document.title = `${displayTitle} - ${bookDetail.title} | EnjoyBook`;
+      } else {
+        document.title = `${bookDetail.title} | EnjoyBook`;
+      }
+    } else {
+      document.title = "EnjoyBook - อ่านนิยายออนไลน์";
+    }
+  }, [bookDetail, displayTitle]);
+
   useEffect(() => {
     const disableRightClick = (e: MouseEvent) => {
       e.preventDefault();
     };
-
     const disableDevTools = (e: KeyboardEvent) => {
       if (e.keyCode === 123) {
         e.preventDefault();
@@ -620,19 +825,12 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
       }
     };
 
-    const detectDevTools = () => {
-      const threshold = 160;
-      const widthThreshold = window.outerWidth - window.innerWidth > threshold;
-      const heightThreshold = window.outerHeight - window.innerHeight > threshold;
 
-      if (widthThreshold || heightThreshold) {
-        document.body.innerHTML =
-          '<div style="display:flex;justify-content:center;align-items:center;height:100vh;font-size:24px;color:red;">⚠️ กรุณาปิด Developer Tools</div>';
-      }
-    };
+
+
 
     const protectContent = () => {
-      const noop = () => {};
+      const noop = () => { };
       if (typeof window !== "undefined" && process.env.NODE_ENV !== "development") {
         (window as any).console.log = noop;
         (window as any).console.info = noop;
@@ -719,26 +917,66 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
       };
     };
 
-    document.addEventListener("contextmenu", disableRightClick);
-    document.addEventListener("keydown", disableDevTools);
-    document.addEventListener("keydown", disableSelection);
+    const handleWindowBlur = () => {
+      setIsFocused(false);
+    };
+
+    const handleWindowFocus = () => {
+      setIsFocused(true);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.key === 'F12' ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.key === 'PrintScreen' ||
+        event.keyCode === 44
+      ) {
+        event.preventDefault();
+        handleWindowBlur();
+        setTimeout(() => {
+          handleWindowFocus();
+        }, 2000);
+      }
+    };
+
+    const handleRightClick = (event: Event) => {
+      event.preventDefault();
+    };
+
+    window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('focus', handleWindowFocus);
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('contextmenu', handleRightClick);
+
+    document.addEventListener("contextmenu", disableRightClick); // Replaced by handleRightClick
+    document.addEventListener("keydown", disableDevTools); // Removed
+    document.addEventListener("keydown", disableSelection); // Kept if needed, but handled by handleKeyDown above for F12 etc.
 
     let cleanupProtection: (() => void) | undefined;
     const timer = setTimeout(() => {
       cleanupProtection = protectContent();
     }, 1000);
 
-    const devToolsInterval = setInterval(detectDevTools, 1000);
+    const extensionObserver = detectExtension();
 
     return () => {
+      window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('focus', handleWindowFocus);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('contextmenu', handleRightClick);
+
       document.removeEventListener("contextmenu", disableRightClick);
       document.removeEventListener("keydown", disableDevTools);
       document.removeEventListener("keydown", disableSelection);
       clearTimeout(timer);
-      clearInterval(devToolsInterval);
-      if (cleanupProtection) {
-        cleanupProtection();
-      }
+      // clearInterval(devToolsInterval);
+
+      // if (extensionObserver) extensionObserver.disconnect();
+      // if (cleanupProtection) {
+      //   cleanupProtection();
+      // }
     };
   }, [episode]);
 
@@ -753,11 +991,9 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
       if (!nav) return;
 
       const colorMap: Record<string, { bg: string; text: string; border: string }> = {
-        white: { bg: "#ffffff", text: "#111827", border: "#000000" },
-        sepia: { bg: "#fffbeb", text: "#111827", border: "#000000" },
-        // Use a subtle light border on dark themes so borders remain visible against black backgrounds
-        dark: { bg: "rgb(17 24 39)", text: "#FFFFFF", border: "#FFFFFF" },
-        black: { bg: "#000000", text: "#FFFFFF", border: "#FFFFFF" },
+        white: { bg: "#ffffff", text: "#000000", border: "#e5e7eb" }, // Navbar matches content (paper) bg
+        sepia: { bg: "#fdfaee", text: "#000000", border: "#e6dbc4" },
+        dark: { bg: "#1c1c1e", text: "#ffffff", border: "#333333" },
       };
 
       const colors = colorMap[bgColor] ?? colorMap.white;
@@ -766,16 +1002,98 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
       const styleId = "navbar-theme-override";
       let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
       const css = `#Navbar { background-color: ${colors.bg} !important; color: ${colors.text} !important; border-bottom-color: ${colors.border} !important; }
-        #Navbar, #Navbar * { color: ${colors.text} !important; border-color: ${colors.border} !important; }
-        #Navbar svg, #Navbar svg * { stroke: ${colors.text} !important; fill: none !important; }
-        #Navbar a { color: ${colors.text} !important; }
-        #Navbar .text-red-600, #Navbar .text-gray-800 { color: ${colors.text} !important; }
+
+        /* General override for Navbar content */
+        #Navbar > div, 
+        #Navbar a, 
+        #Navbar button,
+        #Navbar .text-gray-800,
+        #Navbar svg,
+        #Navbar span { 
+            color: ${colors.text} !important; 
+            border-color: ${colors.border} !important; 
+        }
+        
+        /* Force Red Hover on Navbar Links (Top Level) */
+        #Navbar a:hover,
+        #Navbar button:hover,
+        #Navbar .group:hover > a {
+            color: #dc2626 !important;
+        }
+
+        #Navbar svg * { stroke: ${colors.text} !important; fill: none !important; }
+        
+        /* 0. Adjust Profile Dropdown Border for Dark Mode */
+        #Navbar #UserProfileDropdown {
+             border-color: ${currentBg?.key === 'dark' ? '#ffffff' : '#000000'} !important;
+        }
+        
+        /* Mega Menu Theme Override using Structural Selectors for robustness */
+        
+        /* 1. Target the Root Container of NovelMenu (Child of #NovelMegaMenu) */
+        #Navbar #NovelMegaMenu > div {
+             background-color: ${colors.bg} !important;
+             border-color: ${colors.border} !important;
+        }
+
+        /* 2. Target the Sidebar (First Child) and Content Area (Last Child/Flex-1) inside NovelMenu */
+        #Navbar #NovelMegaMenu > div > div {
+             background-color: ${colors.bg} !important;
+             border-color: ${colors.border} !important;
+        }
+
+        /* 3. Text Colors: Override gray text to match theme text */
+        #Navbar #NovelMegaMenu .text-gray-600,
+        #Navbar #NovelMegaMenu .text-gray-500,
+        #Navbar #NovelMegaMenu button,
+        #Navbar #NovelMegaMenu a {
+             color: ${colors.text} !important;
+        }
+
+        /* 4. Allow Red Text (Active/Brand) to remain visible - assume red is fine on both backgrounds */
+        #Navbar #NovelMegaMenu .text-red-600 {
+             color: #dc2626 !important; /* Force standard red-600 */
+        }
+        
+        /* 5. Hover States: Use Border Color as background AND Red Text */
+        #Navbar #NovelMegaMenu button:hover,
+        #Navbar #NovelMegaMenu a:hover {
+             background-color: ${colors.border} !important;
+             color: #dc2626 !important; /* Restore red hover effect */
+        }
+        
+        /* 6. Active Sidebar Item (has shadow and white bg usually) */
+        #Navbar #NovelMegaMenu button.shadow-sm {
+              background-color: ${colors.border} !important;
+              color: #dc2626 !important; /* Make active item red too */
+        }
+
+        /* 7. SVGs */
+        #Navbar #NovelMegaMenu svg {
+             color: inherit !important;
+        }
         /* Footer theme override for reader page - apply and remove only while on reader */
-        footer { background-color: ${colors.bg} !important; color: ${colors.text} !important; border-top-color: ${colors.border} !important; }
+        footer { background-color: ${colors.bg} !important; color: ${colors.text} !important; border-top-color: ${colors.border} !important; margin-top: 0 !important; }
         footer, footer * { color: ${colors.text} !important; border-color: ${colors.border} !important; }
         footer svg, footer svg * { stroke: ${colors.text} !important; fill: none !important; }
         footer a { color: ${colors.text} !important; }
         footer .text-gray-700, footer .text-gray-500, footer .text-gray-400 { color: ${colors.text} !important; }
+
+        /* Force Episode Content to match theme (Override inline styles from WYSIWYG/Word) */
+        .episode-content, .episode-content * {
+            color: ${colors.text} !important;
+            background-color: transparent !important; /* Ensure text blends with page bg */
+            border-color: ${colors.border} !important;
+        }
+
+        /* Force Font Family on Content Wrapper and all children */
+        .episode-content-wrapper, .episode-content-wrapper * {
+             font-family: ${currentFontFamily?.family || "var(--font-sarabun), sans-serif"} !important;
+        }
+        /* Extra specificity for prose if used */
+        .prose, .prose * {
+             font-family: ${currentFontFamily?.family || "var(--font-sarabun), sans-serif"} !important;
+        }
       `;
 
       if (!styleEl) {
@@ -794,7 +1112,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     } catch (err) {
       console.warn("Could not update Navbar theme:", err);
     }
-  }, [bgColor]);
+  }, [bgColor, currentFontFamily]);
 
   // Popover visible state for episodes list
   const [isListPopoverOpen, setIsListPopoverOpen] = useState(false);
@@ -873,15 +1191,12 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     onClick: () => setBgColor(bg.key),
   }));
 
+
+
   if (isLoading) {
     return (
       <div className={`min-h-screen ${currentBg?.bg || "bg-white"}`}>
-        <div className="flex flex-col justify-center items-center min-h-[400px]">
-          <Spin size="large" />
-          <p className={`mt-4 ${currentBg?.text || "text-gray-900"}`}>
-            กำลังโหลดเนื้อหา...
-          </p>
-        </div>
+        <GifLoader />
       </div>
     );
   }
@@ -938,189 +1253,235 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
         msUserSelect: "none",
         minHeight: "100vh",
       }}
-      onCopy={(e) => e.preventDefault()}
+      onCopy={(e) => e.preventDefault()
+      }
       onCut={(e) => e.preventDefault()}
       onContextMenu={(e) => e.preventDefault()}
     >
       {messageContextHolder}
-      {isSidebarOpen && (
-        <>
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-[60]" onClick={() => setIsSidebarOpen(false)} />
+      {
+        isSidebarOpen && (
+          <>
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-[60]" onClick={() => setIsSidebarOpen(false)} />
 
-          <div className="fixed top-0 right-0 h-full w-full sm:w-80 bg-white shadow-xl z-[70] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-900">สารบัญ</h2>
-              <button onClick={() => setIsSidebarOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {episodesData && episodesData.groups && episodesData.groups.length > 0 ? (
-              <div className="divide-y divide-gray-100">
-                <div className="px-4 py-3 flex gap-2">
-                  <button onClick={expandAllGroups} className="text-sm px-3 py-1 bg-gray-100 rounded">แสดงทั้งหมด</button>
-                  <button onClick={collapseAllGroups} className="text-sm px-3 py-1 bg-gray-100 rounded">ย่อทั้งหมด</button>
-                </div>
-                {episodesData.groups.map((group: any, groupIndex: number) => {
-                  const isExpanded = expandedGroups[group.group_id] ?? groupIndex === 0;
-                  const toggleGroup = () => {
-                    setExpandedGroups((prev) => ({ ...prev, [group.group_id]: !isExpanded }));
-                  };
-
-                  return (
-                    <div key={group.group_id} className="bg-white">
-                      <button onClick={toggleGroup} className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors">
-                        <h3 className="text-xs font-semibold text-gray-700 text-left uppercase tracking-wide">{group.name}</h3>
-                        <svg className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-
-                      {isExpanded && (
-                        <div className="divide-y divide-gray-50">
-                          {group.list.map((ep: any) => {
-                            const isCurrentEpisode = (ep.epID != null ? String(ep.epID) : null) === episodeId;
-                            return (
-                              <button
-                                key={ep.ep_id}
-                                onClick={() => {
-                                  setIsSidebarOpen(false);
-                                  router.push(`/read/${bookId}/${String(ep.ep_id ?? ep.epID)}`);
-                                }}
-                                className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors text-left ${isCurrentEpisode ? "bg-red-50/50 border-l-2 border-red-500" : ""}`}>
-                                <div className="flex-1 min-w-0 pr-3">
-                                  <p className={`text-sm truncate ${isCurrentEpisode ? "text-red-600 font-medium" : "text-gray-700"}`}>{ep.name.trim()}</p>
-                                </div>
-
-                                <div className="flex-shrink-0 flex items-center gap-2">
-                                  {ep.isBuy && <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>}
-                                  {ep.coin > 0 && !ep.isBuy && <span className="text-xs text-gray-500">{ep.coin}</span>}
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+            <div className="fixed top-0 right-0 h-full w-full sm:w-80 bg-white shadow-xl z-[70] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
+                <button onClick={() => setIsSidebarOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                  <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-sm text-gray-500">ไม่พบรายการตอน</p>
+
+              {episodesData && episodesData.groups && episodesData.groups.length > 0 ? (
+                <div className="divide-y divide-gray-100">
+                  <div className="px-4 py-3 flex gap-2">
+                  </div>
+                  {episodesData.groups.map((group: any, groupIndex: number) => {
+                    const isExpanded = expandedGroups[group.group_id] ?? groupIndex === 0;
+                    const toggleGroup = () => {
+                      setExpandedGroups((prev) => ({ ...prev, [group.group_id]: !isExpanded }));
+                    };
+
+                    return (
+                      <div key={group.group_id} className="bg-white">
+                        <button onClick={toggleGroup} className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors">
+                          <h3 className="text-xs font-semibold text-gray-700 text-left uppercase tracking-wide">{group.name}</h3>
+                          <svg className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+
+                        {isExpanded && (
+                          <div className="divide-y divide-gray-50">
+                            {group.list.map((ep: any) => {
+                              const isCurrentEpisode = (ep.epID != null ? String(ep.epID) : null) === episodeId;
+                              return (
+                                <button
+                                  key={ep.ep_id}
+                                  onClick={() => {
+                                    setIsSidebarOpen(false);
+                                    router.push(`/read/${bookId}/${String(ep.ep_id ?? ep.epID)}`);
+                                  }}
+                                  className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors text-left ${isCurrentEpisode ? "bg-red-50/50 border-l-2 border-red-500" : ""}`}>
+                                  <div className="flex-1 min-w-0 pr-3">
+                                    <p className={`text-sm truncate ${isCurrentEpisode ? "text-red-600 font-medium" : "text-gray-700"}`}>{ep.name.trim()}</p>
+                                  </div>
+
+                                  <div className="flex-shrink-0 flex items-center gap-2">
+                                    {ep.isBuy && <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>}
+                                    {ep.coin > 0 && !ep.isBuy && <span className="text-xs text-gray-500">{ep.coin}</span>}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-sm text-gray-500">ไม่พบรายการตอน</p>
+                </div>
+              )}
+            </div>
+          </>
+        )
+      }
+
+
+
+      <main className={`${currentBg?.bg} min-h-screen pb-20`}>
+        <div className="min-h-[500px] p-4 flex flex-col items-center">
+          <div className={`min-h-[1000px] rounded-md w-full lg:max-w-[1000px] ${currentBg?.paper || currentBg?.bg} ${currentBg?.text} shadow-lg relative flex flex-col`}>
+            {/* Header inside paper */}
+            {/* Header inside paper - Always Visible */}
+            <div className={`transition-all duration-300 w-full sticky top-0 z-30 ${currentBg?.paper || currentBg?.bg}`}
+              style={{
+                borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)",
+                borderBottomWidth: "1px"
+              }}
+            >
+              <div className="flex items-center justify-between px-2 py-2">
+                <div className="flex items-center gap-1">
+                  <Link href={bookId ? `/book/${bookId}` : "/"} className={`p-2 rounded-full transition-colors ${currentBg?.text} ${currentBg?.key === "dark" ? "hover:bg-white/10" : "hover:bg-black/5"}`} style={{ color: currentBg?.key === "dark" ? "white" : undefined }}>
+                    <div className="flex items-center gap-1 text-xs font-medium" style={{ color: currentBg?.key === "dark" ? "white" : undefined }}>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: currentBg?.key === "dark" ? "white" : undefined }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                      <span className="hidden sm:inline" style={{ color: currentBg?.key === "dark" ? "white" : undefined }}>หน้าหลัก</span>
+                    </div>
+                  </Link>
+
+                  <Popover
+                    placement="bottomLeft"
+                    title={<div className="text-sm font-semibold">สารบัญ</div>}
+                    content={renderEpisodesList()}
+                    trigger="click"
+                    open={isListPopoverOpen}
+                    onOpenChange={(open) => setIsListPopoverOpen(open)}
+                  >
+                    <button className={`p-2 rounded-full transition-colors ${currentBg?.text} ${currentBg?.key === "dark" ? "hover:bg-white/10" : "hover:bg-black/5"}`} title="สารบัญ" style={{ color: currentBg?.key === "dark" ? "white" : undefined }}>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: currentBg?.key === "dark" ? "white" : undefined }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+                    </button>
+                  </Popover>
+                </div>
+
+                <h1 className="text-sm font-medium truncate mx-4 flex-1 text-center opacity-80" style={{ color: currentBg?.key === "dark" ? "white" : undefined }}>{displayTitle || ""}</h1>
+
+                <div className="flex items-center gap-0.5">
+                  <button
+                    onClick={() => setIsAutoScroll(!isAutoScroll)}
+                    className={`p-2 rounded-full transition-colors ${currentBg?.text} ${currentBg?.key === "dark" ? "hover:bg-white/10" : "hover:bg-black/5"} ${isAutoScroll ? 'text-red-600' : ''}`}
+                    title={isAutoScroll ? "หยุดเลื่อน" : "เลื่อนอัตโนมัติ"}
+                    style={{ color: isAutoScroll ? '#dc2626' : (currentBg?.key === "dark" ? "white" : undefined) }}
+                  >
+                    {isAutoScroll ? (
+                      <svg className="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    )}
+                  </button>
+                  <Dropdown menu={{ items: fontSizeMenu }} placement="bottomRight">
+                    <button className={`p-2 rounded-full transition-colors ${currentBg?.text} ${currentBg?.key === "dark" ? "hover:bg-white/10" : "hover:bg-black/5"}`} title="ขนาดตัวอักษร" style={{ color: currentBg?.key === "dark" ? "white" : undefined }}>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h8m-8 6h16" /></svg>
+                    </button>
+                  </Dropdown>
+                  <Dropdown menu={{ items: fontFamilyMenu }} placement="bottomRight">
+                    <button className={`p-2 rounded-full transition-colors ${currentBg?.text} ${currentBg?.key === "dark" ? "hover:bg-white/10" : "hover:bg-black/5"}`} title="ประเภทฟอนต์" style={{ color: currentBg?.key === "dark" ? "white" : undefined }}>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" /></svg>
+                    </button>
+                  </Dropdown>
+                  <Dropdown menu={{ items: bgColorMenu }} placement="bottomRight">
+                    <button className={`p-2 rounded-full transition-colors ${currentBg?.text} ${currentBg?.key === "dark" ? "hover:bg-white/10" : "hover:bg-black/5"}`} title="ธีมสี" style={{ color: currentBg?.key === "dark" ? "white" : undefined }}>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
+                    </button>
+                  </Dropdown>
+                </div>
+              </div>
+            </div>
+            <article
+              ref={contentRef}
+              className="episode-content-wrapper mt-5 select-none leading-loose lg:px-11 px-6 text-wrap whitespace-normal overflow-hidden main-read cursor-pointer"
+              style={{ userSelect: "none", WebkitUserSelect: "none", MozUserSelect: "none", msUserSelect: "none" }}
+              onClick={() => setShowNav(!showNav)}
+            >
+              {isFocused ? (
+                <div className={`${currentFontSize?.size || "text-base"}`} style={{ lineHeight: "1.8", fontFamily: currentFontFamily?.family || "var(--font-sarabun), sans-serif" }}>
+                  {episode?.des ? (
+                    parse(modifiedHtml(episode.des, currentFontFamily?.family || "var(--font-sarabun), sans-serif", user))
+                  ) : episode?.content ? (
+                    parse(modifiedHtml(episode.content, currentFontFamily?.family || "var(--font-sarabun), sans-serif", user))
+                  ) : (
+                    <PurchaseFallback />
+                  )}
+                </div>
+              ) : (
+                <div className='flex flex-col p-10 w-full min-h-[500px] justify-center text-center cursor-pointer' onClick={() => setIsFocused(true)}>
+                  {Array.from({ length: Math.max(1, Math.ceil((episode?.des || episode?.content || "").length / 2000)) }, (_, i) => (
+                    <div className={`text-2xl flex items-center justify-center w-full h-[600px] ${currentBg?.text}`} key={i}>คลิกที่นี่เพื่ออ่านต่อ</div>
+                  ))}
+                </div>
+              )}
+
+            </article>
+
+            {/* Sticky Toggleable Footer inside paper (z-40 to be above text, similar to header) */}
+            {showNav && (
+              <div
+                className={`w-full cursor-pointer border-t grid grid-cols-2 items-center sticky bottom-0 z-40 transition-all duration-300 shadow-lg ${currentBg?.paper || currentBg?.bg}`}
+                style={{
+                  // Add a subtle shadow to emphasize it's sticky
+                  boxShadow: `0 -4px 6px -1px rgba(0, 0, 0, ${currentBg?.key === "dark" ? "0.3" : "0.05"})`,
+                  borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)"
+                }}
+              >
+                <div
+                  className={`group w-full p-3 flex flex-row gap-2 items-center justify-center border-r hover:bg-black/5 transition-all ${!prevEpId ? "opacity-30 cursor-not-allowed" : "cursor-pointer active:scale-[0.98]"}`}
+                  style={{
+                    borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)"
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (prevEpId && bookId) router.push(`/read/${bookId}/${prevEpId}`);
+                  }}
+                >
+                  <svg className={`w-5 h-5 transition-transform group-hover:-translate-x-1`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                  <div className="flex flex-col items-start leading-none gap-0.5">
+                    <span className="text-[10px] opacity-60 font-normal">ตอนก่อนหน้า</span>
+                    <span className="font-semibold text-sm">ก่อนหน้า</span>
+                  </div>
+                </div>
+                <div
+                  className={`group w-full p-3 flex flex-row gap-2 items-center justify-center hover:bg-black/5 transition-all ${!nextEpId ? "opacity-30 cursor-not-allowed" : "cursor-pointer active:scale-[0.98]"}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.scrollTo(0, 0);
+                    if (nextEpId && bookId) router.push(`/read/${bookId}/${nextEpId}`);
+                  }}
+                >
+                  <div className="flex flex-col items-end leading-none gap-0.5">
+                    <span className="text-[10px] opacity-60 font-normal">ตอนต่อไป</span>
+                    <span className="font-semibold text-sm">ถัดไป</span>
+                  </div>
+                  <svg className={`w-5 h-5 transition-transform group-hover:translate-x-1`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                </div>
+              </div>
+            )}
+
+            {/* Episode Comment Section - Moved inside to keep header sticky */}
+            {episodeId && (
+              <div className="px-4 pb-8">
+                <EpisodeCommentSection episodeId={episodeId} theme={currentBg} />
               </div>
             )}
           </div>
-        </>
-      )}
-
-      <div className={`sticky top-0 z-50 ${currentBg?.bg} border-b border-gray-100`}>
-        <div className="max-w-3xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <button onClick={() => (bookId ? router.push(`/book/${bookId}`) : router.back())} className={`p-2 rounded-full transition-colors ${currentBg?.text}`} style={{ backgroundColor: currentBg?.key === "white" ? "#f3f4f6" : currentBg?.key === "dark" || currentBg?.key === "black" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)" }}>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-
-            <h1 className="text-sm font-medium truncate mx-4 flex-1 text-center">{displayTitle || ""}</h1>
-
-            <div className="flex items-center gap-1">
-              <Dropdown menu={{ items: fontSizeMenu }} placement="bottomRight">
-                <button className={`p-2 rounded-full transition-colors ${currentBg?.text}`} style={{ backgroundColor: currentBg?.key === "white" ? "#f3f4f6" : currentBg?.key === "dark" || currentBg?.key === "black" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)" }} title="ขนาดตัวอักษร">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h8m-8 6h16" />
-                  </svg>
-                </button>
-              </Dropdown>
-
-              <Dropdown menu={{ items: fontFamilyMenu }} placement="bottomRight">
-                <button className={`p-2 rounded-full transition-colors ${currentBg?.text}`} style={{ backgroundColor: currentBg?.key === "white" ? "#f3f4f6" : currentBg?.key === "dark" || currentBg?.key === "black" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)" }} title="ประเภทฟอนต์">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                  </svg>
-                </button>
-              </Dropdown>
-
-              <Dropdown menu={{ items: bgColorMenu }} placement="bottomRight">
-                <button className={`p-2 rounded-full transition-colors ${currentBg?.text}`} style={{ backgroundColor: currentBg?.key === "white" ? "#f3f4f6" : currentBg?.key === "dark" || currentBg?.key === "black" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)" }}>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                  </svg>
-                </button>
-              </Dropdown>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <main className={`${currentBg?.bg} min-h-screen pb-20`}>
-        <div className="max-w-3xl mx-auto px-6 py-12">
-          <article className="episode-content-wrapper" style={{ userSelect: "none", WebkitUserSelect: "none", MozUserSelect: "none", msUserSelect: "none" }}>
-            <div className={currentFontSize?.size || "text-base"} style={{ lineHeight: "1.8", fontFamily: currentFontFamily?.family || "'Sarabun', sans-serif" }}>
-              {episode?.des ? (
-                <ProtectedContent content={episode.des} className="episode-content" allowHtml={true} />
-              ) : episode?.content ? (
-                <ProtectedContent content={episode.content} className="episode-content" allowHtml={true} />
-              ) : (
-                <PurchaseFallback />
-              )}
-            </div>
-          </article>
         </div>
       </main>
 
-      <div className={`sticky bottom-0 border-t border-gray-100 ${currentBg?.bg} backdrop-blur-sm z-[90]`} style={{ zIndex: 90 }}>
-        <div className="max-w-3xl mx-auto px-4 py-3">
-          <div className="flex items-center gap-2">
-            
-            {/* ปุ่มก่อนหน้า */}
-            <button 
-                className={`flex-1 py-3 rounded-lg text-sm font-semibold transition-all ${!prevEpId ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-red-600 hover:bg-red-700 active:scale-95"}`} 
-                style={{ color: !prevEpId ? "#000000" : "#ffffff", textShadow: !prevEpId ? undefined : "0 1px 2px rgba(0,0,0,0.3)" }} 
-                disabled={!prevEpId}
-                onClick={() => { 
-                    if (prevEpId && bookId) router.push(`/read/${bookId}/${prevEpId}`); 
-                }}
-            >
-                ← ก่อนหน้า
-            </button>
 
-            {/* ปุ่มสารบัญ (เหมือนเดิม) */}
-            <Popover
-              placement="top"
-              title={<div className="text-sm font-semibold">สารบัญ</div>}
-              content={renderEpisodesList()}
-              trigger="click"
-              open={isListPopoverOpen}
-              onOpenChange={(open) => setIsListPopoverOpen(open)}
-            >
-              <button className={`p-3 rounded-lg border transition-colors ${currentBg?.key === "dark" || currentBg?.key === "black" ? "border-gray-700 hover:bg-gray-800" : "border-gray-200 hover:bg-gray-50"}`} aria-label="สารบัญ" type="button">
-                <svg className={`w-5 h-5 ${currentBg?.text || "text-gray-700"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-            </Popover>
 
-            {/* ปุ่มถัดไป */}
-            <button 
-                className={`flex-1 py-3 rounded-lg text-sm font-semibold transition-all ${!nextEpId ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-red-600 hover:bg-red-700 active:scale-95"}`} 
-                style={{ color: !nextEpId ? undefined : "#ffffff", textShadow: !nextEpId ? undefined : "0 1px 2px rgba(0,0,0,0.3)" }} 
-                disabled={!nextEpId}
-                onClick={() => { 
-                    if (nextEpId && bookId) router.push(`/read/${bookId}/${nextEpId}`); 
-                }}
-            >
-                ถัดไป →
-            </button>
-
-          </div>
-        </div>
-      </div>
-
-      <BackToTopButton /> 
+      <BackToTopButton />
       <Modal
         open={confirmOpen}
         onCancel={() => setConfirmOpen(false)}
@@ -1145,11 +1506,11 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
         <div className="space-y-2 text-center">
           <div className="text-base font-semibold text-gray-700">{displayTitle || 'ตอนนี้'}</div>
           <div className="text-sm text-red-600 font-medium flex items-center justify-center gap-2">
-            <Image src="/images/e-coin.png" alt="เหรียญ" width={18} height={18} />
+            <Image src={settings?.coin || '/images/e-coin.png'} alt="เหรียญ" width={18} height={18} loader={imageLoader} />
             <span>{confirmAmount != null ? confirmAmount : '---'}</span>
           </div>
         </div>
       </Modal>
-    </div>
+    </div >
   );
 }

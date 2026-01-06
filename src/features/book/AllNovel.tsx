@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useRef, useMemo } from 'react';
-import { Pagination, Tabs, Spin, Select, Alert } from 'antd';
+import { Pagination, Tabs, Select, Alert } from 'antd';
+import GifLoader from '@/components/utility/GifLoader';
 import { useQuery } from '@tanstack/react-query';
-import CardBook from '@/components/novel/CardBook';
+import CardBook from '@/components/novelCard/CardBook';
 
 interface SearchParams {
   query: string;
@@ -128,6 +129,7 @@ function AllNovel() {
         isNew: b.isNew,
         discount: b.discount,
         isNewEp: b.isNewEp,
+        discount_ep_count: b.discount_ep_count,
       };
     });
 
@@ -221,7 +223,7 @@ function AllNovel() {
       {/* Loading */}
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
-          <Spin size="large" />
+          <GifLoader />
         </div>
       ) : (
         <>

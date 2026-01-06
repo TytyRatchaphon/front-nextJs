@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from "react";
-import { Checkbox, Form, Input, Select, Spin, Modal, notification } from "antd"; // เพิ่ม notification
+import { Checkbox, Form, Input, Select, Modal, notification } from "antd"; // เพิ่ม notification
 import type { CheckboxChangeEvent } from "antd/es/checkbox";
 import axios from "axios"; 
 import Cookies from "js-cookie"; 
@@ -10,6 +10,7 @@ import Cookies from "js-cookie";
 import TextEditorTiny from "@/components/editor/TextEditorTiny";
 import UploadCropBook from "@/components/upload/UploadBook";
 import UploadCropBookBanner from "@/components/upload/UploadCropBookBanner";
+import GifLoader from '@/components/utility/GifLoader';
 
 // --- 1. Constant Data ---
 const novelType = [
@@ -294,7 +295,9 @@ const NewBook: React.FC = () => {
     return (
         <div className="my-10">
             {contextHolder} {/* แสดง Notification Holder */}
-            <Spin spinning={spinLoading}>
+            {spinLoading ? (
+                <GifLoader />
+            ) : (
                 <Form
                     name="formNewBook"
                     autoComplete="off"
@@ -453,28 +456,37 @@ const NewBook: React.FC = () => {
                             </div>
 
                             <div className="flex justify-center items-center mb-3">
-                                <Checkbox id="accept_conditions" checked={acceptBookCon} onChange={handleCheckboxChange}>
-                                    <label htmlFor="accept_conditions">ยอมรับ </label>
+                                <Checkbox 
+                                    id="accept_conditions" 
+                                    checked={acceptBookCon} 
+                                    onChange={handleCheckboxChange}
+                                    className="[&_.ant-checkbox-checked_.ant-checkbox-inner]:!bg-red-500 [&_.ant-checkbox-checked_.ant-checkbox-inner]:!border-red-500 [&_.ant-checkbox-wrapper:hover_.ant-checkbox-inner]:!border-red-500 [&_.ant-checkbox:hover_.ant-checkbox-inner]:!border-red-500"
+                                >
+                                    <label htmlFor="accept_conditions" className="cursor-pointer">ยอมรับ </label>
                                 </Checkbox>
                                 <span onClick={() => setOpenModal(true)} className="text-primary font-bold cursor-pointer">เงื่อนไขการใช้บริการ</span>
                             </div>
 
                             <div className='grid grid-cols-1 p-0 '>
                                 <div className='flex justify-center p-0'>
-                                    <button className='text-md text-white bg-primary py-1 hover:border-secondary hover:bg-secondary hover:text-primary focus:outline-none fontFam md:text-xl' type="submit">บันทึก</button>
+                                    <button 
+                                        className='!text-white bg-red-500 px-12 py-2.5 rounded-full shadow-md hover:shadow-lg hover:bg-red-600 transition-all duration-300 transform hover:scale-105 font-bold text-lg tracking-wide' 
+                                        type="submit"
+                                    >
+                                        บันทึก
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     )}
                 </Form>
+            )}
 
                 <Modal title='' footer='' open={openModal} onCancel={() => setOpenModal(false)}>
                     <div>
                         <div dangerouslySetInnerHTML={{ __html: website?.book_conditions || '' }} />
                     </div>
                 </Modal>
-
-            </Spin>
         </div>
     )
 }

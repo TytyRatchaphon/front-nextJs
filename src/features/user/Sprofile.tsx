@@ -9,7 +9,6 @@ import {
   Select, 
   Button, 
   App,
-  Spin,
   Upload,
   Modal
 } from 'antd';
@@ -21,6 +20,7 @@ import { useFormStore } from '@/stores/formStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import GifLoader from '@/components/utility/GifLoader';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -74,7 +74,7 @@ const UserInfoForm = () => {
   };
 
   return (
-    <div className='select-none w-full' style={{ width: '927px', height: '524px' }}>
+    <div className='select-none w-full h-full min-h-[524px]'>
       <div className='border-2 border-gray-200 rounded-lg p-6 bg-white h-full flex flex-col'>
         <Form
           form={form}
@@ -84,7 +84,7 @@ const UserInfoForm = () => {
           className="fontFam flex-1"
           onValuesChange={handleValuesChange}
         >
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Form.Item name="fullname" label={<span className={labelSpan}>ชื่อโปรไฟล์</span>} rules={[{ required: true, message: 'กรุณากรอกชื่อโปรไฟล์' }]}>
               <Input className={inputClassName} />
             </Form.Item>
@@ -109,7 +109,7 @@ const UserInfoForm = () => {
             </Form.Item>
 
             <Form.Item name="des" label={<span className={labelSpan}>เกี่ยวกับฉัน</span>}>
-              <TextArea className={inputClassName} autoSize />
+              <TextArea className={inputClassName}  autoSize/>
             </Form.Item>
 
             <Form.Item name="address_main" label={<span className={labelSpan}>ที่อยู่</span>}>
@@ -303,7 +303,7 @@ const ProfilePictureTab = ({ onProfileFileChange }: ProfilePictureTabProps) => {
   };
 
   return (
-    <div className='select-none w-full' style={{ width: '385px', height: '524px' }}>
+    <div className='select-none w-full lg:w-[385px] h-full min-h-[524px] flex-shrink-0'>
       <div className='flex flex-col gap-4 h-full'>
         <div className='border-2 border-gray-200 rounded-lg p-6 bg-white flex flex-col items-center justify-between h-full'>
           <div className='w-full text-center mb-2'>
@@ -358,9 +358,9 @@ const ProfilePictureTab = ({ onProfileFileChange }: ProfilePictureTabProps) => {
 
         <Modal title={<span className='font-primary text-xl font-bold'>เลือกกรอบ</span>} open={isFrameModalOpen} onCancel={() => setIsFrameModalOpen(false)} footer={[<Button key="submit" type="primary" onClick={handleConfirmFrame} className='font-primary font-medium' style={{ backgroundColor: '#FF0037', borderColor: '#FF0037' }}>ยืนยัน</Button>]} width={600} centered>
           {loadingFrames ? (
-            <div className='flex justify-center py-10'><Spin size="large" /></div>
+            <div className='flex justify-center py-10'><GifLoader className="h-64" width={150} height={150} /></div>
           ) : (
-            <div className='grid grid-cols-3 gap-4 py-4'>
+            <div className='grid grid-cols-2 sm:grid-cols-3 gap-4 py-4'>
               <div onClick={() => handleSelectFrameInModal(null)} className={`border-2 rounded-lg p-4 cursor-pointer flex flex-col items-center justify-center h-40 transition-all ${selectedFrameInModal === null ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-400'}`}>
                 <span className='font-primary text-sm'>ไม่ใส่กรอบ</span>
               </div>
@@ -524,8 +524,8 @@ const UserInfoTab = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex gap-4">
-        <div className="flex-shrink-0">
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="flex-shrink-0 w-full lg:w-auto flex justify-center lg:block">
           <ProfilePictureTab onProfileFileChange={setProfileFile} />
         </div>
         <div className="flex-1">
@@ -533,7 +533,7 @@ const UserInfoTab = () => {
         </div>
       </div>
 
-      <div className="w-full" style={{ maxWidth: '1328px', height: '466px' }}>
+      <div className="w-full h-auto min-h-[300px] md:min-h-[466px] aspect-[1328/466]">
         <div className="border-2 border-gray-200 rounded-lg p-6 bg-white w-full h-full flex flex-col">
           <div className='w-full text-center mb-4'>
             <h3 className='text-lg font-bold font-primary text-black'>รูปพื้นหลัง</h3>
@@ -608,16 +608,14 @@ function Page() {
 
   if (!hasMounted || !isLoggedIn || !user) {
     return (
-      <div className='bg-white min-h-screen flex items-center justify-center'>
-        <Spin size="large" />
-      </div>
+      <GifLoader />
     );
   }
 
   return (
     <div className='bg-white' style={{ overflowX: 'hidden' }}>
         <div className='relative w-[100vw] items-center flex flex-col'>
-            <div className='flex flex-col pt-[100px] lg:px-0 w-full max-w-[1360px] relative mb-10' style={{ minHeight: 'calc(100vh - 100px)' }}>
+            <div className='flex flex-col pt-[100px] px-4 lg:px-0 w-full max-w-[1360px] relative mb-10' style={{ minHeight: 'calc(100vh - 100px)' }}>
                 <div className='bg-white select-none'>
                     <div className='select-none '>
                         <div className='lg: mt-[-80] py-2'>

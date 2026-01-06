@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState, useRef, useMemo } from "react";
-import { Pagination, Spin, Alert } from "antd";
+import React, { useState, useRef, useMemo, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
+import { Pagination, Alert } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import SearchBar from "@/components/search/SearchBar";
-import CardBook from "@/components/novel/CardBook";
+import CardBook from "@/components/novelCard/CardBook";
+import GifLoader from '@/components/utility/GifLoader';
 
 interface SearchParams {
   query: string;
@@ -16,6 +18,7 @@ interface SearchParams {
   order: string;
 }
 
+
 const searchBooks = async (
   params: SearchParams,
   page: number,
@@ -23,8 +26,9 @@ const searchBooks = async (
 ) => {
   const { query, categories, types, status, end, sortBy, order } = params;
 
+  // --- กรณีที่ 2: ถ้าไม่มีคำค้นหา (ใช้ระบบ API เดิมของคุณ) ---
+  // (Original logic restored for all cases)
   const queryParams = new URLSearchParams();
-
   if (query) queryParams.append("q", query);
   if (categories.length > 0) queryParams.append("categories", categories.join(","));
   if (types.length > 0) queryParams.append("types", types.join(","));
@@ -55,24 +59,56 @@ const searchBooks = async (
 };
 
 export default function SearchClient() {
-  const [currentPage, setCurrentPage] = useState(1);
+  const searchParamsUrl = useSearchParams();
+  const [currentPage, setCurrentPage] = useState(Number(searchParamsUrl?.get('page')) || 1);
+  
   const [searchParams, setSearchParams] = useState<SearchParams>({
-    query: "",
-    categories: [],
-    types: [],
-    status: [],
-    end: "all",
-    sortBy: "date_at",
-    order: "DESC",
+    query: searchParamsUrl?.get('q') || "",
+    categories: searchParamsUrl?.get('categories')?.split(',').map(Number) || [],
+    types: searchParamsUrl?.get('types')?.split(',') || [],
+    status: searchParamsUrl?.get('status')?.split(',') || [],
+    end: searchParamsUrl?.get('end') || "all",
+    sortBy: searchParamsUrl?.get('sortBy') || "date_at",
+    order: searchParamsUrl?.get('order') || "DESC",
   });
+
   const topRef = useRef<HTMLDivElement>(null);
   const pageSize = 20;
 
-  const handleSearch = (params: SearchParams) => {
-    console.log("🔍 Search triggered with params:", params);
-    setSearchParams(params);
-    setCurrentPage(1);
-  };
+  const handleSearch = useCallback((params: SearchParams) => {
+    setSearchParams((prev) => {
+      // Use JSON.stringify for simple deep comparison to prevent infinite loops
+      if (JSON.stringify(prev) === JSON.stringify(params)) {
+        return prev;
+      }
+      console.log("🔍 Search triggered with params:", params);
+      setCurrentPage(1);
+      return params;
+    });
+  }, []);
+
+  // Update state when URL changes (e.g. navigation from navbar)
+  React.useEffect(() => {
+    const paramsFromUrl: SearchParams = {
+        query: searchParamsUrl?.get('q') || "",
+        categories: searchParamsUrl?.get('categories')?.split(',').map(Number) || [],
+        types: searchParamsUrl?.get('types')?.split(',') || [],
+        status: searchParamsUrl?.get('status')?.split(',') || [],
+        end: searchParamsUrl?.get('end') || "all",
+        sortBy: searchParamsUrl?.get('sortBy') || "date_at",
+        order: searchParamsUrl?.get('order') || "DESC",
+    };
+
+    setSearchParams((prev) => {
+      if (JSON.stringify(prev) === JSON.stringify(paramsFromUrl)) {
+        return prev;
+      }
+      console.log("[DEBUG] Updating state from URL:", paramsFromUrl);
+      // If categories from URL changed significantly, we might want to reset page? 
+      // But for now just sync state.
+      return paramsFromUrl;
+    });
+  }, [searchParamsUrl]);
 
   const {
     data: apiResponse,
@@ -132,6 +168,7 @@ export default function SearchClient() {
         isNew: b.isNew,
         discount: b.discount,
         isNewEp: b.isNewEp,
+        discount_ep_count: b.discount_ep_count,
       };
     });
 
@@ -161,17 +198,23 @@ export default function SearchClient() {
     <>
       {/* Sidebar */}
       <div className="lg:col-span-3 xl:col-span-3">
-        <SearchBar onSearch={handleSearch} />
+        <SearchBar 
+          onSearch={handleSearch} 
+          initialQuery={searchParams.query}
+          initialFilters={{
+            categories: searchParams.categories,
+            types: searchParams.types,
+            status: searchParams.status,
+            end: searchParams.end
+          }}
+        />
       </div>
 
       {/* Main Content */}
       <div className="lg:col-span-9 xl:col-span-9" ref={topRef}>
         {/* Loading State */}
         {isLoading && (
-          <div className="flex flex-col justify-center items-center min-h-[400px]">
-            <Spin size="large" />
-            <p className="mt-4 text-gray-500">กำลังโหลดข้อมูล...</p>
-          </div>
+            <GifLoader className="h-64" width={150} height={150} />
         )}
 
         {/* Error State */}
@@ -225,7 +268,7 @@ export default function SearchClient() {
                   className="grid justify-items-center"
                   style={{
                     gridTemplateColumns: "repeat(auto-fill, 168px)",
-                    gap: "8px",
+                    gap: "16px",
                     justifyContent: "start",
                   }}
                 >

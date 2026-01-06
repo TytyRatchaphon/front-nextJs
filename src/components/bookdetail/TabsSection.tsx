@@ -58,10 +58,10 @@ function TabsSection<T extends string>({
           items={items}
           activeKey={activeTab}
           onChange={(key) => onTabChange(key as T)}
-          tabBarGutter={16}
+          tabBarGutter={30}
           tabBarStyle={{
             margin: 0,
-            padding: "0 0",
+            padding: "0 20px",
             borderBottom: "1px solid #e5e7eb",
           }}
         />

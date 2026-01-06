@@ -1,11 +1,13 @@
 "use client"
 
 import React from 'react'
-import { Card, Tabs, Table, Empty, Spin, message, Collapse } from 'antd'
+import { Card, Tabs, Table, Empty, message, Collapse } from 'antd'
 import apiClient from '@/services/apiClient'
 import { useQuery } from '@tanstack/react-query'
 import { get_date as use_date } from '@/utils/dateUtils'
 import { StoreBanner } from '@/components/home/Banner'
+import { useWebsiteStore } from '@/stores/websiteStore';
+import GifLoader from '@/components/utility/GifLoader';
 
 function History() {
   const [activeKey, setActiveKey] = React.useState<string>('1')
@@ -52,6 +54,7 @@ function History() {
   const [gachaPage, setGachaPage] = React.useState(1)
   const [getmorePage, setGetmorePage] = React.useState(1)
   const [giftPage, setGiftPage] = React.useState(1)
+  const [storeHistoryPage, setStoreHistoryPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState(20)
 
   // keep last-known totals to avoid transient 0 totals during fetches
@@ -123,6 +126,7 @@ function History() {
     setRedeemPage(1)
     setGachaPage(1)
     setGetmorePage(1)
+    setStoreHistoryPage(1)
   }, [activeKey])
 
   // redeem history query
@@ -290,6 +294,17 @@ function History() {
     keepPreviousData: true,
   } as any))
 
+  // store purchase history (ประวัติการซื้อสินค้า)
+  const storeHistoryQuery = useQuery<any>(({ 
+    queryKey: ['his_store', storeHistoryPage, pageSize],
+    queryFn: async () => {
+      const resp = await apiClient.get('/user/his_store', { params: { page: storeHistoryPage, limit: pageSize } })
+      return resp.data
+    },
+    enabled: activeKey === '7',
+    keepPreviousData: true,
+  } as any))
+
   const giftPrev = (giftQuery as any).previousData
   const giftRaw = giftQuery.data?.data ?? giftQuery.data ?? giftPrev?.data ?? giftPrev ?? {}
   const gifts = React.useMemo(() => {
@@ -311,6 +326,27 @@ function History() {
       key: `${it.id ?? it.txId ?? it.giftID ?? 'gift'}-${idx}`,
     }))
   }, [giftQuery.data, giftQuery.isFetching])
+
+  const storeHistoryPrev = (storeHistoryQuery as any).previousData
+  const storeHistoryRaw = storeHistoryQuery.data?.data ?? storeHistoryQuery.data ?? storeHistoryPrev?.data ?? storeHistoryPrev ?? {}
+  const storeHistories = React.useMemo(() => {
+    const list = Array.isArray(storeHistoryRaw)
+      ? storeHistoryRaw
+      : Array.isArray(storeHistoryRaw?.history)
+      ? storeHistoryRaw.history
+      : Array.isArray(storeHistoryRaw?.data)
+      ? storeHistoryRaw.data
+      : []
+
+    return list.map((it: any, idx: number) => ({
+      date: it.date ? new Date(it.date).toLocaleString() : '',
+      name: it.StorePack?.name ?? it.name ?? '-',
+      price: it.price ?? 0,
+      currency: (it.des === 'coin' || it.type === 'coin') ? 'coin' : (it.des === 'stamp' || it.type === 'stamp') ? 'stamp' : 'baht',
+      raw: it,
+      key: `${it.id ?? idx}-store-${idx}`,
+    }))
+  }, [storeHistoryQuery.data, storeHistoryQuery.isFetching])
 
   // Ensure current page indices stay within valid range when data or pageSize changes
   React.useEffect(() => {
@@ -337,6 +373,10 @@ function History() {
     const giftTotal = giftQuery.data?.data?.total ?? giftQuery.data?.data?.pagination?.total ?? giftQuery.data?.total ?? (giftQuery as any).previousData?.data?.total ?? gifts.length
     const maxGiftPage = giftQuery.data?.data?.totalPages ?? Math.max(1, Math.ceil((giftTotal ?? 0) / pageSize))
     if (!giftQuery.isFetching && giftPage > maxGiftPage) setGiftPage(maxGiftPage)
+
+    const storeTotal = storeHistoryQuery.data?.data?.total ?? storeHistoryQuery.data?.data?.pagination?.total ?? storeHistoryQuery.data?.total ?? (storeHistoryQuery as any).previousData?.data?.total ?? storeHistories.length
+    const maxStorePage = storeHistoryQuery.data?.data?.totalPages ?? Math.max(1, Math.ceil((storeTotal ?? 0) / pageSize))
+    if (!storeHistoryQuery.isFetching && storeHistoryPage > maxStorePage) setStoreHistoryPage(maxStorePage)
   }, [
     payments.length,
     useCoins.length,
@@ -351,6 +391,7 @@ function History() {
     gachaQuery.data,
     getMoreQuery.data,
     giftQuery.data,
+    storeHistoryQuery.data,
   ])
 
   const tableColumns = React.useMemo(() => {
@@ -393,7 +434,7 @@ function History() {
           render: (text: any) => (
             <div className="flex items-center justify-end gap-2">
               <span>{text}</span>
-              <img src="/images/e-coin.png" alt="coin" style={{ width: 18, height: 18 }} />
+              <img src={settings?.coin || '/images/e-coin.png'} alt="coin" style={{ width: 18, height: 18 }} />
             </div>
           ),
         },
@@ -413,7 +454,7 @@ function History() {
           align: 'right' as const,
           render: (unit: any, record: any) => {
             const type = record?.type ?? ''
-            const src = type === 'getcoin' ? '/images/e-coin.png' : type === 'getfreecoin' ? '/images/money-bag.png' : '/images/e-coin.png'
+            const src = type === 'getcoin' ? settings?.coin || '/images/e-coin.png' : type === 'getfreecoin' ? settings?.freecoin || '/images/money-bag.png' : settings?.coin || '/images/e-coin.png'
             return (
               <div className="flex items-center justify-end gap-2">
                 <span>{unit}</span>
@@ -434,6 +475,34 @@ function History() {
       ]
     }
 
+    if (activeKey === '7') {
+        return [
+          { title: 'วัน-เวลา', dataIndex: 'date', key: 'date', width: 220 },
+          { title: 'สินค้า', dataIndex: 'name', key: 'name' },
+          { 
+              title: 'ราคา', 
+              dataIndex: 'price', 
+              key: 'price', 
+              width: 150, 
+              align: 'right' as const,
+              render: (val: any, record: any) => {
+                   return (
+                      <div className="flex items-center justify-end gap-2">
+                          <span>{Number(val).toLocaleString()}</span>
+                          {record.currency === 'coin' ? (
+                            <img src={settings?.coin || '/images/e-coin.png'} alt="coin" style={{ width: 18, height: 18 }} />
+                          ) : record.currency === 'stamp' ? (
+                            <img src={settings?.stamp || '/images/stamp.png'} alt="stamp" style={{ width: 18, height: 18 }} />
+                          ) : (
+                            <span className="text-gray-500 text-xs">THB</span>
+                          )}
+                      </div>
+                   )
+              }
+          },
+        ]
+      }
+
     if (activeKey === '4') {
       return [
         { title: 'วันที่ได้รับ', dataIndex: 'date', key: 'date', width: 220 },
@@ -445,7 +514,7 @@ function History() {
           render: (val: any, record: any) => {
             const type = record?.gift_type ?? ''
             const value = val ?? record?.gift_value ?? ''
-            const src = type === 'stamp' ? '/images/stamp.png' : type === 'freecoin' ? '/images/money-bag.png' : type === 'coin' ? '/images/e-coin.png' : '/images/stamp.png'
+            const src = type === 'stamp' ? settings?.stamp || '/images/stamp.png' : type === 'freecoin' ? settings?.freecoin || '/images/money-bag.png' : type === 'coin' ? settings?.coin || '/images/e-coin.png' : '/images/stamp.png'
             return (
               <div className="flex items-center justify-center gap-2">
                 <span className="text-center">{value}</span>
@@ -469,13 +538,14 @@ function History() {
           render: (val: any, record: any) => {
             const cur = (val ?? record?.currency ?? '').toLowerCase()
             const map: Record<string, string> = {
-              coin: '/images/e-coin.png',
-              coupon: '/images/gacha.png',
-              freecoin: '/images/money-bag.png',
-              flower: '/images/flower.png',
-              heart: '/images/heart.png',
-              exp: '/images/exp.png',
-              fast_ticket: '/images/fast_ticket.png',
+              coin: settings?.coin || '/images/e-coin.png',
+              coupon: settings?.coupon || '/images/gacha.png',
+              freecoin: settings?.freecoin || '/images/money-bag.png',
+              flower: settings?.flower || '/images/flower.png',
+              heart: settings?.heart || '/images/heart.png',
+              exp: settings?.exp || '/images/exp.png',
+              fast_ticket: settings?.fast_ticket || '/images/fast_ticket.png',
+              stamp: settings?.stamp || '/images/stamp.png',
             }
             const src = map[cur] ?? '/images/e-coin.png'
             return (
@@ -492,6 +562,8 @@ function History() {
 
     return columns
   }, [activeKey, paymentsQuery.data, useCoinQuery.data, redeemQuery.data, gachaQuery.data, getMoreQuery.data])
+
+  const {settings} = useWebsiteStore(); 
 
   return (
     <div className="mt-10 mb-10">
@@ -571,7 +643,11 @@ function History() {
             </div>
 
             <div className="bg-white rounded-md shadow-sm border border-gray-200">
-              <Spin spinning={activeKey === '1' ? paymentsQuery.isLoading : activeKey === '2' ? useCoinQuery.isLoading : activeKey === '3' ? redeemQuery.isLoading : false}>
+              {(activeKey === '1' ? paymentsQuery.isLoading : activeKey === '2' ? useCoinQuery.isLoading : activeKey === '3' ? redeemQuery.isLoading : activeKey === '4' ? gachaQuery.isLoading : activeKey === '5' ? getMoreQuery.isLoading : activeKey === '6' ? giftQuery.isLoading : activeKey === '7' ? storeHistoryQuery.isLoading : false) ? (
+                  <div className="flex justify-center items-center py-10 min-h-[400px]">
+                      <GifLoader className="h-48 w-48" width={200} height={200} />
+                  </div>
+              ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <Table
                     scroll={{ x: 'max-content' }}
@@ -589,7 +665,9 @@ function History() {
                                 ? getMores
                                 : activeKey === '6'
                                   ? gifts
-                                : data
+                                  : activeKey === '7'
+                                    ? storeHistories
+                                    : data
                     }
                     pagination={
                       activeKey === '1'
@@ -656,6 +734,17 @@ function History() {
                                       if (newPageSize && newPageSize !== pageSize) setPageSize(newPageSize)
                                     },
                                   }
+                                : activeKey === '7'
+                                  ? {
+                                      current: storeHistoryPage,
+                                      pageSize,
+                                      total: storeHistoryQuery.data?.data?.total ?? storeHistoryQuery.data?.data?.pagination?.total ?? storeHistoryQuery.data?.total ?? (storeHistoryQuery as any).previousData?.data?.total ?? (storeHistoryQuery as any).previousData?.data?.pagination?.total ?? storeHistories.length,
+                                      showSizeChanger: false,
+                                      onChange: (page: number, newPageSize?: number) => {
+                                        setStoreHistoryPage(page)
+                                        if (newPageSize && newPageSize !== pageSize) setPageSize(newPageSize)
+                                      },
+                                    }
                                 : { pageSize, current: 1, total: data.length }
                     }
                     rowKey="key"
@@ -669,7 +758,7 @@ function History() {
                     // give table a little spacing to match screenshot look
                     style={{ borderRadius: 8, border: '1px solid #e5e7eb' }}
                   /></div>
-              </Spin>
+              )}
               <div className="p-4">
                 {activeKey === '1' && (
                   <Collapse items={[{

@@ -24,3 +24,47 @@ export const stripHtmlTags = (html: string): string => {
     .replace(/\n\s*\n/g, '\n\n')
     .trim();
 };
+
+export function randomString(length: number) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+
+export const genEmailHide = (email?: string | null) => {
+    if (!email) {
+        return randomString(4)
+    }
+ 
+    const explode = email.split('@')
+    
+    return explode[0] + randomString(4) + (explode[1] || '')
+}
+
+export const modifiedHtml = (detailData: string, currentFont: string, userData: any) => {
+    const font = currentFont || 'var(--font-sarabun), sans-serif'; // Fallback if cookie usage is handled outside or passed in
+    // Note: getCookies is not available here, assuming caller passes the correct resolved font
+
+    if (!detailData) return '';
+
+    let newDetail = detailData
+            .replace(/<(\/)?font[^>]*>/g, '')
+            .replace(/font-size:\d+pt;/g, '')
+            .replace(/font-family:.+?;/g, '')
+            .replace(/class/g, '')
+            .replace(/color:.+?;/g, '') 
+            .replace(/<o:p>/g, '<span>')  // ลบ tag <o:p>
+            .replace(/<p[^>]*>/g, `<p class="no-select" style="font-family: ${font} ">&emsp;&emsp;&emsp;`) // Format p tags with font and indentation
+            .replace(/<h1[^>]*>/g, `<p class="no-select" style="font-family: ${font} ">&emsp;&emsp;&emsp;`) // Format h1 as p
+            .replace(/<span[^>]*>/g, '')
+            .replace(/<\/span>/g, '')
+            .replace(/<\/p>/g, () => { 
+              const hiddenEmail = genEmailHide(userData?.email);
+              return `<span class="no-select" style="color:transparent;font-size:0;">${hiddenEmail}</span></p>`;
+            });
+
+    return newDetail;
+}

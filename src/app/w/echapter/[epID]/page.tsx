@@ -3,17 +3,17 @@ import EditChapter from '@/features/mybook/EditEpisode'
 
 
 interface PageProps {
-  params: {
+  params: Promise<{
     epID: string; 
-  }
+  }>
 }
 
-// 2. รับ params เข้ามา
-function page({ params }: PageProps) {
-
+async function page({ params }: PageProps) {
+  const { epID } = await params;
+  
   return (
     <EditChapter 
-        epID={params.epID} 
+        epID={epID} 
         groupID="" 
     />
   )

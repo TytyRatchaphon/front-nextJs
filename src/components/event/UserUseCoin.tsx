@@ -63,10 +63,6 @@ export default function UserUseCoin({
     retry: 1 
   })
 
-  // ===========================================================================
-  // 🟢 จุดแก้ที่ 1: ย้ายตัวแปรพวกนี้ขึ้นมา ก่อน useMutation
-  // เพื่อให้เราเอาค่า totalUnclaimed ไปบวกเพิ่มใน Store ได้ทันที
-  // ===========================================================================
   const apiCoin = data?.coin_used_data
   const rewardToClaim = apiCoin?.reward_to_claim ?? false
   const totalUnclaimed = Number(apiCoin?.total_unclaimed_reward_unit ?? 0)
@@ -167,7 +163,7 @@ export default function UserUseCoin({
   const displayRightAmount = `${apiGoal} coin`
 
   return (
-    <div style={{ maxWidth: typeof width === 'number' ? `${width}px` : width, margin: '0 auto' }}>
+    <div className={`w-full ${typeof width === 'number' ? `max-w-[${width}px]` : `max-w-[${width}]`} mx-auto px-4 md:px-0`}>
       <div style={{ borderRadius: 12, overflow: 'hidden' }}>
         
         {/* Header Section */}
@@ -197,7 +193,7 @@ export default function UserUseCoin({
               strokeColor="#d40b1d"
               trailColor="#f3f4f6"
               strokeLinecap="round"
-              strokeWidth={progressHeight ?? 12}
+              size={{ height: progressHeight ?? 12 }}
             />
           </div>
 

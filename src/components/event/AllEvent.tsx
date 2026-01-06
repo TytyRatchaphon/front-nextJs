@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { Modal, Button, notification } from 'antd'
 import { useAuthStore } from '@/stores/authStore'
 import axios from 'axios'
+import { useWebsiteStore } from '@/stores/websiteStore'
 
 function AllEvent() {
   const { user, token, updateToken } = useAuthStore()
@@ -19,6 +20,10 @@ function AllEvent() {
   const [stampType, setStampType] = useState<'flower' | 'heart' | null>('flower')
   const [stampLoading, setStampLoading] = useState(false)
   const STAMP_COST = 200
+  
+  const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
+  return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
+}
 
 const handleConfirmStampExchange = async () => {
     if (!stampType) return
@@ -324,64 +329,36 @@ const handleConfirmStampExchange = async () => {
     setStage(3)
   }
 
+  const {settings} = useWebsiteStore(); 
+
   return (
     <div style={{ maxWidth: 1040, margin: '0 auto', padding: 12 }}>
       {contextHolder}
-      <div style={{ display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between w-full">
         <button
           type="button"
           aria-label="จิ๊กซอว์"
-          style={{
-            flex: '1 1 0',
-            minWidth: 0,
-            height: 116,
-            padding: 0,
-            border: 'none',
-            background: 'transparent',
-            borderRadius: 12,
-            overflow: 'hidden',
-            cursor: 'pointer'
-          }}
+          className="flex-1 w-full min-w-0 h-auto aspect-[376/116] p-0 border-none bg-transparent rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
         >
-          <Image src="/images/jigsaw.png" alt="จิ๊กซอว์" width={376} height={116} style={{ objectFit: 'cover', display: 'block', width: '100%', height: '100%' }} />
+          <Image src="/images/jigsaw.png" alt="จิ๊กซอว์" width={376} height={116} loader={imageLoader} style={{ objectFit: 'cover', display: 'block', width: '100%', height: '100%' }} />
         </button>
 
         <button
           type="button"
           aria-label="แลกสแตมป์"
           onClick={() => setStampModalOpen(true)}
-          style={{
-            flex: '1 1 0',
-            minWidth: 0,
-            height: 116,
-            padding: 0,
-            border: 'none',
-            background: 'transparent',
-            borderRadius: 12,
-            overflow: 'hidden',
-            cursor: 'pointer'
-          }}
+          className="flex-1 w-full min-w-0 h-auto aspect-[376/116] p-0 border-none bg-transparent rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
         >
-          <Image src="/images/stamp.png" alt="แลกสแตมป์" width={376} height={116} style={{ objectFit: 'cover', display: 'block', width: '100%', height: '100%' }} />
+          <Image src="/images/stamp-ex.png" alt="แลกสแตมป์" width={376} height={116} loader={imageLoader} style={{ objectFit: 'cover', display: 'block', width: '100%', height: '100%' }} />
         </button>
 
         <button
           type="button"
           aria-label="สุ่มกาชาปอง"
           onClick={openGachaModal}
-          style={{
-            flex: '1 1 0',
-            minWidth: 0,
-            height: 116,
-            padding: 0,
-            border: 'none',
-            background: 'transparent',
-            borderRadius: 12,
-            overflow: 'hidden',
-            cursor: 'pointer'
-          }}
+          className="flex-1 w-full min-w-0 h-auto aspect-[376/116] p-0 border-none bg-transparent rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
         >
-          <Image src="/images/gachapon.png" alt="สุ่มกาชาปอง" width={376} height={116} style={{ objectFit: 'cover', display: 'block', width: '100%', height: '100%' }} />
+          <Image src="/images/gachapon.png" alt="สุ่มกาชาปอง" width={376} loader={imageLoader} height={116} style={{ objectFit: 'cover', display: 'block', width: '100%', height: '100%' }} />
         </button>
       </div>
 
@@ -403,15 +380,14 @@ const handleConfirmStampExchange = async () => {
                 type="primary"
                 disabled={couponCount <= 0}
                 onClick={handleStage1Action}
+                className={`${couponCount <= 0 ? '!bg-gray-400 !border-gray-400' : '!bg-red-600 hover:!bg-red-700 !border-red-600 hover:!border-red-700'}`}
                 style={{
-                  background: couponCount <= 0 ? '#9ca3af' : '#dc2626',
-                  borderColor: couponCount <= 0 ? '#9ca3af' : '#dc2626',
                   height: 44,
                   borderRadius: 8,
                   padding: '0 20px'
                 }}
               >
-                <span style={{ fontWeight: 700 }}>{couponCount <= 0 ? 'สิทธิ์รับรางวัลหมดแล้ว' : 'สุ่มเลย!'}</span>
+                <span>{couponCount <= 0 ? 'สิทธิ์รับรางวัลหมดแล้ว' : 'สุ่มเลย!'}</span>
               </Button>
             </div>
           </div>
@@ -423,7 +399,7 @@ const handleConfirmStampExchange = async () => {
               <Image src={gachaImage} alt="gacha-play" width={220} height={220} style={{ objectFit: 'contain' }} unoptimized />
             </div>
             <div style={{ display: 'flex', gap: 12, flex: '0 0 auto' }}>
-              <Button onClick={handleSkip} style={{ background: '#dc2626', borderColor: '#dc2626', color: '#fff' }}>ข้าม</Button>
+              <Button onClick={handleSkip} className="!bg-red-600 hover:!bg-red-700 !border-red-600 hover:!border-red-700" style={{ color: '#fff', height: 44, borderRadius: 8, padding: '0 20px' }}>ข้าม</Button>
             </div>
           </div>
         )}
@@ -438,12 +414,12 @@ const handleConfirmStampExchange = async () => {
                   {(() => {
                     const typeRaw = (gachaResult.type ?? gachaResult.reward_type ?? '').toString().toLowerCase()
                     const unit = gachaResult.unit ?? gachaResult.amount ?? 1
-                    let img = '/images/coupon.png'
+                    let img = settings?.coupon || '/images/coupon.png'
                     let label = typeRaw || 'รางวัล'
-                    if (typeRaw.includes('exp')) { img = '/images/exp.png'; label = 'EXP' }
-                    else if (typeRaw.includes('flower')) { img = '/images/flower.png'; label = 'ดอกไม้' }
-                    else if (typeRaw.includes('heart')) { img = '/images/heartbig.png'; label = 'หัวใจ' }
-                    else if (typeRaw.includes('freecoin') || typeRaw.includes('free_coin') || typeRaw.includes('money')) { img = '/images/freecoin.png'; label = 'Freecoin' }
+                    if (typeRaw.includes('exp')) { img = settings?.exp || '/images/exp.png'; label = 'EXP' }
+                    else if (typeRaw.includes('flower')) { img = settings?.flower || '/images/flower.png'; label = 'ดอกไม้' }
+                    else if (typeRaw.includes('heart')) { img = settings?.heart || '/images/heartbig.png'; label = 'หัวใจ' }
+                    else if (typeRaw.includes('freecoin') || typeRaw.includes('free_coin') || typeRaw.includes('money')) { img = settings?.freecoin || '/images/freecoin.png'; label = 'Freecoin' }
 
                     return (
                       <>
@@ -459,7 +435,7 @@ const handleConfirmStampExchange = async () => {
               <div style={{ marginTop: 12 }}>
                 <Button
                   onClick={() => { setModalOpen(false); setStage(1); setGachaImage('/images/gachaStatic.gif'); setGachaResult(null) }}
-                  style={{ background: '#dc2626', borderColor: '#dc2626', color: '#fff' }}
+                  className="!bg-red-600 hover:!bg-red-700 h-[44px] rounded-lg font-normal !text-white hover:!border-red-700 hover:border px-5"
                 >
                   ตกลง
                 </Button>
@@ -484,7 +460,7 @@ const handleConfirmStampExchange = async () => {
           
           <div style={{ marginBottom: 4 }}>
              <Image 
-               src="/images/userstamp.png" 
+               src={settings?.stamp || '/images/userstamp.png'} 
                alt="stamp-large" 
                width={100} 
                height={100} 
@@ -525,7 +501,7 @@ const handleConfirmStampExchange = async () => {
                 height: 44
               }}
             >
-              <Image src="/images/flower.png" alt="flower" width={24} height={24} style={{ objectFit: 'contain' }} />
+              <Image src={settings?.flower || '/images/flower.png'} alt="flower" width={24} height={24} style={{ objectFit: 'contain' }} />
               <div style={{ fontWeight: 500 }}>{stampAmount * STAMP_COST}</div>
             </div>
 
@@ -546,7 +522,7 @@ const handleConfirmStampExchange = async () => {
                 height: 44
               }}
             >
-              <Image src="/images/heartbig.png" alt="heart" width={24} height={24} style={{ objectFit: 'contain' }} />
+              <Image src={settings?.heart || '/images/heartbig.png'} alt="heart" width={24} height={24} style={{ objectFit: 'contain' }} />
               <div style={{ fontWeight: 500 }}>{stampAmount * STAMP_COST}</div>
             </div>
           </div>

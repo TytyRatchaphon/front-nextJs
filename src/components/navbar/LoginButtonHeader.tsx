@@ -11,9 +11,9 @@ import { useAuthStore, UserData } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 
 // Types
-import LoginFacebook from '../LoginFacebook';
-import LoginGoogle from '../LoginGoogle';
-import LoginLine from '../LoginLine';
+import LoginFacebook from '../social/LoginFacebook';
+import LoginGoogle from '../social/LoginGoogle';
+import LoginLine from '../social/LoginLine';
 
 type LoginFieldType = {
   email?: string;

@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { Drawer, Button, Spin } from "antd";
+import { Drawer, Button } from "antd";
 import { FilterOutlined } from "@ant-design/icons";
+import GifLoader from '@/components/utility/GifLoader';
 
 interface Category {
   id: number;
@@ -19,6 +20,8 @@ interface SelectedFilters {
 }
 
 interface SearchBarProps {
+  initialQuery?: string;
+  initialFilters?: SelectedFilters;
   onSearch?: (params: {
     query: string;
     categories: number[];
@@ -30,18 +33,36 @@ interface SearchBarProps {
   }) => void;
 }
 
-function SearchBar({ onSearch }: SearchBarProps) {
+function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarProps) {
   const [open, setOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [sortBy, setSortBy] = useState("date_at");
   const [order] = useState("DESC");
 
-  const [selectedFilters, setSelectedFilters] = useState<SelectedFilters>({
+  // Initialize from parent props if available
+  const [selectedFilters, setSelectedFilters] = useState<SelectedFilters>(initialFilters || {
     categories: [],
     types: [],
     status: [],
-    end: "all", // default เป็น "ทั้งหมด"
+    end: "all",
   });
+
+  // Sync with props when they change (e.g. navigation)
+  useEffect(() => {
+    if (initialFilters) {
+      setSelectedFilters((prev) => {
+         if (JSON.stringify(prev) !== JSON.stringify(initialFilters)) {
+             return initialFilters;
+         }
+         return prev;
+      });
+    }
+  }, [initialFilters]);
+
+  // Sync query from props when URL changes
+  useEffect(() => {
+      setSearchQuery(initialQuery);
+  }, [initialQuery]);
 
   // State สำหรับหมวดหมู่จาก API
   const [categories, setCategories] = useState<Category[]>([]);
@@ -253,10 +274,22 @@ function SearchBar({ onSearch }: SearchBarProps) {
 
   const allFilters = getAllSelectedFilters();
 
-  const handleSearchClick = () => {
+  const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Auto-trigger search when filters or debounced query change
+  useEffect(() => {
     if (onSearch) {
       onSearch({
-        query: searchQuery,
+        query: debouncedQuery,
         categories: selectedFilters.categories,
         types: selectedFilters.types,
         status: selectedFilters.status,
@@ -265,6 +298,11 @@ function SearchBar({ onSearch }: SearchBarProps) {
         order,
       });
     }
+  }, [debouncedQuery, selectedFilters, sortBy, order, onSearch]);
+
+  const handleSearchClick = () => {
+    // Search is triggered automatically by useEffect
+    // This function now primarily serves to close the drawer on mobile
     if (open) {
       onClose();
     }
@@ -323,10 +361,7 @@ function SearchBar({ onSearch }: SearchBarProps) {
           <p className="font-medium mb-2">หมวดหมู่</p>
           <div className="flex flex-col gap-2 text-sm max-h-48 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
             {isLoadingCategories ? (
-              <div className="flex justify-center items-center py-4">
-                <Spin size="small" />
-                <span className="ml-2 text-gray-500">กำลังโหลดหมวดหมู่...</span>
-              </div>
+               <GifLoader width={80} height={80} className="py-4" />
             ) : categories.length > 0 ? (
               categories.map((item, index) => {
                 console.log(`Category item ${index}:`, item);
@@ -450,7 +485,7 @@ function SearchBar({ onSearch }: SearchBarProps) {
             isInDrawer ? "py-4 text-base" : "py-2 text-sm"
           }`}
         >
-          ค้นหา
+          ดูผลลัพธ์
         </button>
       </div>
     </div>
@@ -553,14 +588,6 @@ function SearchBar({ onSearch }: SearchBarProps) {
         }}
       >
         <div
-          onTouchStart={(e) => {
-            const target = e.currentTarget;
-            if (target.scrollTop === 0) {
-              handleTouchStart(e);
-            }
-          }}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
           style={{ height: "100%", overflow: "auto" }}
         >
           <FilterContent isInDrawer={true} />

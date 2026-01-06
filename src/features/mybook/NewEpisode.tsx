@@ -1,16 +1,18 @@
 'use client';
 
 import React, { useEffect, useState } from "react";
-import { Form, Input, Select, Spin, DatePicker, notification, Button, Modal } from "antd"; // ✨ เพิ่ม Modal
+import { Form, Input, Select, DatePicker, notification, Button, Modal } from "antd"; // ✨ เพิ่ม Modal
 import type { Dayjs } from "dayjs";
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import axios from "axios"; 
 import Cookies from "js-cookie"; 
 import { useRouter } from "next/navigation"; // ✨ เพิ่ม useRouter
+import { fetchGroupEpisodes } from "@/services/apiServices";
 
 // Import TextEditor
 import TextEditorTiny from "@/components/editor/TextEditorTiny";
+import GifLoader from '@/components/utility/GifLoader';
 
 dayjs.extend(customParseFormat);
 const { RangePicker } = DatePicker;
@@ -109,16 +111,35 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
                     setSpinLoading(false);
                 }
             } else if (groupID) {
-                formEditChapter.setFieldsValue({
-                    groupID: groupID,
-                    bookID: bookID,
-                    epID: '',
-                    coin: '0',
-                    publishDate: dayjs(),
-                    publishTime: '00:00',
-                    detail: '',
-                    order_by: 1
-                });
+                try {
+                    const res = await fetchGroupEpisodes(groupID);
+                    const episodes = res.episodes || [];
+                    const maxOrder = episodes.reduce((max: number, ep: any) => Math.max(max, Number(ep.order_by || 0)), 0);
+                    
+                    formEditChapter.setFieldsValue({
+                        groupID: groupID,
+                        bookID: bookID,
+                        epID: '',
+                        coin: '0',
+                        publishDate: dayjs(),
+                        publishTime: '00:00',
+                        detail: '',
+                        order_by: maxOrder + 1
+                    });
+                } catch (error) {
+                    console.error("Error fetching group episodes for order:", error);
+                    // Fallback
+                    formEditChapter.setFieldsValue({
+                        groupID: groupID,
+                        bookID: bookID,
+                        epID: '',
+                        coin: '0',
+                        publishDate: dayjs(),
+                        publishTime: '00:00',
+                        detail: '',
+                        order_by: 1
+                    });
+                }
             }
         };
 
@@ -210,7 +231,9 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
             </Modal>
 
             <div className="max-w-[840px] mx-auto px-4">
-                <Spin spinning={spinLoading}>
+                {spinLoading ? (
+                    <GifLoader />
+                ) : (
                     <Form
                         name="formEditChapter"
                         autoComplete="off"
@@ -274,9 +297,8 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
                                     <div className="h-[400px]">
                                         <Form.Item name='detail'>
                                             <TextEditorTiny 
-                                                value={formEditChapter.getFieldValue('detail')}
-                                                onChange={(content: string) => formEditChapter.setFieldsValue({ detail: content })} 
                                                 height={400}
+                                                onChange={() => {}}
                                             />
                                         </Form.Item>
                                     </div>
@@ -291,7 +313,7 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
                             <div className='grid grid-cols-1 p-0 mb-10 mt-8'> 
                                 <div className='flex justify-center p-0'>
                                     <button 
-                                        className='text-md text-white bg-primary py-1 px-8 h-auto hover:border-secondary hover:bg-secondary hover:text-primary focus:outline-none fontFam md:text-xl rounded' 
+                                        className='!text-white bg-red-500 px-12 py-2.5 rounded-full shadow-md hover:shadow-lg hover:bg-red-600 transition-all duration-300 transform hover:scale-105 font-bold text-lg tracking-wide' 
                                         type="submit"
                                     >
                                         บันทึก
@@ -300,7 +322,7 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
                             </div> 
                         </div>
                     </Form>
-                </Spin>
+                )}
             </div>
         </div>
     )
