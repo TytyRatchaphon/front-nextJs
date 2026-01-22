@@ -1,9 +1,12 @@
-import React from 'react'
+import React from 'react';
+import Report from '@/features/mybook/Report';
+import AuthGuard from '@/components/auth/AuthGuard';
 
-function page() {
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   return (
-    <div>page</div>
-  )
+    <AuthGuard>
+      <Report bookId={id} />
+    </AuthGuard>
+  );
 }
-
-export default page

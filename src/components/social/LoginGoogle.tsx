@@ -26,18 +26,13 @@ const LoginGoogle = () => {
 
   useEffect(() => {
     // Load Google Sign-In SDK
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    document.body.appendChild(script);
-
-    return () => {
-      // Cleanup
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
-    };
+    if (!document.querySelector('script[src="https://accounts.google.com/gsi/client"]')) {
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      document.body.appendChild(script);
+    }
   }, []);
 
   const handleGoogleLogin = () => {
@@ -70,9 +65,14 @@ const LoginGoogle = () => {
     // Trigger the Google Sign-In prompt
     window.google.accounts.id.prompt((notification: any) => {
       if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        console.log('Google Prompt Error:', {
+          notDisplayedReason: notification.getNotDisplayedReason(),
+          skippedReason: notification.getSkippedReason()
+        });
+
         // Fallback: Show error if One Tap doesn't work
         setLoading(false);
-        message.info('กรุณาอนุญาตการเข้าสู่ระบบผ่าน Google');
+        message.info(`กรุณาอนุญาตการเข้าสู่ระบบผ่าน Google (${notification.getNotDisplayedReason()})`);
       }
     });
 
@@ -88,8 +88,7 @@ const LoginGoogle = () => {
     try {
       if (response.credential) {
         const idToken = response.credential;
-        console.log('Google ID Token:', idToken);
-        
+
         // Send to Backend
         await sendToBackend(idToken);
       } else {
@@ -97,7 +96,6 @@ const LoginGoogle = () => {
         message.error('ไม่พบข้อมูลจาก Google');
       }
     } catch (error) {
-      console.error('Google Response Error:', error);
       setLoading(false);
       message.error('เกิดข้อผิดพลาดในการเข้าสู่ระบบผ่าน Google');
     }
@@ -109,8 +107,6 @@ const LoginGoogle = () => {
         idToken: idToken,
       });
 
-      console.log('✅ Backend Response:', response.data);
-      console.log('📋 Response Headers:', response.headers);
 
       if (response.data && response.data.data) {
         const userData = response.data.data;
@@ -136,17 +132,16 @@ const LoginGoogle = () => {
           };
 
           // ตรวจสอบ token จากหลายแหล่ง
-          token = userData.token || 
-                       userData.pws || 
-                       response.headers?.authorization || 
-                       response.headers?.['x-auth-token'];
+          token = userData.token ||
+            userData.pws ||
+            response.headers?.authorization ||
+            response.headers?.['x-auth-token'];
         }
 
-        console.log('🔑 Token found:', token ? 'Yes' : 'No');
 
         if (token) {
           login(userInfo, token);
-          
+
           // Update user data from token payload immediately
           updateToken(token);
 
@@ -157,16 +152,13 @@ const LoginGoogle = () => {
 
           // Redirect ไปหน้า profile
           setTimeout(() => {
-            router.push('/sprofile');
+            router.push('/');
           }, 500);
         } else {
-          console.error('❌ No token in response');
-          console.log('Full userData:', userData);
           message.error('ไม่พบ token จาก Backend - กรุณาติดต่อผู้ดูแลระบบ');
         }
       }
     } catch (error: any) {
-      console.error('Backend Error:', error);
       message.error(
         error.response?.data?.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ'
       );
@@ -178,9 +170,8 @@ const LoginGoogle = () => {
   return (
     <div
       onClick={!loading ? handleGoogleLogin : undefined}
-      className={`border border-gray-200 rounded-md py-2 flex justify-center items-center cursor-pointer hover:bg-blue-50 transition-colors ${
-        loading ? 'opacity-50 cursor-wait' : ''
-      }`}
+      className={`border border-gray-200 rounded-md py-2 flex justify-center items-center cursor-pointer hover:bg-blue-50 transition-colors ${loading ? 'opacity-50 cursor-wait' : ''
+        }`}
     >
       <Image
         className="inline-block h-[23px] w-[23px] rounded-full"

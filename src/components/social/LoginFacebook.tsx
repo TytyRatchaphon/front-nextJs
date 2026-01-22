@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { App } from 'antd';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
@@ -11,76 +11,79 @@ import Image from 'next/image';
 const LoginFacebook = () => {
   const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
+  // เพิ่ม state เพื่อเช็คว่า SDK พร้อมใช้งานหรือยัง
+  const [isSdkLoaded, setIsSdkLoaded] = useState(false);
   const router = useRouter();
   const { login, updateToken } = useAuthStore();
   const { closeLoginModal } = useUIStore();
 
-  const FACEBOOK_APP_ID = process.env.NEXT_PUBLIC_FACEBOOK_ID || '1223450826239717';
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.220.214:3331';
+  const FACEBOOK_APP_ID = process.env.NEXT_PUBLIC_FACEBOOK_ID || '1967780540282892';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.220.214:4005';
 
-  const handleFacebookLogin = () => {
-    setLoading(true);
+  // 1. ย้ายการ Initialize SDK มาไว้ใน useEffect ทำงานทันทีที่ Mount
+  useEffect(() => {
+    initFacebookSDK();
+  }, []);
 
-    // Load Facebook SDK
-    if (typeof window !== 'undefined' && (window as any).FB) {
-      (window as any).FB.login(
-        (response: any) => {
-          if (response.authResponse) {
-            const { accessToken } = response.authResponse;
-            fetchFacebookProfile(accessToken);
-          } else {
-            setLoading(false);
-            // message.error('การเข้าสู่ระบบผ่าน Facebook ถูกยกเลิก');
-          }
-        },
-        { scope: 'public_profile,email' }
-      );
-    } else {
-      // Initialize Facebook SDK if not loaded
-      initFacebookSDK().then(() => {
-        handleFacebookLogin();
+  const initFacebookSDK = () => {
+    if (typeof window === 'undefined') return;
+
+    if ((window as any).FB) {
+      setIsSdkLoaded(true);
+      return;
+    }
+
+    // Setup function ที่ FB จะเรียกเมื่อโหลด script เสร็จ
+    (window as any).fbAsyncInit = function () {
+      (window as any).FB.init({
+        appId: FACEBOOK_APP_ID,
+        cookie: true,
+        xfbml: true,
+        version: 'v18.0'
       });
+      setIsSdkLoaded(true);
+    };
+
+    // Load Script
+    if (!document.getElementById('facebook-jssdk')) {
+      const script = document.createElement('script');
+      script.id = 'facebook-jssdk';
+      script.src = 'https://connect.facebook.net/th_TH/sdk.js';
+      script.async = true;
+      script.defer = true;
+      script.crossOrigin = 'anonymous';
+      document.body.appendChild(script);
     }
   };
 
-  const initFacebookSDK = (): Promise<void> => {
-    return new Promise((resolve) => {
-      if (typeof window === 'undefined') {
-        resolve();
-        return;
-      }
+  const handleFacebookLogin = () => {
+    // ถ้า SDK ยังไม่มา ให้ return หรือแจ้งเตือน (แต่ปกติปุ่มจะ disable หรือรอโหลดอยู่แล้ว)
+    if (!isSdkLoaded || !(window as any).FB) {
+      console.warn('Facebook SDK not ready yet');
+      return;
+    }
 
-      // Load Facebook SDK script
-      if (!(window as any).FB) {
-        const script = document.createElement('script');
-        script.src = 'https://connect.facebook.net/th_TH/sdk.js';
-        script.async = true;
-        script.defer = true;
-        script.crossOrigin = 'anonymous';
-        
-        script.onload = () => {
-          (window as any).FB.init({
-            appId: FACEBOOK_APP_ID,
-            cookie: true,
-            xfbml: true,
-            version: 'v18.0'
-          });
-          resolve();
-        };
+    setLoading(true);
 
-        document.body.appendChild(script);
-      } else {
-        resolve();
-      }
-    });
+    // 2. เรียก FB.login โดยตรงทันที ไม่มีการ await หรือ promise คั่นก่อนหน้า
+    (window as any).FB.login(
+      (response: any) => {
+        if (response.authResponse) {
+          const { accessToken } = response.authResponse;
+          fetchFacebookProfile(accessToken);
+        } else {
+          setLoading(false);
+          // message.warning('ยกเลิกการเชื่อมต่อ Facebook');
+        }
+      },
+      { scope: 'public_profile,email' }
+    );
   };
 
   const fetchFacebookProfile = async (accessToken: string) => {
     try {
-      // ส่ง accessToken ไปให้ Backend ตรวจสอบเอง
       await sendToBackend(accessToken);
     } catch (error) {
-      console.error('Error with Facebook login:', error);
       message.error('เกิดข้อผิดพลาดในการเข้าสู่ระบบผ่าน Facebook');
       setLoading(false);
     }
@@ -92,12 +95,8 @@ const LoginFacebook = () => {
         accessToken: accessToken
       });
 
-      console.log('✅ Backend Response:', response.data);
-      console.log('📋 Response Headers:', response.headers);
-
       if (response.data && response.data.data) {
         const userData = response.data.data;
-        
         let token = '';
         let userInfo = {
           fullname: 'Facebook User',
@@ -106,50 +105,31 @@ const LoginFacebook = () => {
           userId: ''
         };
 
-        // Check if userData is the token string itself
         if (typeof userData === 'string') {
           token = userData;
         } else {
-          // Backend ส่ง userProfile มา
           userInfo = {
             fullname: userData.fullname || userData.name || 'Facebook User',
             email: userData.email || 'user@facebook.local',
             role: userData.role || 'user',
             userId: userData.user_id || userData.userID
           };
-
-          // ตรวจสอบ token จากหลายแหล่ง
-          token = userData.token || 
-                       userData.pws || 
-                       response.headers?.authorization || 
-                       response.headers?.['x-auth-token'];
+          token = userData.token || userData.pws || response.headers?.authorization || response.headers?.['x-auth-token'];
         }
-
-        console.log('🔑 Token found:', token ? 'Yes' : 'No');
 
         if (token) {
           login(userInfo, token);
-          
-          // Update user data from token payload immediately
           updateToken(token);
-
           message.success('เข้าสู่ระบบผ่าน Facebook สำเร็จ!');
-          
-          // ปิด Modal
           closeLoginModal();
-          
-          // Redirect ไปหน้า profile
           setTimeout(() => {
-            router.push('/sprofile');
+            router.push('/');
           }, 500);
         } else {
-          console.error('❌ No token in response');
-          console.log('Full userData:', userData);
-          message.error('ไม่พบ token จาก Backend - กรุณาติดต่อผู้ดูแลระบบ');
+          message.error('ไม่พบ token จาก Backend');
         }
       }
     } catch (error: any) {
-      console.error('Backend Error:', error);
       message.error(error.response?.data?.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ');
     } finally {
       setLoading(false);
@@ -157,9 +137,11 @@ const LoginFacebook = () => {
   };
 
   return (
-    <div
-      onClick={!loading ? handleFacebookLogin : undefined}
-      className={`border border-gray-200 rounded-md py-2 flex justify-center items-center cursor-pointer hover:bg-blue-50 transition-colors ${loading ? 'opacity-50 cursor-wait' : ''}`}
+    <button
+      type="button"
+      onClick={(!loading && isSdkLoaded) ? handleFacebookLogin : undefined}
+      className={`border border-gray-200 rounded-md py-2 flex justify-center items-center w-full hover:bg-blue-50 transition-colors ${(loading || !isSdkLoaded) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+      disabled={loading || !isSdkLoaded}
     >
       <Image
         className="inline-block h-[23px] w-[23px] rounded-full"
@@ -169,7 +151,7 @@ const LoginFacebook = () => {
         height={23}
         unoptimized
       />
-    </div>
+    </button>
   );
 };
 

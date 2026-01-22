@@ -9,6 +9,7 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
+    "deploy": "next build && next export",
     "lint": "eslint"
   },
   "dependencies": {
@@ -31,6 +32,7 @@
     "dayjs": "^1.11.18",
     "html-react-parser": "^5.2.7",
     "js-cookie": "^3.0.5",
+    "jwt-decode": "^4.0.0",
     "lucide-react": "^0.555.0",
     "next": "^16.1.0-canary.19",
     "openai": "^6.15.0",

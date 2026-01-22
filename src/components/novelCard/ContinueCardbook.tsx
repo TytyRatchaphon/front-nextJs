@@ -31,11 +31,6 @@ function CardBook({ book }: CardBookProps) {
   // Client-side debug: log whether shelveCount is present when the card mounts/updates
   React.useEffect(() => {
     try {
-      console.debug('CardBook debug:', {
-        book_id: book.book_id,
-        bookID: book.bookID,
-        shelveCount: book.shelveCount,
-      });
     } catch (e) {
       // ignore
     }

@@ -130,7 +130,6 @@ const TextEditor = ({ value, onChange, height, onInit }: TextEditorProps) => {
           initializeTinyMCE();
         };
         script.onerror = () => {
-          console.error('Failed to load TinyMCE script');
         };
         document.head.appendChild(script);
       }

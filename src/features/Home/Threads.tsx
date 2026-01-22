@@ -57,7 +57,6 @@ export default function Threads() {
         const uid = decoded.user_id || decoded.id || decoded.sub || decoded.userId;
         setCurrentUserId(Number(uid));
       } catch (error) {
-        console.error("Error decoding token for user ID:", error);
       }
     }
   }, [token]);
@@ -81,7 +80,6 @@ export default function Threads() {
       queryClient.invalidateQueries({ queryKey: ['threads'] });
     },
     onError: (error) => {
-      console.error('Create thread error:', error);
       messageApi.error('เกิดข้อผิดพลาดในการตั้งกระทู้');
     },
   });
@@ -93,7 +91,6 @@ export default function Threads() {
       queryClient.invalidateQueries({ queryKey: ['threads'] });
     },
     onError: (error) => {
-        console.error('Delete thread error:', error);
         messageApi.error('เกิดข้อผิดพลาดในการลบกระทู้');
     }
   });

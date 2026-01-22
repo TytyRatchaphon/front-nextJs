@@ -61,13 +61,13 @@ export default function ExclusiveSwiper({ items, title, icon, link }: ExclusiveS
       <div className="flex items-center gap-3 mb-4 px-4 bg-white/50 backdrop-blur-sm rounded-lg p-2">
         {icon && (
           <div className="relative w-10 h-10 flex-shrink-0 rounded-full overflow-hidden">
-             <Image 
-               src={icon} 
-               alt={title || 'icon'} 
-               fill
-               className="object-cover"
-               unoptimized
-             />
+            <Image
+              src={icon}
+              alt={title || 'icon'}
+              fill
+              className="object-cover"
+              unoptimized
+            />
           </div>
         )}
         {title && (
@@ -78,16 +78,16 @@ export default function ExclusiveSwiper({ items, title, icon, link }: ExclusiveS
 
         {link && (
           <Link href={link} className="ml-auto text-red-500 hover:text-red-600 text-sm font-medium flex items-center gap-1">
-            ดูทั้งหมด 
+            ดูทั้งหมด
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </Link>
         )}
       </div>
-      
+
       {/* Custom Navigation Buttons */}
-      <button 
+      <button
         ref={prevRef}
         className="arrow-left absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-white/90 p-3 rounded-full shadow-lg opacity-0 group-hover/swiper:opacity-100 transition-all duration-300 hover:bg-white disabled:opacity-0 disabled:cursor-not-allowed"
       >
@@ -95,7 +95,7 @@ export default function ExclusiveSwiper({ items, title, icon, link }: ExclusiveS
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
         </svg>
       </button>
-      <button 
+      <button
         ref={nextRef}
         className="arrow-right absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-white/90 p-3 rounded-full shadow-lg opacity-0 group-hover/swiper:opacity-100 transition-all duration-300 hover:bg-white disabled:opacity-0 disabled:cursor-not-allowed"
       >

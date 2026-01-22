@@ -16,11 +16,11 @@ function Shelve() {
   const [activeTab, setActiveTab] = useState('1');
 
   useEffect(() => {
-     if (tabParam && ['1', '2', '3'].includes(tabParam)) {
-         setActiveTab(tabParam);
-     }
+    if (tabParam && ['1', '2', '3'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
   }, [tabParam]);
-  
+
   // Pagination States
   const [pageShelve, setPageShelve] = useState(1);
   const [pageContinue, setPageContinue] = useState(1);
@@ -63,14 +63,17 @@ function Shelve() {
   const totalBuy = buyData?.paginate?.total ?? 0;
 
   const renderPagination = (current: number, total: number, onChange: (page: number) => void) => {
-    if (total <= 20) return null; // Hide if only 1 page
+    if ((total || 0) <= 20) return null; // Hide if only 1 page
     return (
       <div className="flex justify-center mt-8">
-        <Pagination 
-          current={current} 
-          total={total} 
+        <Pagination
+          current={current}
+          total={total || 0}
           pageSize={20}
-          onChange={onChange}
+          onChange={(page) => {
+            onChange(page);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
           showSizeChanger={false}
           className="custom-pagination-red"
         />
@@ -85,7 +88,7 @@ function Shelve() {
       children: (
         <div className='py-6'>
           {isLoading ? (
-<GifLoader className="h-[400px]" />
+            <GifLoader className="h-[400px]" />
           ) : isError ? (
             <div className='py-6 text-center text-red-500'>เกิดข้อผิดพลาดในการโหลดข้อมูล</div>
           ) : books.length === 0 ? (
@@ -123,7 +126,7 @@ function Shelve() {
       children: (
         <div className='py-6'>
           {contLoading ? (
-<GifLoader className="h-[400px]" />
+            <GifLoader className="h-[400px]" />
           ) : contError ? (
             <div className='py-6 text-center text-red-500'>เกิดข้อผิดพลาดในการโหลดข้อมูล</div>
           ) : continueBooks.length === 0 ? (
@@ -171,7 +174,7 @@ function Shelve() {
       children: (
         <div className='py-6'>
           {buyLoading ? (
-<GifLoader className="h-[400px]" />
+            <GifLoader className="h-[400px]" />
           ) : buyError ? (
             <div className='py-6 text-center text-red-500'>เกิดข้อผิดพลาดในการโหลดข้อมูล</div>
           ) : buyBooks.length === 0 ? (

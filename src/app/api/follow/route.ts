@@ -18,8 +18,6 @@ export async function POST(request: Request) {
     const rawToken = token.replace(/^Bearer\s+/i, "").trim();
     const finalToken = `Bearer ${rawToken}`;
 
-    console.log(`🚀 Proxying follow request to ${BACKEND_URL}/user/follow`);
-    console.log('Payload:', { writer_id, action });
 
     const response = await axios.post(
       `${BACKEND_URL}/user/follow`,
@@ -35,11 +33,9 @@ export async function POST(request: Request) {
     return NextResponse.json(response.data);
 
   } catch (error: any) {
-    console.error('🔥 Follow Proxy Error:', error.response?.data || error.message);
     
     // If 404, maybe try /profile/follow?
     if (error.response?.status === 404) {
-        console.log('⚠️ /user/follow not found, trying /profile/follow...');
         try {
             const token = request.headers.get('authorization');
             const rawToken = token ? token.replace(/^Bearer\s+/i, "").trim() : "";
@@ -57,7 +53,6 @@ export async function POST(request: Request) {
             );
             return NextResponse.json(responseRetry.data);
         } catch (retryError: any) {
-            console.error('🔥 Retry /profile/follow failed:', retryError.response?.data || retryError.message);
             return NextResponse.json(
                 retryError.response?.data || { message: 'เกิดข้อผิดพลาดในการติดตาม' },
                 { status: retryError.response?.status || 500 }

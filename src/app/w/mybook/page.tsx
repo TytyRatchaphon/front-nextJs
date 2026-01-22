@@ -1,11 +1,14 @@
 import React from 'react'
 import MyBook from '@/features/mybook/MyBook'
+import AuthGuard from '@/components/auth/AuthGuard'
 
 function page() {
   return (
-    <div>
-      <MyBook />
-    </div>
+    <AuthGuard>
+      <div>
+        <MyBook />
+      </div>
+    </AuthGuard>
   )
 }
 

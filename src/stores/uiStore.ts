@@ -5,14 +5,15 @@ interface UIState {
   isLoginModalOpen: boolean;
   isRegisterModalOpen: boolean;
   isDailyPopupOpen: boolean;
-  
+  isDuplicateLoginModalOpen: boolean;
+
   // Animation states
   loginAnimationClass: string;
   registerAnimationClass: string;
-  
+
   // View modes
   loginViewMode: 'login' | 'register' | 'forgot-password';
-  
+
   // Actions
   openLoginModal: () => void;
   closeLoginModal: () => void;
@@ -21,10 +22,14 @@ interface UIState {
   setLoginViewMode: (mode: 'login' | 'register' | 'forgot-password') => void;
   setLoginAnimation: (animation: string) => void;
   setRegisterAnimation: (animation: string) => void;
-  
+
   // Daily popup actions
   openDailyPopup: () => void;
   closeDailyPopup: () => void;
+
+  // Duplicate login actions
+  openDuplicateLoginModal: () => void;
+  closeDuplicateLoginModal: () => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -32,29 +37,33 @@ export const useUIStore = create<UIState>((set) => ({
   isLoginModalOpen: false,
   isRegisterModalOpen: false,
   isDailyPopupOpen: false,
+  isDuplicateLoginModalOpen: false,
   loginAnimationClass: 'fade-in',
   registerAnimationClass: 'fade-in',
   loginViewMode: 'login',
-  
+
   // Modal actions
   openLoginModal: () => set({ isLoginModalOpen: true }),
   closeLoginModal: () => set({ isLoginModalOpen: false }),
-  
+
   openRegisterModal: () => set({ isRegisterModalOpen: true }),
   closeRegisterModal: () => set({ isRegisterModalOpen: false }),
-  
+
   // View mode actions
-  setLoginViewMode: (mode: 'login' | 'register' | 'forgot-password') => 
+  setLoginViewMode: (mode: 'login' | 'register' | 'forgot-password') =>
     set({ loginViewMode: mode }),
-  
+
   // Animation actions
-  setLoginAnimation: (animation: string) => 
+  setLoginAnimation: (animation: string) =>
     set({ loginAnimationClass: animation }),
-  
-  setRegisterAnimation: (animation: string) => 
+
+  setRegisterAnimation: (animation: string) =>
     set({ registerAnimationClass: animation }),
-  
+
   // Daily popup actions
   openDailyPopup: () => set({ isDailyPopupOpen: true }),
   closeDailyPopup: () => set({ isDailyPopupOpen: false }),
+
+  openDuplicateLoginModal: () => set({ isDuplicateLoginModalOpen: true }),
+  closeDuplicateLoginModal: () => set({ isDuplicateLoginModalOpen: false }),
 }))

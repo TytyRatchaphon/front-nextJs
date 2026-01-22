@@ -128,7 +128,6 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
           initializeTinyMCE();
         };
         script.onerror = () => {
-          console.error('Failed to load TinyMCE script');
         };
         document.head.appendChild(script);
       }
@@ -145,7 +144,6 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
                 }
             }
         } catch (err) {
-            console.warn("TinyMCE remove skipped:", err);
         }
         setIsEditorReady(false);
     };

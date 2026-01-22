@@ -38,7 +38,6 @@ export default function ThreadDetail({ topicId }: ThreadDetailProps) {
         const uid = decoded.user_id || decoded.id || decoded.sub || decoded.userId;
         setCurrentUserId(Number(uid));
       } catch (error) {
-        console.error("Error decoding token for user ID:", error);
       }
     }
   }, [token]);
@@ -57,7 +56,6 @@ export default function ThreadDetail({ topicId }: ThreadDetailProps) {
       router.push('/thread'); // Redirect to thread list
     },
     onError: (error) => {
-        console.error('Delete thread error:', error);
         messageApi.error('เกิดข้อผิดพลาดในการลบกระทู้');
     }
   });

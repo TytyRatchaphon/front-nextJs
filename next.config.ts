@@ -2,8 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  reactStrictMode: false, // ปิด strict mode เพื่อลด warning
   images: {
+    qualities: [100, 70, 70, 70, 70, 70, 70, 75],
     remotePatterns: [
       {
         protocol: 'https',

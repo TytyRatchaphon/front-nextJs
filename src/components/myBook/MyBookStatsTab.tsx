@@ -62,7 +62,6 @@ const MyBookStatsTab: React.FC<MyBookStatsTabProps> = ({ myBooks, token }) => {
         const res = await apiClient.get('/user/bookstats', { params });
         return res.data;
       } catch (e) {
-        console.error('Error fetching bookstats:', e);
         return null;
       }
     },
@@ -92,7 +91,6 @@ const MyBookStatsTab: React.FC<MyBookStatsTabProps> = ({ myBooks, token }) => {
       const rows = Object.keys(dataRows).sort().map(dk => dataRows[dk]);
       return { statsChartData: rows, statsSeriesKeys: seriesKeys };
     } catch (e) {
-      console.error('Error transforming bookStats response', e);
       return { statsChartData: [], statsSeriesKeys: [] };
     }
   }, [bookStatsResponse]);
@@ -149,7 +147,6 @@ const MyBookStatsTab: React.FC<MyBookStatsTabProps> = ({ myBooks, token }) => {
               setStatsSearched(true);
               if (typeof refetchBookStats === 'function') refetchBookStats();
             } catch (e) {
-              console.debug('refetchBookStats failed', e);
             }
           }}
           disabled={isLoadingBookStats}

@@ -1,4 +1,3 @@
-
 import HomePage from "@/features/Home/HomePage";
 import { unstable_noStore as noStore } from 'next/cache';
 

@@ -54,7 +54,7 @@ interface BookFormValues {
 const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
     // --- Setup Logic ---
     const params = useParams();
-    // const router = useRouter();
+    const router = useRouter();
     // ใช้ ID จาก Props ถ้าไม่มีให้ใช้จาก URL Params
     const finalBookId = bookId || (params?.bookID as string);
 
@@ -120,8 +120,7 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                 }
 
                 // 2. จัดการ Book Data (แก้เรื่อง data.data ตามที่คุยกัน)
-                const bookData = bookRes.data?.data; 
-                console.log("Book Data Fetched:", bookData);
+                const bookData = bookRes.data?.data;
 
                 if (bookData) {
                     // Preview Images
@@ -164,7 +163,6 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                 setIsBook(true);
 
             } catch (error: any) {
-                console.error("Error fetching data:", error);
                 api.error({
                     message: "โหลดข้อมูลไม่สำเร็จ",
                     description: error.response?.data?.message || "ไม่สามารถดึงข้อมูลหนังสือได้"
@@ -215,13 +213,12 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
 
             if (Array.isArray(value)) {
                 // const quotedTags = value.map(t => `"${t}"`).join(',');
-                formdata.append(keyName, value.join(',')); 
+                formdata.append(keyName, value.join(','));
                 continue;
             }
 
             if ((keyName === 'img' || keyName === 'bgImg')) {
                 if (!(value instanceof File)) {
-                    console.log(`⚠️ Skipping existing image URL: ${keyName}`);
                     continue;
                 }
             }
@@ -243,20 +240,19 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                     // Content-Type for FormData is usually handled automatically by axios/browser, 
                     // but apiClient sets 'application/json' by default. 
                     // We should let axios set the boundary for FormData.
-                    'Content-Type': 'multipart/form-data' 
+                    'Content-Type': 'multipart/form-data'
                 }
             });
 
-            console.log("✅ Update Response:", response.data);
 
             if (response.data.status === 'ok' || response.status === 200 || response.data.code === 200) {
                 api.success({ message: 'แก้ไขนิยายสำเร็จ' });
+                router.push('/w/mybook');
             } else {
                 api.error({ message: 'แก้ไขไม่สำเร็จ', description: response.data.message });
             }
 
         } catch (error: any) {
-            console.error("❌ Update Error:", error);
             api.error({ message: 'เกิดข้อผิดพลาด', description: error.response?.data?.message || 'Network Error' });
         } finally {
             setSpinLoading(false);
@@ -271,197 +267,197 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                 <GifLoader />
             ) : (
                 <>
-                <Form
-                    name="formEditBook"
-                    autoComplete="off"
-                    layout="vertical"
-                    form={formNewBook}
-                    className='fontFam'
-                    onFinish={onFinish}
-                >
-                    {isBook && (
-                        <div>
-                            <div className='flex flex-row justify-between mb-4'>
-                                <p className='text-2xl'>แก้ไขงานเขียน</p> {/* เปลี่ยน Title */}
-                            </div>
-
-                            <div className='grid md:grid-cols-7 gap-4 lg:gap-20 '>
-                                <div className="md:col-span-2">
-                                    <div>
-                                        <p className='body-text'>ภาพปกนิยาย <span className='text-[13px] text-gray-400'> (330 x 467) </span> </p>
-                                        <Form.Item
-                                            name="img"
-                                            valuePropName="file"
-                                            getValueFromEvent={(e: any) => e}
-                                        >
-                                            <UploadCropBook src={imagePreview} />
-                                        </Form.Item>
-                                    </div>
+                    <Form
+                        name="formEditBook"
+                        autoComplete="off"
+                        layout="vertical"
+                        form={formNewBook}
+                        className='fontFam'
+                        onFinish={onFinish}
+                    >
+                        {isBook && (
+                            <div>
+                                <div className='flex flex-row justify-between mb-4'>
+                                    <p className='text-2xl'>แก้ไขงานเขียน</p> {/* เปลี่ยน Title */}
                                 </div>
-                                <div className="md:col-span-5">
-                                    <div>
-                                        <p className='body-text'>ภาพแบนเนอร์ <span className='text-[13px] text-gray-400'> (1,240 x 567) </span> </p>
-                                        <Form.Item
-                                            name="bgimg"
-                                            valuePropName="file"
-                                            getValueFromEvent={(e: any) => e}
-                                        >
-                                            <UploadCropBookBanner src={imagePreviewBanner} />
-                                        </Form.Item>
+
+                                <div className='grid md:grid-cols-7 gap-4 lg:gap-20 '>
+                                    <div className="md:col-span-2">
+                                        <div>
+                                            <p className='body-text'>ภาพปกนิยาย <span className='text-[13px] text-gray-400'> (330 x 467) </span> </p>
+                                            <Form.Item
+                                                name="img"
+                                                valuePropName="file"
+                                                getValueFromEvent={(e: any) => e}
+                                            >
+                                                <UploadCropBook src={imagePreview} />
+                                            </Form.Item>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-
-                            <div className='grid gap-4'>
-                                <div className=''>
-                                    <div>
-                                        <span className='body-text'>ชื่อเรื่อง</span>
-                                        <Form.Item
-                                            name='name'
-                                            rules={[{ type: 'string' }, { required: true, message: 'กรุณาระบุชื่อเรื่อง' }]}
-                                        >
-                                            <Input className='input' />
-                                        </Form.Item>
-                                    </div>
-
-                                    <div>
-                                        <span className='body-text'>คำโปรย</span>
-                                        <Form.Item
-                                            name='title'
-                                            rules={[{ type: 'string' }, { required: true, message: 'กรุณาระบุข้อมูล' }]}
-                                        >
-                                            <TextArea className='input' />
-                                        </Form.Item>
-                                    </div>
-
-                                    <div>
-                                        <span className='body-text'>แท็กที่เกี่ยวข้อง</span>
-                                        <Form.Item
-                                            name='tag'
-                                            rules={[{ type: 'array' }, { required: true, message: 'กรุณาระบุข้อมูล' }]}
-                                        >
-                                            <Select
-                                                mode='tags'
-                                                className="custom-select"
-                                                placeholder="แท็กที่เกี่ยวข้อง"
-                                                options={[
-                                                    { label: "นิยายแปล", value: "นิยายแปล" },
-                                                    { label: "ปลูกผัก", value: "ปลูกผัก" },
-                                                    { label: "พระเอกเก่ง", value: "พระเอกเก่ง" },
-                                                    { label: "นางเอกเก่ง", value: "นางเอกเก่ง" },
-                                                ]}
-                                            />
-                                        </Form.Item>
-                                    </div>
-
-                                    <div className='grid grid-cols-3 gap-4'>
+                                    <div className="md:col-span-5">
                                         <div>
-                                            <span className='body-text'>ประเภทนิยาย</span>
-                                            <Form.Item name='type'>
-                                                <Select placeholder="Select an option" options={novelType} onChange={handleSelectType} />
-                                            </Form.Item>
-                                        </div>
-
-                                        <div>
-                                            <span className='body-text'>หมวดหมู่หลัก</span>
-                                            <Form.Item name='cat1' rules={[{ required: true, message: 'กรุณาเลือกหมวดหมู่' }]}>
-                                                <Select placeholder="Select an option">
-                                                    {category1 && category1.map((item, i) => (
-                                                        <Select.Option key={i} value={item.id}>{item.name}</Select.Option>
-                                                    ))}
-                                                </Select>
-                                            </Form.Item>
-                                        </div>
-
-                                        <div>
-                                            <span className='body-text'>หมวดหมู่รอง</span>
-                                            <Form.Item name='cat2' rules={[{ required: true, message: 'กรุณาเลือกหมวดหมู่' }]}>
-                                                <Select placeholder="Select an option">
-                                                    {category2 && category2.map((item, i) => (
-                                                        <Select.Option key={i} value={item.id}>{item.name}</Select.Option>
-                                                    ))}
-                                                </Select>
-                                            </Form.Item>
-                                        </div>
-
-                                        <div>
-                                            <span className='body-text'>เรตติ้ง</span>
-                                            <Form.Item name='rate'>
-                                                <Select placeholder="Select an option">
-                                                    <Select.Option value={1}>NC 18+</Select.Option>
-                                                    <Select.Option value={3}>ไม่มี NC</Select.Option>
-                                                </Select>
-                                            </Form.Item>
-                                        </div>
-
-                                        <div>
-                                            <span className='body-text'>สถานะ</span>
-                                            <Form.Item name='end'>
-                                                <Select placeholder="Select an option">
-                                                    <Select.Option value='end'>จบแล้ว</Select.Option>
-                                                    <Select.Option value='not_end'>ยังไม่จบ</Select.Option>
-                                                </Select>
-                                            </Form.Item>
-                                        </div>
-
-                                        <div>
-                                            <span className='body-text'>สถานะเผยแพร่</span>
-                                            <Form.Item name='status'>
-                                                <Select placeholder="Select an option">
-                                                    <Select.Option value='private'>ปิดเรื่อง</Select.Option>
-                                                    <Select.Option value='publish'>เผยแพร่</Select.Option>
-                                                </Select>
+                                            <p className='body-text'>ภาพแบนเนอร์ <span className='text-[13px] text-gray-400'> (1,240 x 567) </span> </p>
+                                            <Form.Item
+                                                name="bgimg"
+                                                valuePropName="file"
+                                                getValueFromEvent={(e: any) => e}
+                                            >
+                                                <UploadCropBookBanner src={imagePreviewBanner} />
                                             </Form.Item>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className=' gap-4'>
-                                <div>
-                                    <span className='body-text'>เรื่องย่อ</span>
-                                    <div className="h-[500px]">
-                                        <Form.Item name='des'>
-                                            <TextEditorTiny
-                                                height={400}
-                                                onChange={(content: string) => formNewBook.setFieldsValue({ des: content })}
-                                            />
-                                        </Form.Item>
+                                <div className='grid gap-4'>
+                                    <div className=''>
+                                        <div>
+                                            <span className='body-text'>ชื่อเรื่อง</span>
+                                            <Form.Item
+                                                name='name'
+                                                rules={[{ type: 'string' }, { required: true, message: 'กรุณาระบุชื่อเรื่อง' }]}
+                                            >
+                                                <Input className='input' />
+                                            </Form.Item>
+                                        </div>
+
+                                        <div>
+                                            <span className='body-text'>คำโปรย</span>
+                                            <Form.Item
+                                                name='title'
+                                                rules={[{ type: 'string' }, { required: true, message: 'กรุณาระบุข้อมูล' }]}
+                                            >
+                                                <TextArea className='input' />
+                                            </Form.Item>
+                                        </div>
+
+                                        <div>
+                                            <span className='body-text'>แท็กที่เกี่ยวข้อง</span>
+                                            <Form.Item
+                                                name='tag'
+                                                rules={[{ type: 'array' }, { required: true, message: 'กรุณาระบุข้อมูล' }]}
+                                            >
+                                                <Select
+                                                    mode='tags'
+                                                    className="custom-select"
+                                                    placeholder="แท็กที่เกี่ยวข้อง"
+                                                    options={[
+                                                        { label: "นิยายแปล", value: "นิยายแปล" },
+                                                        { label: "ปลูกผัก", value: "ปลูกผัก" },
+                                                        { label: "พระเอกเก่ง", value: "พระเอกเก่ง" },
+                                                        { label: "นางเอกเก่ง", value: "นางเอกเก่ง" },
+                                                    ]}
+                                                />
+                                            </Form.Item>
+                                        </div>
+
+                                        <div className='grid grid-cols-3 gap-4'>
+                                            <div>
+                                                <span className='body-text'>ประเภทนิยาย</span>
+                                                <Form.Item name='type'>
+                                                    <Select placeholder="Select an option" options={novelType} onChange={handleSelectType} />
+                                                </Form.Item>
+                                            </div>
+
+                                            <div>
+                                                <span className='body-text'>หมวดหมู่หลัก</span>
+                                                <Form.Item name='cat1' rules={[{ required: true, message: 'กรุณาเลือกหมวดหมู่' }]}>
+                                                    <Select placeholder="Select an option">
+                                                        {category1 && category1.map((item, i) => (
+                                                            <Select.Option key={i} value={item.id}>{item.name}</Select.Option>
+                                                        ))}
+                                                    </Select>
+                                                </Form.Item>
+                                            </div>
+
+                                            <div>
+                                                <span className='body-text'>หมวดหมู่รอง</span>
+                                                <Form.Item name='cat2' rules={[{ required: true, message: 'กรุณาเลือกหมวดหมู่' }]}>
+                                                    <Select placeholder="Select an option">
+                                                        {category2 && category2.map((item, i) => (
+                                                            <Select.Option key={i} value={item.id}>{item.name}</Select.Option>
+                                                        ))}
+                                                    </Select>
+                                                </Form.Item>
+                                            </div>
+
+                                            <div>
+                                                <span className='body-text'>เรตติ้ง</span>
+                                                <Form.Item name='rate'>
+                                                    <Select placeholder="Select an option">
+                                                        <Select.Option value={1}>NC 18+</Select.Option>
+                                                        <Select.Option value={3}>ไม่มี NC</Select.Option>
+                                                    </Select>
+                                                </Form.Item>
+                                            </div>
+
+                                            <div>
+                                                <span className='body-text'>สถานะ</span>
+                                                <Form.Item name='end'>
+                                                    <Select placeholder="Select an option">
+                                                        <Select.Option value='end'>จบแล้ว</Select.Option>
+                                                        <Select.Option value='not_end'>ยังไม่จบ</Select.Option>
+                                                    </Select>
+                                                </Form.Item>
+                                            </div>
+
+                                            <div>
+                                                <span className='body-text'>สถานะเผยแพร่</span>
+                                                <Form.Item name='status'>
+                                                    <Select placeholder="Select an option">
+                                                        <Select.Option value='private'>ปิดเรื่อง</Select.Option>
+                                                        <Select.Option value='publish'>เผยแพร่</Select.Option>
+                                                    </Select>
+                                                </Form.Item>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className="flex justify-center items-center mb-3">
-                                <Checkbox 
-                                    id="accept_conditions" 
-                                    checked={acceptBookCon} 
-                                    onChange={handleCheckboxChange}
-                                    className="[&_.ant-checkbox-checked_.ant-checkbox-inner]:!bg-red-500 [&_.ant-checkbox-checked_.ant-checkbox-inner]:!border-red-500 [&_.ant-checkbox-wrapper:hover_.ant-checkbox-inner]:!border-red-500 [&_.ant-checkbox:hover_.ant-checkbox-inner]:!border-red-500"
-                                >
-                                    <label htmlFor="accept_conditions" className="cursor-pointer">ยอมรับ </label>
-                                </Checkbox>
-                                <span onClick={() => setOpenModal(true)} className="text-primary font-bold cursor-pointer">เงื่อนไขการใช้บริการ</span>
-                            </div>
+                                <div className=' gap-4'>
+                                    <div>
+                                        <span className='body-text'>เรื่องย่อ</span>
+                                        <div className="h-[500px]">
+                                            <Form.Item name='des'>
+                                                <TextEditorTiny
+                                                    height={400}
+                                                    onChange={(content: string) => formNewBook.setFieldsValue({ des: content })}
+                                                />
+                                            </Form.Item>
+                                        </div>
+                                    </div>
+                                </div>
 
-                            <div className='grid grid-cols-1 p-0 '>
-                                <div className='flex justify-center p-0'>
-                                    <button 
-                                        className='!text-white bg-red-500 px-12 py-2.5 rounded-full shadow-md hover:shadow-lg hover:bg-red-600 transition-all duration-300 transform hover:scale-105 font-bold text-lg tracking-wide' 
-                                        type="submit"
+                                <div className="flex justify-center items-center mb-3">
+                                    <Checkbox
+                                        id="accept_conditions"
+                                        checked={acceptBookCon}
+                                        onChange={handleCheckboxChange}
+                                        className="[&_.ant-checkbox-checked_.ant-checkbox-inner]:!bg-red-500 [&_.ant-checkbox-checked_.ant-checkbox-inner]:!border-red-500 [&_.ant-checkbox-wrapper:hover_.ant-checkbox-inner]:!border-red-500 [&_.ant-checkbox:hover_.ant-checkbox-inner]:!border-red-500"
                                     >
-                                        บันทึกการแก้ไข
-                                    </button>
+                                        <label htmlFor="accept_conditions" className="cursor-pointer">ยอมรับ </label>
+                                    </Checkbox>
+                                    <span onClick={() => setOpenModal(true)} className="text-primary font-bold cursor-pointer">เงื่อนไขการใช้บริการ</span>
+                                </div>
+
+                                <div className='grid grid-cols-1 p-0 '>
+                                    <div className='flex justify-center p-0'>
+                                        <button
+                                            className='!text-white bg-red-500 px-12 py-2.5 rounded-full shadow-md hover:shadow-lg hover:bg-red-600 transition-all duration-300 transform hover:scale-105 font-bold text-lg tracking-wide'
+                                            type="submit"
+                                        >
+                                            บันทึกการแก้ไข
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
-                </Form>
+                        )}
+                    </Form>
 
-                <Modal title='' footer='' open={openModal} onCancel={() => setOpenModal(false)}>
-                    <div>
-                        <div dangerouslySetInnerHTML={{ __html: website?.book_conditions || '' }} />
-                    </div>
-                </Modal>
+                    <Modal title='' footer='' open={openModal} onCancel={() => setOpenModal(false)}>
+                        <div>
+                            <div dangerouslySetInnerHTML={{ __html: website?.book_conditions || '' }} />
+                        </div>
+                    </Modal>
                 </>
             )}
         </div>

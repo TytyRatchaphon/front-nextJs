@@ -121,7 +121,6 @@ const UploadCropBookBanner: React.FC<UploadCropBookBannerProps> = ({ src, onChan
             onChange(file);
         }
     } catch (error) {
-      console.error('Cropping error:', error);
     }
   };
 

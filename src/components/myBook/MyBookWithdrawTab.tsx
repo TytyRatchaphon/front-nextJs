@@ -120,7 +120,6 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
         const res = await fetchWriterWithdrawSetting();
         return res?.data ?? res ?? null;
       } catch (e) {
-        console.error('Error fetching withdraw settings', e);
         return null;
       }
     },
@@ -187,7 +186,6 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
             if (typeof window !== 'undefined') localStorage.setItem('authToken', nt);
           }
         } catch (e) {
-          console.debug('No token in withdraw response or error reading it', e);
         }
 
         setShowWithdrawModal(false);
@@ -196,13 +194,11 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
         try {
           if (typeof refetchWithdrawHistory === 'function') refetchWithdrawHistory();
         } catch (e) {
-          console.debug('refetchWithdrawHistory failed', e);
         }
       } else {
         api.error({ message: data?.message || 'ไม่สามารถส่งคำขอถอนเงินได้' });
       }
     } catch (err: any) {
-      console.error('Withdraw API error:', err);
       const msg = err?.response?.data?.message || err?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
       api.error({ message: msg });
     } finally {

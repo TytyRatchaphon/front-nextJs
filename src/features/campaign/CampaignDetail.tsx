@@ -68,75 +68,96 @@ export default function CampaignDetail({ id }: { id: string }) {
   }
 
   return (
-    <div 
+    <div
       className="min-h-screen pb-20 font-primary"
       style={{ backgroundColor: data.color_bg || '#f4f5eb' }}
     >
-        {/* Main Content Container */}
-        <div className="max-w-[800px] mx-auto shadow-2xl min-h-screen relative flex flex-col bg-transparent">
-            
-            {/* Banners Section */}
-            <div className="flex flex-col w-full gap-4">
-                {/* Banner 2 / Section Header */}
-                {data.img_banner2 && (
-                    <div className="w-full relative">
-                         <Image
-                            loader={imageLoader}
-                            src={data.img_banner2} 
-                            alt="Secondary Banner" 
-                            width={0}
-                            height={0}
-                            sizes="100vw"
-                            className="w-full h-auto block"
-                        />
-                    </div>
-                )}
-            </div>
+      {/* Main Content Container - Widened & Styled */}
+      <div className="max-w-5xl mx-auto shadow-2xl min-h-screen relative flex flex-col bg-white">
 
-             {/* Detail Text */}
-             {data.detail && (
-                <div className="bg-white/80 backdrop-blur-sm p-6 md:p-8 mx-4 md:mx-0 rounded-xl md:rounded-none my-4 md:my-0 text-center shadow-sm md:shadow-none">
-                    <div className="text-gray-800 text-lg leading-relaxed font-medium">
-                        {parse(data.detail)}
-                    </div>
-                </div>
-             )}
-
-            {/* Book List Section */}
-            {data.books && data.books.length > 0 && (
-                <div className="w-full">
-                     {/* Shelf / Section Header Image */}
-                     {data.img_shelf && (
-                         <div className="w-full relative">
-                              <Image
-                                loader={imageLoader}
-                                src={data.img_shelf} 
-                                alt="Shelf/Header" 
-                                width={0}
-                                height={0}
-                                sizes="100vw"
-                                className="w-full h-auto block"
-                              />
-                         </div>
-                     )}
-                     
-                     {/* Book Grid Container - Matches the dark/red theme of the shelf often seen in these designs */}
-                     <div className="px-4 pb-12 pt-6" style={{ backgroundImage: `linear-gradient(to bottom, ${data.color_bg || '#f4f5eb'} 0%, ${data.color_bg || '#f4f5eb'} 100%)` }}>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 justify-items-center">
-                            {data.books.map((book) => (
-                                <CardBook key={book.book_id} book={book} />
-                            ))}
-                        </div>
-                     </div>
-                </div>
-            )}
-            
-            {/* Start/End Date Footer */}
-            <div className="text-center pb-8 pt-4 text-gray-500 text-xs md:text-sm">
-                 <p className="opacity-70">ระยะเวลากิจกรรม</p>
-                 <p className="font-semibold">{formatDate(data.start_date)} - {formatDate(data.end_date)}</p>
+        {/* Banners Section */}
+        <div className="flex flex-col w-full">
+          {/* Banner 2 / Section Header */}
+          {data.img_banner2 && (
+            <div className="w-full relative px-0">
+              <Image
+                loader={imageLoader}
+                src={data.img_banner2}
+                alt="Secondary Banner"
+                width={0}
+                height={0}
+                sizes="100vw"
+                className="w-full h-auto block"
+              />
             </div>
+          )}
         </div>
+
+        {/* Detail Text */}
+        {data.detail && (
+          <div className="px-6 md:px-10 py-6 text-center">
+            <div className="text-gray-700 text-lg leading-relaxed">
+              {parse(data.detail)}
+            </div>
+          </div>
+        )}
+
+        {/* Image Cards Section - Vertical Stack */}
+        {data.img_card && data.img_card.length > 0 && (
+          <div className="w-full px-4 md:px-10 mb-8">
+            <div className="flex flex-col gap-4">
+              {data.img_card.map((imgUrl, index) => (
+                imgUrl && imgUrl !== "null" && (
+                  <div key={index} className="relative w-full rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 group">
+                    <Image
+                      loader={imageLoader}
+                      src={imgUrl}
+                      alt={`Promotion Card ${index + 1}`}
+                      width={0}
+                      height={0}
+                      sizes="100vw"
+                      className="w-full h-auto block"
+                    />
+                  </div>
+                )
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Book List Section */}
+        {data.books && data.books.length > 0 && (
+          <div className="w-full">
+
+            {/* Book Grid Container with img_shelf as Background */}
+            <div
+              className="px-4 md:px-10 pb-12 pt-8"
+              style={{
+                backgroundImage: (data.img_shelf && data.img_shelf !== "null")
+                  ? `url(${data.img_shelf})`
+                  : `linear-gradient(to bottom, #ffffff 0%, ${data.color_bg || '#f4f5eb'} 100%)`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'top center',
+                backgroundRepeat: 'no-repeat'
+              }}
+            >
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 justify-items-center">
+                {data.books.map((book) => (
+                  <CardBook key={book.book_id} book={book} />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Start/End Date Footer */}
+        <div className="text-center pb-10 pt-4 text-gray-500 text-sm bg-white/50">
+          <p className="opacity-70 mb-1">ระยะเวลากิจกรรม</p>
+          <div className="inline-block px-4 py-1 rounded-full bg-gray-100 font-medium">
+            {formatDate(data.start_date)} - {formatDate(data.end_date)}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

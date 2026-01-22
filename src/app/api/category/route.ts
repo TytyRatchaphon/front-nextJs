@@ -8,11 +8,10 @@ export async function GET() {
   try {
     // ดึงข้อมูล Category จาก Backend
     const response = await axios.get(`${BACKEND_URL}/category`);
-    
+
     // ส่งข้อมูลกลับไปที่ Frontend
     return NextResponse.json(response.data);
   } catch (error: any) {
-    console.error('Category Proxy Error:', error.message);
     return NextResponse.json([], { status: 500 });
   }
 }

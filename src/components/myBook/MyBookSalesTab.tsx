@@ -39,12 +39,9 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
           end: formattedSalesRange[1],
         } as Record<string, string>;
 
-        console.debug('Fetching sales-report with params:', params);
         const res = await apiClient.get('/user/sales-report', { params });
-        console.debug('sales-report raw response:', res.data);
         return res.data;
       } catch (err) {
-        console.error('Error fetching sales report:', err);
         return [];
       }
     },
@@ -86,7 +83,6 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
 
       api.success({ message: 'เริ่มดาวน์โหลดไฟล์ Excel' });
     } catch (err: any) {
-      console.error('Export error:', err);
       const msg = err?.response?.data?.message || err?.message || 'ไม่สามารถดาวน์โหลดไฟล์ได้';
       api.error({ message: msg });
     } finally {
@@ -196,7 +192,6 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
               try {
                 if (typeof refetchSales === 'function') refetchSales();
               } catch (e) {
-                console.debug('refetchSales failed', e);
               }
             }}
             disabled={isLoadingSales}

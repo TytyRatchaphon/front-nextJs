@@ -83,7 +83,6 @@ export default function ThreadCommentItem({
             onReplySuccess();
         }
     } catch (error: any) {
-        console.error("Error replying:", error);
         api.error({
              message: 'เกิดข้อผิดพลาด',
              description: error?.response?.data?.message || "เกิดข้อผิดพลาดในการตอบกลับ",
@@ -104,7 +103,6 @@ export default function ThreadCommentItem({
         });
         if (onDeleteSuccess) onDeleteSuccess();
       } catch (error: any) {
-        console.error("Error deleting comment:", error);
         api.error({
             message: 'เกิดข้อผิดพลาด',
             description: error?.response?.data?.message || "ไม่สามารถลบความคิดเห็นได้",
@@ -123,7 +121,6 @@ export default function ThreadCommentItem({
             placement: 'topRight',
         });
       } catch (error: any) {
-        console.error("Error reporting comment:", error);
         api.error({
             message: 'เกิดข้อผิดพลาด',
             description: error?.response?.data?.message || "ไม่สามารถรายงานความคิดเห็นได้",
@@ -300,7 +297,6 @@ function ReplyItem({ reply, api, currentUserId, onReload }: { reply: any, api: a
             placement: 'topRight',
         });
       } catch (error: any) {
-        console.error("Error reporting reply:", error);
         api.error({
             message: 'เกิดข้อผิดพลาด',
             description: error?.response?.data?.message || "ไม่สามารถรายงานความคิดเห็นได้",
@@ -320,7 +316,6 @@ function ReplyItem({ reply, api, currentUserId, onReload }: { reply: any, api: a
         });
         if (onReload) onReload();
       } catch (error: any) {
-        console.error("Error deleting reply:", error);
         api.error({
             message: 'เกิดข้อผิดพลาด',
             description: error?.response?.data?.message || "ไม่สามารถลบความคิดเห็นได้",

@@ -44,7 +44,6 @@ export default function BulkPriceModal({
                 onClose()
                 onUpdated && onUpdated()
               } catch (e: any) {
-                console.error('updateEpisodesPrice error', e)
                 msgApi.error(e?.response?.data?.message ?? 'ไม่สามารถแก้ไขราคาได้')
               } finally {
                 setSubmitting(false)

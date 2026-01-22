@@ -1,6 +1,7 @@
 import React from 'react';
 // เช็ค Path ให้ถูกว่าไฟล์ NewEpisode อยู่ไหน
-import NewChapter from '@/features/mybook/NewEpisode'; 
+import NewChapter from '@/features/mybook/NewEpisode';
+import AuthGuard from '@/components/auth/AuthGuard';
 
 interface PageProps {
   params: Promise<{
@@ -13,9 +14,11 @@ export default async function Page({ params }: PageProps) {
   const { groupID } = await params;
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* 2. ส่ง groupID ไปให้ Component */}
-      <NewChapter groupID={groupID} />
-    </div>
+    <AuthGuard>
+      <div className="min-h-screen bg-white">
+        {/* 2. ส่ง groupID ไปให้ Component */}
+        <NewChapter groupID={groupID} />
+      </div>
+    </AuthGuard>
   );
 }

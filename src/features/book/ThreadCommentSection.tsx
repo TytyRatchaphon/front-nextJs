@@ -40,7 +40,6 @@ export default function ThreadCommentSection({ topicId }: ThreadCommentSectionPr
         const uid = decoded.user_id || decoded.id || decoded.sub || decoded.userId;
         setCurrentUserId(Number(uid));
       } catch (error) {
-        console.error("Error decoding token for user ID:", error);
       }
     }
   }, [token]);
@@ -117,7 +116,6 @@ export default function ThreadCommentSection({ topicId }: ThreadCommentSectionPr
             const data = await fetchStickers();
             setStickers(data);
         } catch (error) {
-            console.error("Error loading stickers", error);
         } finally {
             setStickerLoading(false);
         }
@@ -242,7 +240,6 @@ export default function ThreadCommentSection({ topicId }: ThreadCommentSectionPr
         loadReviews();
         
     } catch (err: any) {
-        console.error("Submit error:", err);
         api.error({
              message: 'เกิดข้อผิดพลาด',
              description: err?.response?.data?.message || "เกิดข้อผิดพลาดในการส่งความคิดเห็น",

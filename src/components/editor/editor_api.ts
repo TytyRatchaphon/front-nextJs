@@ -14,7 +14,6 @@ const getHeaders = () => {
     const token = Cookies.get('token') || localStorage.getItem('authToken');
     
     // 🛠️ Debug ดูว่า Token มีค่าไหม (กด F12 ดู console ตอนอัปโหลด)
-    console.log("🔑 Token for Upload:", token ? token : "❌ NULL");
 
     const encodedApiKey = typeof window !== 'undefined' 
         ? btoa(process.env.NEXT_PUBLIC_ACCESS_TOKEN || '') 
@@ -67,7 +66,6 @@ export const uploadDesImage = async (file: File | Blob): Promise<string> => {
         
         return '';
     } catch (error) {
-        console.error("Upload Error:", error);
         return '';
     }
 };
@@ -93,17 +91,13 @@ export const imageUploadHandler = (blobInfo: BlobInfo, progress: (percent: numbe
             // 2. ไม่ต้อง Decrypt แล้ว เพราะ Postman โชว์ข้อมูลดิบๆ เลย
             // 3. ดึง URL จาก res.data.data.imageURL โดยตรง
             const responseBody = res.data;
-            console.log("Upload Response:", responseBody);
             if (responseBody.code === 200 && responseBody.data?.imageURL) {
                 const url = responseBody.data.imageURL;
-                console.log("✅ อัปโหลดสำเร็จ:", url);
                 resolve(url);
             } else {
-                console.error("Upload Failed Response:", responseBody);
                 reject(responseBody.message || 'อัปโหลดล้มเหลว');
             }
         } catch (err) {
-            console.error("❌ Upload error:", err);
             reject('เกิดข้อผิดพลาดในการอัปโหลด');
         }
     });

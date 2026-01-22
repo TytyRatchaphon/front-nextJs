@@ -49,7 +49,6 @@ const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, 
       }).join(''));
 
       const decodedToken = JSON.parse(jsonPayload);
-      console.debug('MyBook: decodedToken for prefill ->', decodedToken);
 
       if (decodedToken.writer_name && !regFirstName) {
         setRegFirstName(String(decodedToken.writer_name));
@@ -98,7 +97,6 @@ const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, 
           if (province && !regPostalCode) setRegPostalCode(province);
           if (zipcode && !regNationality) setRegNationality(zipcode);
         } catch (e) {
-          console.debug('address_main parse failed', e);
         }
       }
       if ((decodedToken.moo || decodedToken.village) && !regSubdistrict) setRegSubdistrict(String(decodedToken.moo ?? decodedToken.village));
@@ -109,7 +107,6 @@ const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, 
       if ((decodedToken.province) && !regPostalCode) setRegPostalCode(String(decodedToken.province));
       if ((decodedToken.zipcode || decodedToken.postalCode) && !regNationality) setRegNationality(String(decodedToken.zipcode ?? decodedToken.postalCode));
     } catch (e) {
-      console.debug('Prefill token decode failed', e);
     }
   }, [token]);
 
@@ -168,7 +165,6 @@ const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, 
             router.replace('/w/mybook');
           }
         } catch (err) {
-          console.error('Error applying new token after registration:', err);
         }
       } else if (response.status === 'success' && !response.data?.token) {
         api.success({
@@ -191,7 +187,6 @@ const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, 
         });
       }
     } catch (error: any) {
-      console.error('Error:', error);
       const errorMessage = error.response?.data?.message || 'เกิดข้อผิดพลาดในการสมัครนักเขียน';
       api.error({
         message: errorMessage,

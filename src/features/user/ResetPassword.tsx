@@ -25,7 +25,6 @@ function decodeToken(token: string): any {
     );
     return JSON.parse(jsonPayload);
   } catch (error) {
-    console.error('Error decoding token:', error);
     return null;
   }
 }
@@ -48,7 +47,6 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
   useEffect(() => {
     if (token) {
       const decoded = decodeToken(token);
-      console.log('🔓 Decoded Token:', decoded);
       
       if (decoded && decoded.email) {
         setEmail(decoded.email);
@@ -74,15 +72,12 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
         newPasswordReEnter: values.confirmPassword,
       };
       
-      console.log('📤 POST Payload:', payload);
-      console.log('📤 POST URL:', `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.220.214:3331'}/resetpassword/${token}`);
       
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.220.214:3331'}/resetpassword/${token}`,
         payload
       );
 
-      console.log('✅ POST Response:', response.data);
       message.success('เปลี่ยนรหัสผ่านสำเร็จ กำลังเข้าสู่ระบบ...');
       
       // Auto-login หลังจาก reset password สำเร็จ
@@ -95,7 +90,6 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
           }
         );
 
-        console.log('✅ Login Response:', loginResponse.data);
 
         if (loginResponse.data && loginResponse.data.data) {
           const token = typeof loginResponse.data.data === 'string' 
@@ -124,7 +118,6 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
           }
         }
       } catch (loginError) {
-        console.error('❌ Auto-login failed:', loginError);
         // ถ้า login ไม่สำเร็จ ให้ไปหน้า home ให้ user login เอง
         message.info('กรุณาเข้าสู่ระบบด้วยรหัสผ่านใหม่');
         setTimeout(() => {
@@ -132,11 +125,6 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
         }, 1500);
       }
     } catch (error: any) {
-      console.error('❌ Reset password error:', error);
-      console.error('❌ Error response:', error.response);
-      console.error('❌ Error status:', error.response?.status);
-      console.error('❌ Error data:', error.response?.data);
-      console.error('❌ Error message from backend:', error.response?.data?.message);
       
       const errorMessage = error.response?.data?.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง';
       message.error(errorMessage);

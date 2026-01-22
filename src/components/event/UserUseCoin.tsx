@@ -56,11 +56,11 @@ export default function UserUseCoin({
   }
 
   // 2. Query Data
-  const { data } = useQuery({ 
-    queryKey: ['user-event-summary', useAuthStore.getState().token], 
-    queryFn: () => fetchEventSummary(), 
-    staleTime: 30_000, 
-    retry: 1 
+  const { data } = useQuery({
+    queryKey: ['user-event-summary', useAuthStore.getState().token],
+    queryFn: () => fetchEventSummary(),
+    staleTime: 30_000,
+    retry: 1
   })
 
   const apiCoin = data?.coin_used_data
@@ -82,36 +82,35 @@ export default function UserUseCoin({
       // --- STEP B: ✨ Optimistic User Update (หัวใจสำคัญ) ✨ ---
       // ดึง User ปัจจุบันออกมา
       const currentUser = useAuthStore.getState().user;
-      
+
       if (currentUser) {
-          // คำนวณยอดที่จะเพิ่ม (ถ้า API บอกมี 3 อันก็บวก 3, ถ้าไม่มีข้อมูลกันเหนียวบวก 1)
-          const amountToAdd = totalUnclaimed > 0 ? totalUnclaimed : 1;
-          
-          // คำนวณยอดใหม่
-          const newStampCount = (Number(currentUser.stamp) || 0) + amountToAdd;
-          
-          console.log(`✨ Optimistic Update: Stamp ${currentUser.stamp} -> ${newStampCount}`);
+        // คำนวณยอดที่จะเพิ่ม (ถ้า API บอกมี 3 อันก็บวก 3, ถ้าไม่มีข้อมูลกันเหนียวบวก 1)
+        const amountToAdd = totalUnclaimed > 0 ? totalUnclaimed : 1;
 
-          // สร้าง User Object ใหม่
-          const optimisticUser = {
-              ...currentUser,
-              stamp: newStampCount
-          };
+        // คำนวณยอดใหม่
+        const newStampCount = (Number(currentUser.stamp) || 0) + amountToAdd;
 
-          // 🚀 ยัดใส่ Store ทันที! (Header จะเปลี่ยนเลขเดี๋ยวนี้เลย)
-          useAuthStore.setState({ user: optimisticUser });
-          
-          // (Optional) Update LocalStorage ด้วย
-          localStorage.setItem('userData', JSON.stringify(optimisticUser));
+
+        // สร้าง User Object ใหม่
+        const optimisticUser = {
+          ...currentUser,
+          stamp: newStampCount
+        };
+
+        // 🚀 ยัดใส่ Store ทันที! (Header จะเปลี่ยนเลขเดี๋ยวนี้เลย)
+        useAuthStore.setState({ user: optimisticUser });
+
+        // (Optional) Update LocalStorage ด้วย
+        localStorage.setItem('userData', JSON.stringify(optimisticUser));
       }
 
       // --- STEP C: ซ่อนปุ่มทันที (Optimistic Cache Update) ---
       queryClient.setQueryData(['user-event-summary', useAuthStore.getState().token], (oldData: any) => {
         if (!oldData) return oldData;
-        const newData = JSON.parse(JSON.stringify(oldData)); 
-        if(newData.coin_used_data) {
-             newData.coin_used_data.reward_to_claim = false;
-             newData.coin_used_data.total_unclaimed_reward_unit = 0;
+        const newData = JSON.parse(JSON.stringify(oldData));
+        if (newData.coin_used_data) {
+          newData.coin_used_data.reward_to_claim = false;
+          newData.coin_used_data.total_unclaimed_reward_unit = 0;
         }
         return newData;
       });
@@ -120,25 +119,23 @@ export default function UserUseCoin({
       setTimeout(async () => {
         const currentToken = newToken || useAuthStore.getState().token;
         const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? ''
-        
+
         // 1. Refetch หน้า Event (เผื่อมีเงื่อนไขอื่นเปลี่ยน)
         queryClient.invalidateQueries({ queryKey: ['user-event-summary'] })
 
         // 2. Fetch User Profile ล่าสุดจาก Server (เพื่อความชัวร์ 100%)
         try {
-            const meRes = await axios.get(`${base}/user/me`, {
-                headers: { 'Authorization': currentToken }
-            });
-            const realProfile = meRes.data?.data || meRes.data;
-            if(realProfile) {
-                console.log('✅ Synced real user profile');
-                useAuthStore.setState({ user: realProfile });
-                localStorage.setItem('userData', JSON.stringify(realProfile));
-            }
+          const meRes = await axios.get(`${base}/user/me`, {
+            headers: { 'Authorization': currentToken }
+          });
+          const realProfile = meRes.data?.data || meRes.data;
+          if (realProfile) {
+            useAuthStore.setState({ user: realProfile });
+            localStorage.setItem('userData', JSON.stringify(realProfile));
+          }
         } catch (e) {
-            console.warn('Failed to sync user profile', e);
         }
-      }, 1000) 
+      }, 1000)
     },
     onError: (error: any) => {
       message.error(error?.response?.data?.message || 'เกิดข้อผิดพลาดในการรับรางวัล')
@@ -148,10 +145,10 @@ export default function UserUseCoin({
   // derive values อื่นๆ (เหมือนเดิม)
   const apiUsed = Number(apiCoin?.user_used_coins ?? used)
   const apiGoal = Number(apiCoin?.goal ?? (used + remaining))
-  
+
   const apiPercentRaw = Number(apiCoin?.current_reward_percentage ?? NaN)
-  const percent = Number.isFinite(apiPercentRaw) 
-    ? Math.max(0, Math.min(100, Math.round(apiPercentRaw))) 
+  const percent = Number.isFinite(apiPercentRaw)
+    ? Math.max(0, Math.min(100, Math.round(apiPercentRaw)))
     : Math.max(0, Math.min(100, Math.round((apiUsed / Math.max(1, apiGoal)) * 100)))
 
   const showClaimButton = rewardToClaim || totalUnclaimed > 0
@@ -162,10 +159,12 @@ export default function UserUseCoin({
   const displayLeftAmount = `${displayUsed} coin`
   const displayRightAmount = `${apiGoal} coin`
 
+  if (!apiCoin) return null;
+
   return (
     <div className={`w-full ${typeof width === 'number' ? `max-w-[${width}px]` : `max-w-[${width}]`} mx-auto px-4 md:px-0`}>
       <div style={{ borderRadius: 12, overflow: 'hidden' }}>
-        
+
         {/* Header Section */}
         <div style={{ background: 'linear-gradient(90deg,#b71c26,#8b0c14)', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 48, height: 48, borderRadius: 12, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -222,15 +221,15 @@ export default function UserUseCoin({
                 }}
                 className="hover:scale-105 transition-transform duration-300"
               >
-                {totalUnclaimed > 0 
-                  ? `กดรับรางวัล (x${totalUnclaimed})` 
+                {totalUnclaimed > 0
+                  ? `กดรับรางวัล (x${totalUnclaimed})`
                   : 'กดรับรางวัล'}
               </Button>
             </div>
           )}
         </div>
       </div>
-      
+
       <style jsx global>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(10px); }

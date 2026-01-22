@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { Checkbox, Form, Input, Select, Modal, notification } from "antd"; // เพิ่ม notification
 import type { CheckboxChangeEvent } from "antd/es/checkbox";
-import axios from "axios"; 
-import Cookies from "js-cookie"; 
+import axios from "axios";
+import Cookies from "js-cookie";
 
 // Import Components ที่คุณมีอยู่แล้ว
 import TextEditorTiny from "@/components/editor/TextEditorTiny";
@@ -14,41 +14,46 @@ import GifLoader from '@/components/utility/GifLoader';
 
 // --- 1. Constant Data ---
 const novelType = [
-  { label : 'นิยายแปล', value : 'tran', color : 'bg-rose-400' },
-  { label : 'นิยายแต่ง', value : 'write', color : 'bg-indigo-400' },
-  { label : 'แฟนฟิค', value : 'fanfic', color : 'bg-teal-400' },
+    { label: 'นิยายแปล', value: 'tran', color: 'bg-rose-400' },
+    { label: 'นิยายแต่ง', value: 'write', color: 'bg-indigo-400' },
+    { label: 'แฟนฟิค', value: 'fanfic', color: 'bg-teal-400' },
 ];
 
 // --- 2. Interfaces ---
 interface Category {
-  id: number | string;
-  name: string;
-  order_by: number | string;
+    id: number | string;
+    name: string;
+    order_by: number | string;
 }
 
 interface WebsiteData {
-  book_conditions: string;
+    book_conditions: string;
 }
 
 interface BookFormValues {
-  name: string;
-  des: string;
-  title: string;
-  tag: string[];
-  type: string;
-  cat1: number | string;
-  cat2: number | string;
-  rate: number;
-  end: string;
-  status: string;
-  imgBook?: any;
-  bgimg?: any;
-  [key: string]: any;
+    name: string;
+    des: string;
+    title: string;
+    tag: string[];
+    type: string;
+    cat1: number | string;
+    cat2: number | string;
+    rate: number;
+    end: string;
+    status: string;
+    imgBook?: any;
+    bgimg?: any;
+    [key: string]: any;
 }
+
+import { useRouter } from "next/navigation";
+
+// ... [Imports]
 
 const NewBook: React.FC = () => {
     // --- ใช้ notification แทน AlertError/AlertSuccess ---
     const [api, contextHolder] = notification.useNotification();
+    const router = useRouter();
 
     const [formNewBook] = Form.useForm();
     const { TextArea } = Input;
@@ -58,7 +63,7 @@ const NewBook: React.FC = () => {
     const [isBook, setIsBook] = useState<boolean>(false);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [imagePreviewBanner, setImagePreviewBanner] = useState<string | null>(null);
-    
+
     // State สำหรับเก็บข้อมูลที่เคยอยู่ใน Context
     const [category, setCategory] = useState<Category[]>([]);
     const [website, setWebsite] = useState<WebsiteData | null>(null);
@@ -82,24 +87,20 @@ const NewBook: React.FC = () => {
             // 🔍 จุดที่ 1: เช็คค่า Env และ Token ก่อนยิง (สำคัญมาก!)
             // ---------------------------------------------------------
             console.group("🕵️‍♂️ Debug 1: ตรวจสอบค่าก่อนยิง API");
-            
+
             const rawToken = Cookies.get('token') || localStorage.getItem('authToken');
             const rawAccessToken = ACCESS_TOKEN; // มาจาก process.env ด้านบน
-            
-            console.log("1. URL ที่จะยิง:", `${API_URL}/category`);
-            console.log("2. Cookie Token:", rawToken ? `✅ มีค่า (${rawToken.substring(0, 10)}...)` : "❌ เป็นค่าว่าง (undefined/null)");
-            console.log("3. Access Token (Env):", rawAccessToken ? "✅ มีค่า" : "❌ เป็นค่าว่าง (undefined/null)");
-            
+
+
             // จำลองการสร้าง Header แบบเดียวกับที่จะใช้ยิง
-            const encodedApiKey = typeof window !== 'undefined' 
-                ? btoa(rawAccessToken) 
+            const encodedApiKey = typeof window !== 'undefined'
+                ? btoa(rawAccessToken)
                 : Buffer.from(rawAccessToken).toString('base64');
-            
+
             const debugHeaders = {
                 'Authorization': rawToken || '',
                 'X-API-Key': encodedApiKey
             };
-            console.log("4. Headers ที่จะส่งไป:", debugHeaders);
             console.groupEnd();
             // ---------------------------------------------------------
 
@@ -112,19 +113,18 @@ const NewBook: React.FC = () => {
 
                 // ยิง API
                 const [catRes, webRes] = await Promise.all([
-                    axios.get(`${API_URL}/category`, config), 
-                    axios.get(`${API_URL}/get_website`, config)   
+                    axios.get(`${API_URL}/category`, config),
+                    axios.get(`${API_URL}/get_website`, config)
                 ]);
 
                 // ถ้าผ่านจะมาทำงานตรงนี้
-                console.log("✅ Fetch Success:", catRes.data);
 
-                const cats = catRes.data?.data || []; 
+                const cats = catRes.data?.data || [];
                 const webData = webRes.data?.data || {};
 
                 setCategory(cats);
                 setWebsite(webData);
-                
+
                 if (cats.length > 0) {
                     const newCate = cats.filter((item: Category) => {
                         return ![0, 1, 2, 3, 4].includes(parseInt(item.order_by.toString()));
@@ -136,7 +136,7 @@ const NewBook: React.FC = () => {
                 setIsBook(true);
                 setImagePreviewBanner(IMAGE_BOOK_URL);
 
-                
+
                 formNewBook.setFieldsValue({
                     status: 'publish',
                     rate: 3,
@@ -152,21 +152,17 @@ const NewBook: React.FC = () => {
                 // 🔍 จุดที่ 2: แกะกล่อง Error ดูไส้ใน (เมื่อเกิด 401)
                 // ---------------------------------------------------------
                 console.group("🔴 Debug 2: วิเคราะห์ Error 401");
-                
+
                 if (axios.isAxiosError(error)) {
-                    console.log("❌ URL ที่เกิดเรื่อง:", error.config?.url);
-                    console.log("❌ Headers ที่ส่งไปจริง:", error.config?.headers);
-                    console.log("❌ Status Code:", error.response?.status);
-                    console.log("❌ ข้อความจาก Server:", error.response?.data); // *จุดสำคัญ ดูว่า Server ด่าว่าอะไร
+                    // *จุดสำคัญ ดูว่า Server ด่าว่าอะไร
                 } else {
-                    console.error("❌ Error อื่นๆ:", error);
                 }
                 console.groupEnd();
                 // ---------------------------------------------------------
 
-                api.error({ 
-                    message: "โหลดข้อมูลไม่สำเร็จ", 
-                    description: axios.isAxiosError(error) 
+                api.error({
+                    message: "โหลดข้อมูลไม่สำเร็จ",
+                    description: axios.isAxiosError(error)
                         ? `Code: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`
                         : "Unknown Error"
                 });
@@ -205,24 +201,23 @@ const NewBook: React.FC = () => {
         console.group("🚀 Debug Form Data (ก่อนส่ง)");
         const formdata = new FormData();
 
-        formdata.append("accept_conditions", "true"); 
+        formdata.append("accept_conditions", "true");
 
         for (const key in values) {
             let value = values[key];
             let keyName = key;
 
             // แปลงชื่อ key
-            if (key === 'imgBook') keyName = 'img'; 
-            
+            if (key === 'imgBook') keyName = 'img';
+
             // 1. เช็คค่าว่าง: ถ้าไม่มีข้อมูล หรือเป็นค่าว่าง ให้ข้ามไปเลย (รวมถึงรูปที่ไม่อัปโหลดด้วย)
             if (value === undefined || value === null || value === '') {
-                console.log(`⚠️ Skipping empty field: ${keyName}`);
-                continue; 
+                continue;
             }
 
             // 2. กรณี Array (เช่น tag)
             if (Array.isArray(value)) {
-                value = value.join(','); 
+                value = value.join(',');
             }
 
             // 3. เช็คว่าเป็นรูปภาพหรือไม่
@@ -230,8 +225,7 @@ const NewBook: React.FC = () => {
                 // ถ้ามีค่า แต่ไม่ใช่ File (เช่นเป็น URL string จากการดึงข้อมูลเก่ามา Edit)
                 // เราจะไม่ส่งไป Backend (ถือว่าใช้รูปเดิม)
                 if (!(value instanceof File)) {
-                     console.log(`⚠️ Skipping non-file image (Existing URL): ${keyName}`);
-                     continue; 
+                    continue;
                 }
             }
 
@@ -240,16 +234,14 @@ const NewBook: React.FC = () => {
 
             // Log
             if (value instanceof File) {
-                console.log(`📁 ${keyName}:`, value.name, `(${value.size} bytes)`);
             } else {
-                console.log(`📝 ${keyName}:`, value);
             }
 
             // Validate ขนาดไฟล์
             if (value instanceof File && value.size > 2000000) {
-                 api.error({ message: 'รูปภาพต้องขนาดไม่เกิน 2 MB' });
-                 console.groupEnd();
-                 return;
+                api.error({ message: 'รูปภาพต้องขนาดไม่เกิน 2 MB' });
+                console.groupEnd();
+                return;
             }
         }
         console.groupEnd();
@@ -259,8 +251,8 @@ const NewBook: React.FC = () => {
         try {
             const token = Cookies.get('token') || localStorage.getItem('authToken');
             const cleanToken = token ? token.replace(/^['"]+|['"]+$/g, '') : '';
-            const encodedApiKey = typeof window !== 'undefined' 
-                ? btoa(ACCESS_TOKEN) 
+            const encodedApiKey = typeof window !== 'undefined'
+                ? btoa(ACCESS_TOKEN)
                 : Buffer.from(ACCESS_TOKEN).toString('base64');
 
             const response = await axios.post(`${API_URL}/user/mybook`, formdata, {
@@ -269,18 +261,17 @@ const NewBook: React.FC = () => {
                     'X-API-Key': encodedApiKey
                 }
             });
-            
-            console.log("✅ Server Response:", response.data);
+
 
             if (response.data.status === 'ok' || response.status === 200) {
                 api.success({ message: 'เพิ่มนิยายสำเร็จ' });
                 // Redirect ไปหน้าอื่น หรือ Reset Form ตรงนี้
+                router.push('/w/mybook');
             } else {
                 api.error({ message: 'ทำรายการไม่สำเร็จ', description: response.data.message || 'เกิดข้อผิดพลาด' });
             }
 
         } catch (error: any) {
-            console.error("❌ Submit Error:", error);
             if (error.response) {
                 const serverMsg = error.response.data?.message || error.response.data?.error || 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้';
                 api.error({ message: 'เกิดข้อผิดพลาด', description: serverMsg });
@@ -367,16 +358,16 @@ const NewBook: React.FC = () => {
                                             name='tag'
                                             rules={[{ type: 'array' }, { required: true, message: 'กรุณาระบุข้อมูล' }]}
                                         >
-                                            <Select 
-                                                mode='tags' 
-                                                className="custom-select" 
-                                                placeholder="แท็กที่เกี่ยวข้อง" 
+                                            <Select
+                                                mode='tags'
+                                                className="custom-select"
+                                                placeholder="แท็กที่เกี่ยวข้อง"
                                                 options={[
                                                     { label: "นิยายแปล", value: "นิยายแปล" },
                                                     { label: "ปลูกผัก", value: "ปลูกผัก" },
                                                     { label: "พระเอกเก่ง", value: "พระเอกเก่ง" },
                                                     { label: "นางเอกเก่ง", value: "นางเอกเก่ง" },
-                                                ]} 
+                                                ]}
                                             />
                                         </Form.Item>
                                     </div>
@@ -456,9 +447,9 @@ const NewBook: React.FC = () => {
                             </div>
 
                             <div className="flex justify-center items-center mb-3">
-                                <Checkbox 
-                                    id="accept_conditions" 
-                                    checked={acceptBookCon} 
+                                <Checkbox
+                                    id="accept_conditions"
+                                    checked={acceptBookCon}
                                     onChange={handleCheckboxChange}
                                     className="[&_.ant-checkbox-checked_.ant-checkbox-inner]:!bg-red-500 [&_.ant-checkbox-checked_.ant-checkbox-inner]:!border-red-500 [&_.ant-checkbox-wrapper:hover_.ant-checkbox-inner]:!border-red-500 [&_.ant-checkbox:hover_.ant-checkbox-inner]:!border-red-500"
                                 >
@@ -469,8 +460,8 @@ const NewBook: React.FC = () => {
 
                             <div className='grid grid-cols-1 p-0 '>
                                 <div className='flex justify-center p-0'>
-                                    <button 
-                                        className='!text-white bg-red-500 px-12 py-2.5 rounded-full shadow-md hover:shadow-lg hover:bg-red-600 transition-all duration-300 transform hover:scale-105 font-bold text-lg tracking-wide' 
+                                    <button
+                                        className='!text-white bg-red-500 px-12 py-2.5 rounded-full shadow-md hover:shadow-lg hover:bg-red-600 transition-all duration-300 transform hover:scale-105 font-bold text-lg tracking-wide'
                                         type="submit"
                                     >
                                         บันทึก
@@ -482,11 +473,11 @@ const NewBook: React.FC = () => {
                 </Form>
             )}
 
-                <Modal title='' footer='' open={openModal} onCancel={() => setOpenModal(false)}>
-                    <div>
-                        <div dangerouslySetInnerHTML={{ __html: website?.book_conditions || '' }} />
-                    </div>
-                </Modal>
+            <Modal title='' footer='' open={openModal} onCancel={() => setOpenModal(false)}>
+                <div>
+                    <div dangerouslySetInnerHTML={{ __html: website?.book_conditions || '' }} />
+                </div>
+            </Modal>
         </div>
     )
 }

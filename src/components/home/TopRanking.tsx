@@ -4,6 +4,9 @@ import React from 'react';
 import Link from "next/link";
 import Image from "next/image";
 import { useWebsiteStore } from '@/stores/websiteStore';
+import { Eye, Crown } from 'lucide-react';
+import BookSwiper from './BookSwiper';
+
 interface TopRankingProps {
   rankingGroup: any;
 }
@@ -15,9 +18,19 @@ const imageLoader = ({ src, width, quality }: { src: string; width?: number; qua
 const getImageUrl = (img?: string) => {
   return img
     ? (typeof img === 'string' && img.startsWith('https')
-        ? img
-        : `https://img.enjoybook.co/img/book/tn/${img}`)
+      ? img
+      : `https://img.enjoybook.co/img/book/tn/${img}`)
     : "/images/ejb.png";
+};
+
+const formatViewCount = (width: number) => {
+  if (width >= 1000000) {
+    return (width / 1000000).toFixed(1) + 'M';
+  } else if (width >= 1000) {
+    return (width / 1000).toFixed(1) + 'k';
+  } else {
+    return width.toString();
+  }
 };
 
 export default function TopRanking({ rankingGroup }: TopRankingProps) {
@@ -26,305 +39,301 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
   const rankingList = rankingGroup?.list || [];
 
   return (
-    <div className="w-full mt-12 mb-24">
-      <div className="text-left mb-4 hidden lg:block">
-        {rankingGroup?.name_web ? (
-          <h2 
-            className="text-xl font-normal text-black"
-            dangerouslySetInnerHTML={{ __html: rankingGroup.name_web }}
-          />
-        ) : (
-          <h2 className="text-xl font-normal text-black">Top 10</h2>
-        )}
+    <div className="w-full mt-12 mb-24 max-w-[1240px] mx-auto px-4">
+      {/* Title */}
+      <div className="flex justify-between items-center mb-8">
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl lg:text-2xl font-bold text-black">
+            {rankingGroup?.name_web ? (
+              <span dangerouslySetInnerHTML={{ __html: rankingGroup.name_web }} />
+            ) : (
+              "อันดับ 1-10 สุดยอด"
+            )}
+          </h2>
+        </div>
+        <Link href="/ranking" className="text-gray-500 hover:text-red-500 text-sm font-medium flex items-center gap-1">
+          ดูทั้งหมด <span className="text-lg">›</span>
+        </Link>
       </div>
-      
-      {/* Desktop Layout */}
-      <div className="hidden lg:block relative w-[1227px] h-[575px] mx-auto mb-24">
-        {/* Background Image */}
-        <Image 
-          src="/images/black-board.png"
-          alt="Black Board"
-          className="absolute inset-0 w-full h-full object-fill overflow-visible"
-          width={1227}
-          height={575}
-        />
-        
-        {/* Top 3 Podium Area - New structure based on old website */}
-        <div className="absolute left-12 -bottom-8 z-30 w-[475px] h-[296px]"> 
-          <div className="relative">
-            {/* Podium base image */}
-            <Image 
+
+      {/* Mobile Layout - Podium */}
+      <div className="block lg:hidden relative w-full mb-16 px-2">
+        <div className="relative h-[400px] flex justify-center items-end">
+          {/* Podium Image Base */}
+          <div className="absolute bottom-[-50px] z-10 w-[360px]">
+            <Image
               src={settings?.chartpng || '/images/podium.png'}
               alt="Podium"
-              className="w-full h-auto"
-              width={600}
+              width={360}
               height={200}
+              className="w-full h-auto object-contain"
+              loader={imageLoader}
             />
-            
-            {/* Three cards grid positioned above podium */}
-            <div className="absolute -top-[272px] left-0 right-0 grid grid-cols-3 gap-4 px-4">
-              {/* Rank 2 - Left (Index 8) */}
-              <div className="flex justify-start items-start w-full mt-16">
-                <div className="flex flex-col justify-center items-center gap-2 w-full">
-                  <Link href={rankingList[1] ? `/book/${rankingList[1].book_id}` : '#'} target="_blank">
-                  <div className="w-[95px] h-[133px] flex items-center justify-center rounded-lg shadow-md cursor-pointer relative border-4 border-[#d8d8c8] overflow-hidden mx-auto transition-transform duration-300 hover:scale-110">
-                    {rankingList[1] ? (
-                      <Image 
-                        src={getImageUrl(rankingList[1].img || rankingList[1].img_full)}
-                        alt={rankingList[1].name}
-                        className="w-full h-full object-cover"
-                        width={95} 
-                        height={133}
-                        loader={imageLoader}
-                        
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200" />
-                    )}
-                  </div>
-                  </Link>
-                  {/* Read button */}
-                  <Link href={rankingList[1] ? `/book/${rankingList[1].book_id}` : '#'} target="_blank">
-                  <button className="bg-red-600 rounded hover:bg-red-700 transition-colors w-[70px] h-[32px] mx-auto mt-4 flex items-center justify-center">
-                    <span className="text-gray-200 text-sm">
-                      อ่านนิยาย
-                    </span>
-                  </button>
-                  </Link>
-                </div>
-              </div>
+          </div>
 
-              {/* Rank 1 - Center (Index 9) */}
-              <div className="flex justify-start items-start w-full mt-0">
-                <div className="flex flex-col justify-center items-center gap-2 w-full">
-                  <Link href={rankingList[0] ? `/book/${rankingList[0].book_id}` : '#'} target="_blank">
-                  <div className="w-[117px] h-[163px] flex items-center justify-center rounded-lg shadow-md cursor-pointer relative border-4 border-amber-300 overflow-hidden mx-auto transition-transform duration-300 hover:scale-110">
-                    {rankingList[0] ? (
-                      <Image 
-                        src={getImageUrl(rankingList[0].img || rankingList[0].img_full)}
-                        alt={rankingList[0].name}
-                        className="w-full h-full object-cover"
-                        width={117}
-                        height={163}
-                        loader={imageLoader}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200" />
-                    )}
-                  </div>
-                  </Link>
-                  {/* Read button */}
-                  <Link href={rankingList[0] ? `/book/${rankingList[0].book_id}` : '#'} target="_blank">
-                  <button className="bg-red-600 rounded hover:bg-red-700 transition-colors w-[70px] h-[32px] mx-auto mt-6 flex items-center justify-center">
-                    <span className="text-gray-200 text-sm">
-                      อ่านนิยาย
-                    </span>
-                  </button>
-                  </Link>
-                </div>
+          {/* Rank 2 (Left) */}
+          <div className="absolute bottom-[130px] left-[calc(50%-170px)] z-20 flex flex-col items-center w-[100px]">
+            <Link href={rankingList[1] ? `/book/${rankingList[1].book_id}` : '#'} className="relative flex flex-col items-center transform transition-all duration-300 ease-in-out hover:scale-105">
+              <div className="relative w-[100px] h-[150px] rounded-lg overflow-hidden border-2 border-[#C0C0C0] shadow-lg">
+                {rankingList[1] ? (
+                  <Image
+                    src={getImageUrl(rankingList[1].img || rankingList[1].img_full)}
+                    alt={rankingList[1].name}
+                    fill
+                    className="object-cover"
+                    loader={imageLoader}
+                  />
+                ) : <div className="w-full h-full bg-gray-200" />}
               </div>
+              <div className="w-[24px] h-[24px] mt-[-12px] transform rotate-45 rounded-lg bg-[#C0C0C0] relative z-10 shadow-md border-2 border-white flex items-center justify-center">
+                <div className="transform -rotate-45 text-white font-bold text-sm">2</div>
+              </div>
+            </Link>
+            <div className="mt-2 text-center w-full">
+              <h3 className="font-bold text-xs truncate w-full text-black">{rankingList[1]?.name || "-"}</h3>
+              <div className="flex items-center justify-center gap-1 text-gray-500 text-[10px] mt-1">
+                <Eye size={10} />
+                <span>{formatViewCount(rankingList[1]?.view || 0)}</span>
+              </div>
+              <Link href={rankingList[1] ? `/book/${rankingList[1].book_id}` : '#'} className="mt-1 flex justify-center w-full">
+                <button className="bg-[#E60000] hover:bg-red-700 !text-white text-[10px] px-3 py-1 rounded-full transition-colors duration-300 w-auto shadow-sm min-w-[60px]">
+                  อ่าน
+                </button>
+              </Link>
+            </div>
+          </div>
 
-              {/* Rank 3 - Right (Index 7) */}
-              <div className="flex justify-start items-start w-full mt-32">
-                <div className="flex flex-col justify-center items-center gap-2 w-full">
-                  <Link href={rankingList[2] ? `/book/${rankingList[2].book_id}` : '#'} target="_blank">
-                  <div className="w-[97px] h-[135px] flex items-center justify-center rounded-lg shadow-md cursor-pointer relative border-4 border-[#e8ad74] overflow-hidden mx-auto transition-transform duration-300 hover:scale-110">
-                    {rankingList[2] ? (
-                      <Image 
-                        src={getImageUrl(rankingList[2].img || rankingList[2].img_full)}
-                        alt={rankingList[2].name}
-                        className="w-full h-full object-cover"
-                        width={97}
-                        height={135}
-                        loader={imageLoader}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200" />
-                    )}
-                  </div>
-                  </Link>
-                  {/* Read button */}
-                  <Link href={rankingList[2] ? `/book/${rankingList[2].book_id}` : '#'} target="_blank">
-                  <button className="bg-red-600 rounded hover:bg-red-700 transition-colors w-[70px] h-[32px] mx-auto mt-4 flex items-center justify-center">
-                    <span className="text-gray-200 text-sm">
-                      อ่านนิยาย
-                    </span>
-                  </button>
-                  </Link>
-                </div>
+          {/* Rank 1 (Center) */}
+          <div className="absolute bottom-[170px] left-1/2 -translate-x-1/2 z-30 flex flex-col items-center w-[120px]">
+            <Link href={rankingList[0] ? `/book/${rankingList[0].book_id}` : '#'} className="relative flex flex-col items-center transform transition-all duration-300 ease-in-out hover:scale-110">
+              {/* Crown Icon */}
+              <div className="mb-1 animate-bounce-slow">
+                <Image src="/images/crown.png" alt="Crown" width={30} height={30} className="w-8 h-8 object-contain" loader={imageLoader} />
               </div>
+              <div className="relative w-[120px] h-[180px] rounded-lg overflow-hidden border-4 border-[#f3ad3d] shadow-xl">
+                {rankingList[0] ? (
+                  <Image
+                    src={getImageUrl(rankingList[0].img || rankingList[0].img_full)}
+                    alt={rankingList[0].name}
+                    fill
+                    className="object-cover"
+                    loader={imageLoader}
+                  />
+                ) : <div className="w-full h-full bg-gray-200" />}
+              </div>
+              <div className="w-[28px] h-[28px] mt-[-14px] transform rotate-45 rounded-lg bg-[#f3ad3d] relative z-10 shadow-md border-2 border-white flex items-center justify-center">
+                <div className="transform -rotate-45 text-white font-bold text-base">1</div>
+              </div>
+            </Link>
+            <div className="mt-3 text-center w-full">
+              <h3 className="font-bold text-sm truncate w-full text-black">{rankingList[0]?.name || "-"}</h3>
+              <div className="flex items-center justify-center gap-1 text-gray-500 text-xs mt-1">
+                <Eye size={12} />
+                <span>{formatViewCount(rankingList[0]?.view || 0)}</span>
+              </div>
+              <Link href={rankingList[0] ? `/book/${rankingList[0].book_id}` : '#'} className="mt-2 flex justify-center w-full">
+                <button className="bg-[#E60000] hover:bg-red-700 !text-white text-xs px-4 py-1.5 rounded-full transition-colors duration-300 w-auto shadow-lg min-w-[70px]">
+                  อ่าน
+                </button>
+              </Link>
+            </div>
+          </div>
+
+          {/* Rank 3 (Right) */}
+          <div className="absolute bottom-[115px] right-[calc(50%-170px)] z-20 flex flex-col items-center w-[100px]">
+            <Link href={rankingList[2] ? `/book/${rankingList[2].book_id}` : '#'} className="relative flex flex-col items-center transform transition-all duration-300 ease-in-out hover:scale-105">
+              <div className="relative w-[100px] h-[150px] rounded-lg overflow-hidden border-2 border-[#CD7F32] shadow-lg">
+                {rankingList[2] ? (
+                  <Image
+                    src={getImageUrl(rankingList[2].img || rankingList[2].img_full)}
+                    alt={rankingList[2].name}
+                    fill
+                    className="object-cover"
+                    loader={imageLoader}
+                  />
+                ) : <div className="w-full h-full bg-gray-200" />}
+              </div>
+              <div className="w-[24px] h-[24px] mt-[-12px] transform rotate-45 rounded-lg bg-[#CD7F32] relative z-10 shadow-md border-2 border-white flex items-center justify-center">
+                <div className="transform -rotate-45 text-white font-bold text-sm">3</div>
+              </div>
+            </Link>
+            <div className="mt-2 text-center w-full">
+              <h3 className="font-bold text-xs truncate w-full text-black">{rankingList[2]?.name || "-"}</h3>
+              <div className="flex items-center justify-center gap-1 text-gray-500 text-[10px] mt-1">
+                <Eye size={10} />
+                <span>{formatViewCount(rankingList[2]?.view || 0)}</span>
+              </div>
+              <Link href={rankingList[2] ? `/book/${rankingList[2].book_id}` : '#'} className="mt-1 flex justify-center w-full">
+                <button className="bg-[#E60000] hover:bg-red-700 !text-white text-[10px] px-3 py-1 rounded-full transition-colors duration-300 w-auto shadow-sm min-w-[60px]">
+                  อ่าน
+                </button>
+              </Link>
             </div>
           </div>
         </div>
-
-        {/* Ranks 4-10 - Right side in 2 rows */}
-        <div className="absolute top-[168px] right-16 z-10">
-          {/* Top row: Ranks 4-7 (Indices 6, 5, 4, 3) */}
-          <div className="flex gap-14 mb-16">
-            {[3, 4, 5, 6].map((index, i) => {
-              const rank = i + 4;
-              const item = rankingList[index];
-              return (
-              <Link href={item ? `/book/${item.book_id}` : '#'} key={rank} target="_blank">
-              <div className="relative w-[86px] h-[122px]  bg-white overflow-visible cursor-pointer hover:scale-105 transition-transform border-4 border-[#d8d8c8] rounded-[4px]">
-                {item ? (
-                  <Image 
-                    src={getImageUrl(item.img || item.img_full)}
-                    alt={item.name}
-                    className="w-full h-full object-cover "
-                    width={86}
-                    height={122}
-                    loader={imageLoader}
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gray-200" />
-                )}
-                <Image 
-                  src={`/images/${rank}.png`}
-                  alt={`${rank}`}
-                  className="absolute -bottom-2 -right-2 w-[29px] h-[30px]"
-                  width={29}
-                  height={30}
-                  loader={imageLoader}
-                />
-              </div>
-              </Link>
-            )})}
-          </div>
-          
-          {/* Bottom row: Ranks 8-10 (Indices 2, 1, 0) */}
-          <div className="flex gap-14 ml-16">
-            {[7, 8, 9].map((index, i) => {
-              const rank = i + 8;
-              const item = rankingList[index];
-              return (
-              <Link href={item ? `/book/${item.book_id}` : '#'} key={rank} target="_blank">
-              <div className="relative w-[85px] h-[120px] rounded-[4px] shadow-lg bg-white overflow-visible cursor-pointer hover:scale-105 transition-transform border-4 border-[#d8d8c8]">
-                {item ? (
-                  <Image 
-                    src={getImageUrl(item.img_full || item.img)}
-                    alt={item.name}
-                    className="w-full h-full object-cover rounded-[4px]"
-                    width={85}
-                    height={120}
-                    loader={imageLoader}
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gray-200" />
-                )}
-                <Image 
-                  src={`/images/${rank}.png`}
-                  alt={`${rank}`}
-                  className={`absolute -bottom-2 -right-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] ${rank === 10 ? 'w-[58px] h-[30px]' : 'w-[29px] h-[30px]'}`}
-                  width={rank === 10 ? 58 : 29}
-                  height={30}
-                  loader={imageLoader}
-                />
-              </div>
-              </Link>
-            )})}
-          </div>
-          
-          {/* Chalk slot underneath ranks 4-10 */}
-          <Image 
-            src="/images/chalk-slot.png"
-            alt="Chalk Slot"
-            className="absolute -bottom-[120px] left-0 z-20 w-[600px] h-[61px]"
-            width={600}
-            height={61}
-            loader={imageLoader}
-          />
-        </div>
-        {/* Bottom orange/gold bar */}
       </div>
 
-      {/* Mobile Layout - Top 3 Only */}
-      <div className="block lg:hidden w-full relative h-[550px] sm:h-[650px] mx-auto rounded-lg bg-[#305341] mb-20">
-        {/* Background */}
-        <div className="absolute inset-0">
-             {/* Using standard img tag to avoid Next.js Image loader issues */}
-             <img 
-               src="/images/res-bb.png"
-               alt="Background"
-               className="w-full h-full object-fill opacity-100 rounded-lg"
-             />
-             
-             {/* Header Title: Top 3 Image */}
-             <div className="absolute top-8 left-1/2 transform -translate-x-1/2 z-10">
-                 <img
-                    src="/images/top3.png"
-                    alt="Top 3"
-                    className="w-[180px] h-auto opacity-90"
-                 />
-             </div>
+      {/* Desktop Layout - Podium */}
+      <div className="hidden lg:block relative w-full mb-50">
+        {/* Podium Container */}
+        <div className="relative h-[650px] flex justify-center items-end">
+
+          {/* Podium Image Base */}
+          <div className="absolute bottom-[-140px] z-10 w-[574px]">
+            <Image
+              src={settings?.chartpng || '/images/podium.png'}
+              alt="Podium"
+              width={574}
+              height={342}
+              className="w-full h-auto object-contain"
+              loader={imageLoader}
+            />
+          </div>
+
+
+          {/* Rank 2 (Left) */}
+          <div className="absolute bottom-[200px] left-[calc(50%-265px)] z-20 flex flex-col items-center w-[150px]">
+            <Link href={rankingList[1] ? `/book/${rankingList[1].book_id}` : '#'} className="relative flex flex-col items-center transform transition-all duration-300 ease-in-out hover:scale-105">
+              <div className="relative w-[150px] h-[220px] rounded-lg overflow-hidden border-4 border-[#C0C0C0] shadow-lg">
+                {rankingList[1] ? (
+                  <Image
+                    src={getImageUrl(rankingList[1].img || rankingList[1].img_full)}
+                    alt={rankingList[1].name}
+                    fill
+                    className="object-cover"
+                    loader={imageLoader}
+                  />
+                ) : <div className="w-full h-full bg-gray-200" />}
+              </div>
+              <div className="w-[30px] h-[30px] mt-[-15px] transform rotate-45 rounded-lg bg-[#C0C0C0] relative z-10 shadow-md border-2 border-white flex items-center justify-center">
+                <div className="transform -rotate-45 text-white font-bold text-lg">2</div>
+              </div>
+            </Link>
+            <div className="mt-4 text-center w-full">
+              <h3 className="font-bold text-lg truncate w-full text-black">{rankingList[1]?.name || "-"}</h3>
+              <div className="flex items-center justify-center gap-1 text-gray-500 text-sm mt-1">
+                <Eye size={14} />
+                <span>{formatViewCount(rankingList[1]?.view || 0)}</span>
+              </div>
+              <Link href={rankingList[1] ? `/book/${rankingList[1].book_id}` : '#'} className="mt-2 flex justify-center w-full">
+                <button className="bg-[#E60000] hover:bg-red-700 !text-white text-sm px-6 py-1.5 rounded-full transition-colors duration-300 w-auto shadow-sm min-w-[100px]">
+                  อ่านนิยาย
+                </button>
+              </Link>
+            </div>
+          </div>
+
+          {/* Rank 1 (Center) */}
+          <div className="absolute bottom-[260px] left-1/2 -translate-x-1/2 z-30 flex flex-col items-center w-[150px]">
+            <Link href={rankingList[0] ? `/book/${rankingList[0].book_id}` : '#'} className="relative flex flex-col items-center transform transition-all duration-300 ease-in-out hover:scale-110">
+              {/* Crown Icon */}
+              <div className="mb-2 animate-bounce-slow">
+                <Image src="/images/crown.png" alt="Crown" width={40} height={40} className="w-10 h-10 object-contain" loader={imageLoader} />
+              </div>
+              <div className="relative w-[150px] h-[220px] rounded-lg overflow-hidden border-4 border-[#f3ad3d] shadow-xl">
+                {rankingList[0] ? (
+                  <Image
+                    src={getImageUrl(rankingList[0].img || rankingList[0].img_full)}
+                    alt={rankingList[0].name}
+                    fill
+                    className="object-cover"
+                    loader={imageLoader}
+                  />
+                ) : <div className="w-full h-full bg-gray-200" />}
+              </div>
+              <div className="w-[30px] h-[30px] mt-[-15px] transform rotate-45 rounded-lg bg-[#f3ad3d] relative z-10 shadow-md border-2 border-white flex items-center justify-center">
+                <div className="transform -rotate-45 text-white font-bold text-xl">1</div>
+              </div>
+            </Link>
+            <div className="mt-5 text-center w-full">
+              <h3 className="font-bold text-xl truncate w-full text-black">{rankingList[0]?.name || "-"}</h3>
+              <div className="flex items-center justify-center gap-1 text-gray-500 text-sm mt-1">
+                <Eye size={16} />
+                <span>{formatViewCount(rankingList[0]?.view || 0)}</span>
+              </div>
+              <Link href={rankingList[0] ? `/book/${rankingList[0].book_id}` : '#'} className="mt-3 flex justify-center w-full">
+                <button className="bg-[#E60000] hover:bg-red-700 !text-white text-sm px-6 py-1.5 rounded-full transition-colors duration-300 w-auto shadow-lg min-w-[100px]">
+                  อ่านนิยาย
+                </button>
+              </Link>
+            </div>
+          </div>
+
+          {/* Rank 3 (Right) */}
+          <div className="absolute bottom-[180px] right-[calc(50%-265px)] z-20 flex flex-col items-center w-[150px]">
+            <Link href={rankingList[2] ? `/book/${rankingList[2].book_id}` : '#'} className="relative flex flex-col items-center transform transition-all duration-300 ease-in-out hover:scale-105">
+              <div className="relative w-[150px] h-[220px] rounded-lg overflow-hidden border-4 border-[#CD7F32] shadow-lg">
+                {rankingList[2] ? (
+                  <Image
+                    src={getImageUrl(rankingList[2].img || rankingList[2].img_full)}
+                    alt={rankingList[2].name}
+                    fill
+                    className="object-cover"
+                    loader={imageLoader}
+                  />
+                ) : <div className="w-full h-full bg-gray-200" />}
+              </div>
+              <div className="w-[30px] h-[30px] mt-[-15px] transform rotate-45 rounded-lg bg-[#CD7F32] relative z-10 shadow-md border-2 border-white flex items-center justify-center">
+                <div className="transform -rotate-45 text-white font-bold text-lg">3</div>
+              </div>
+            </Link>
+            <div className="mt-4 text-center w-full">
+              <h3 className="font-bold text-lg truncate w-full text-black">{rankingList[2]?.name || "-"}</h3>
+              <div className="flex items-center justify-center gap-1 text-gray-500 text-sm mt-1">
+                <Eye size={14} />
+                <span>{formatViewCount(rankingList[2]?.view || 0)}</span>
+              </div>
+              <Link href={rankingList[2] ? `/book/${rankingList[2].book_id}` : '#'} className="mt-2 flex justify-center w-full">
+                <button className="bg-[#E60000] hover:bg-red-700 !text-white text-sm px-6 py-1.5 rounded-full transition-colors duration-300 w-auto shadow-sm min-w-[100px]">
+                  อ่านนิยาย
+                </button>
+              </Link>
+            </div>
+          </div>
         </div>
+      </div>
 
-        {/* Podium and Books Container */}
-        <div className="absolute -bottom-24 left-0 w-full h-[350px] flex justify-center items-end pb-4">
-             <div className="relative w-full max-w-full sm:max-w-[80%] h-full"> 
-                   {/* Podium - res-podium.png */}
-                   <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-full flex justify-center z-10">
-                       <img 
-                          src={settings?.chartpng || '/images/podium.png'}
-                          alt="Podium"
-                          className="w-[95%] sm:w-[80%] h-auto object-contain"
-                       />
-                   </div>
+      {/* Ranks 4-10 List (Desktop Grid / Mobile Swiper) */}
+      <div className="hidden lg:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 lg:gap-6">
+        {rankingList.map((item: any, index: number) => {
+          if (index >= 10) return null; // Limit to Top 10
 
-                   {/* Books - Absolute positioning relative to this container */}
-                   {/* Rank 2 (Left) */}
-                   <div className="absolute left-[5%] bottom-[235px] sm:bottom-[250px] z-20 flex flex-col items-center w-[30%]">
-                        <Link href={rankingList[1] ? `/book/${rankingList[1].book_id}` : '#'} className="w-full flex flex-col items-center">
-                            <div className="w-[85%] max-w-[130px] aspect-[2/3] relative rounded-md border-2 border-[#d8d8c8] shadow-md overflow-hidden bg-white transition-transform duration-300 hover:scale-110">
-                                 {rankingList[1] ? (
-                                    <Image 
-                                      src={getImageUrl(rankingList[1].img || rankingList[1].img_full)}
-                                      alt={rankingList[1].name}
-                                      fill
-                                      className="object-cover"
-                                      loader={imageLoader}
-                                    />
-                                 ) : <div className="w-full h-full bg-gray-200" />}
-                            </div>
-                        </Link>
-                   </div>
+          const rank = index + 1;
+          const isTop3 = index < 3;
+          // Hide Top 3 on Desktop (as they are in podium), show on Mobile
+          const visibilityClass = isTop3 ? 'lg:hidden' : '';
 
-                   {/* Rank 1 (Center) */}
-                   <div className="absolute left-[35%] bottom-[275px] sm:bottom-[290px] z-30 flex flex-col items-center w-[30%]">
-                        <Link href={rankingList[0] ? `/book/${rankingList[0].book_id}` : '#'} className="w-full flex flex-col items-center">
-                            <div className="w-[95%] max-w-[160px] aspect-[2/3] relative rounded-md border-2 border-amber-300 shadow-lg overflow-hidden bg-white scale-110 transition-transform duration-300 hover:scale-125">
-                                 {rankingList[0] ? (
-                                    <Image 
-                                      src={getImageUrl(rankingList[0].img || rankingList[0].img_full)}
-                                      alt={rankingList[0].name}
-                                      fill
-                                      className="object-cover"
-                                      loader={imageLoader}
-                                    />
-                                 ) : <div className="w-full h-full bg-gray-200" />}
-                            </div>
-                        </Link>
-                   </div>
+          return (
+            <div key={item.book_id || index} className={`flex flex-col gap-2 ${visibilityClass}`}>
+              <Link href={`/book/${item.book_id}`} className="relative w-full aspect-[2/3] rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <Image
+                  src={getImageUrl(item.img || item.img_full)}
+                  alt={item.name}
+                  fill
+                  className="object-cover hover:scale-105 transition-transform duration-300"
+                  loader={imageLoader}
+                />
+                {/* Rank Badge */}
+                <div className="absolute bottom-1 right-1 w-[30px] h-[30px] transform rotate-45 rounded-lg bg-[#E60000] shadow-md border-2 border-white flex items-center justify-center z-10">
+                  <div className="transform -rotate-45 text-white font-bold text-lg">{rank}</div>
+                </div>
+              </Link>
+              <div className="text-left">
+                <h4 className="font-bold text-black text-sm line-clamp-1" title={item.name}>{item.name}</h4>
+                <p className="text-gray-500 text-xs line-clamp-1">{item.writer_name || "Unknown"}</p>
+                <div className="flex items-center gap-1 text-gray-400 text-xs mt-1">
+                  <Eye size={12} />
+                  <span>{formatViewCount(item.view || 0)}</span>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
 
-                   {/* Rank 3 (Right) */}
-                   <div className="absolute right-[5%] bottom-[215px] sm:bottom-[230px] z-20 flex flex-col items-center w-[30%]">
-                        <Link href={rankingList[2] ? `/book/${rankingList[2].book_id}` : '#'} className="w-full flex flex-col items-center">
-                             <div className="w-[85%] max-w-[130px] aspect-[2/3] relative rounded-md border-2 border-[#e8ad74] shadow-md overflow-hidden bg-white transition-transform duration-300 hover:scale-110">
-                                 {rankingList[2] ? (
-                                    <Image 
-                                      src={getImageUrl(rankingList[2].img || rankingList[2].img_full)}
-                                      alt={rankingList[2].name}
-                                      fill
-                                      className="object-cover"
-                                      loader={imageLoader}
-                                    />
-                                 ) : <div className="w-full h-full bg-gray-200" />}
-                            </div>
-                        </Link>
-                   </div>
-             </div>
-        </div>
-
+      {/* Mobile Swiper for 4-10 */}
+      <div className="block lg:hidden mt-8">
+        <BookSwiper books={rankingList.slice(3, 10).map((book: any, index: number) => ({ ...book, rank: index + 4 }))} />
       </div>
 
     </div>

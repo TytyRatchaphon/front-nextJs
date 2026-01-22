@@ -3,15 +3,20 @@
 import Image from "next/image";
 import React, { useState, useEffect, useMemo } from "react";
 import { useAuthStore } from "@/stores/authStore";
-import { Modal, Checkbox, Spin, Button, message, notification, App } from "antd";
+import { Modal, Checkbox, Spin, Button, App, Radio } from "antd";
 import { useQuery } from "@tanstack/react-query";
-import { fetchBookEpisodes } from "@/services/apiServices";
+import { fetchBookEpisodes, refreshToken } from "@/services/apiServices";
 import apiClient from "@/services/apiClient";
 import { useQueryClient } from '@tanstack/react-query';
 import { useUIStore } from '@/stores/uiStore';
-import { Minus, Plus } from "lucide-react";
+// import { Minus, Plus } from "lucide-react";
 import GifLoader from '@/components/utility/GifLoader';
 import SuccessAnimation from '@/components/utility/SuccessAnimation';
+import AmountPill from '@/components/utility/AmountPill';
+import FreeCoinPill from '@/components/utility/FreeCoinPill';
+import { useWebsiteStore } from '@/stores/websiteStore';
+import { jwtDecode } from "jwt-decode";
+
 
 type Book = {
   cover: string;
@@ -47,10 +52,27 @@ type Book = {
     web_enabled: boolean;
     book_enabled: boolean;
   };
+  use_freecoin?: number;
 };
 
 const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
   return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
+}
+
+function decodeToken(token: string) {
+  try {
+    const base64Url = token.split(".")[1]
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/")
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    return {};
+  }
 }
 
 const CountdownTimer = ({ endDate }: { endDate: string }) => {
@@ -130,22 +152,24 @@ const Pill = ({
 const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   const [heartQty, setHeartQty] = useState<number>(0);
   const [roseQty, setRoseQty] = useState<number>(0);
-  const { token, isLoggedIn, updateToken } = useAuthStore();
+  const { token, isLoggedIn, updateToken, user } = useAuthStore();
   const openLoginModal = useUIStore((s) => s.openLoginModal);
   const queryClient = useQueryClient();
   const { message: messageApi, modal: modalApi, notification: notificationApi } = App.useApp();
   const [buyLoading, setBuyLoading] = useState(false);
-  const [userCoinCount, setUserCoinCount] = useState<number | null>(null);
-  const [userFlowerCount, setUserFlowerCount] = useState<number | null>(null);
-  const [userHeartCount, setUserHeartCount] = useState<number | null>(null);
+  // Removed redundant local state for coins/flowers/hearts - using auth store directly
+  // const [userCoinCount, setUserCoinCount] = useState<number | null>(null);
+  // const [userFlowerCount, setUserFlowerCount] = useState<number | null>(null);
+  // const [userHeartCount, setUserHeartCount] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEpisodeIds, setSelectedEpisodeIds] = useState<number[]>([]);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [showSuccess, setShowSuccess] = useState(false);
+  const [payWith, setPayWith] = useState<'coin' | 'freecoin'>('coin');
 
   // Fetch episodes when modal opens
   const queryResult: any = useQuery({
-    queryKey: ["bookEpisodes", String(bookId ?? "")],
+    queryKey: ["bookEpisodes", String(bookId ?? ""), token],
     queryFn: () => fetchBookEpisodes(String(bookId ?? "")),
     enabled: isModalOpen && !!bookId,
     staleTime: 5 * 60 * 1000,
@@ -154,6 +178,10 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   const isFetching = queryResult.isFetching as boolean;
 
   const openModal = () => {
+    if (!isLoggedIn) {
+      openLoginModal();
+      return;
+    }
     setSelectedEpisodeIds([]);
     // expand first group by default when opening
     if (episodesData?.groups && episodesData.groups.length > 0) {
@@ -163,6 +191,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       map[firstId] = true;
       setExpandedGroups(map);
     }
+    setPayWith('coin');
     setIsModalOpen(true);
   };
 
@@ -187,6 +216,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       ),
       okText: 'ยืนยัน',
       cancelText: 'ยกเลิก',
+      okButtonProps: { className: '!bg-red-600 hover:!bg-red-700 !border-red-600 !text-white' },
       onOk: async () => {
         try {
           setBuyLoading(true);
@@ -194,24 +224,38 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
           const res = await apiClient.post(`/buy/groupPromotion`, payload);
           if (res?.data?.code === 200) {
             const respMsg = res.data?.message || 'ซื้อโปรโมชั่นสำเร็จ!';
-            console.log('Purchase Promotion Success: triggering animation');
             setShowSuccess(true);
-            console.log('showSuccess state set to true');
 
-            const maybeToken = res?.data?.data?.token ?? res?.data?.token ?? res?.data?.data?.authToken ?? res?.data?.data?.accessToken;
-            if (maybeToken && typeof updateToken === 'function') {
-              try {
-                updateToken(String(maybeToken));
-              } catch (err) {
-                console.warn('Failed to update token from purchase response', err);
+            if (res.data?.data?.token) {
+              const newToken = res.data.data.token;
+              const decoded = decodeToken(newToken);
+              // Force use of calculated coin if token is stale (higher than expected)
+              if (user && book.promotion?.price) {
+                const expectedCoin = (Number(user.coin) || 0) - (Number(book.promotion.price) || 0);
+                const tokenCoin = Number(decoded.coin ?? decoded.coins ?? decoded.goldCoins ?? decoded.gold_coin ?? 0);
+
+                // Construct merged user. If token coin is > expected, force expected.
+                const finalCoin = (tokenCoin > expectedCoin) ? expectedCoin : tokenCoin;
+
+                const mergedUser = { ...user, ...decoded, coin: finalCoin };
+                useAuthStore.getState().login(mergedUser, newToken);
+              } else {
+                updateToken(newToken);
               }
             }
+            // Temporarily disabled eager refresh to prevent stale token overwrite
+            // else {
+            //   try {
+            //     const refreshRes = await refreshToken();
+            //     const newToken = refreshRes?.data?.token || refreshRes?.token;
+            //     if (newToken) updateToken(newToken);
+            //   } catch (e) {}
+            // }
           } else {
             const errMsg = res?.data?.message || 'ไม่สามารถทำการซื้อได้';
             messageApi.error(errMsg);
           }
         } catch (err: any) {
-          console.error('Buy promotion failed', err);
           const msg = err?.response?.data?.message || err?.message || 'เกิดข้อผิดพลาดขณะซื้อ';
           messageApi.error(msg);
         } finally {
@@ -223,6 +267,11 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       },
     });
   };
+
+  const [buyAllModalOpen, setBuyAllModalOpen] = useState(false);
+  const [manualBuyConfirmModalOpen, setManualBuyConfirmModalOpen] = useState(false);
+  const [buyAllIds, setBuyAllIds] = useState<number[]>([]);
+  const [buyAllTotal, setBuyAllTotal] = useState(0);
 
   const handleBuyAllClick = async () => {
     if (buyLoading) return;
@@ -256,54 +305,13 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
         return;
       }
 
-      modalApi.confirm({
-        title: 'ยืนยันการซื้อ',
-        content: (
-          <div>
-            <div>คุณต้องการซื้อทั้งเรื่องหรือไม่?</div>
-            <div className="mt-2">ตอนที่ต้องซื้อ: <b>{selectableIds.length} ตอน</b></div>
-            <div className="flex">รวมยอด: <b className="text-red-600 flex mr-2">{total.toLocaleString()}</b><Image src="/images/e-coin.png" alt="Coin" width={24} height={24} /></div>
-          </div>
-        ),
-        okText: 'ยืนยัน',
-        cancelText: 'ยกเลิก',
-        okButtonProps: { className: '!bg-red-600 hover:!bg-red-700 !border-red-600 !text-white' },
-        onOk: async () => {
-          try {
-            const payload = { eps: selectableIds.map((id) => Number(id)), payWith: 'coin' };
-            const res = await apiClient.post(`/buy/eps`, payload);
-            if (res?.data?.code === 200) {
-              const respMsg = res.data?.message || 'ซื้อสำเร็จ!';
-              console.log('Purchase All Success: triggering animation');
-              setShowSuccess(true);
-              console.log('showSuccess state set to true');
+      setBuyAllIds(selectableIds);
+      setBuyAllTotal(total);
+      setPayWith('coin'); // Default to coin
+      setBuyAllModalOpen(true);
+      setBuyLoading(false);
 
-              const maybeToken = res?.data?.data?.token ?? res?.data?.token ?? res?.data?.data?.authToken ?? res?.data?.data?.accessToken;
-              if (maybeToken && typeof updateToken === 'function') {
-                try {
-                  updateToken(String(maybeToken));
-                } catch (err) {
-                  console.warn('Failed to update token from purchase response', err);
-                }
-              }
-            } else {
-              const errMsg = res?.data?.message || 'ไม่สามารถทำการซื้อได้';
-              messageApi.error(errMsg);
-            }
-          } catch (err: any) {
-            console.error('Buy all failed', err);
-            const msg = err?.response?.data?.message || err?.message || 'เกิดข้อผิดพลาดขณะซื้อ';
-            messageApi.error(msg);
-          } finally {
-            setBuyLoading(false);
-          }
-        },
-        onCancel: () => {
-          setBuyLoading(false);
-        },
-      });
     } catch (err) {
-      console.error('Preparing buy all failed', err);
       messageApi.error('เกิดข้อผิดพลาด ขณะเตรียมการซื้อ');
       setBuyLoading(false);
     }
@@ -338,12 +346,49 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     }
   };
 
+  // Helper to resolve price (Regular vs Promo)
+  const resolveEpisodePrice = (episode: any) => {
+    const regularPrice = Number(episode.coin ?? 0);
+    let promoPrice: number | undefined = undefined;
+
+    // Helper to safe parse price
+    const getPrice = (val: any) => {
+      if (val === null || val === undefined) return undefined;
+      const v = Number(val);
+      return isNaN(v) ? undefined : v;
+    };
+
+    // 1. Check Discount Object (Priority 1)
+    if (episode.Discount) {
+      const p = getPrice(episode.Discount.discount_price);
+      if (p !== undefined) promoPrice = p;
+    }
+    // 2. Fallback: Nested promotions
+    else if (Array.isArray(episode.promotions) && episode.promotions.length > 0) {
+      const p = getPrice(episode.promotions[0].discount_price);
+      if (p !== undefined) promoPrice = p;
+    }
+    // 3. Fallback: Direct property
+    else if (episode.discount_price !== undefined) {
+      const p = getPrice(episode.discount_price);
+      if (p !== undefined) promoPrice = p;
+    }
+
+    const hasPromo = !episode.isBuy && promoPrice !== undefined && promoPrice < regularPrice && promoPrice >= 0;
+    const finalPrice = hasPromo ? (promoPrice as number) : regularPrice;
+
+    return { regularPrice, promoPrice, hasPromo, finalPrice };
+  };
+
   const selectedSummary = useMemo(() => {
     if (!episodesData?.groups) return { count: 0, total: 0 };
     let total = 0;
     for (const g of episodesData.groups) {
       for (const ep of g.list) {
-        if (selectedEpisodeIds.includes(ep.ep_id) && ep.coin > 0) total += Number(ep.coin || 0);
+        if (selectedEpisodeIds.includes(ep.ep_id) && ep.coin > 0) {
+          const { finalPrice } = resolveEpisodePrice(ep);
+          total += finalPrice;
+        }
       }
     }
     return { count: selectedEpisodeIds.length, total };
@@ -370,41 +415,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     }
   };
 
-  useEffect(() => {
-    if (!token) {
-      setUserCoinCount(null);
-      setUserFlowerCount(null);
-      setUserHeartCount(null);
-      return;
-    }
+  // useEffect for syncing local state removed - accessing user.coin directly in render
 
-    try {
-      const base64Url = token.split(".")[1];
-      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split("")
-          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-          .join("")
-      );
-      const decoded = JSON.parse(jsonPayload);
-
-      const coins = decoded.coin ?? decoded.coins ?? decoded.goldCoins ?? decoded.gold_coin ?? 0;
-      setUserCoinCount(Number(coins) || 0);
-
-      const flowers = decoded.flower ?? decoded.flowers ?? 0;
-      setUserFlowerCount(Number(flowers) || 0);
-
-      const hearts = decoded.heart ?? decoded.hearts ?? 0;
-      setUserHeartCount(Number(hearts) || 0);
-
-    } catch (e) {
-      console.warn("Failed to decode token for coin/gift count", e);
-      setUserCoinCount(null);
-      setUserFlowerCount(null);
-      setUserHeartCount(null);
-    }
-  }, [token]);
+  const { settings } = useWebsiteStore()
 
   const handleSendGift = async (sendType: 'heart' | 'flower', amount: number) => {
     if (!isLoggedIn) {
@@ -443,7 +456,6 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
         messageApi.error(res?.data?.message || 'ส่งของขวัญไม่สำเร็จ');
       }
     } catch (err: any) {
-      console.error('Send gift failed', err);
       messageApi.error(err?.response?.data?.message || 'เกิดข้อผิดพลาดขณะส่งของขวัญ');
     }
   };
@@ -499,9 +511,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       {/* Outer card */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm sticky top-4">
         {/* Title row and coins pill */}
-        <div className="px-5 pt-5 pb-2 flex items-center justify-between">
+        <div className="px-5 pt-5 pb-2 flex items-center justify-between gap-3">
           <h3 className="text-xl font-extrabold text-gray-900">ซื้อหลายตอน</h3>
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <div
               role="button"
               tabIndex={0}
@@ -510,38 +522,38 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
               className={`inline-block`}
             >
               {isLoggedIn ? (
-                <Pill className="pr-10">
-                  <Image
-                    src="/images/e-coin.png"
-                    alt="Coin"
-                    width={20}
-                    height={20}
-                    loader={imageLoader}
-                  />
-                  <span className="font-semibold text-gray-900">{(userCoinCount != null ? userCoinCount : (book.remaining_paid_total ?? book.price ?? 0)).toLocaleString()}</span>
-                </Pill>
+                <>
+                  <div className="flex flex-col items-end gap-2">
+                    <AmountPill
+                      amount={user && user.coin !== undefined ? Number(user.coin) : (book.remaining_paid_total ?? book.price ?? 0)}
+                    />
+                    {book.use_freecoin === 1 && (
+                      <FreeCoinPill
+                        amount={user && user.freecoin !== undefined ? Number(user.freecoin) : 0}
+                      />
+                    )}
+                  </div>
+                </>
               ) : (
                 <Pill className="px-6 bg-gray-50 border-dashed border-gray-200 text-gray-600 cursor-pointer justify-center">
                   <span className="text-sm font-medium">เข้าสู่ระบบ</span>
                 </Pill>
               )}
             </div>
-            {isLoggedIn && (
-              <button
-                aria-label="เพิ่มเหรียญ"
-                onClick={() => { if (!isLoggedIn) openLoginModal(); }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-green-500 text-white grid place-items-center shadow"
-              >
-                <span className="text-xl leading-none mb-1">+</span>
-              </button>
-            )}
           </div>
         </div>
 
         <div className="px-5 pb-5">
           {isLoggedIn && Number(book.remaining_paid_count ?? 0) === 0 ? (
-            <div className="px-5 pb-5">
-              <p className="text-[14px] text-gray-800 mb-3 font-semibold">คุณเป็นเจ้าของนิยายนี้ทั้งหมดแล้ว</p>
+            <div className="mt-2 px-5 pb-5">
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm text-center">
+                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-green-100">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className=" text-green-800 text-base">คุณเป็นเจ้าของนิยายเรื่องนี้ครบทุกตอนแล้ว</div>
+              </div>
             </div>
           ) : (
             <>
@@ -604,7 +616,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                     <span className="text-[14px] font-bold text-gray-800">
                       เหมาทั้งเรื่อง
                     </span>
-                    <Image src="/images/e-coin.png" alt="Coin" width={20} height={20} loader={imageLoader} />
+                    <Image src={settings?.coin || '/images/e-coin.png'} alt="Coin" width={20} height={20} loader={imageLoader} />
                   </div>
                   <div className="flex items-baseline gap-3">
                     <span className="text-2xl leading-none font-extrabold text-red-600">
@@ -619,7 +631,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                 onClick={openModal}
                 className="w-full h-12 rounded-2xl border-2 border-red-600 text-red-600 text-lg font-bold hover:bg-red-50 transition-colors"
               >
-                เลือกเอง
+                เลือกตอนเอง
               </button>
 
               <Modal
@@ -628,62 +640,39 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                 open={isModalOpen}
                 onCancel={closeModal}
                 footer={
-                  <div className="w-full flex items-center justify-between">
-                    <Button onClick={closeModal} className="border border-red-200 text-red-600 bg-white hover:bg-red-50">ยกเลิก</Button>
-                    <div className="flex items-center gap-3">
-                      <div className="text-sm text-gray-700">เลือก {selectedSummary.count} ตอน</div>
-                      <div className="text-sm font-semibold text-red-600">รวม {selectedSummary.total} ฿</div>
-                      <Button type="primary" danger loading={buyLoading} disabled={selectedSummary.count === 0} onClick={async () => {
-                        // Perform batch buy
-                        if (!isLoggedIn) {
-                          // Close select modal then prompt login
-                          setIsModalOpen(false);
-                          setSelectedEpisodeIds([]);
-                          openLoginModal();
-                          return;
-                        }
-                        try {
-                          setBuyLoading(true);
-                          const payload = { eps: selectedEpisodeIds.map((id) => Number(id)), payWith: "coin" };
-                          const res = await apiClient.post(`/buy/eps`, payload);
-                          if (res?.data?.code === 200) {
-                            const respMsg = res.data?.message || "ซื้อสำเร็จ! กำลังอัปเดตเนื้อหา...";
-                            console.log('Purchase Selection Success: triggering animation');
-                            setShowSuccess(true);
-                            console.log('showSuccess state set to true');
-
-                            const maybeToken = res?.data?.data?.token ?? res?.data?.token ?? res?.data?.data?.authToken ?? res?.data?.data?.accessToken;
-                            if (maybeToken && typeof updateToken === 'function') {
-                              try {
-                                updateToken(String(maybeToken));
-                                console.log('Purchase response included token — auth updated');
-                              } catch (err) {
-                                console.warn('Failed to update token from purchase response', err);
-                              }
-                            }
-
-                            closeModal();
+                  <div className="w-full">
+                    <div className="flex items-center justify-between">
+                      <Button onClick={closeModal} className="border border-red-200 text-red-600 bg-white !hover:bg-red-50">ยกเลิก</Button>
+                      <div className="flex items-center gap-3">
+                        <div className="text-sm text-gray-700">เลือก {selectedSummary.count} ตอน</div>
+                        <div className="text-sm font-semibold text-red-600 flex items-center gap-2">
+                          รวม {selectedSummary.total} ฿
+                          <Image src={"/images/e-coin.png"} alt="currency" width={16} height={16} loader={imageLoader} />
+                        </div>
+                        <Button type="primary" danger disabled={selectedSummary.count === 0} onClick={() => {
+                          if (!isLoggedIn) {
+                            setIsModalOpen(false);
                             setSelectedEpisodeIds([]);
-                          } else {
-                            const errMsg = res?.data?.message || 'ไม่สามารถทำการซื้อได้';
-                            messageApi.error(errMsg);
+                            openLoginModal();
+                            return;
                           }
-                        } catch (err: any) {
-                          console.error('Batch buy failed', err);
-                          const msg = err?.response?.data?.message || err?.message || 'เกิดข้อผิดพลาดขณะซื้อ';
-                          messageApi.error(msg);
-                        } finally {
-                          setBuyLoading(false);
-                        }
-                      }}>
-                        ยืนยัน
-                      </Button>
+                          setPayWith('coin');
+                          setManualBuyConfirmModalOpen(true);
+                        }}>
+                          ยืนยัน
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 }
                 width={760}
                 centered
               >
+                {/* ... existing modal content ... */}
+                {/* Re-rendering existing content for context match if needed, but since we replace Modal block... */}
+                {/* Actually I am replacing the whole Modal block? No, StartLine 626. */}
+                {/* The Tool input says "Replace Modal footer logic... and append BuyAllModal". */}
+                {/* I must include the children of Modal because I am replacing from line 626 (Modal start) to 813 (Modal end). */}
                 {isFetching ? (
                   <GifLoader className="py-12" />
                 ) : (
@@ -696,7 +685,17 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                       </div>
                       <div className="flex items-center gap-3 text-sm text-gray-700">
                         <div>เลือก {selectedSummary.count} ตอน</div>
-                        <div className="font-semibold text-red-600 flex">รวม {selectedSummary.total} {" "} <Image src="/images/e-coin.png" alt="Coin" width={16} height={16} /></div>
+                        <div className="font-semibold text-red-600 flex items-center gap-1">
+                          รวม {selectedSummary.total}
+                          <div className="relative w-4 h-4 shrink-0">
+                            <Image src={settings?.coin || "/images/e-coin.png"} alt="Coin" fill className="object-contain" loader={imageLoader} />
+                          </div>
+                          {book.use_freecoin === 1 && (
+                            <div className="relative w-4 h-4 shrink-0">
+                              <Image src={settings?.freecoin || "/images/money-bag.png"} alt="FreeCoin" fill className="object-contain" loader={imageLoader} />
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -735,6 +734,8 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                                 {group.list.map((episode: any) => {
                                   const disabled = episode.coin <= 0 || episode.isBuy;
                                   const checked = selectedEpisodeIds.includes(episode.ep_id);
+                                  const { regularPrice, promoPrice, hasPromo } = resolveEpisodePrice(episode);
+
                                   return (
                                     <div key={episode.ep_id} className={`flex items-center justify-between px-4 py-3 ${disabled ? 'opacity-60' : ''}`}>
                                       <div className="flex items-center gap-3">
@@ -744,20 +745,32 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                                           onChange={() => toggleEpisode(episode.ep_id)}
                                         />
                                         <div className="min-w-0">
-                                          <div className={`text-sm font-medium truncate ${disabled ? 'text-gray-500' : 'text-gray-900'}`}>
+                                          <div className={`text-sm font-medium line-clamp-2 ${disabled ? 'text-gray-500' : 'text-gray-900'}`}>
                                             {episode.name}
                                           </div>
                                           <div className="text-xs text-gray-500">{episode.view} • {new Date(episode.publish_datetime).toLocaleDateString('th-TH')}</div>
                                         </div>
                                       </div>
                                       <div className="flex items-center gap-3">
-                                        {episode.coin > 0 ? (
-                                          <div className="flex items-center gap-1">
-                                            <Image src="/images/e-coin.png" alt="coin" width={16} height={16} loader={imageLoader} />
-                                            <span className="text-sm font-semibold text-orange-600">{episode.coin}</span>
+                                        {(regularPrice > 0 || hasPromo) ? (
+                                          <div className="flex items-center gap-1.5 justify-end">
+                                            <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={16} height={16} loader={imageLoader} />
+                                            {book.use_freecoin === 1 && (
+                                              <Image src={settings?.freecoin || "/images/money-bag.png"} alt="freecoin" width={16} height={16} loader={imageLoader} />
+                                            )}
+                                            {hasPromo ? (
+                                              <>
+                                                <span className="text-sm font-semibold text-rose-600">{promoPrice}</span>
+                                                <span className="text-xs text-gray-400 line-through decoration-gray-300">{regularPrice}</span>
+                                              </>
+                                            ) : (
+                                              <span className="text-sm font-semibold text-orange-600">
+                                                {regularPrice}
+                                              </span>
+                                            )}
                                           </div>
                                         ) : (
-                                          <span className="text-sm font-semibold text-red-600">อ่านฟรี</span>
+                                          <span className="text-sm font-semibold text-emerald-600">อ่านฟรี</span>
                                         )}
                                       </div>
                                     </div>
@@ -771,7 +784,179 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                     </div>
                   </div>
                 )}
-                <style jsx global>{`
+
+              </Modal>
+
+              {/* Manual Buy Confirmation Modal */}
+              <Modal
+                title="ยืนยันการซื้อ"
+                open={manualBuyConfirmModalOpen}
+                onCancel={() => setManualBuyConfirmModalOpen(false)}
+                centered
+                footer={null}
+                width={400}
+              >
+                <div className="flex flex-col gap-4 py-4">
+                  <div className="text-base text-gray-800 text-center">
+                    คุณต้องการซื้อตอนที่เลือกไว้หรือไม่?
+                  </div>
+                  <div className="text-center">
+                    ตอนที่เลือก: <b>{selectedSummary.count} ตอน</b>
+                  </div>
+                  <div className="text-center flex justify-center items-center gap-2">
+                    รวมยอด: <b className="text-red-600 text-xl">{selectedSummary.total}</b>
+                    <Image src={payWith === 'freecoin' ? (settings?.freecoin || "/images/money-bag.png") : (settings?.coin || "/images/e-coin.png")} alt="currency" width={20} height={20} unoptimized />
+                  </div>
+
+                  {book.use_freecoin === 1 && (
+                    <div className="flex justify-center mt-2">
+                      <Radio.Group value={payWith} onChange={(e) => setPayWith(e.target.value)} buttonStyle="solid">
+                        <Radio.Button value="coin">
+                          <div className="flex items-center gap-1">เหรียญ <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={14} height={14} unoptimized /></div>
+                        </Radio.Button>
+                        <Radio.Button value="freecoin">
+                          <div className="flex items-center gap-1">ถุงเงิน <Image src={settings?.freecoin || "/images/money-bag.png"} alt="free" width={14} height={14} unoptimized /></div>
+                        </Radio.Button>
+                      </Radio.Group>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 justify-center mt-4">
+                    <Button onClick={() => setManualBuyConfirmModalOpen(false)} className="w-1/2 !bg-white !text-red-600 hover:!border-red-600">ยกเลิก</Button>
+                    <Button type="primary" danger loading={buyLoading} className="w-1/2 !bg-red-600" onClick={async () => {
+                      try {
+                        setBuyLoading(true);
+                        const payload = { eps: selectedEpisodeIds.map((id) => Number(id)), payWith: payWith };
+                        const res = await apiClient.post(`/buy/eps`, payload);
+                        if (res?.data?.code === 200) {
+                          const respMsg = res.data?.message || "ซื้อสำเร็จ! กำลังอัปเดตเนื้อหา...";
+                          setShowSuccess(true);
+
+                          if (res.data?.data?.token) {
+                            updateToken(res.data.data.token);
+                          } else {
+                            try {
+                              const refreshRes = await refreshToken();
+                              if (refreshRes?.data?.token) updateToken(refreshRes.data.token);
+                            } catch (e) { }
+                          }
+
+                          setManualBuyConfirmModalOpen(false);
+                          closeModal(); // Close the main selection modal too
+                          setSelectedEpisodeIds([]);
+                        } else {
+                          messageApi.error(res?.data?.message || 'ไม่สามารถทำการซื้อได้');
+                        }
+                      } catch (err: any) {
+                        messageApi.error(err?.response?.data?.message || 'เกิดข้อผิดพลาดขณะซื้อ');
+                      } finally {
+                        setBuyLoading(false);
+                      }
+                    }}>ยืนยัน</Button>
+                  </div>
+                </div>
+              </Modal>
+
+              {/* Buy All Confirmation Modal */}
+              <Modal
+                title="ยืนยันการซื้อ"
+                open={buyAllModalOpen}
+                onCancel={() => setBuyAllModalOpen(false)}
+                centered
+                footer={null}
+                width={400}
+              >
+                <div className="flex flex-col gap-4 py-4">
+                  <div className="text-base text-gray-800 text-center">
+                    คุณต้องการซื้อทั้งเรื่องหรือไม่?
+                  </div>
+                  <div className="text-center">
+                    ตอนที่ต้องซื้อ: <b>{buyAllIds.length} ตอน</b>
+                  </div>
+                  <div className="text-center flex justify-center items-center gap-2">
+                    รวมยอด: <b className="text-red-600 text-xl">{buyAllTotal.toLocaleString()}</b>
+                    <Image src={payWith === 'freecoin' ? (settings?.freecoin || "/images/money-bag.png") : (settings?.coin || "/images/e-coin.png")} alt="currency" width={20} height={20} unoptimized />
+                  </div>
+
+                  {book.use_freecoin === 1 && (
+                    <div className="flex justify-center mt-2">
+                      <Radio.Group value={payWith} onChange={(e) => setPayWith(e.target.value)} buttonStyle="solid">
+                        <Radio.Button value="coin">
+                          <div className="flex items-center gap-1">เหรียญ <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={14} height={14} unoptimized /></div>
+                        </Radio.Button>
+                        <Radio.Button value="freecoin">
+                          <div className="flex items-center gap-1">ถุงเงิน <Image src={settings?.freecoin || "/images/money-bag.png"} alt="free" width={14} height={14} unoptimized /></div>
+                        </Radio.Button>
+                      </Radio.Group>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 justify-center mt-4">
+                    <Button onClick={() => setBuyAllModalOpen(false)} className="w-1/2 !bg-white !text-red-600 hover:!border-red-600">ยกเลิก</Button>
+                    <Button type="primary" danger loading={buyLoading} className="w-1/2 !bg-red-600" onClick={async () => {
+                      try {
+                        setBuyLoading(true);
+                        const payload = { eps: buyAllIds, payWith: payWith };
+                        const res = await apiClient.post(`/buy/eps`, payload);
+                        if (res?.data?.code === 200) {
+                          setShowSuccess(true);
+                          if (res.data?.data?.token) {
+                            const newToken = res.data.data.token;
+                            const decoded = decodeToken(newToken);
+
+                            if (user) {
+                              let finalCoin = Number(decoded.coin ?? decoded.coins ?? decoded.goldCoins ?? decoded.gold_coin ?? 0);
+                              let finalFreeCoin = Number(decoded.freecoin ?? 0);
+
+                              if (payWith === 'coin') {
+                                const expectedCoin = (Number(user.coin) || 0) - buyAllTotal;
+                                if (finalCoin > expectedCoin) finalCoin = expectedCoin;
+                              } else if (payWith === 'freecoin') {
+                                const expectedFreeCoin = (Number(user.freecoin) || 0) - buyAllTotal;
+                                if (finalFreeCoin > expectedFreeCoin) finalFreeCoin = expectedFreeCoin;
+                              }
+
+                              const mergedUser = { ...user, ...decoded, coin: finalCoin >= 0 ? finalCoin : 0, freecoin: finalFreeCoin >= 0 ? finalFreeCoin : 0 };
+                              useAuthStore.getState().login(mergedUser, newToken);
+                            } else {
+                              updateToken(newToken);
+                            }
+                          } else {
+                            // If no token returned, try refresh
+                            try {
+                              const refreshRes = await refreshToken();
+                              if (refreshRes?.data?.token) updateToken(refreshRes.data.token);
+                            } catch (e) { }
+                          }
+                          setBuyAllModalOpen(false);
+                          setBuyAllIds([]);
+                        } else {
+                          messageApi.error(res?.data?.message || 'ไม่สามารถทำการซื้อได้');
+                        }
+                      } catch (err: any) {
+                        messageApi.error(err?.response?.data?.message || 'เกิดข้อผิดพลาดขณะซื้อ');
+                      } finally {
+                        setBuyLoading(false);
+                      }
+                    }}>ยืนยัน</Button>
+                  </div>
+                </div>
+              </Modal>
+            </>
+          )}
+
+          {/* Divider */}
+          <div className="hidden lg:block my-5 border-t border-gray-200" />
+
+        </div >
+      </div >
+      {showSuccess && <SuccessAnimation onComplete={async () => {
+        setShowSuccess(false);
+        await queryClient.invalidateQueries({ queryKey: ["bookEpisodes", String(bookId ?? "")] });
+        await queryClient.invalidateQueries({ queryKey: ["bookDetail", String(bookId ?? "")] });
+      }} />}
+
+      <style jsx global>{`
           .book-select-modal .ant-checkbox-inner { border-color: #e11d48; transition: border-color .12s, background-color .12s; }
           /* Hover on wrapper or checkbox itself */
           .book-select-modal .ant-checkbox-wrapper:hover .ant-checkbox-inner,
@@ -788,86 +973,37 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
             background-color: #e11d48 !important;
             border-color: #e11d48 !important;
           }
+
+          /* Red Radio Buttons */
+          /* Checked State */
+          .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
+            background-color: #e11d48 !important;
+            border-color: #e11d48 !important;
+            color: white !important;
+          }
+           /* Checked Hover */
+          .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled):hover {
+            background-color: #be123c !important;
+            border-color: #be123c !important;
+            color: white !important;
+          }
+
+          /* Unchecked State - ensure text isn't blue on hover */
+          .ant-radio-button-wrapper:hover {
+            color: #e11d48 !important;
+            border-color: #e11d48 !important;
+          }
+
+          /* Focus / Active - Remove blue shadow */
+           .ant-radio-button-wrapper:focus-within {
+            box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.12) !important;
+           }
+           
+           /* Separator line when checked */
+           .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled)::before {
+            background-color: #e11d48 !important;
+           }
         `}</style>
-              </Modal>
-            </>
-          )}
-
-          {/* Divider */}
-          <div className="my-5 border-t border-gray-200" />
-
-          {/* Gift header with stats pills */}
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-extrabold text-gray-900">ส่งของขวัญ</h3>
-            <div className="flex items-center gap-3 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
-              <div className="flex items-center gap-1.5">
-                <Image src="/images/rose.png" alt="rose" width={16} height={16} loader={imageLoader} />
-                <span className="text-sm font-bold text-gray-700">{userFlowerCount !== null ? userFlowerCount.toLocaleString() : 0}</span>
-              </div>
-              <div className="w-px h-3 bg-gray-300"></div>
-              <div className="flex items-center gap-1.5">
-                <Image src="/images/heart.png" alt="heart" width={16} height={16} loader={imageLoader} />
-                <span className="text-sm font-bold text-gray-700">{userHeartCount !== null ? userHeartCount.toLocaleString() : 0}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Gift Cards Grid */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Heart Card */}
-            <div className="rounded-xl border border-gray-200 p-3 flex flex-col items-center bg-white shadow-sm hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 relative mb-2">
-                <Image src="/images/heart40.png" alt="heart" fill className="object-contain" loader={imageLoader} />
-              </div>
-              <div className=" text-gray-900 mb-1">ส่งหัวใจ</div>
-
-              <div className="w-full mb-3">
-                <Stepper value={heartQty} onChange={setHeartQty} min={0} />
-              </div>
-
-              <button
-                disabled={heartQty === 0}
-                onClick={() => handleSendGift('heart', heartQty)}
-                className={`w-full h-9 rounded-lg text-sm transition-all ${heartQty > 0
-                  ? "bg-gradient-to-r from-red-600 to-pink-600 !text-white shadow hover:opacity-90"
-                  : "bg-gray-100 text-black cursor-not-allowed"
-                  }`}
-              >
-                ส่ง
-              </button>
-            </div>
-
-            {/* Rose Card */}
-            <div className="rounded-xl border border-gray-200 p-3 flex flex-col items-center bg-white shadow-sm hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 relative mb-2">
-                <Image src="/images/rose.png" alt="rose" fill className="object-contain" loader={imageLoader} />
-              </div>
-              <div className=" text-gray-900 mb-1">ส่งกุหลาบ</div>
-
-
-              <div className="w-full mb-3">
-                <Stepper value={roseQty} onChange={setRoseQty} min={0} />
-              </div>
-
-              <button
-                disabled={roseQty === 0}
-                onClick={() => handleSendGift('flower', roseQty)}
-                className={`w-full h-9 rounded-lg text-sm transition-all ${roseQty > 0
-                  ? "bg-gradient-to-r from-red-600 to-pink-600 !text-white shadow hover:opacity-90"
-                  : "bg-gray-100 text-black cursor-not-allowed"
-                  }`}
-              >
-                ส่ง
-              </button>
-            </div>
-          </div>
-        </div >
-      </div >
-      {showSuccess && <SuccessAnimation onComplete={async () => {
-        setShowSuccess(false);
-        await queryClient.invalidateQueries({ queryKey: ["bookEpisodes", String(bookId ?? "")] });
-        await queryClient.invalidateQueries({ queryKey: ["bookDetail", String(bookId ?? "")] });
-      }} />}
     </aside >
   );
 };

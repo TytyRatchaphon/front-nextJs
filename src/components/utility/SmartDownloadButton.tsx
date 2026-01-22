@@ -1,0 +1,78 @@
+"use client";
+
+import React, { useEffect, useState } from 'react';
+import { Button } from 'antd';
+import { DownloadOutlined, AppleOutlined, AndroidOutlined } from '@ant-design/icons';
+import { useWebsiteStore } from '@/stores/websiteStore';
+
+interface SmartDownloadButtonProps {
+    className?: string;
+    label?: string;
+    children?: React.ReactNode;
+}
+
+const SmartDownloadButton: React.FC<SmartDownloadButtonProps> = ({ className, label = 'Download App', children }) => {
+    const { settings } = useWebsiteStore();
+    const [os, setOs] = useState<'ios' | 'android' | 'other' | null>(null);
+
+    // Fallbacks provided by user
+    const DEFAULT_APP_STORE_URL = 'https://bit.ly/47zskk0';
+    const DEFAULT_PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.enjoybook.enjoyread&hl=en';
+
+    useEffect(() => {
+        const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+
+        if (/android/i.test(userAgent)) {
+            setOs('android');
+        } else if (/iPad|iPhone|iPod|Macintosh|Mac OS X/i.test(userAgent) && !(window as any).MSStream) {
+            setOs('ios');
+        } else {
+            setOs('other');
+        }
+    }, []);
+
+    const handleClick = () => {
+        const iosLink = settings?.app_store || DEFAULT_APP_STORE_URL;
+        const androidLink = settings?.play_store || DEFAULT_PLAY_STORE_URL;
+
+        if (os === 'ios') {
+            window.open(iosLink, '_blank');
+        } else if (os === 'android') {
+            window.open(androidLink, '_blank');
+        } else {
+            // Fallback for Desktop: Open both or just Play Store?
+            // User request implies just "Download App", usually Play Store is a safe default for web
+            window.open(androidLink, '_blank');
+        }
+    };
+
+    if (children) {
+        return (
+            <div onClick={handleClick} className={`cursor-pointer ${className}`} role="button" tabIndex={0}>
+                {children}
+            </div>
+        );
+    }
+
+    // Default rendering if no children
+    if (os === null) return null;
+
+    let Icon = DownloadOutlined;
+    if (os === 'ios') Icon = AppleOutlined;
+    if (os === 'android') Icon = AndroidOutlined;
+
+    return (
+        <Button
+            type="primary"
+            shape="round"
+            icon={<Icon />}
+            size="large"
+            onClick={handleClick}
+            className={`${className} bg-red-600 border-red-600 hover:bg-red-500 hover:border-red-500 text-white font-bold shadow-md flex items-center justify-center`}
+        >
+            {label}
+        </Button>
+    );
+};
+
+export default SmartDownloadButton;

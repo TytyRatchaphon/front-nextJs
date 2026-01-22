@@ -3,12 +3,39 @@ import apiClient from "./apiClient";
 import axios from 'axios';
 import type { WebsiteSettingsResponse } from "@/types/api";
 import Cookies from 'js-cookie';
-import type { BookTrans, BookDetail, BookDetailResponse, CommentResponse, CommentData, CommentEpData, StickerSet, StickerResponse, ThreadResponse, ArticleResponse, CampaignDetailResponse, CampaignDetailData, StoreCategory, StoreResponse, BookPurchaseDetailsResponse, CategoryBookListResponse, CategoryDetail, CategoryAllResponse, LatestReadEpisodeResponse } from "@/types/api";
+import type { BookTrans, BookDetail, BookDetailResponse, CommentResponse, CommentData, CommentEpData, StickerSet, StickerResponse, ThreadResponse, ArticleResponse, CampaignDetailResponse, CampaignDetailData, StoreCategory, StoreResponse, BookPurchaseDetailsResponse, CategoryBookListResponse, CategoryDetail, CategoryAllResponse, LatestReadEpisodeResponse, CampaignDiscount, PackCampaignDetail, BookPromotionOption } from "@/types/api";
+
+export const fetchPackCampaignDetail = async (id: string): Promise<PackCampaignDetail | null> => {
+  try {
+    const response = await apiClient.get<{ code: number; data: PackCampaignDetail }>(`/pack-campaign/${id}`);
+    if (response.data?.code !== 200) {
+      return null;
+    }
+    return response.data.data;
+  } catch (error) {
+    return null;
+  }
+}
+
+
+export const fetchCampaignsDiscount = async (): Promise<CampaignDiscount[]> => {
+  try {
+    const response = await apiClient.get<{ code: number; data: CampaignDiscount[] }>("/campaigns-discount");
+    if (response.data?.code !== 200) {
+      return [];
+    }
+    return response.data.data || [];
+  } catch (error) {
+    return [];
+  }
+}
+
 
 export interface Slide {
   banner_id: number;
   name: string;
   img: string;
+  type?: string;
   type_link: string;
   ref_id: string;
   order_by: number;
@@ -48,23 +75,136 @@ export interface HomeDataResponse {
   };
 }
 
+
+
 export const fetchHomeData = async (): Promise<HomeDataResponse | null> => {
   try {
     const response = await apiClient.get<HomeDataResponse>("/getAllBookHome");
-    console.log('getAllBookHome API Response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error fetching home data:', error);
     return null;
   }
 }
 
+export interface BookStats {
+  data: {
+    book_id: number;
+    bookID: string;
+    name: string;
+    title: string;
+    img: string;
+    img_full: string;
+    writer_name: string;
+    fullname: string;
+    total_views: number;
+    total_episodes: number;
+    total_groups: number;
+    reactions: {
+      hearts: number;
+      flowers: number;
+    };
+    sales: {
+      coin: number;
+      freecoin: number;
+      total: number;
+    };
+    comments: number;
+    reviews: number;
+    shelve_count: number;
+    updated_at: string;
+  };
+}
+
+export interface AnalyticsDataPoint {
+  date: string;
+  sales_count: number;
+  reads_count: number;
+}
+
+export interface BookAnalyticsResponse {
+  code: number;
+  status: string;
+  message: string;
+  data: AnalyticsDataPoint[];
+}
+
+// Book Analytics Stats
+export const fetchBookStats = async (bookId: string | number): Promise<BookStats['data'] | null> => {
+  try {
+    const response = await apiClient.get<BookStats>(`/managebook/${bookId}/stats`);
+    return response.data?.data || null;
+  } catch (error) {
+    return null;
+  }
+};
+
+export const fetchBookAnalytics = async (bookId: string | number, start: string, end: string): Promise<AnalyticsDataPoint[]> => {
+  try {
+    const response = await apiClient.get<BookAnalyticsResponse>(`/managebook/${bookId}/analytics`, {
+      params: { start, end }
+    });
+    return response.data?.data || [];
+  } catch (error) {
+    return [];
+  }
+}
+
+export interface EpisodeStats {
+  ep_id: string;
+  name: string;
+  order_by: number;
+  read_count: number;
+  sales_coin: number;
+  sales_freecoin: number;
+  total_income: number;
+}
+
+export interface PurchaseItem {
+  id: string | number;
+  ep_id: string | number;
+  date: string;
+  ep_name: string;
+  user_name: string;
+  price: number;
+  type: string;
+  income: number;
+}
+
+export interface BookEpisodesStatsResponse {
+  code: number;
+  status: string;
+  message: string;
+  data: {
+    total_data: EpisodeStats[];
+    total_purchase_list: PurchaseItem[];
+  };
+}
+
+export const fetchBookEpisodesStats = async (bookId: string | number, start: string, end: string): Promise<BookEpisodesStatsResponse['data'] | null> => {
+  try {
+    const response = await apiClient.get<BookEpisodesStatsResponse>(`/managebook/${bookId}/episodes/stats`, {
+      params: { start, end }
+    });
+    // Ensure we return the expected structure even if parts are missing
+    return {
+      total_data: response.data?.data?.total_data || [],
+      total_purchase_list: response.data?.data?.total_purchase_list || []
+    };
+  } catch (error) {
+    return null;
+  }
+};
+
 export const fetchWebsiteSettings = async (): Promise<WebsiteSettingsResponse | null> => {
+
   try {
     const response = await apiClient.get<WebsiteSettingsResponse>("/get_website");
+    if (response.data) {
+      // Cache removed
+    }
     return response.data;
   } catch (error) {
-    console.error('Error fetching website settings:', error);
+    console.error("fetchWebsiteSettings error:", error);
     return null;
   }
 }
@@ -72,14 +212,11 @@ export const fetchWebsiteSettings = async (): Promise<WebsiteSettingsResponse | 
 export const fetchBookTrans = async (): Promise<BookTrans[]> => {
   try {
     const response = await apiClient.get<{ data: BookTrans[] }>("/getAllBookHome");
-    console.log('getAllBookHome API Response:', response.data);
     if (!response.data || !Array.isArray(response.data)) {
-      console.warn('API response data is not an array:', response.data);
       return [];
     }
     return response.data;
   } catch (error) {
-    console.error('Error fetching books:', error);
     return [];
   }
 }
@@ -87,13 +224,12 @@ export const fetchBookTrans = async (): Promise<BookTrans[]> => {
 export const fetchBookTransById = async (id: string): Promise<BookTrans> => {
   try {
     const response = await apiClient.get(`/book/${id}`);
-    console.log('API Response for /book/:id:', response.data);
-    
+
     // ตรวจสอบ response structure
     if (!response.data) {
       throw new Error('ไม่พบข้อมูลจาก API');
     }
-    
+
     // ถ้า data เป็น array (ตามที่เห็นในรูปก่อนหน้า)
     if (Array.isArray(response.data.data)) {
       if (response.data.data.length === 0) {
@@ -101,21 +237,20 @@ export const fetchBookTransById = async (id: string): Promise<BookTrans> => {
       }
       return response.data.data[0];
     }
-    
+
     // ถ้า data เป็น object ที่มี book property
     if (response.data.data && response.data.data.book) {
       return response.data.data.book;
     }
-    
+
     // ถ้า data เป็น object โดยตรง
     if (response.data.data && !Array.isArray(response.data.data)) {
       return response.data.data;
     }
-    
+
     throw new Error('รูปแบบข้อมูลไม่ถูกต้อง');
-    
+
   } catch (error) {
-    console.error('Error fetching book by ID:', error);
     throw error;
   }
 };
@@ -138,10 +273,7 @@ export interface WriterRegistrationData {
 }
 
 export const registerWriter = async (data: WriterRegistrationData, token: string) => {
-  console.log('🚀 apiServices.registerWriter called');
-  console.log('📋 Request Data:', JSON.stringify(data, null, 2));
-  console.log('🔐 Token:', token.substring(0, 50) + '...');
-  
+
   try {
     const response = await apiClient.post('/user/writer', data, {
       headers: {
@@ -149,23 +281,17 @@ export const registerWriter = async (data: WriterRegistrationData, token: string
         'Content-Type': 'application/json'
       }
     });
-    
-    console.log('✅ Response Status:', response.status);
-    console.log('📦 Response Data:', response.data);
-    
+
+
     // Response จาก backend: { code: 200, status: "success", message: "...", data: { token } }
     return response.data;
   } catch (error: any) {
-    console.error('❌ API Error:', error.response?.data || error.message);
     throw error;
   }
 };
 
 // Update writer information (reuse same endpoint if backend supports PUT)
 export const updateWriter = async (data: Partial<WriterRegistrationData>, token: string) => {
-  console.log('🚀 apiServices.updateWriter called (POST /user/writer)');
-  console.log('📋 Request Data:', JSON.stringify(data, null, 2));
-  console.log('🔐 Token (prefix):', typeof token === 'string' ? token.substring(0, 50) + '...' : token);
 
   try {
     // Use POST since backend appears to expose POST /user/writer (register endpoint)
@@ -176,73 +302,70 @@ export const updateWriter = async (data: Partial<WriterRegistrationData>, token:
       }
     });
 
-    console.log('✅ updateWriter Response Status:', response.status);
-    console.log('📦 updateWriter Response Data:', response.data);
     return response.data;
   } catch (err: any) {
-    console.error('❌ updateWriter API Error:', err.response?.status, err.response?.data || err.message);
     throw err;
+  }
+};
+
+export interface WriterCheckResponse {
+  is_writer: boolean;
+  status: string | null;
+  message: string;
+}
+
+export const fetchWriterCheck = async (): Promise<WriterCheckResponse | null> => {
+  try {
+    // Endpoint referenced in user request: /user/writer/check
+    const response = await apiClient.get<{ code: number, status: string, message: string, data: WriterCheckResponse }>('/user/writer/check');
+    return response.data?.data || null;
+  } catch (error) {
+    return null;
   }
 };
 
 export const fetchBookEpisodes = async (bookId: string | number) => {
   try {
-  const token = localStorage.getItem('authToken');
-    
+    let token = null;
+    if (typeof window !== 'undefined') {
+      token = localStorage.getItem('authToken');
+    }
+
     // TODO: ชั่วคราว - รอระบบ login จาก frontend อีกคน
     // ใส่ token demo เพื่อทดสอบ (ลบออกเมื่อมีระบบ login แล้ว)
     if (!token) {
-      console.warn('⚠️ No auth token found - using demo mode (episodes may show as locked)');
       // API จะคืนข้อมูล episodes แต่ isBuy จะเป็น false ทั้งหมด
     }
-    
-    console.log('🔑 Fetching episodes with bookId:', bookId, 'type:', typeof bookId);
-    console.log('🔑 Token:', token ? `${token.substring(0, 20)}...` : '❌ NO TOKEN (demo mode)');
-    
+
+
     const response = await apiClient.get(`/bookgroup/${bookId}`);
-    
-    console.log('🔍 BookEpisodes API Response:', response.data);
-    
+
+
     if (response.data && response.data.code === 200 && response.data.data) {
       const groups = response.data.data.groups || [];
-      console.log('✅ Episodes loaded:', groups.length, 'groups');
-      
+
       // Log ตัวอย่างตอนแรกเพื่อเช็คสถานะ isBuy
       if (groups.length > 0 && groups[0].list && groups[0].list.length > 0) {
         const firstEpisode = groups[0].list[0];
-        console.log('📝 First episode sample:', {
-          name: firstEpisode.name,
-          coin: firstEpisode.coin,
-          isBuy: firstEpisode.isBuy,
-        });
       }
-      
+
       return response.data.data;
     }
-    
+
     throw new Error('ไม่พบข้อมูลตอน');
   } catch (error: any) {
-    console.error('❌ Error fetching book episodes:', error);
-    
+
     // Log detailed error from API response
     if (error.response) {
-      console.error('📛 API Error Response:', {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        data: error.response.data,
-        message: error.response.data?.message,
-      });
     }
-    
+
     throw error;
   }
 };
 
 export const fetchBookGroups = async (bookId: string | number) => {
   try {
-    console.log('🔍 fetchBookGroups for', bookId);
     const response = await apiClient.get(`/user/managebook/${bookId}/groups`);
-    console.log('🔍 BookGroups API Response:', response.data);
     // Normalize backend shapes:
     // - { code:200, data: [group, ...] }
     // - { code:200, data: { groups: [...] } }
@@ -253,7 +376,6 @@ export const fetchBookGroups = async (bookId: string | number) => {
     if (payload && Array.isArray((payload as any).data)) return (payload as any).data
     return []
   } catch (error: any) {
-    console.error('❌ Error fetching book groups:', error?.response?.data ?? error.message ?? error);
     throw error;
   }
 }
@@ -262,9 +384,7 @@ export const fetchBookGroups = async (bookId: string | number) => {
 
 export const fetchGroupEpisodes = async (groupId: string | number) => {
   try {
-    console.log('🔍 fetchGroupEpisodes for group', groupId);
     const response = await apiClient.get(`/user/managebook/group/${groupId}/eps`);
-    console.log('🔍 GroupEpisodes API Response:', response.data);
     // Normalize possible shapes:
     // - { code:200, data: [ep1, ep2] }
     // - { code:200, data: { episodes: [...] } }
@@ -278,7 +398,6 @@ export const fetchGroupEpisodes = async (groupId: string | number) => {
     if (Array.isArray(alt)) return { episodes: alt }
     return { episodes: [] };
   } catch (error: any) {
-    console.error('❌ Error fetching group episodes:', error?.response?.data ?? error.message ?? error);
     throw error;
   }
 }
@@ -288,93 +407,81 @@ export const updateEpisodesPrice = async (epIds: (string | number)[] | string, c
     // Backend expects a comma-separated string in `ep_ids` (per Postman screenshot)
     const idsCsv = Array.isArray(epIds) ? epIds.map(String).join(',') : String(epIds)
     const payload = { ep_ids: idsCsv, coin }
-    console.log('🔍 updateEpisodesPrice payload:', payload)
     const resp = await apiClient.put('/user/managebook/eps/price', payload)
-    console.log('🔍 updateEpisodesPrice response:', resp.status, resp.data)
     return resp.data
   } catch (err: any) {
-    console.error('❌ updateEpisodesPrice failed:', err?.response?.data ?? err.message ?? err)
     throw err
   }
 }
 
 export const fetchUserShelve = async (limit: number = 20, page: number = 1) => {
   try {
-    console.log(`🔍 fetchUserShelve limit:${limit} page:${page}`)
     const resp = await apiClient.get('/user/getbookshelve', {
       params: { limit, page }
     })
-    console.log('🔍 fetchUserShelve response:', resp.status, resp.data)
-    
+
     // Response structure: { data: { books: [...], paginate: {...}, order: {...} } }
     const payload = resp.data?.data ?? resp.data
-    
+
     if (payload && Array.isArray(payload.books)) {
       return payload
     }
-    
+
     // Legacy support or fallback
     if (Array.isArray(payload)) {
       return { books: payload, paginate: null }
     }
-    
+
     return { books: [], paginate: null }
   } catch (err: any) {
-    console.error('❌ fetchUserShelve failed:', err?.response?.data ?? err.message ?? err)
     throw err
   }
 }
 
 export const fetchUserShelveContinue = async (limit: number = 20, page: number = 1) => {
   try {
-    console.log(`🔍 fetchUserShelveContinue limit:${limit} page:${page}`)
     const resp = await apiClient.get('/user/getbookshelvecontinue', {
       params: { limit, page }
     })
-    console.log('🔍 fetchUserShelveContinue response:', resp.status, resp.data)
-    
+
     // Response structure: { data: { books: [...], paginate: {...}, order: {...} } }
     const payload = resp.data?.data ?? resp.data
-    
+
     if (payload && Array.isArray(payload.books)) {
       return payload
     }
-    
+
     // Legacy support or fallback
     if (Array.isArray(payload)) {
       return { books: payload, paginate: null }
     }
-    
+
     return { books: [], paginate: null }
   } catch (err: any) {
-    console.error('❌ fetchUserShelveContinue failed:', err?.response?.data ?? err.message ?? err)
     throw err
   }
 }
 
 export const fetchUserShelveBuy = async (limit: number = 20, page: number = 1, order: string = 'desc') => {
   try {
-    console.log(`🔍 fetchUserShelveBuy limit:${limit} page:${page} order:${order}`)
     const resp = await apiClient.get('/user/getbookshelvebuy', {
       params: { limit, page, order }
     })
-    console.log('🔍 fetchUserShelveBuy response:', resp.status, resp.data)
-    
+
     // Response structure: { data: { books: [...], paginate: {...}, order: {...} } }
     const payload = resp.data?.data ?? resp.data
-    
+
     if (payload && Array.isArray(payload.books)) {
       return payload
     }
-    
+
     // Legacy support or fallback
     if (Array.isArray(payload)) {
       return { books: payload, paginate: null }
     }
-    
+
     return { books: [], paginate: null }
   } catch (err: any) {
-    console.error('❌ fetchUserShelveBuy failed:', err?.response?.data ?? err.message ?? err)
     throw err
   }
 }
@@ -383,13 +490,10 @@ export const fetchUserShelveBuy = async (limit: number = 20, page: number = 1, o
 export const redeemCode = async (code: string) => {
   try {
     // Backend expects key `redeemCode` in the request body (see Postman)
-    console.log('🔍 redeemCode payload (redeemCode):', code)
     const payload = { redeemCode: code }
     const resp = await apiClient.post('/user/redeem', payload)
-    console.log('🔍 redeemCode response:', resp.status, resp.data)
     return resp.data
   } catch (err: any) {
-    console.error('❌ redeemCode failed:', err?.response?.data ?? err.message ?? err)
     throw err
   }
 }
@@ -415,41 +519,31 @@ export const deleteGroupEpisode = async (episodeId: string | number, groupId?: s
   let lastErr: any = null
   for (const path of endpoints) {
     try {
-      console.log('🔍 deleteGroupEpisode trying', path)
       const response = await apiClient.delete(path)
-      console.log('🔍 deleteGroupEpisode API Response for', path, response.data)
       return response.data
     } catch (error: any) {
       lastErr = error
-      console.warn('⚠️ deleteGroupEpisode path failed:', path, error?.response?.status ?? error?.message ?? error)
       // continue trying other paths
     }
   }
   // As a last resort, try sending DELETE with a request body (some servers expect payload)
   try {
-    console.log('🔍 deleteGroupEpisode trying DELETE with body payload')
     const response = await apiClient.delete('/user/managebook/eps', { data: { episodeId, groupId } })
-    console.log('🔍 deleteGroupEpisode API Response for body-delete', response.data)
     return response.data
   } catch (error: any) {
     lastErr = error
-    console.warn('⚠️ deleteGroupEpisode body-delete failed:', error?.response?.status ?? error?.message ?? error)
   }
 
   // Some backends expose a specific '/eps/delete' action route (seen in your screenshot).
   // Try DELETE with body first, then POST to that path.
   try {
-    console.log('🔍 deleteGroupEpisode trying DELETE /user/managebook/eps/delete with body')
     const response = await apiClient.delete('/user/managebook/eps/delete', { data: { episodeId, groupId } })
-    console.log('🔍 deleteGroupEpisode API Response for eps/delete (DELETE)', response.data)
     return response.data
   } catch (error: any) {
     lastErr = error
-    console.warn('⚠️ deleteGroupEpisode eps/delete (DELETE) failed:', error?.response?.status ?? error?.message ?? error)
   }
 
   try {
-    console.log('🔍 deleteGroupEpisode trying POST /user/managebook/eps/delete with body')
     // Try several common payload shapes to match backend expectations
     const payloadVariants = [
       { episodeId, groupId },
@@ -464,24 +558,19 @@ export const deleteGroupEpisode = async (episodeId: string | number, groupId?: s
 
     for (const body of payloadVariants) {
       try {
-        console.log('🔍 deleteGroupEpisode trying POST /user/managebook/eps/delete with body:', body)
         const response = await apiClient.post('/user/managebook/eps/delete', body)
-        console.log('🔍 deleteGroupEpisode API Response for eps/delete (POST)', response.data)
         return response.data
       } catch (err: any) {
         lastErr = err
-        console.warn('⚠️ eps/delete (POST) payload failed:', body, err?.response?.status ?? err?.message ?? err)
         // try next payload shape
       }
     }
   } catch (error: any) {
     lastErr = error
-    console.warn('⚠️ deleteGroupEpisode eps/delete (POST) failed:', error?.response?.status ?? error?.message ?? error)
   }
 
   // Some clients / Postman were using PUT with key `ep_ids` (string or CSV). Try that exact shape.
   try {
-    console.log('🔍 deleteGroupEpisode trying PUT /user/managebook/eps/delete with ep_ids variants')
     const epIdsString = String(episodeId)
     const putVariants = [
       { ep_ids: epIdsString },
@@ -492,21 +581,16 @@ export const deleteGroupEpisode = async (episodeId: string | number, groupId?: s
 
     for (const body of putVariants) {
       try {
-        console.log('🔍 deleteGroupEpisode trying PUT /user/managebook/eps/delete with body:', body)
         const resp = await apiClient.put('/user/managebook/eps/delete', body)
-        console.log('🔍 deleteGroupEpisode API Response for eps/delete (PUT)', resp.status, resp.data)
         return resp.data
       } catch (err: any) {
         lastErr = err
-        console.warn('⚠️ eps/delete (PUT) payload failed:', body, err?.response?.status ?? err?.message ?? err)
       }
     }
   } catch (err: any) {
     lastErr = err
-    console.warn('⚠️ deleteGroupEpisode eps/delete (PUT) failed:', err?.response?.status ?? err?.message ?? err)
   }
 
-  console.error('❌ Error deleting group episode (all tried endpoints failed):', lastErr?.response?.data ?? lastErr?.message ?? lastErr)
   throw lastErr
 }
 
@@ -515,31 +599,25 @@ export const fetchBookDetail = async (bookId: string): Promise<BookDetail> => {
     // Try new management API first (/user/managebook/:id/detail)
     try {
       const resp = await apiClient.get(`/bookdetail/${bookId}`);
-      console.log('🔍 BookDetail (managebook) API Response:', resp.data);
       if (resp?.data) {
         // some backends return { code, data } others return data directly
         const payload = resp.data.data ?? resp.data;
         if (payload) {
-          console.log('✅ Book detail loaded from managebook:', payload.name ?? payload.title ?? bookId);
           return payload as BookDetail;
         }
       }
       // if that endpoint didn't return expected data, fallthrough to legacy
     } catch (err: any) {
-      console.warn('managebook detail endpoint failed, falling back to legacy /bookdetail:', err?.message ?? err);
     }
 
     // Fallback to legacy endpoint
     const response = await apiClient.get<BookDetailResponse>(`/bookdetail/${bookId}`);
-    console.log('🔍 BookDetail (legacy) API Response:', response.data);
     if (response.data && response.data.data) {
-      console.log('✅ Book detail loaded (legacy):', response.data.data.name);
       return response.data.data;
     }
 
     throw new Error('ไม่พบข้อมูลหนังสือ');
   } catch (error) {
-    console.error('❌ Error fetching book detail:', error);
     throw error;
   }
 };
@@ -549,77 +627,80 @@ export const fetchMyBookDetail = async (bookId: string): Promise<BookDetail> => 
     // Try new management API first (/user/managebook/:id/detail)
     try {
       const resp = await apiClient.get(`/bookdetail/${bookId}`);
-      console.log('🔍 BookDetail (managebook) API Response:', resp.data);
       if (resp?.data) {
         // some backends return { code, data } others return data directly
         const payload = resp.data.data ?? resp.data;
         if (payload) {
-          console.log('✅ Book detail loaded from managebook:', payload.name ?? payload.title ?? bookId);
           return payload as BookDetail;
         }
       }
       // if that endpoint didn't return expected data, fallthrough to legacy
     } catch (err: any) {
-      console.warn('managebook detail endpoint failed, falling back to legacy /bookdetail:', err?.message ?? err);
     }
 
     // Fallback to legacy endpoint
     const response = await apiClient.get<BookDetailResponse>(`/bookdetail/${bookId}`);
-    console.log('🔍 BookDetail (legacy) API Response:', response.data);
     if (response.data && response.data.data) {
-      console.log('✅ Book detail loaded (legacy):', response.data.data.name);
       return response.data.data;
     }
 
     throw new Error('ไม่พบข้อมูลหนังสือ');
   } catch (error) {
-    console.error('❌ Error fetching book detail:', error);
     throw error;
   }
 };
 
 export const updateGroup = async (groupId: string | number, name: string) => {
-    // 1. ดึง Token: หาจากทุกที่ที่เป็นไปได้ (Cookies หรือ LocalStorage)
-    const rawToken = Cookies.get('token') 
-                  || localStorage.getItem('token') 
-                  || localStorage.getItem('authToken');
-    
-    // 2. ล้าง Token: ถ้ามีเครื่องหมาย " ติดมา ให้เอาออก
-    const token = rawToken ? rawToken.replace(/^['"]+|['"]+$/g, '') : '';
+  // 1. ดึง Token: หาจากทุกที่ที่เป็นไปได้ (Cookies หรือ LocalStorage)
+  const rawToken = Cookies.get('token')
+    || localStorage.getItem('token')
+    || localStorage.getItem('authToken');
 
-    if (!token) {
-        throw new Error("ไม่พบ Token สำหรับเข้าสู่ระบบ");
+  // 2. ล้าง Token: ถ้ามีเครื่องหมาย " ติดมา ให้เอาออก
+  const token = rawToken ? rawToken.replace(/^['"]+|['"]+$/g, '') : '';
+
+  if (!token) {
+    throw new Error("ไม่พบ Token สำหรับเข้าสู่ระบบ");
+  }
+
+  // 3. ยิง Request
+  const response = await axios.put(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/managebook/group/update`,
+    {
+      group_id: Number(groupId), // แปลงเป็นตัวเลขให้ชัวร์
+      name: name
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        // ส่ง Token ไป (ถ้า API ปกติต้องมี Bearer ก็เติม `Bearer ${token}` แต่ถ้าส่งเพียวๆ ก็ใส่ token)
+        'Authorization': token
+      }
     }
+  );
 
-    // 3. ยิง Request
-    const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/managebook/group/update`,
-        {
-            group_id: Number(groupId), // แปลงเป็นตัวเลขให้ชัวร์
-            name: name
-        },
-        {
-            headers: {
-                'Content-Type': 'application/json',
-                // ส่ง Token ไป (ถ้า API ปกติต้องมี Bearer ก็เติม `Bearer ${token}` แต่ถ้าส่งเพียวๆ ก็ใส่ token)
-                'Authorization': token 
-            }
-        }
-    );
-
-    return response.data;
+  return response.data;
 };
 
 export const createGroup = async (bookId: string | number, name: string) => {
   try {
-    console.log('🔍 createGroup for book', bookId, 'name:', name)
     const payload = { book_id: String(bookId), name }
     const resp = await apiClient.post('/user/managebook/group', payload)
-    console.log('🔍 createGroup response:', resp.status, resp.data)
     return resp.data
   } catch (err: any) {
-    console.error('❌ createGroup failed:', err?.response?.data ?? err.message ?? err)
     throw err
+  }
+}
+
+export const deleteGroup = async (groupId: string | number) => {
+  try {
+    // Backend expects DELETE with body { group_id: ... }
+    const response = await apiClient.delete('/user/managebook/group', {
+      data: { group_id: String(groupId) }
+    });
+    return response.data;
+  } catch (error: any) {
+    throw error;
   }
 }
 
@@ -628,7 +709,6 @@ export const getBankList = async () => {
     const response = await apiClient.get('/writer/bank_list');
     return response.data?.data ?? [];
   } catch (error: any) {
-    console.error('Error fetching bank list:', error);
     throw error;
   }
 };
@@ -642,7 +722,6 @@ export const updateBankIdCardAccount = async (formData: FormData) => {
     });
     return response.data;
   } catch (error: any) {
-    console.error('Error updating bank account info:', error);
     throw error;
   }
 };
@@ -652,7 +731,6 @@ export const getBankIdCardAccount = async () => {
     const response = await apiClient.get('/writer/bank_idcard_account');
     return response.data;
   } catch (error: any) {
-    console.error('Error fetching bank account info:', error);
     throw error;
   }
 };
@@ -665,13 +743,19 @@ export const createPromotion = async (payload: {
   discount_percent: string | number;
 }) => {
   try {
-    console.log('🔍 createPromotion payload:', payload);
     const response = await apiClient.post('/user/managebook/groups/promotion', payload);
-    console.log('🔍 createPromotion response:', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('Error creating promotion:', error);
     throw error;
+  }
+};
+
+export const fetchBookCategoryAll = async (): Promise<CategoryDetail[]> => {
+  try {
+    const response = await apiClient.get<CategoryAllResponse>("/book-category/all");
+    return response.data?.data || [];
+  } catch (error) {
+    return [];
   }
 };
 
@@ -684,61 +768,49 @@ export const updatePromotion = async (payload: {
   discount_percent: string | number;
 }) => {
   try {
-    console.log('🔍 updatePromotion payload:', payload);
     const response = await apiClient.put('/user/managebook/groups/promotion', payload);
-    console.log('🔍 updatePromotion response:', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('Error updating promotion:', error);
     throw error;
   }
 };
 
 export const deletePromotion = async (dfbId: string | number) => {
   try {
-    console.log('🔍 deletePromotion id:', dfbId);
     // Backend expects DELETE with body { dfb_id: ... }
     const response = await apiClient.delete('/user/managebook/groups/promotion', {
       data: { dfb_id: Number(dfbId) }
     });
-    console.log('🔍 deletePromotion response:', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('Error deleting promotion:', error);
     throw error;
   }
 };
 
 export const createGroupEpisodePromotion = async (payload: {
-    ep_ids: string;
-    start_date: string;
-    end_date: string;
-    discount_price: number;
+  ep_ids: string;
+  start_date: string;
+  end_date: string;
+  discount_price: number;
 }) => {
-    try {
-        console.log('🔍 createGroupEpisodePromotion payload:', payload);
-        const response = await apiClient.post('/user/managebook/eps/promotion', payload);
-        console.log('🔍 createGroupEpisodePromotion response:', response.data);
-        return response.data;
-    } catch (error: any) {
-        console.error('Error creating episode promotion:', error);
-        throw error;
-    }
+  try {
+    const response = await apiClient.post('/user/managebook/eps/promotion', payload);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
 };
 
 export const deleteGroupEpisodePromotion = async (ids: string) => {
-    try {
-        console.log('🔍 deleteGroupEpisodePromotion ids:', ids);
-        // Backend expects DELETE with body { ids: "..." }
-        const response = await apiClient.delete('/user/managebook/eps/promotion', {
-            data: { ids }
-        });
-        console.log('🔍 deleteGroupEpisodePromotion response:', response.data);
-        return response.data;
-    } catch (error: any) {
-        console.error('Error deleting episode promotion:', error);
-        throw error;
-    }
+  try {
+    // Backend expects DELETE with body { ids: "..." }
+    const response = await apiClient.delete('/user/managebook/eps/promotion', {
+      data: { ids }
+    });
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
 };
 
 export interface BookUpdate {
@@ -764,99 +836,81 @@ export const fetchBookUpdates = async (): Promise<BookUpdate[]> => {
     // Ensure we return an array
     return Array.isArray(response.data?.data) ? response.data.data : [];
   } catch (error) {
-    console.error('Error fetching book updates:', error);
     return [];
   }
 };
 
 export const fetchBookReviews = async (bookId: string | number, page: number = 1, limit: number = 10, sort: string = 'newest'): Promise<{ comments: CommentData[], pagination?: any }> => {
   try {
-    console.log('🔍 fetchBookReviews for book', bookId, 'page:', page, 'sort:', sort);
     const response = await apiClient.get<CommentResponse>(`/bookdetail/${bookId}/reviews`, {
-        params: { page, limit, sort }
+      params: { page, limit, sort }
     });
-    console.log('🔍 BookReviews API Response:', response.data);
-    
+
     if (response.data && response.data.data) {
-        const payload = response.data.data;
-        // Check if data has comment_data array
-        if (Array.isArray(payload.comment_data)) {
-            return {
-                comments: payload.comment_data as CommentData[],
-                pagination: payload.pagination
-            };
-        }
-        // Fallback for flat array (if backend changes)
-        if (Array.isArray(payload)) {
-             return { comments: payload as CommentData[] };
-        }
+      const payload = response.data.data;
+      // Check if data has comment_data array
+      if (Array.isArray(payload.comment_data)) {
+        return {
+          comments: payload.comment_data as CommentData[],
+          pagination: payload.pagination
+        };
+      }
+      // Fallback for flat array (if backend changes)
+      if (Array.isArray(payload)) {
+        return { comments: payload as CommentData[] };
+      }
     }
-    
+
     return { comments: [] };
   } catch (error: any) {
-    console.error('❌ Error fetching book reviews:', error?.response?.data ?? error.message ?? error);
     return { comments: [] };
   }
 };
 
 export const postBookReview = async (bookId: string | number, comment: string, star: number) => {
   try {
-    console.log('🔍 postBookReview', { bookId, comment, star });
     const payload = { comment, star };
     const response = await apiClient.post(`/bookdetail/${bookId}/reviews`, payload);
-    console.log('🔍 postBookReview response:', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error posting book review:', error?.response?.data ?? error.message ?? error);
     throw error;
   }
 };
 
 export const postReply = async (commentBookId: string | number, comment: string) => {
   try {
-    console.log('🔍 postReply', { commentBookId, comment });
     const payload = { comment };
     const response = await apiClient.post(`/bookdetail/reviews/${commentBookId}/replies`, payload);
-    console.log('🔍 postReply response:', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error posting reply:', error?.response?.data ?? error.message ?? error);
     throw error;
   }
 };
 
 export const deleteBookReview = async (commentBookId: string | number) => {
   try {
-    console.log('🔍 deleteBookReview', commentBookId);
     const response = await apiClient.delete(`/bookdetail/reviews/${commentBookId}`);
-    console.log('🔍 deleteBookReview response:', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error deleting review:', error?.response?.data ?? error.message ?? error);
     throw error;
   }
 };
 
 export const reportBookReview = async (commentBookId: string | number) => {
   try {
-    console.log('🔍 reportBookReview', commentBookId);
     // Backend expects POST /bookdetail/reviews/:comment_book_id/report
     const response = await apiClient.post(`/bookdetail/reviews/${commentBookId}/report`);
-    console.log('🔍 reportBookReview response:', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error reporting review:', error?.response?.data ?? error.message ?? error);
     throw error;
   }
 };
 
 export const deleteBookReviewReply = async (replyId: string | number) => {
   try {
-    console.log('🔍 deleteBookReviewReply', replyId);
     const response = await apiClient.delete(`/bookdetail/reviews/replies/${replyId}`);
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error deleting review reply:', error);
     throw error;
   }
 };
@@ -864,236 +918,199 @@ export const deleteBookReviewReply = async (replyId: string | number) => {
 export const fetchStoreData = async (): Promise<StoreCategory[]> => {
   try {
     const response = await apiClient.get<StoreResponse>('/user/store');
-    console.log('🔍 fetchStoreData response:', response.data);
     return response.data?.data || [];
   } catch (error) {
-    console.error('Error fetching store data:', error);
     return [];
   }
 };
 
 export const reportBookReviewReply = async (replyId: string | number) => {
   try {
-    console.log('🔍 reportBookReviewReply', replyId);
     const response = await apiClient.post(`/bookdetail/reviews/replies/${replyId}/report`);
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error reporting review reply:', error);
     throw error;
   }
 };
 
 export const fetchStickers = async (): Promise<StickerSet[]> => {
   try {
-    console.log('🔍 fetchStickers');
     const response = await apiClient.get<StickerResponse>("/stickers");
-    console.log('🔍 Sticker API Response:', response.data);
     return response.data?.data ?? [];
   } catch (error: any) {
-    console.error('❌ Error fetching stickers:', error?.response?.data ?? error.message ?? error);
     return [];
   }
 };
 
 export interface WriterBook {
-    book_id: number;
-    name: string;
-    img: string;
-    user_id: number;
-    view: number;
-    end: string;
-    status: string;
-    img_full: string;
-    bgimg: string | null;
-    writer_name: string;
-    chapter: number;
-    shelve_count: number;
-    isBestSeller: boolean;
-    isNew: boolean;
-    isNewEp: boolean;
-    discount: any;
-    discount_ep_count?: number;
+  book_id: number;
+  name: string;
+  title: string;
+  img: string;
+  user_id: number;
+  view: number;
+  end: string;
+  status: string;
+  tag: string;
+  img_full: string;
+  bgimg: string | null;
+  writer_name: string;
+  chapter: number;
+  shelve_count: number;
+  isBestSeller: boolean;
+  isNew: boolean;
+  isNewEp: boolean;
+  discount: any;
+  discount_ep_count?: number;
 }
 
 export interface WriterBooksResponse {
-    code: number;
-    status: string;
-    message: string;
-    data: {
-        page: number;
-        limit: number;
-        total: number;
-        totalPages: number;
-        nextPage: number | null;
-        prevPage: number | null;
-        type: string;
-        items: WriterBook[];
-    }
+  code: number;
+  status: string;
+  message: string;
+  data: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    nextPage: number | null;
+    prevPage: number | null;
+    type: string;
+    items: WriterBook[];
+  }
 }
 
 // Writer Profile Interface
 export interface WriterProfileResponse {
-    code: number;
-    status: string;
-    message: string;
-    data: {
-        writer: {
-            user_id: number;
-            writer_name: string;
-            img: string;
-            banner: string;
-        };
-        book_count: number;
-        follower_count: number;
-        isFollowing: boolean;
+  code: number;
+  status: string;
+  message: string;
+  data: {
+    writer: {
+      user_id: number;
+      writer_name: string;
+      img: string;
+      banner: string;
     };
+    book_count: number;
+    follower_count: number;
+    isFollowing: boolean;
+  };
 }
 
 export const fetchWriterProfile = async (writerId: string | number): Promise<WriterProfileResponse['data'] | null> => {
-    try {
-        const response = await apiClient.get<WriterProfileResponse>(`/profile/${writerId}`);
-        return response.data?.data ?? null;
-    } catch (error) {
-        console.error("Error fetching writer profile:", error);
-        return null;
-    }
+  try {
+    const response = await apiClient.get<WriterProfileResponse>(`/profile/${writerId}`);
+    return response.data?.data ?? null;
+  } catch (error) {
+    return null;
+  }
 };
 
 export const fetchWriterBooks = async (
-    writerId: number | string, 
-    type: string = 'new', 
-    page: number = 1, 
-    limit: number = 20, 
-    sortBy: string = 'view'
+  writerId: number | string,
+  type: string = 'new',
+  page: number = 1,
+  limit: number = 20,
+  sortBy: string = 'view'
 ): Promise<WriterBooksResponse['data'] | null> => {
-    try {
-        console.log(`🔍 fetchWriterBooks writerId:${writerId} type:${type} page:${page}`);
-        // Endpoint: /profile/:writer_id/books/:type/:page
-        const response = await apiClient.get<WriterBooksResponse>(`/profile/${writerId}/books/${type}/${page}`, {
-            params: {
-                limit,
-                sortBy,
-                type: 'promotion' // The image shows this query param too? Let's keep it flexible or follow image strictly?
-                // The image shows: ?limit=5&type=promotion&sortBy=view
-                // But the path has :type too.
-                // It's possible the path :type is for filter (like 'new', 'recommend') and query type is for something else?
-                // Or maybe redundancy?
-                // I will trust the path param 'type' first, and maybe add query params if needed. 
-                // Wait, the prompt image says `{{path}} /profile/:writer_id/books/:type/:page ?limit=5&type=promotion&sortBy=view`
-                // It specifically has `type=promotion` in query. 
-                // Let's pass extra params flexibly.
-            }
-        });
-        console.log('🔍 fetchWriterBooks Response:', response.data);
-        return response.data?.data ?? null;
-// ... existing fetchWriterBooks implementation ...
-    } catch (error: any) {
-        console.error('❌ Error fetching writer books:', error?.response?.data ?? error.message ?? error);
-        return null;
-    }
+  try {
+    // Endpoint: /profile/:writer_id/books/:type/:page
+    const response = await apiClient.get<WriterBooksResponse>(`/profile/${writerId}/books/${type}/${page}`, {
+      params: {
+        limit,
+        sortBy
+      }
+    });
+    return response.data?.data ?? null;
+    // ... existing fetchWriterBooks implementation ...
+  } catch (error: any) {
+    return null;
+  }
 };
 
 export const followWriter = async (writerId: number | string, action: 'follow' | 'unfollow') => {
-    try {
-        console.log(`🔍 followWriter writerId:${writerId} action:${action}`);
-        const response = await apiClient.post('/profile/follow', {
-            writer_id: Number(writerId),
-            action: action
-        });
-        console.log('🔍 followWriter Response:', response.data);
-        return response.data;
-    } catch (error: any) {
-        console.error('❌ Error following/unfollowing writer:', error?.response?.data ?? error.message ?? error);
-        throw error;
-    }
+  try {
+    const response = await apiClient.post('/profile/follow', {
+      writer_id: Number(writerId),
+      action: action
+    });
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
 };
 // --- Book Comments (Episode Comments) API ---
 
 export const fetchBookComments = async (bookId: string | number, page: number = 1, limit: number = 10, sort: string = 'newest'): Promise<{ comments: CommentEpData[], pagination?: any }> => {
   try {
-    console.log('🔍 fetchBookComments for book', bookId, 'page:', page, 'sort:', sort);
     const response = await apiClient.get<CommentResponse>(`/bookdetail/${bookId}/comments`, {
-        params: { page, limit, sort }
+      params: { page, limit, sort }
     });
-    console.log('🔍 BookComments API Response:', response.data);
-    
+
     if (response.data && response.data.data) {
-        const payload = response.data.data;
-        if (Array.isArray(payload.comment_data)) {
-            return {
-                comments: payload.comment_data as CommentEpData[],
-                pagination: payload.pagination
-            };
-        }
-        if (Array.isArray(payload)) {
-             return { comments: payload as CommentEpData[] };
-        }
+      const payload = response.data.data;
+      if (Array.isArray(payload.comment_data)) {
+        return {
+          comments: payload.comment_data as CommentEpData[],
+          pagination: payload.pagination
+        };
+      }
+      if (Array.isArray(payload)) {
+        return { comments: payload as CommentEpData[] };
+      }
     }
     return { comments: [] };
   } catch (error: any) {
-    console.error('❌ Error fetching book comments:', error?.response?.data ?? error.message ?? error);
     return { comments: [] };
   }
 };
 
 export const postCommentReply = async (commentEpId: string | number, comment: string) => {
   try {
-    console.log('🔍 postCommentReply', { commentEpId, comment });
     const payload = { comment };
     // API: POST /bookdetail/comments/:comment_ep_id/replies
     const response = await apiClient.post(`/bookdetail/comments/${commentEpId}/replies`, payload);
-    console.log('🔍 postCommentReply response:', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error posting comment reply:', error?.response?.data ?? error.message ?? error);
     throw error;
   }
 };
 
 export const deleteBookComment = async (commentEpId: string | number) => {
   try {
-    console.log('🔍 deleteBookComment', commentEpId);
     // API: DELETE /bookdetail/comments/:comment_ep_id
     const response = await apiClient.delete(`/bookdetail/comments/${commentEpId}`);
-    console.log('🔍 deleteBookComment response:', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error deleting comment:', error?.response?.data ?? error.message ?? error);
     throw error;
   }
 };
 
 export const reportBookComment = async (commentEpId: string | number) => {
   try {
-    console.log('🔍 reportBookComment', commentEpId);
     // API: POST /bookdetail/comments/:comment_ep_id/report
     const response = await apiClient.post(`/bookdetail/comments/${commentEpId}/report`);
-    console.log('🔍 reportBookComment response:', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error reporting comment:', error?.response?.data ?? error.message ?? error);
     throw error;
   }
 };
 
 export const deleteBookCommentReply = async (replyId: string | number) => {
   try {
-    console.log('🔍 deleteBookCommentReply', replyId);
     const response = await apiClient.delete(`/bookdetail/comments/replies/${replyId}`);
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error deleting comment reply:', error);
     throw error;
   }
 };
 
 export const reportBookCommentReply = async (replyId: string | number) => {
   try {
-    console.log('🔍 reportBookCommentReply', replyId);
     const response = await apiClient.post(`/bookdetail/comments/replies/${replyId}/report`);
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error reporting comment reply:', error);
     throw error;
   }
 };
@@ -1113,7 +1130,6 @@ export const fetchPopularArticles = async (): Promise<PopularArticle[]> => {
     const response = await apiClient.get<{ code: number; status: string; data: { list: PopularArticle[] } }>("/articles/popular");
     return response.data?.data?.list || [];
   } catch (error) {
-    console.error('Error fetching popular articles:', error);
     return [];
   }
 };
@@ -1150,7 +1166,6 @@ export const fetchLatestArticles = async (page: number = 1, limit: number = 8): 
     const response = await apiClient.get<LatestArticlesResponse>(`/articles?limit=${limit}&page=${page}`);
     return response.data?.data || { list: [], pagination: { page: 1, limit, total: 0, totalPages: 0, nextPage: null, prevPage: null } };
   } catch (error) {
-    console.error('Error fetching latest articles:', error);
     return { list: [], pagination: { page: 1, limit, total: 0, totalPages: 0, nextPage: null, prevPage: null } };
   }
 };
@@ -1193,7 +1208,6 @@ export const fetchRankingBooks = async (range: RankingTimeRange = 'week', page: 
     const response = await apiClient.get<RankingResponse>(`/books/ranks/${range}?limit=${limit}&page=${page}`);
     return response.data?.data || { books: [], pagination: { page: 1, limit, total: 0, totalPages: 0, nextPage: null, prevPage: null } };
   } catch (error) {
-    console.error(`Error fetching ranking books (${range}):`, error);
     return { books: [], pagination: { page: 1, limit, total: 0, totalPages: 0, nextPage: null, prevPage: null } };
   }
 };
@@ -1208,7 +1222,6 @@ export interface FetchThreadsParams {
 
 export const fetchThreads = async (params: FetchThreadsParams = {}): Promise<ThreadResponse | null> => {
   try {
-    console.log('🔍 fetchThreads params:', params);
     const response = await apiClient.get<ThreadResponse>('/user/threads', {
       params: {
         page: params.page || 1,
@@ -1216,10 +1229,8 @@ export const fetchThreads = async (params: FetchThreadsParams = {}): Promise<Thr
         ...params
       }
     });
-    console.log('🔍 fetchThreads response:', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error fetching threads:', error?.response?.data ?? error.message ?? error);
     return null;
   }
 };
@@ -1235,12 +1246,9 @@ export interface CreateThreadPayload {
 
 export const createThread = async (payload: CreateThreadPayload) => {
   try {
-    console.log('🔍 createThread payload:', payload);
     const response = await apiClient.post('/user/threads', payload);
-    console.log('🔍 createThread response:', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error creating thread:', error?.response?.data ?? error.message ?? error);
     throw error;
   }
 };
@@ -1248,10 +1256,8 @@ export const createThread = async (payload: CreateThreadPayload) => {
 export const fetchBookPromotions = async (page = 1, limit = 20) => {
   try {
     const response = await apiClient.get('/books/promotions/ep', { params: { page, limit } });
-    console.log('fetchBookPromotions response:', response.data);
     return response.data;
   } catch (err: any) {
-    console.error('fetchBookPromotions error:', err);
     throw err;
   }
 };
@@ -1278,34 +1284,31 @@ export const fetchThreadDetail = async (topicId: string | number): Promise<Threa
     const response = await apiClient.get<{ data: ThreadDetail }>(`/user/threads/${topicId}`);
     return response.data.data;
   } catch (error: any) {
-    console.error('Error fetching thread detail:', error);
     throw error;
   }
 };
 
 export const fetchThreadComments = async (topicId: string | number, page: number = 1): Promise<{ comments: CommentData[], pagination?: any }> => {
   try {
-    console.log(`Getting comments for topic ${topicId}, page ${page}`);
     const response = await apiClient.get<CommentResponse>(`/user/threads/${topicId}/comments`, {
       params: { page }
     });
-    
+
     if (response.data && response.data.data) {
-        const payload = response.data.data;
-         // Based on screenshot: data: { paginate: {...}, comment_data: [...] }
-        if (Array.isArray((payload as any).comment_data)) {
-            // Need to map or ensure types match CommentData
-            // CommentData usually has: id (or equivalent), user, comment, date...
-            // Thread comments might look slightly different but let's assume similarity for now or cast.
-            return {
-                comments: (payload as any).comment_data as CommentData[],
-                pagination: (payload as any).paginate
-            };
-        }
+      const payload = response.data.data;
+      // Based on screenshot: data: { paginate: {...}, comment_data: [...] }
+      if (Array.isArray((payload as any).comment_data)) {
+        // Need to map or ensure types match CommentData
+        // CommentData usually has: id (or equivalent), user, comment, date...
+        // Thread comments might look slightly different but let's assume similarity for now or cast.
+        return {
+          comments: (payload as any).comment_data as CommentData[],
+          pagination: (payload as any).paginate
+        };
+      }
     }
     return { comments: [] };
   } catch (error: any) {
-    console.error('Error fetching thread comments:', error);
     return { comments: [] };
   }
 };
@@ -1315,7 +1318,6 @@ export const postThreadComment = async (topicId: string | number, comment: strin
     const response = await apiClient.post(`/user/threads/${topicId}/comments`, { comment });
     return response.data;
   } catch (error: any) {
-    console.error('Error posting thread comment:', error);
     throw error;
   }
 };
@@ -1325,7 +1327,6 @@ export const postThreadReply = async (topicId: string | number, commentTopicId: 
     const response = await apiClient.post(`/user/threads/${topicId}/comments/${commentTopicId}/replies`, { comment });
     return response.data;
   } catch (error: any) {
-    console.error('Error posting thread reply:', error);
     throw error;
   }
 };
@@ -1336,7 +1337,6 @@ export const fetchArticleDetail = async (articleId: string | number): Promise<Ar
     const response = await apiClient.get<ArticleResponse>(`/articles/${articleId}`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching article detail:', error);
     return null;
   }
 };
@@ -1347,7 +1347,6 @@ export const fetchCampaignDetail = async (id: string | number): Promise<Campaign
     const response = await apiClient.get<CampaignDetailResponse>(`/campaigns/${id}`);
     return response.data.data;
   } catch (error) {
-    console.error('Error fetching campaign detail:', error);
     return null;
   }
 };
@@ -1367,15 +1366,12 @@ export interface RankingCategoryResponse {
 
 export const fetchRankingCategories = async (): Promise<RankingCategoryData | null> => {
   try {
-    console.log('[DEBUG] Fetching ranking categories...');
     const response = await apiClient.get<RankingCategoryResponse>("/books/ranking/categories");
-    console.log('[DEBUG] Ranking Categories Response:', response.data);
     if (response.data && response.data.code === 200) {
       return response.data.data;
     }
     return null;
   } catch (error) {
-    console.error('Error fetching ranking categories:', error);
     return null;
   }
 };
@@ -1419,26 +1415,20 @@ export interface CategoryRankingBooksResponse {
 export const fetchCategoryRankingBooks = async (categoryId: number, range: number, limit: number = 5): Promise<CategoryRankingBookItem[]> => {
   try {
     const url = `/books/ranking/${categoryId}/${range}?limit=${limit}`;
-    console.log(`[DEBUG] Fetching ranking: ${url}`);
     const response = await apiClient.get<CategoryRankingBooksResponse>(url);
-    
-    console.log(`[DEBUG] Raw API Response for ${categoryId}:`, response.data);
+
 
     // Detailed validation
     if (response.data && response.data.code === 200 && response.data.data) {
-       const list = response.data.data.list;
-       if (Array.isArray(list)) {
-           console.log(`[DEBUG] Ranking loaded for ${categoryId}: ${list.length} items`);
-           return list;
-       }
-       console.warn(`[DEBUG] Ranking list is not an array for ${categoryId}:`, list);
-       return [];
+      const list = response.data.data.list;
+      if (Array.isArray(list)) {
+        return list;
+      }
+      return [];
     }
-    
-    console.warn('[DEBUG] Ranking API returned non-200 or missing data:', response.data);
+
     return [];
   } catch (error) {
-    console.error('Error fetching ranking books:', error);
     return [];
   }
 
@@ -1446,26 +1436,21 @@ export const fetchCategoryRankingBooks = async (categoryId: number, range: numbe
 
 export const buyStorePack = async (packId: string | number) => {
   try {
-    console.log('🔍 buyStorePack packId:', packId);
     // Backend expects POST /user/store with { store_pack_id: ... }
     const response = await apiClient.post('/user/store', {
-       store_pack_id: String(packId)
+      store_pack_id: String(packId)
     });
-    console.log('🔍 buyStorePack response:', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('Error buying store pack:', error);
     throw error;
   }
 };
 
 export const fetchBookPurchaseDetails = async (bookId: string | number) => {
   try {
-    console.log('🔍 fetchBookPurchaseDetails bookId:', bookId);
     const response = await apiClient.get<BookPurchaseDetailsResponse>(`/bookdetail/purchase/${bookId}`);
     return response.data?.data;
   } catch (error: any) {
-    console.error('Error fetching book purchase details:', error);
     return null;
   }
 };
@@ -1474,7 +1459,6 @@ export const postBannerClick = async (bannerId: number) => {
   try {
     await apiClient.post('/banner-click', { banner_id: bannerId });
   } catch (error) {
-    console.error('Error tracking banner click:', error);
   }
 };
 
@@ -1484,7 +1468,6 @@ export const postBookClick = async (bookId: string | number) => {
     if (!id || isNaN(id)) return;
     await apiClient.post('/bookdetail/click', { book_id: id });
   } catch (error) {
-    console.error('Error tracking book click:', error);
   }
 };
 
@@ -1493,7 +1476,6 @@ export const postCampaignClick = async (campaignId: number) => {
     if (!campaignId) return;
     await apiClient.post(`/campaigns/${campaignId}/click`, { id: campaignId });
   } catch (error) {
-    console.error('Error tracking campaign click:', error);
   }
 };
 
@@ -1536,7 +1518,7 @@ export const postWriterWithdraw = async (amount: number) => {
 
 export const fetchWriterWithdrawHistory = async () => {
   const response = await apiClient.get('/writer/withdraw');
-  return response.data?.data ?? []; 
+  return response.data?.data ?? [];
 };
 
 export const fetchWriterWithdrawSetting = async () => {
@@ -1580,15 +1562,35 @@ export interface RecentNotificationsResponse {
 export const fetchRecentNotifications = async (): Promise<NotificationData[]> => {
   try {
     const response = await apiClient.get<RecentNotificationsResponse>('/user/notifications/recent/unread');
-    
+
     if (response.data && response.data.data && Array.isArray(response.data.data.recent_notifications)) {
       return response.data.data.recent_notifications;
     }
-    
+
     return [];
   } catch (error) {
-    console.error('Error fetching recent notifications:', error);
     return [];
+  }
+};
+
+export const fetchAllNotifications = async (page: number = 1, limit: number = 20): Promise<{ notifications: NotificationData[], pagination?: any }> => {
+  try {
+    const response = await apiClient.get('/user/notifications', {
+      params: { page, limit }
+    });
+
+    // Check structure - this is a guess based on other list APIs in this project
+    if (response.data && response.data.data) {
+      if (Array.isArray(response.data.data)) {
+        return { notifications: response.data.data, pagination: response.data.pagination || response.data.meta };
+      }
+      if (response.data.data.notifications) {
+        return { notifications: response.data.data.notifications, pagination: response.data.data.pagination };
+      }
+    }
+    return { notifications: [] };
+  } catch (error) {
+    return { notifications: [] };
   }
 };
 
@@ -1597,7 +1599,6 @@ export const markNotificationAsRead = async (notificationId: number) => {
     const response = await apiClient.patch(`/user/notifications/${notificationId}/read`);
     return response.data;
   } catch (error) {
-    console.error('Error marking notification as read:', error);
     return null;
   }
 };
@@ -1607,7 +1608,6 @@ export const markAllNotificationsAsRead = async () => {
     const response = await apiClient.patch('/user/notifications/read-all');
     return response.data;
   } catch (error) {
-    console.error('Error marking all notifications as read:', error);
     return null;
   }
 };
@@ -1618,7 +1618,6 @@ export const postCommentNotification = async (commentId: string | number) => {
     const response = await apiClient.post(`/user/notifications/comments/${commentId}`, {});
     return response.data;
   } catch (error) {
-    console.error('Error posting comment notification:', error);
     return null;
   }
 };
@@ -1628,7 +1627,6 @@ export const postReviewNotification = async (commentId: string | number) => {
     const response = await apiClient.post(`/user/notifications/reviews/${commentId}`, {});
     return response.data;
   } catch (error) {
-    console.error('Error posting review notification:', error);
     return null;
   }
 };
@@ -1638,7 +1636,6 @@ export const postReviewReplyNotification = async (commentId: string | number) =>
     const response = await apiClient.post(`/user/notifications/reviews/replies/${commentId}`, {});
     return response.data;
   } catch (error) {
-    console.error('Error posting review reply notification:', error);
     return null;
   }
 };
@@ -1648,7 +1645,6 @@ export const postCommentReplyNotification = async (commentId: string | number) =
     const response = await apiClient.post(`/user/notifications/comments/replies/${commentId}`, {});
     return response.data;
   } catch (error) {
-    console.error('Error posting comment reply notification:', error);
     return null;
   }
 };
@@ -1657,97 +1653,80 @@ export const postCommentReplyNotification = async (commentId: string | number) =
 
 export const fetchEpisodeComments = async (epId: string | number, page: number = 1, limit: number = 10, sort: string = 'newest'): Promise<{ comments: CommentEpData[], pagination?: any }> => {
   try {
-    console.log('🔍 fetchEpisodeComments for ep', epId, 'page:', page);
     const response = await apiClient.get<CommentResponse>(`/readep/${epId}/comments`, {
-        params: { page, limit, sort }
+      params: { page, limit, sort }
     });
-    console.log('🔍 EpisodeComments API Response:', response.data);
-    
+
     if (response.data && response.data.data) {
-        const payload = response.data.data;
-        if (Array.isArray(payload.comment_data)) {
-            return {
-                comments: payload.comment_data as CommentEpData[],
-                pagination: payload.pagination
-            };
-        }
-        if (Array.isArray(payload)) {
-             return { comments: payload as CommentEpData[] };
-        }
+      const payload = response.data.data;
+      if (Array.isArray(payload.comment_data)) {
+        return {
+          comments: payload.comment_data as CommentEpData[],
+          pagination: payload.pagination
+        };
+      }
+      if (Array.isArray(payload)) {
+        return { comments: payload as CommentEpData[] };
+      }
     }
     return { comments: [] };
   } catch (error: any) {
-    console.error('❌ Error fetching episode comments:', error?.response?.data ?? error.message ?? error);
     return { comments: [] };
   }
 };
 
 export const postEpisodeComment = async (epId: string | number, comment: string) => {
   try {
-    console.log('🔍 postEpisodeComment', { epId, comment });
     const payload = { comment };
     const response = await apiClient.post(`/readep/${epId}/comments`, payload);
-    console.log('🔍 postEpisodeComment response:', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error posting episode comment:', error?.response?.data ?? error.message ?? error);
     throw error;
   }
 };
 
 export const postEpisodeReply = async (commentEpId: string | number, comment: string) => {
   try {
-    console.log('🔍 postEpisodeReply', { commentEpId, comment });
     const payload = { comment };
     const response = await apiClient.post(`/readep/comments/${commentEpId}/replies`, payload);
-    console.log('🔍 postEpisodeReply response:', response.data);
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error posting episode reply:', error?.response?.data ?? error.message ?? error);
     throw error;
   }
 };
 
 export const reportEpisodeComment = async (commentEpId: string | number) => {
   try {
-    console.log('🔍 reportEpisodeComment', commentEpId);
     const response = await apiClient.post(`/readep/comments/${commentEpId}/report`);
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error reporting episode comment:', error);
     throw error;
   }
 };
 
 export const reportEpisodeReply = async (commentSubEpId: string | number) => {
   try {
-    console.log('🔍 reportEpisodeReply', commentSubEpId);
     const response = await apiClient.post(`/readep/comments/replies/${commentSubEpId}/report`);
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error reporting episode reply:', error);
     throw error;
   }
 };
 
 export const deleteEpisodeComment = async (commentEpId: string | number) => {
   try {
-    console.log('🔍 deleteEpisodeComment', commentEpId);
     const response = await apiClient.delete(`/readep/comments/${commentEpId}`);
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error deleting episode comment:', error);
     throw error;
   }
 };
 
 export const deleteEpisodeReply = async (commentSubEpId: string | number) => {
   try {
-    console.log('🔍 deleteEpisodeReply', commentSubEpId);
     const response = await apiClient.delete(`/readep/comments/replies/${commentSubEpId}`);
     return response.data;
   } catch (error: any) {
-    console.error('❌ Error deleting episode reply:', error);
     throw error;
   }
 };
@@ -1757,7 +1736,6 @@ export const syncReadingProgress = async (ep_id: string | number) => {
     const response = await apiClient.post('/reading-progress/sync', { ep_id: String(ep_id) });
     return response.data;
   } catch (error: any) {
-    console.error('Error syncing reading progress:', error);
     return null;
   }
 };
@@ -1771,7 +1749,6 @@ export const updateReadingProgress = async (book_id: string | number, ep_id: str
     });
     return response.data;
   } catch (error: any) {
-    console.warn('Error updating reading progress:', error);
     return null;
   }
 };
@@ -1789,7 +1766,6 @@ export const fetchCategoryBooks = async (
     });
     return response.data;
   } catch (error) {
-    console.error('Error fetching category books:', error);
     return null;
   }
 };
@@ -1797,10 +1773,8 @@ export const fetchCategoryBooks = async (
 export const fetchAllCategories = async (): Promise<CategoryDetail[]> => {
   try {
     const response = await apiClient.get<CategoryAllResponse>('/book-category/all');
-    console.log('🔍 fetchAllCategories API Response:', response.data);
     return response.data?.data ?? [];
   } catch (error) {
-    console.error('Error fetching all categories:', error);
     return [];
   }
 };
@@ -1810,7 +1784,6 @@ export const fetchLatestReadEpisode = async (bookId: string | number): Promise<L
     const response = await apiClient.get<LatestReadEpisodeResponse>(`/bookdetail/latest-read-ep/${bookId}`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching latest read episode:', error);
     return null;
   }
 };
@@ -1820,19 +1793,126 @@ export const fetchUserMyBookInfo = async () => {
     const response = await apiClient.get('/user/writer/info');
     return response.data;
   } catch (error) {
-    console.error("Error fetching writer info:", error);
     return null;
   }
 };
 
-export const fetchUserMyBooks = async (page: number = 1, limit: number = 30) => {
+// Search Filters Interfaces
+export interface MyBookSearchParams {
+  page?: number;
+  limit?: number;
+  status?: string; // 'private', 'publish', 'delete', 'wait'
+  sortBy?: string; // 'date_at'
+  order?: string;  // 'asc', 'desc'
+  end?: string;    // 'end', 'not_end'
+  type?: string;   // 'write', 'tran', etc.
+  q?: string;      // Search keyword
+}
+
+export const fetchUserMyBooks = async (params: MyBookSearchParams = {}) => {
   try {
-    const response = await apiClient.get('/user/mybook/search', { params: { page, limit } });
+    const { page = 1, limit = 10, ...rest } = params;
+    const response = await apiClient.get('/user/mybook/search', {
+      params: {
+        page,
+        limit,
+        ...rest
+      }
+    });
     return response.data;
   } catch (error) {
-    console.error("Error fetching user mybooks:", error);
     return null;
   }
 };
 
 
+
+
+
+export interface ResolveEpisodeResponse {
+  code: number;
+  status: string;
+  message: string;
+  data: {
+    ep_id: number;
+    book_id: number;
+  };
+}
+
+export const resolveEpisodeId = async (epId: string): Promise<ResolveEpisodeResponse | null> => {
+  try {
+    const response = await apiClient.get<ResolveEpisodeResponse>(`/ep/resolve/${epId}`);
+    return response.data;
+  } catch (error) {
+    return null;
+  }
+};
+
+export interface ResolveBookResponse {
+  code: number;
+  status: string;
+  message: string;
+  data: {
+    book_id: number;
+  };
+}
+
+export const resolveBookId = async (bookId: string): Promise<ResolveBookResponse | null> => {
+  try {
+    const response = await apiClient.get<ResolveBookResponse>(`/book/resolve/${bookId}`);
+    return response.data;
+  } catch (error) {
+    return null;
+  }
+};
+
+export const refreshToken = async () => {
+  try {
+    const rawToken = Cookies.get('token')
+      || localStorage.getItem('token')
+      || localStorage.getItem('authToken');
+
+    const token = rawToken ? rawToken.replace(/^['"]+|['"]+$/g, '') : '';
+
+    if (!token) throw new Error("No token");
+
+
+    const response = await apiClient.post('/refresh-token', {}, {
+      headers: {
+        'Authorization': token
+      }
+    });
+
+
+    return response.data;
+  } catch (error: any) {
+    console.error('[API] /refresh-token error', error)
+    throw error;
+  }
+};
+
+export const fetchBookPromotionOptions = async (bookId: number): Promise<BookPromotionOption[]> => {
+  try {
+    const response = await apiClient.get<any>(`/pack-campaign/buying-options/${bookId}`);
+
+    if (response.data && response.data.code === 200 && response.data.data) {
+      // Check if data is array
+      if (Array.isArray(response.data.data)) {
+        return response.data.data;
+      }
+      return [];
+    }
+    return [];
+  } catch (error) {
+    return [];
+  }
+};
+
+export const buyGroupPromotion = async (data: { dfb_id: number; payWith: string }) => {
+  try {
+    const response = await apiClient.post("/buy/groupPromotion", data);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

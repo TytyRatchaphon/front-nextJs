@@ -14,7 +14,6 @@ export const OnlineUserCounter = () => {
     // Listen for 'online_users' event from backend
     // Backend should emit this event when connection count changes
     socket.on('online_users', (data: { count: number }) => {
-      console.log('socket online_users:', data);
       setOnlineCount(data.count);
     });
 

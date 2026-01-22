@@ -51,17 +51,17 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
   useEffect(() => {
     if (initialFilters) {
       setSelectedFilters((prev) => {
-         if (JSON.stringify(prev) !== JSON.stringify(initialFilters)) {
-             return initialFilters;
-         }
-         return prev;
+        if (JSON.stringify(prev) !== JSON.stringify(initialFilters)) {
+          return initialFilters;
+        }
+        return prev;
       });
     }
   }, [initialFilters]);
 
   // Sync query from props when URL changes
   useEffect(() => {
-      setSearchQuery(initialQuery);
+    setSearchQuery(initialQuery);
   }, [initialQuery]);
 
   // State สำหรับหมวดหมู่จาก API
@@ -85,21 +85,15 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
 
         const data = await response.json();
 
-        console.log("Raw API Response:", data);
 
         if (data.code === 200 && data.data) {
-          console.log("Categories data:", data.data);
-          console.log("First category sample:", data.data[0]);
           setCategories(data.data);
         } else if (Array.isArray(data)) {
-          console.log("Categories data (array):", data);
           setCategories(data);
         } else {
-          console.error("Unexpected API response format:", data);
           setCategories([]);
         }
       } catch (error) {
-        console.error("Error fetching categories:", error);
         setCategories([]);
       } finally {
         setIsLoadingCategories(false);
@@ -144,13 +138,10 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
 
   const handleCategoryChange = useCallback(
     (cateId: number, cateName: string) => {
-      console.log("Clicked category:", cateId, cateName);
       setSelectedFilters((prev) => {
         const currentList = [...prev.categories]; // Clone array
         const index = currentList.indexOf(cateId);
 
-        console.log("Current list:", currentList);
-        console.log("Index of", cateId, ":", index);
 
         if (index > -1) {
           // Remove
@@ -160,7 +151,6 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
           currentList.push(cateId);
         }
 
-        console.log("New list:", currentList);
 
         return {
           ...prev,
@@ -229,31 +219,31 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
       value: number | string;
       label: string;
     }> = [
-      ...selectedFilters.categories.map((cateId) => {
-        const category = categories.find((c) => c.id === cateId);
-        return {
-          type: "categories" as const,
-          value: cateId,
-          label: category?.name || `ID: ${cateId}`,
-        };
-      }),
-      ...selectedFilters.types.map((item) => ({
-        type: "types" as const,
-        value: item,
-        label:
-          item === "tran" ? "นิยายแปล" : item === "chat" ? "นิยายแต่ง" : item,
-      })),
-      ...selectedFilters.status.map((item) => ({
-        type: "status" as const,
-        value: item,
-        label:
-          item === "publish"
-            ? "สำเร็จแล้ว"
-            : item === "draft"
-            ? "ยังไม่เสร็จ"
-            : item,
-      })),
-    ];
+        ...selectedFilters.categories.map((cateId) => {
+          const category = categories.find((c) => c.id === cateId);
+          return {
+            type: "categories" as const,
+            value: cateId,
+            label: category?.name || `ID: ${cateId}`,
+          };
+        }),
+        ...selectedFilters.types.map((item) => ({
+          type: "types" as const,
+          value: item,
+          label:
+            item === "tran" ? "นิยายแปล" : item === "chat" ? "นิยายแต่ง" : item,
+        })),
+        ...selectedFilters.status.map((item) => ({
+          type: "status" as const,
+          value: item,
+          label:
+            item === "publish"
+              ? "สำเร็จแล้ว"
+              : item === "draft"
+                ? "ยังไม่เสร็จ"
+                : item,
+        })),
+      ];
 
     // เพิ่ม end filter เฉพาะเมื่อไม่ใช่ "all"
     if (selectedFilters.end !== "all") {
@@ -264,8 +254,8 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
           selectedFilters.end === "end"
             ? "จบแล้ว"
             : selectedFilters.end === "notend"
-            ? "ยังไม่จบ"
-            : selectedFilters.end,
+              ? "ยังไม่จบ"
+              : selectedFilters.end,
       });
     }
 
@@ -310,9 +300,8 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
 
   const FilterContent = ({ isInDrawer = false }: { isInDrawer?: boolean }) => (
     <div
-      className={`bg-white rounded-xl p-5 shadow-md ${
-        isInDrawer ? "h-full flex flex-col" : "h-full overflow-y-auto"
-      }`}
+      className={`bg-white rounded-xl p-5 shadow-md ${isInDrawer ? "h-full flex flex-col" : "h-full overflow-y-auto"
+        }`}
     >
       <div className={isInDrawer ? "flex-1 overflow-y-auto" : ""}>
         <div className="mb-5">
@@ -361,13 +350,11 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
           <p className="font-medium mb-2">หมวดหมู่</p>
           <div className="flex flex-col gap-2 text-sm max-h-48 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
             {isLoadingCategories ? (
-               <GifLoader width={80} height={80} className="py-4" />
+              <GifLoader width={80} height={80} className="py-4" />
             ) : categories.length > 0 ? (
               categories.map((item, index) => {
-                console.log(`Category item ${index}:`, item);
                 const cateId = item.id;
                 const cateName = item.name;
-                console.log(`Parsed - ID: ${cateId}, Name: ${cateName}`);
                 return (
                   <label
                     key={cateId || index}
@@ -379,9 +366,6 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
                       checked={selectedFilters.categories.includes(cateId)}
                       onChange={(e) => {
                         e.stopPropagation();
-                        console.log(
-                          `Checkbox clicked - ID: ${cateId}, Name: ${cateName}`
-                        );
                         handleCategoryChange(cateId, cateName);
                       }}
                     />
@@ -481,9 +465,8 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
       >
         <button
           onClick={handleSearchClick}
-          className={`w-full bg-red-500 rounded-md hover:bg-red-600 !text-white font-semibold ${
-            isInDrawer ? "py-4 text-base" : "py-2 text-sm"
-          }`}
+          className={`w-full bg-red-500 rounded-md hover:bg-red-600 !text-white font-semibold ${isInDrawer ? "py-4 text-base" : "py-2 text-sm"
+            }`}
         >
           ดูผลลัพธ์
         </button>

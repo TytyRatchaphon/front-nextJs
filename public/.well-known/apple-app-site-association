@@ -1,0 +1,11 @@
+{
+    "applinks": {
+        "apps": [],
+        "details": [
+        {
+            "appID":"AC43K9VPPX.com.enjoybook.enjoyread.deeplinkEnjoyBook",
+            "paths": ["*"]
+        }
+        ]
+    }
+}

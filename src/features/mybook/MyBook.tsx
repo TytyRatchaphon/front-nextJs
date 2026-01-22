@@ -7,7 +7,7 @@ import type { TabsProps } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
-import { fetchUserMyBookInfo, fetchUserMyBooks } from '@/services/apiServices';
+import { fetchUserMyBookInfo, fetchUserMyBooks, fetchWriterCheck } from '@/services/apiServices';
 
 import MyBookHeader from '../../components/myBook/MyBookHeader';
 import MyBookListTab from '../../components/myBook/MyBookListTab';
@@ -19,7 +19,7 @@ import MyBookWriterInfoTab from '../../components/myBook/MyBookWriterInfoTab';
 function MyBook() {
   const router = useRouter();
   const { user, token, isLoggedIn, updateToken, hasMounted } = useAuthStore();
-  
+
   // Check if user is logged in — wait until persisted store has hydrated
   useEffect(() => {
     if (!hasMounted) return; // wait for hydration
@@ -34,37 +34,38 @@ function MyBook() {
           return;
         }
       } catch (e) {
-        console.warn('Error reading backup token from localStorage', e);
       }
 
       router.push('/');
     }
   }, [hasMounted, isLoggedIn, token, router]);
-  
-  // Decode token to check writer_name
-  const [isWriter, setIsWriter] = useState(false);
-  
-  useEffect(() => {
-    if (token) {
-      try {
-        // Decode JWT token (base64)
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        
-        const decodedToken = JSON.parse(jsonPayload);
-        console.log('Decoded token:', decodedToken);
-        
-        // Check if writer_name exists and is not null
-        setIsWriter(decodedToken.writer_name !== null && decodedToken.writer_name !== undefined);
-      } catch (error) {
-        console.error('Error decoding token:', error);
-        setIsWriter(false);
-      }
-    }
-  }, [token]);
+
+  // Writer Check API
+  const { data: writerCheckData, isLoading: isWriterCheckLoading } = useQuery({
+    queryKey: ['writerCheck', token],
+    queryFn: fetchWriterCheck,
+    enabled: !!token,
+  });
+
+  // Calculate isWriter based on API status
+  // User logic:
+  // - is_writer === true -> Show Dashboard
+  // - is_writer === false -> Show Form
+  const isWriter = useMemo(() => {
+    if (!writerCheckData) return false;
+    return !!writerCheckData.is_writer;
+  }, [writerCheckData]);
+
+  // Should we show the form?
+  // Show form if:
+  // 1. Loaded
+  // 2. is_writer is false
+  const shouldShowWriterForm = useMemo(() => {
+    if (isWriterCheckLoading) return false;
+    if (!writerCheckData) return true; // Default to form if no data
+    return !writerCheckData.is_writer;
+  }, [writerCheckData, isWriterCheckLoading]);
+
 
   const [coinIncome, setCoinIncome] = useState<string | number>('');
   const [userProfileImage, setUserProfileImage] = useState<string | null>(null);
@@ -79,7 +80,7 @@ function MyBook() {
         setCoinIncome(Number.isFinite(parsed) ? parsed : String(raw));
       }
       if ((user as any).totalFollowers !== undefined) {
-         setUserTotalFollowers((user as any).totalFollowers);
+        setUserTotalFollowers((user as any).totalFollowers);
       }
     }
   }, [user]);
@@ -90,7 +91,7 @@ function MyBook() {
     try {
       const base64Url = token.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
       }).join(''));
 
@@ -107,24 +108,38 @@ function MyBook() {
       if (decodedToken.profile_image || decodedToken.img || decodedToken.profileImage) {
         setUserProfileImage(decodedToken.profile_image || decodedToken.img || decodedToken.profileImage);
       }
-      
+
       // Extract total followers from token
       if (decodedToken.totalFollowers !== undefined && decodedToken.totalFollowers !== null) {
-          setUserTotalFollowers(Number(decodedToken.totalFollowers));
+        setUserTotalFollowers(Number(decodedToken.totalFollowers));
       }
     } catch (e) {
       // ignore decode errors
-      console.debug('Prefill token decode failed', e);
     }
   }, [token]);
 
+  // Filter States
+  const [filterStatus, setFilterStatus] = useState<string>(''); // Default: All (empty string)
+  const [filterSortBy, setFilterSortBy] = useState<string>('date_at');
+  const [filterOrder, setFilterOrder] = useState<string>('desc');
+  const [filterEnd, setFilterEnd] = useState<string>('');
+  const [filterQ, setFilterQ] = useState<string>('');
+
   // Fetch user's books for the "งานเขียน" tab and "สถิติ" dropdown
   const [booksPage, setBooksPage] = useState<number>(1);
-  const booksLimit = 30;
+  const booksLimit = 10;
   // Keep the raw response so we can read pagination totals
-  const { data: myBooksResponse = null, isLoading: isLoadingMyBooks } = useQuery({
-    queryKey: ['myBooks', booksPage, booksLimit],
-    queryFn: () => fetchUserMyBooks(booksPage, booksLimit),
+  const { data: myBooksResponse = null, isLoading: isLoadingMyBooks, refetch: refetchMyBooks } = useQuery({
+    queryKey: ['myBooks', booksPage, booksLimit, filterStatus, filterSortBy, filterOrder, filterEnd, filterQ],
+    queryFn: () => fetchUserMyBooks({
+      page: booksPage,
+      limit: booksLimit,
+      status: filterStatus,
+      sortBy: filterSortBy,
+      order: filterOrder,
+      end: filterEnd,
+      q: filterQ
+    }),
     enabled: !!token,
   });
 
@@ -133,8 +148,8 @@ function MyBook() {
     const d = myBooksResponse;
     if (!d) return [];
     if (Array.isArray(d)) return d;
+    if (d.data && Array.isArray(d.data.items)) return d.data.items; // New API shape
     if (Array.isArray(d.data)) return d.data;
-    if (d.data && Array.isArray(d.data.items)) return d.data.items;
     if (d.data && Array.isArray(d.data.books)) return d.data.books;
     if (Array.isArray(d.items)) return d.items;
     if (Array.isArray(d.books)) return d.books;
@@ -144,8 +159,7 @@ function MyBook() {
   const myBooksTotal: number | null = useMemo(() => {
     const d = myBooksResponse as any;
     if (!d) return null;
-    // common locations for total
-    return d.total ?? d.count ?? d.data?.total ?? d.data?.total_items ?? d.data?.total_count ?? d.data?.totalBooks ?? null;
+    return d.data?.total ?? d.total ?? d.count ?? d.data?.total_items ?? d.data?.total_count ?? d.data?.totalBooks ?? null;
   }, [myBooksResponse]);
 
   const tabItems: TabsProps['items'] = useMemo(() => [
@@ -160,7 +174,26 @@ function MyBook() {
           งานเขียน
         </div>
       ),
-      children: <MyBookListTab myBooks={myBooks} isLoadingMyBooks={isLoadingMyBooks} />,
+      children: <MyBookListTab
+        myBooks={myBooks}
+        isLoadingMyBooks={isLoadingMyBooks}
+        page={booksPage}
+        setPage={setBooksPage}
+        total={myBooksTotal || 0}
+        limit={booksLimit}
+        // Filters
+        filterStatus={filterStatus}
+        setFilterStatus={setFilterStatus}
+        filterSortBy={filterSortBy}
+        setFilterSortBy={setFilterSortBy}
+        filterOrder={filterOrder}
+        setFilterOrder={setFilterOrder}
+        filterEnd={filterEnd}
+        setFilterEnd={setFilterEnd}
+        // Search
+        filterQ={filterQ}
+        setFilterQ={setFilterQ}
+      />,
     },
     {
       key: '2',
@@ -215,7 +248,7 @@ function MyBook() {
       ),
       children: <MyBookWriterInfoTab user={user} token={token} isWriter={isWriter} updateToken={updateToken} />,
     },
-  ], [myBooks, isLoadingMyBooks, token, coinIncome, setCoinIncome, updateToken, user, isWriter]);
+  ], [myBooks, isLoadingMyBooks, token, coinIncome, setCoinIncome, updateToken, user, isWriter, booksPage, myBooksTotal, filterStatus, filterSortBy, filterOrder, filterEnd, filterQ]);
 
   const { data: writerInfoData } = useQuery({
     queryKey: ['writerInfo'],
@@ -228,8 +261,8 @@ function MyBook() {
     return null; // or return a loading spinner
   }
 
-  // If not a writer, show registration form
-  if (!isWriter) {
+  // If not a writer (status === null), show registration form
+  if (shouldShowWriterForm) {
     return (
       <div className="min-h-screen bg-white py-8">
         <div className="container mx-auto px-4" style={{ maxWidth: '1200px' }}>
@@ -243,18 +276,18 @@ function MyBook() {
     <div className="min-h-screen bg-white py-8">
       <div className="container mx-auto px-4" style={{ maxWidth: '1200px' }}>
         {/* User Profile Header */}
-        <MyBookHeader 
-          user={user} 
-          coinIncome={(writerInfoData as any)?.data?.withdrawable_amount ?? coinIncome} 
-          myBooksTotal={(writerInfoData as any)?.data?.total_books ?? myBooksTotal} 
+        <MyBookHeader
+          user={user}
+          coinIncome={(writerInfoData as any)?.data?.withdrawable_amount ?? coinIncome}
+          myBooksTotal={(writerInfoData as any)?.data?.total_books ?? myBooksTotal}
           myBooksCount={Array.isArray(myBooks) ? myBooks.length : 0}
           tokenProfileImage={userProfileImage}
           tokenTotalFollowers={(writerInfoData as any)?.data?.total_followers ?? userTotalFollowers}
         />
 
         {/* Tabs */}
-        <Tabs 
-          defaultActiveKey="1" 
+        <Tabs
+          defaultActiveKey="1"
           items={tabItems}
           className='font-primary custom-tabs-red'
         />
@@ -323,7 +356,7 @@ function MyBook() {
           border-color: rgba(227,28,61,0.12) !important;
         }
       `}</style>
-        
+
       </div>
     </div>
   );

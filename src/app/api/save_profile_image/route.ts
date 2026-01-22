@@ -16,8 +16,7 @@ export async function POST(request: Request) {
     const rawToken = token.replace(/^Bearer\s+/i, "");
     const finalToken = `Bearer ${rawToken}`;
 
-    console.log('📸 [Proxy Image] Sending to Backend...');
-    // console.log('🔹 Token:', `${finalToken.substring(0, 15)}...`); // เปิดดูถ้าอยากเช็ค
+    //  // เปิดดูถ้าอยากเช็ค
 
     const backendResponse = await fetch(`${BACKEND_URL}/user/save_profile_image`, {
         method: 'POST',
@@ -31,14 +30,12 @@ export async function POST(request: Request) {
     const data = await backendResponse.json();
 
     if (!backendResponse.ok) {
-        console.error('🔥 Backend Image Error:', data);
         throw new Error(data.message || 'อัปโหลดรูปภาพไม่สำเร็จ');
     }
 
     return NextResponse.json(data);
 
   } catch (error: any) {
-    console.error('🔥 Proxy Image Error:', error);
     return NextResponse.json(
       { message: error.message || 'เกิดข้อผิดพลาดในการอัปโหลดรูป' },
       { status: 500 }

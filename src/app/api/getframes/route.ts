@@ -5,7 +5,7 @@ export async function GET(request: NextRequest) {
   try {
     // ดึง token จาก header
     const token = request.headers.get('authorization');
-    
+
     if (!token) {
       return NextResponse.json(
         { status: 'error', message: 'ไม่พบ token' },
@@ -13,7 +13,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('Proxy: Calling backend API with token...');
 
     // เรียก backend API พร้อม timeout
     const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3331'}/user/getFrameUser`, {
@@ -24,18 +23,16 @@ export async function GET(request: NextRequest) {
       timeout: 25000, // 25 วินาที (น้อยกว่า frontend เล็กน้อย)
     });
 
-    console.log('Proxy: Backend response:', response.data);
 
     // ส่งข้อมูลกลับไปให้ Frontend
     return NextResponse.json(response.data);
 
   } catch (error: any) {
-    console.error('Proxy: Error calling backend:', error.response?.data || error.message);
-    
+
     return NextResponse.json(
-      { 
-        status: 'error', 
-        message: error.response?.data?.message || 'เกิดข้อผิดพลาดในการเรียก API' 
+      {
+        status: 'error',
+        message: error.response?.data?.message || 'เกิดข้อผิดพลาดในการเรียก API'
       },
       { status: error.response?.status || 500 }
     );

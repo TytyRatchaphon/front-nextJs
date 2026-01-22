@@ -12,7 +12,7 @@ const SuccessAnimation: React.FC<SuccessAnimationProps> = ({ onComplete, duratio
 
   useEffect(() => {
     setMounted(true);
-    console.log('SuccessAnimation: mounted'); // Debug verify mounting
+     // Debug verify mounting
 
     // Timer to close
     const timer = setTimeout(() => {

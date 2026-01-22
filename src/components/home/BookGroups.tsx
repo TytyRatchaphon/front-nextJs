@@ -10,11 +10,11 @@ interface BookGroupsProps {
 
 export default function BookGroups({ groupBookHome }: BookGroupsProps) {
   return (
-    <div className="w-full mb-12">
+    <div className="w-full mb-8">
       {groupBookHome
         .filter((group: any) => group.type !== 'ranking' && group.type !== 'spotlight' && group.type !== 'new')
         .sort((a: any, b: any) => {
-          const priority: {[key: string]: number} = { 'exclusive': 2, 'recommend': 1, 'article': 100 };
+          const priority: { [key: string]: number } = { 'exclusive': 2, 'recommend': 1, 'article': 100 };
           const pA = priority[a.type] || 99;
           const pB = priority[b.type] || 99;
           return pA - pB;
@@ -22,10 +22,10 @@ export default function BookGroups({ groupBookHome }: BookGroupsProps) {
         .map((group: any, index: number) => {
           if (group.type === 'exclusive') {
             return (
-              <div key={index} className="-mb-2">
-                <ExclusiveSwiper 
-                  title={group.name_web || group.name} 
-                  items={group.list || []} 
+              <div key={index} className="-mb-8">
+                <ExclusiveSwiper
+                  title={group.name_web || group.name}
+                  items={group.list || []}
                   icon={group.img}
                   link={group.link || undefined}
                 />
@@ -34,10 +34,10 @@ export default function BookGroups({ groupBookHome }: BookGroupsProps) {
           }
           if (group.type === 'recommend') {
             return (
-              <div key={index} className="-mb-2">
-                <RecommendSwiper 
-                  title={group.name_web || group.name} 
-                  items={group.list || []} 
+              <div key={index} className="-mb-8">
+                <RecommendSwiper
+                  title={group.name_web || group.name}
+                  items={group.list || []}
                   icon={group.img}
                   link={group.link || undefined}
                 />
@@ -46,10 +46,10 @@ export default function BookGroups({ groupBookHome }: BookGroupsProps) {
           }
           if (group.type === 'article') {
             return (
-              <div key={index} className="-mb-2">
+              <div key={index} className="-mb-8">
                 <ArticleSwiper
-                  title={group.name_web || group.name} 
-                  items={group.list || []} 
+                  title={group.name_web || group.name}
+                  items={group.list || []}
                   icon={group.img}
                   link={group.link || undefined}
                 />
@@ -57,10 +57,10 @@ export default function BookGroups({ groupBookHome }: BookGroupsProps) {
             );
           }
           return (
-            <div key={index} className="-mb-2">
-              <BookSwiper 
-                title={group.name_web || group.name} 
-                books={group.list || []} 
+            <div key={index} className="-mb-8">
+              <BookSwiper
+                title={group.name_web || group.name}
+                books={group.list || []}
                 icon={group.img}
                 link={group.link || undefined}
               />

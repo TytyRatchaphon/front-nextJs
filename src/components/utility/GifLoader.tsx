@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import Image from 'next/image'
+import { useWebsiteStore } from '@/stores/websiteStore';
 
 interface GifLoaderProps {
   className?: string; // Allow overriding container styles
@@ -8,9 +9,18 @@ interface GifLoaderProps {
 }
 
 function GifLoader({ className = "h-screen", width = 300, height = 300 }: GifLoaderProps) {
+  const settings = useWebsiteStore((state) => state.settings);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const imageSrc = (mounted && settings?.loading_gif) ? settings.loading_gif : "/images/loading_gif.gif";
+
   return (
     <div className={`flex justify-center items-center ${className}`}>
-        <Image src="/images/ejb_gif.gif" alt="loader" width={width} height={height} unoptimized />
+      <Image src={imageSrc} alt="loader" width={width} height={height} unoptimized />
     </div>
   )
 }

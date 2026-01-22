@@ -11,6 +11,11 @@ interface CategoryHorizontalCardProps {
   book: CategoryBook;
 }
 
+const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
+  return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
+}
+
+
 const formatViews = (num: number | undefined | null): string => {
   if (!num) return "0";
   if (num >= 1_000_000) return (num / 1_000_000).toFixed(1) + "M";
@@ -20,8 +25,8 @@ const formatViews = (num: number | undefined | null): string => {
 
 const CategoryHorizontalCard: React.FC<CategoryHorizontalCardProps> = ({ book }) => {
   // Parse tags if string
-  const tags = typeof book.tag === 'string' 
-    ? (book.tag as string).split(',').filter(t => t.trim() !== '') 
+  const tags = typeof book.tag === 'string'
+    ? (book.tag as string).split(',').filter(t => t.trim() !== '')
     : (Array.isArray(book.tag) ? book.tag : []);
 
   return (
@@ -33,12 +38,13 @@ const CategoryHorizontalCard: React.FC<CategoryHorizontalCardProps> = ({ book })
           alt={book.name}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"
+          loader={imageLoader}
           unoptimized
         />
         {book.isNew && (
-             <div className="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-bl-md z-10">
-                NEW
-             </div>
+          <div className="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-bl-md z-10">
+            NEW
+          </div>
         )}
       </Link>
 
@@ -58,22 +64,22 @@ const CategoryHorizontalCard: React.FC<CategoryHorizontalCardProps> = ({ book })
           </div>
 
           <div className="w-full overflow-hidden">
-             <TagSwiper 
-              tags={tags} 
+            <TagSwiper
+              tags={tags}
               classImport="px-2 py-0.5 rounded-full border border-red-200 text-red-500 text-xs bg-red-50 text-nowrap whitespace-nowrap block"
-             />
+            />
           </div>
         </div>
 
         <div className="flex items-center gap-4 text-xs text-gray-400 mt-1 border-t pt-2 w-full">
-           <div className="flex items-center gap-1">
-             <Eye size={14} />
-             <span>{formatViews(book.view)}</span>
-           </div>
-           <div className="flex items-center gap-1">
-             <List size={14} />
-             <span>{(book.chapter || 0).toLocaleString()}</span>
-           </div>
+          <div className="flex items-center gap-1">
+            <Eye size={14} />
+            <span>{formatViews(book.view)}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <List size={14} />
+            <span>{(book.chapter || 0).toLocaleString()}</span>
+          </div>
         </div>
       </div>
     </div>

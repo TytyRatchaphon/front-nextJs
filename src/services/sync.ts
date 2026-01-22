@@ -7,7 +7,7 @@ export const syncAllNovelsToAi = async (novels: any[]) => {
   for (const novel of novels) {
     // 1. รวมข้อมูลที่ต้องการให้ AI วิเคราะห์
     const text = `ชื่อเรื่อง: ${novel.title} แท็ก: ${novel.tag} เรื่องย่อ: ${novel.des}`;
-    
+
     // 2. แปลงเป็น Vector (ตัวเลข 1536 มิติ)
     const embedding = await getEmbedding(text);
 
@@ -19,8 +19,9 @@ export const syncAllNovelsToAi = async (novels: any[]) => {
         title: novel.title,
         embedding: embedding
       });
-      
-    if (error) console.error(`Error syncing book ${novel.book_id}:`, error);
+
+    if (error) {
+      console.error('Error syncing novel to AI:', error);
+    }
   }
-  console.log("Sync complete!");
 };

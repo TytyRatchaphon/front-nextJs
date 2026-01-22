@@ -1,21 +1,24 @@
 import React from 'react'
 import EditChapter from '@/features/mybook/EditEpisode'
+import AuthGuard from '@/components/auth/AuthGuard'
 
 
 interface PageProps {
   params: Promise<{
-    epID: string; 
+    epID: string;
   }>
 }
 
 async function page({ params }: PageProps) {
   const { epID } = await params;
-  
+
   return (
-    <EditChapter 
-        epID={epID} 
-        groupID="" 
-    />
+    <AuthGuard>
+      <EditChapter
+        epID={epID}
+        groupID=""
+      />
+    </AuthGuard>
   )
 }
 

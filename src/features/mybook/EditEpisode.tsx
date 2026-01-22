@@ -4,13 +4,14 @@ import React, { useEffect, useState } from "react";
 import { Form, Input, Select, DatePicker, notification, Modal } from "antd";
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import axios from "axios"; 
-import Cookies from "js-cookie"; 
-import { useRouter } from "next/navigation"; 
+import axios from "axios";
+import Cookies from "js-cookie";
+import { useRouter } from "next/navigation";
 
 // Import TextEditor
 import TextEditorTiny from "@/components/editor/TextEditorTiny";
 import GifLoader from '@/components/utility/GifLoader';
+import { fetchGroupEpisodes } from "@/services/apiServices";
 
 dayjs.extend(customParseFormat);
 
@@ -48,10 +49,12 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
     const router = useRouter();
     const [api, contextHolder] = notification.useNotification();
     const [formEditChapter] = Form.useForm();
-    
+
     const [groupName, setGroupName] = useState<string>('');
     const [spinLoading, setSpinLoading] = useState<boolean>(false);
-    
+    const [nextEpId, setNextEpId] = useState<string | number | null>(null);
+    const [prevEpId, setPrevEpId] = useState<string | number | null>(null);
+
     // Modal Success
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
@@ -63,9 +66,9 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
     const getHeaders = () => {
         const token = Cookies.get('token') || localStorage.getItem('authToken');
         const cleanToken = token ? token.replace(/^['"]+|['"]+$/g, '') : '';
-        
-        const encodedApiKey = typeof window !== 'undefined' 
-            ? btoa(ACCESS_TOKEN) 
+
+        const encodedApiKey = typeof window !== 'undefined'
+            ? btoa(ACCESS_TOKEN)
             : Buffer.from(ACCESS_TOKEN).toString('base64');
 
         return {
@@ -73,7 +76,7 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
             'X-API-Key': encodedApiKey
         };
     };
-    
+
     // --- Fetch Existing Data (ดึงข้อมูลเดิมมาแสดง) ---
     useEffect(() => {
         const fetchData = async () => {
@@ -81,15 +84,15 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
                 setSpinLoading(true);
                 try {
                     // GET ข้อมูลเดิม
-                    const response = await axios.get(`${API_URL}/user/mybook/ep/${epID}`, { 
-                        headers: getHeaders() 
+                    const response = await axios.get(`${API_URL}/user/mybook/ep/${epID}`, {
+                        headers: getHeaders()
                     });
                     const resData = response.data;
 
                     if (resData.code === 200 && resData.data) {
                         const data = resData.data;
                         setGroupName(data.groupName || '');
-                        
+
                         // Set ข้อมูลเดิมลง Form
                         formEditChapter.setFieldsValue({
                             name: data.name,
@@ -103,9 +106,52 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
                             publish: data.publish, // 'publish', 'draft'
                             order_by: data.order_by
                         });
+
+                        // Fetch group episodes to find next episode
+                        // Fetch group episodes to find next episode
+                        if (data.group_id) {
+                            try {
+                                const groupResp: any = await fetchGroupEpisodes(String(data.group_id));
+                                let episodes = groupResp?.episodes ?? groupResp?.list ?? [];
+                                if (Array.isArray(episodes)) {
+                                    // Filter out deleted episodes
+                                    episodes = episodes.filter((e: any) => {
+                                        const s = (e.publish ?? e.status ?? '').toString().toLowerCase();
+                                        return s !== 'private' && s !== 'PRIVATE';
+                                    });
+
+                                    // Sort by order_by (ASC)
+                                    episodes = episodes.sort((a: any, b: any) => (Number(a.order_by) || 0) - (Number(b.order_by) || 0));
+
+                                    // Find current index
+                                    const currentIndex = episodes.findIndex((e: any) =>
+                                        String(e.ep_id ?? e.id ?? e.eid) === String(epID)
+                                    );
+
+                                    // Next Episode
+                                    if (currentIndex !== -1 && currentIndex + 1 < episodes.length) {
+                                        const nextEp = episodes[currentIndex + 1];
+                                        const nextId = nextEp.ep_id ?? nextEp.id ?? nextEp.eid;
+                                        setNextEpId(nextId);
+                                    } else {
+                                        setNextEpId(null);
+                                    }
+
+                                    // Previous Episode
+                                    if (currentIndex > 0) {
+                                        const prevEp = episodes[currentIndex - 1];
+                                        const prevId = prevEp.ep_id ?? prevEp.id ?? prevEp.eid;
+                                        setPrevEpId(prevId);
+                                    } else {
+                                        setPrevEpId(null);
+                                    }
+                                }
+                            } catch (err) {
+                                console.error("Failed to fetch group episodes for next button", err);
+                            }
+                        }
                     }
                 } catch (error) {
-                    console.error("Error fetching EP:", error);
                     api.error({ message: "ไม่สามารถดึงข้อมูลตอนได้" });
                 } finally {
                     setSpinLoading(false);
@@ -121,9 +167,10 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
         setSpinLoading(true);
         try {
             // จัดการวันที่และเวลา
+            // Correctly format publishDateTime using date and time from the DatePicker
             const dateStr = values.publishDate ? values.publishDate.format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD');
             const timeStr = values.publishTime || '00:00';
-            const publishDateTime = `${dateStr} ${timeStr}:00`; 
+            const publishDateTime = `${dateStr} ${timeStr}:00`;
 
             // เตรียม Payload ตาม Postman
             const payload = {
@@ -134,49 +181,47 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
                 order_by: Number(values.order_by || 1),
                 publish_datetime: publishDateTime,
                 // ถ้า API ต้องการ publish status ด้วย (ปกติควรส่ง)
-                publish: values.publish || 'publish', 
+                publish: values.publish || 'publish',
             };
 
-            console.log("Payload Sending:", payload);
 
             // ยิง PUT ไปที่ /user/mybook/ep/update
             const response = await axios.put(`${API_URL}/user/mybook/ep/update`, payload, {
-                 headers: getHeaders()
+                headers: getHeaders()
             });
-            
+
             const resData = response.data;
 
             if (resData.status === 'success' || resData.code === 200) {
                 setIsSuccessModalOpen(true);
             } else {
-                api.error({ 
-                    message: 'บันทึกการแก้ไขไม่สำเร็จ', 
-                    description: resData.message || 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์' 
-                }); 
+                api.error({
+                    message: 'บันทึกการแก้ไขไม่สำเร็จ',
+                    description: resData.message || 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์'
+                });
             }
 
         } catch (error: any) {
-            console.error("❌ Submit Error:", error);
             const serverMsg = error.response?.data?.message || error.message;
-            api.error({ 
-                message: 'เกิดข้อผิดพลาด', 
-                description: `ไม่สามารถบันทึกข้อมูลได้: ${serverMsg}` 
+            api.error({
+                message: 'เกิดข้อผิดพลาด',
+                description: `ไม่สามารถบันทึกข้อมูลได้: ${serverMsg}`
             });
         } finally {
             setSpinLoading(false);
         }
     }
-    
+
     const handleModalOk = () => {
         setIsSuccessModalOpen(false);
-        router.refresh(); 
+        router.refresh();
         router.back();
     };
 
     return (
         <div className="my-5">
             {contextHolder}
-            
+
             {/* Modal แจ้งเตือนสำเร็จ */}
             <Modal
                 title={<div className="text-center text-lg font-bold text-green-600">บันทึกสำเร็จ</div>}
@@ -186,7 +231,7 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
                 centered
                 okText="ตกลง"
                 cancelButtonProps={{ style: { display: 'none' } }}
-                okButtonProps={{ 
+                okButtonProps={{
                     danger: true,
                     type: 'primary',
                     className: 'min-w-[100px]'
@@ -209,12 +254,12 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
                         className='fontFam'
                         onFinish={onFinish}
                     >
-                        <div> 
+                        <div>
                             <p className="text-lg mb-3">
                                 {/* เปลี่ยนข้อความเป็น แก้ไข */}
                                 แก้ไขตอน {groupName ? `ในกลุ่ม "${groupName}"` : ''} (ID: {epID})
                             </p>
-                            
+
                             <div className='grid gap-4'>
                                 <div className='grid grid-cols-5 gap-4'>
                                     <div className='col-span-4'>
@@ -228,7 +273,7 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
                                             </Form.Item>
                                         </div>
                                     </div>
-                                    
+
                                     <div>
                                         <p className={bodyTextStyle}>ลำดับ</p>
                                         <Form.Item
@@ -247,26 +292,50 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
                                             <Select placeholder="เลือก" options={priceCoin} className="custom-select" />
                                         </Form.Item>
                                     </div>
-                                            
+
                                     <div className="col-span-2">
                                         {/* เว้นว่างตาม Layout เดิม */}
                                     </div>
-    
+
                                     <div className="custom-picker">
-                                        <p className={bodyTextStyle}>วันที่เผยแพร่</p> 
-                                        <Form.Item name='publishDate'>
-                                            <DatePicker showTime className='w-full' style={{width: 315}} inputReadOnly={false} allowClear={false} />
-                                        </Form.Item>
+                                        <p className={bodyTextStyle}>วันที่เผยแพร่</p>
+                                        <div className="flex gap-2">
+                                            <Form.Item name='publishDate' className="mb-0">
+                                                <DatePicker className='w-full' style={{ width: 180 }} inputReadOnly={false} allowClear={false} format="DD/MM/YYYY" />
+                                            </Form.Item>
+                                            <Form.Item
+                                                name='publishTime'
+                                                className="mb-0"
+                                                rules={[
+                                                    { required: true, message: 'ระบุเวลา' },
+                                                    { pattern: /^([01]\d|2[0-3]):([0-5]\d)$/, message: 'รูปแบบเวลาไม่ถูกต้อง (HH:mm)' }
+                                                ]}
+                                            >
+                                                <Input
+                                                    style={{ width: 100 }}
+                                                    placeholder="HH:mm"
+                                                    maxLength={5}
+                                                    onChange={(e) => {
+                                                        // Auto-format HH:mm
+                                                        let value = e.target.value.replace(/\D/g, '');
+                                                        if (value.length >= 3) {
+                                                            value = value.slice(0, 2) + ':' + value.slice(2, 4);
+                                                        }
+                                                        formEditChapter.setFieldValue('publishTime', value);
+                                                    }}
+                                                />
+                                            </Form.Item>
+                                        </div>
                                     </div>
                                 </div>
-                                
+
                                 <div>
                                     <p className={bodyTextStyle}>เนื้อเรื่อง</p>
                                     <div className="h-[400px]">
                                         <Form.Item name='detail'>
-                                            <TextEditorTiny 
+                                            <TextEditorTiny
                                                 height={400}
-                                                onChange={() => {}}
+                                                onChange={() => { }}
                                             />
                                         </Form.Item>
                                     </div>
@@ -277,17 +346,54 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
                             <Form.Item name='epID' hidden><Input /></Form.Item>
                             <Form.Item name='groupID' hidden><Input /></Form.Item>
                             <Form.Item name='bookID' hidden><Input /></Form.Item>
-                            
-                            <div className='grid grid-cols-1 p-0 mb-10 mt-8'> 
+
+                            <div className='grid grid-cols-1 p-0 mb-10 mt-8'>
                                 <div className='flex justify-center p-0'>
-                                    <button 
-                                        className='text-md text-white bg-primary py-1 px-8 h-auto hover:border-secondary hover:bg-secondary hover:text-primary focus:outline-none fontFam md:text-xl rounded' 
-                                        type="submit"
-                                    >
-                                        บันทึกการแก้ไข
-                                    </button>
+                                    <div className='flex justify-center items-center gap-4 py-4'>
+                                        {prevEpId && (
+                                            <button
+                                                type="button"
+                                                className='group flex items-center gap-2 text-base text-gray-600 bg-white border border-gray-200 py-2.5 px-6 rounded-full hover:border-rose-500 hover:text-rose-600 hover:shadow-md transition-all duration-300'
+                                                onClick={() => {
+                                                    router.push(`/w/echapter/${prevEpId}`);
+                                                }}
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:-translate-x-1 transition-transform">
+                                                    <path d="m15 18-6-6 6-6" />
+                                                </svg>
+                                                <span>ตอนก่อนหน้า</span>
+                                            </button>
+                                        )}
+
+                                        <button
+                                            className='flex items-center gap-2 text-lg !text-white bg-rose-600 py-2.5 px-8 rounded-full hover:bg-rose-700 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 font-medium'
+                                            type="submit"
+                                        >
+                                            <span>บันทึกการแก้ไข</span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                                                <polyline points="17 21 17 13 7 13 7 21" />
+                                                <polyline points="7 3 7 8 15 8" />
+                                            </svg>
+                                        </button>
+
+                                        {nextEpId && (
+                                            <button
+                                                type="button"
+                                                className='group flex items-center gap-2 text-base text-gray-600 bg-white border border-gray-200 py-2.5 px-6 rounded-full hover:border-rose-500 hover:text-rose-600 hover:shadow-md transition-all duration-300'
+                                                onClick={() => {
+                                                    router.push(`/w/echapter/${nextEpId}`);
+                                                }}
+                                            >
+                                                <span>ตอนถัดไป</span>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:translate-x-1 transition-transform">
+                                                    <path d="m9 18 6-6-6-6" />
+                                                </svg>
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
-                            </div> 
+                            </div>
                         </div>
                     </Form>
                 )}

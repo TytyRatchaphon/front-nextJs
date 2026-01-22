@@ -1,5 +1,6 @@
 import React from 'react'
 import EditMyBook from '@/features/user/EditMyBook'
+import AuthGuard from '@/components/auth/AuthGuard'
 
 interface Props {
   params: { bookID: string }
@@ -7,5 +8,9 @@ interface Props {
 
 export default async function Page({ params }: Props) {
   const { bookID } = await params
-  return <EditMyBook bookId={bookID} />
+  return (
+    <AuthGuard>
+      <EditMyBook bookId={bookID} />
+    </AuthGuard>
+  )
 }

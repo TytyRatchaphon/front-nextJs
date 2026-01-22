@@ -57,7 +57,6 @@ export default function AddGroupModal({
                 onClose()
                 onCreated && onCreated()
               } catch (e: any) {
-                console.error('createGroup failed', e)
                 msgApi.error(e?.response?.data?.message ?? 'ไม่สามารถสร้างเล่มได้')
               } finally {
                 setCreating(false)

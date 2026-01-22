@@ -466,8 +466,8 @@ export interface CampaignDetailData {
   start_date: string;
   end_date: string;
   img_banner: string;
-  img_banner2: string;
-  img_shelf: string;
+  img_banner2: string | null;
+  img_shelf: string | null;
   color_bg: string;
   img_card: string[];
   status: string;
@@ -493,6 +493,11 @@ export interface StorePack {
   start_date: string;
   end_date: string;
   order_by: number;
+  items_description?: string;
+  purchased_count?: number;
+  limit_count?: number;
+  can_purchase?: boolean;
+  remaining_count?: number;
 }
 
 export interface StoreCategory {
@@ -574,6 +579,13 @@ export interface CategoryPagination {
   prevPage: number | null;
 }
 
+export interface CategoryBanner {
+  id: number;
+  name: string;
+  color: string[];
+  img_bg: string;
+}
+
 export interface CategoryBookListResponse {
   code: number;
   status: string;
@@ -581,6 +593,7 @@ export interface CategoryBookListResponse {
   data: {
     pagination: CategoryPagination;
     books: CategoryBook[];
+    banner: CategoryBanner;
   };
 }
 
@@ -613,5 +626,90 @@ export interface LatestReadEpisodeResponse {
       };
     };
     isRead: boolean;
+  };
+}
+
+export interface CampaignDiscount {
+  cp_id: number;
+  img_banner: string | null;
+}
+
+export interface PackCampaignBook {
+  book_id: number;
+  name: string;
+  title: string;
+  img: string;
+  user_id: number;
+  view: number;
+  end: string;
+  status: string;
+  tag: string[];
+  date_at: string;
+  img_full: string;
+  bgimg: string | null;
+  writer_name: string;
+  chapter: number;
+  shelve_count: number;
+  isBestSeller: boolean;
+  isNew: boolean;
+  isNewEp: boolean;
+  discount: number;
+  discount_ep_count: number | null;
+  pack_campaign_item_id: number;
+  order_by: number;
+  has_pack: boolean;
+  pack_book_id: number | null;
+}
+
+export interface PackCampaignDetail {
+  id: number;
+  name: string;
+  detail: string;
+  banner_img: string;
+  start_date: string;
+  end_date: string;
+  books: PackCampaignBook[];
+}
+
+export interface BookPromotionOption {
+  type: 'NORMAL' | 'BUNDLE';
+  title_prefix: string;
+  book_id: number;
+  name: string;
+  title: string;
+  img: string;
+  user_id: number;
+  view: number;
+  end: string;
+  status: string;
+  tag: string;
+  date_at: string;
+  img_full: string;
+  bgimg: string | null;
+  writer_name: string;
+  chapter: number;
+  shelve_count: number;
+  isBestSeller: boolean;
+  isNew: boolean;
+  isNewEp: boolean;
+  discount: number;
+  discount_ep_count: number | null;
+  promotion_data: {
+    dfb_id: number;
+    currency: string;
+  };
+  global: {
+    global_discounted_price: number;
+    global_full_price: number;
+    global_paid_chapter_count: number;
+  };
+  user: {
+    user_price: number;
+    user_full_price: number;
+    user_saved_price: number;
+    user_chapter_received: number;
+    user_owned_count: number;
+    user_coin: number;
+    user_freecoin: number;
   };
 }

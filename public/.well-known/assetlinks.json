@@ -1,0 +1,15 @@
+
+[
+    {
+      "relation": [
+        "delegate_permission/common.handle_all_urls"
+      ],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.enjoybook.enjoyread",
+        "sha256_cert_fingerprints": [
+          "45:C9:00:CD:1B:4A:1A:83:BE:26:5D:AC:35:85:B4:1D:67:66:93:2A:39:64:DF:C6:A4:DF:82:DF:4E:B7:65:B4"
+        ]
+      }
+    }
+  ]

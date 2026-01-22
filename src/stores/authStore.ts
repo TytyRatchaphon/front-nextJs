@@ -1,16 +1,18 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import axios from 'axios'
+import { useFormStore } from '@/stores/formStore';
 
 // ✅ อัปเดต Interface ให้ครบถ้วนตามที่ใช้จริงใน Sprofile และ Token
 export interface UserData {
+  user_id?: number;
   fullname: string;
   email: string;
   role: string;
   writer_name?: string | null;
   profileImage?: string; // รูปโปรไฟล์ผู้ใช้ (บางทีใช้ img)
   img?: string | null;   // รูปโปรไฟล์ (บางทีใช้ img)
-  
+
   // Stats
   flower?: number;
   heart?: number;
@@ -18,6 +20,7 @@ export interface UserData {
   coupon?: number;
   coin?: number;
   freecoin?: number;
+  exp?: number;
 
   // Additional Profile Data (ที่ใช้ใน Sprofile)
   phone?: string | null;
@@ -29,18 +32,18 @@ export interface UserData {
   birthday?: string | null;
   cat1?: string | null;
   cat2?: string | null;
-  
+
   // Frame & Aka & Banner
   banner?: string | null;
   frame_id?: number | null;
   aka_id?: number | null;
-  
+
   frame?: {
     frame_id: number;
     name: string;
     img: string;
   } | null;
-  
+
   aka?: {
     aka_id: number;
     name: string;
@@ -48,18 +51,19 @@ export interface UserData {
   } | null;
 }
 
-interface AuthState {
+export interface AuthState {
   user: UserData | null;
   token: string | null;
   isLoggedIn: boolean;
   hasMounted: boolean;
-  
+
   // Actions
   login: (userData: UserData, token: string) => void;
   logout: () => void;
   setMounted: () => void;
   updateToken: (newToken: string) => void;
-  
+  updateUserBalance: (updates: Partial<UserData>) => void;
+
   // Computed
   isAuthenticated: boolean;
 }
@@ -71,25 +75,32 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isLoggedIn: false,
       hasMounted: false,
-      
+
       // Actions
       login: (userData: UserData, token: string) => {
-        console.log('🔐 authStore.login() called with:', { userData, token });
         set({ user: userData, token: token, isLoggedIn: true });
         localStorage.setItem('authToken', token);
         localStorage.setItem('userData', JSON.stringify(userData));
-        console.log('✅ Login successful');
       },
-      
+
       logout: () => {
         localStorage.removeItem('authToken');
         localStorage.removeItem('userData');
+        try { useFormStore.getState().resetUserProfile(); } catch (e) { } // Clear form data
         set({ user: null, token: null, isLoggedIn: false });
         window.location.reload();
       },
-      
+
+      updateUserBalance: (updates: Partial<UserData>) => {
+        const currentUser = get().user;
+        if (!currentUser) return;
+
+        const updatedUser = { ...currentUser, ...updates };
+        set({ user: updatedUser });
+        try { localStorage.setItem('userData', JSON.stringify(updatedUser)) } catch (e) { }
+      },
+
       updateToken: (newToken: string) => {
-        console.log('🔄 Updating token...');
         const normalize = (t?: string | null) => {
           if (!t) return undefined
           let s = String(t).trim()
@@ -109,46 +120,49 @@ export const useAuthStore = create<AuthState>()(
         try {
           const base64Url = cleaned.split('.')[1]
           const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-          const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+          const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
             return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
           }).join(''))
 
           const decodedToken = JSON.parse(jsonPayload)
-          console.log('Decoded new token payload:', decodedToken)
 
           const currentUser = get().user
           if (currentUser) {
-            // Helper to safely pick numbers
-            const pickNumber = (paths: any[], fallback = 0) => {
-              for (const p of paths) {
-                try {
-                  const parts = Array.isArray(p) ? p : [p]
-                  let v: any = decodedToken
-                  for (const key of parts) {
-                    if (v == null) { v = undefined; break }
-                    v = v[key]
-                  }
-                  if (v !== undefined && v !== null && !Number.isNaN(Number(v))) return Number(v)
-                } catch (e) { }
-              }
+            // Helper to safely parse numbers
+            const getNumber = (key: string, fallback: number) => {
+              const v = decodedToken[key]
+              if (v !== undefined && v !== null && !Number.isNaN(Number(v))) return Number(v)
               return fallback
             }
 
-            const flower = pickNumber([ 'flower', ['user','flower'], ['data','flower'], 'flowers', ['user','flowers'] ], Number(currentUser.flower ?? 0))
-            const heart = pickNumber([ 'heart', ['user','heart'], ['data','heart'], 'hearts', ['user','hearts'] ], Number(currentUser.heart ?? 0))
-            const stamp = pickNumber([ 'stamp', ['user','stamp'], ['data','stamp'] ], Number(currentUser.stamp ?? 0))
-            const coupon = pickNumber([ 'coupon', ['user','coupon'], ['data','coupon'], 'coupons', ['user','coupons'] ], Number(currentUser.coupon ?? 0))
-            const coin = pickNumber([ 'coin', ['user','coin'], ['data','coin'], 'coins', ['user','coins'] ], Number(currentUser.coin ?? 0))
-            const freecoin = pickNumber([ 'freecoin', ['user','freecoin'], ['data','freecoin'], 'free_coin', ['user','free_coin'] ], Number(currentUser.freecoin ?? 0))
+            const flower = getNumber('flower', Number(currentUser.flower ?? 0))
+            const heart = getNumber('heart', Number(currentUser.heart ?? 0))
+            const stamp = getNumber('stamp', Number(currentUser.stamp ?? 0))
+            const coupon = getNumber('coupon', Number(currentUser.coupon ?? 0))
+
+            // Check multiple keys for coin
+            const coinRaw = decodedToken.coin ?? decodedToken.coins ?? decodedToken.goldCoins ?? decodedToken.gold_coin;
+            const coin = (coinRaw !== undefined && coinRaw !== null && !Number.isNaN(Number(coinRaw)))
+              ? Number(coinRaw)
+              : Number(currentUser.coin ?? 0);
+
+            // Check multiple keys for freecoin
+            const freecoinRaw = decodedToken.freecoin ?? decodedToken.free_coin;
+            const freecoin = (freecoinRaw !== undefined && freecoinRaw !== null && !Number.isNaN(Number(freecoinRaw)))
+              ? Number(freecoinRaw)
+              : Number(currentUser.freecoin ?? 0);
+            const exp = getNumber('exp_point', Number(currentUser.exp ?? 0)) // Token key is exp_point based on JSON
+            const user_id = getNumber('user_id', Number(currentUser.user_id ?? 0))
 
             // ✅ เพิ่มการอัปเดต Field ใหม่ๆ จาก Token
             const updatedUser: UserData = {
               ...currentUser,
-              
+              user_id,
+
               writer_name: decodedToken.writer_name !== undefined ? decodedToken.writer_name : currentUser.writer_name,
               fullname: decodedToken.fullname !== undefined ? decodedToken.fullname : currentUser.fullname,
               email: decodedToken.email !== undefined ? decodedToken.email : currentUser.email,
-              
+
               // Map fields (ยอมรับ null)
               phone: decodedToken.phone !== undefined ? decodedToken.phone : currentUser.phone,
               address_main: decodedToken.address_main !== undefined ? decodedToken.address_main : currentUser.address_main,
@@ -159,30 +173,27 @@ export const useAuthStore = create<AuthState>()(
               birthday: decodedToken.birthday !== undefined ? decodedToken.birthday : currentUser.birthday,
               cat1: decodedToken.cat1 !== undefined ? decodedToken.cat1 : currentUser.cat1,
               cat2: decodedToken.cat2 !== undefined ? decodedToken.cat2 : currentUser.cat2,
-              
+
               // Images & Frames (ยอมรับ null)
               banner: decodedToken.banner !== undefined ? decodedToken.banner : currentUser.banner,
-              img: decodedToken.img !== undefined ? decodedToken.img : currentUser.img, 
-              
+              img: decodedToken.img !== undefined ? decodedToken.img : currentUser.img,
+
               // *** จุดสำคัญที่แก้ ***
               frame_id: decodedToken.frame_id !== undefined ? decodedToken.frame_id : currentUser.frame_id,
               aka_id: decodedToken.aka_id !== undefined ? decodedToken.aka_id : currentUser.aka_id,
               frame: decodedToken.frame !== undefined ? decodedToken.frame : currentUser.frame,
               aka: decodedToken.aka !== undefined ? decodedToken.aka : currentUser.aka,
 
-              flower, heart, stamp, coupon, coin, freecoin,
+              flower, heart, stamp, coupon, coin, freecoin, exp,
             }
-            
+
             set({ user: updatedUser })
             try { localStorage.setItem('userData', JSON.stringify(updatedUser)) } catch (e) { }
-            console.log('✅ User data updated from token:', updatedUser)
           }
         } catch (error) {
-          console.error('❌ Error decoding token:', error)
         }
-        console.log('✅ Token updated successfully')
       },
-      
+
       setMounted: () => {
         const state = get();
         if (!state.user && !state.token && !state.isLoggedIn) {
@@ -197,16 +208,15 @@ export const useAuthStore = create<AuthState>()(
         }
         set({ hasMounted: true });
       },
-      
+
       get isAuthenticated() {
         return get().isLoggedIn && get().user !== null && get().token !== null;
       }
     }),
-    { 
+    {
       name: 'auth-storage',
       skipHydration: false,
       onRehydrateStorage: () => (state) => {
-        console.log('🔄 Hydration complete');
       }
     }
   )

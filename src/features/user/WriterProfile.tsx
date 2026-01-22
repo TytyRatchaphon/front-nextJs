@@ -2,51 +2,60 @@
 
 import React, { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
+import { Image as AntdImage } from "antd";
 import { Pagination, Select, Tabs, Empty, Button, message, Modal } from "antd";
 import { fetchWriterBooks, fetchWriterProfile, followWriter, WriterBook, WriterProfileResponse } from "@/services/apiServices";
 import CardBook from "@/components/novelCard/CardBook";
 import { useSearchParams } from "next/navigation";
 import { FacebookShareButton, TwitterShareButton, LineShareButton } from "react-share";
+import { useUIStore } from "@/stores/uiStore";
 import GifLoader from '@/components/utility/GifLoader';
 
 
 const TABS = [
-    { key: "new", label: "นิยายทั้งหมด" },
+    { key: "all", label: "นิยายทั้งหมด" },
+    { key: "new", label: "นิยายมาใหม่" },
     { key: "end", label: "จบแล้ว" },
 ];
+
+const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
+    if (src.startsWith('http') || src.startsWith('data:') || src.startsWith('/')) return src;
+    return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
+}
 
 function WriterProfileContent() {
     const searchParams = useSearchParams();
     // Default writerId from prompt JSON if not in URL
-    const writerId = searchParams.get("id") || "16113"; 
-    
+    const writerId = searchParams.get("id") || "17966";
+
     const [books, setBooks] = useState<WriterBook[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState("new");
+    const [activeTab, setActiveTab] = useState("all");
     const [currentPage, setCurrentPage] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
     const [pageSize, setPageSize] = useState(24);
     const [sortBy, setSortBy] = useState("view");
-    
+
     // Follow State
     const [isFollowing, setIsFollowing] = useState(false);
     const [followLoading, setFollowLoading] = useState(false);
-    
+
     // Antd Message Hook
     const [messageApi, contextHolder] = message.useMessage();
     const [shareModalOpen, setShareModalOpen] = useState(false);
-    
+    const openLoginModal = useUIStore((s) => s.openLoginModal);
+
     // Profile State
     const [profile, setProfile] = useState<WriterProfileResponse['data'] | null>(null);
 
     // Fetch Profile
     useEffect(() => {
         const loadProfile = async () => {
-             const data = await fetchWriterProfile(writerId);
-             if (data) {
-                 setProfile(data);
-                 setIsFollowing(data.isFollowing);
-             }
+            const data = await fetchWriterProfile(writerId);
+            if (data) {
+                setProfile(data);
+                setIsFollowing(data.isFollowing);
+            }
         };
         if (writerId) loadProfile();
     }, [writerId]);
@@ -74,7 +83,6 @@ function WriterProfileContent() {
                 setTotalItems(0);
             }
         } catch (error) {
-            console.error("Failed to fetch writer books", error);
         } finally {
             setLoading(false);
         }
@@ -93,36 +101,35 @@ function WriterProfileContent() {
     const handleFollow = async () => {
         const token = localStorage.getItem('authToken');
         if (!token) {
-            messageApi.warning("กรุณาเข้าสู่ระบบก่อนติดตาม");
+            openLoginModal();
             return;
         }
-        
+
         setFollowLoading(true);
         try {
             const action = isFollowing ? 'unfollow' : 'follow';
             await followWriter(writerId, action);
-            
+
             setIsFollowing(!isFollowing);
-            
+
             // Show Feedback Message
             if (action === 'follow') {
                 messageApi.success("ติดตามนักเขียนเรียบร้อยแล้ว");
             } else {
                 messageApi.success("ยกเลิกติดตามนักเขียนเรียบร้อยแล้ว");
             }
-            
+
             // Optionally update the follower count locally for immediate feedback
             if (profile) {
                 setProfile({
                     ...profile,
-                    follower_count: isFollowing 
-                        ? Math.max(0, profile.follower_count - 1) 
+                    follower_count: isFollowing
+                        ? Math.max(0, profile.follower_count - 1)
                         : profile.follower_count + 1
                 });
             }
 
         } catch (error) {
-            console.error("Follow action failed", error);
             messageApi.error("เกิดข้อผิดพลาด กรุณาลองใหม่");
         } finally {
             setFollowLoading(false);
@@ -131,73 +138,87 @@ function WriterProfileContent() {
 
     return (
         <div className="min-h-screen bg-white font-primary pb-10">
-             {contextHolder}
-             {/* Banner Section */}
+            {contextHolder}
+            {/* Banner Section */}
             <div className="w-full h-[200px] md:h-[280px] relative overflow-hidden bg-gray-100">
-                 {profile?.writer.banner ? (
-                    <Image 
-                        src={profile.writer.banner} 
-                        alt="Banner" 
-                        fill 
-                        className="object-cover"
-                        priority
-                        unoptimized
+                {profile?.writer.banner ? (
+                    <AntdImage
+                        src={imageLoader({
+                            src: profile.writer.banner.startsWith('http') || profile.writer.banner.startsWith('data:') || profile.writer.banner.startsWith('/')
+                                ? profile.writer.banner
+                                : `https://img.enjoybook.co/${profile.writer.banner}`,
+                            width: 1000
+                        })}
+                        alt="Banner"
+                        width="100%"
+                        height="100%"
+                        style={{ objectFit: "cover" }}
+                        preview={{}}
                     />
-                 ) : (
+                ) : (
                     <div className="w-full h-full bg-gradient-to-r from-red-600 to-rose-500" />
-                 )}
-                 <div className="absolute inset-0 bg-black/10" /> {/* Dim overlay */}
+                )}
+                <div className="absolute inset-0 bg-black/10" /> {/* Dim overlay */}
             </div>
 
             {/* Profile Bar */}
             <div className="container mx-auto px-4 relative z-10 -mt-16 mb-8 md:mb-12">
-                <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl p-4 md:p-6 flex flex-col md:flex-row items-center md:items-end gap-4 md:gap-6 border border-gray-100/50">
+                <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl p-4 md:p-6 flex flex-col md:flex-row items-center md:items-center gap-4 md:gap-6 border border-gray-100/50">
                     {/* Avatar */}
                     <div className="relative -mt-16 md:-mt-20 shrink-0">
-                         <div className="w-28 h-28 md:w-40 md:h-40 rounded-full border-[4px] md:border-[6px] border-white shadow-lg overflow-hidden bg-gray-50 relative group">
-                            <Image 
-                                src={profile?.writer.img || "/images/cat_avatar.png"} 
-                                alt="Profile" 
-                                fill 
-                                className="object-cover transition-transform duration-500 group-hover:scale-110" 
-                                unoptimized
+                        <div className="w-28 h-28 md:w-40 md:h-40 rounded-full border-[4px] md:border-[6px] border-white shadow-lg overflow-hidden bg-gray-50 relative group">
+                            <AntdImage
+                                src={imageLoader({
+                                    src: profile?.writer.img
+                                        ? (profile.writer.img.startsWith('http') || profile.writer.img.startsWith('data:') || profile.writer.img.startsWith('/')
+                                            ? profile.writer.img
+                                            : `https://img.enjoybook.co/${profile.writer.img}`)
+                                        : "/images/default-avatar.png",
+                                    width: 300
+                                })}
+                                alt="Profile"
+                                width="100%"
+                                height="100%"
+                                className="object-cover transition-transform duration-500"
+                                style={{ objectFit: "cover" }}
+                                preview={{}}
+                                fallback="/images/default-avatar.png"
                             />
-                         </div>
+                        </div>
                     </div>
-                    
+
                     {/* Info */}
                     <div className="flex-1 text-center md:text-left w-full md:w-auto">
                         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 truncate px-2 md:px-0">{profile?.writer.writer_name || "กำลังโหลด..."}</h1>
                         <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 md:gap-4 text-gray-600 text-sm font-medium">
                             <span className="flex items-center gap-1.5 bg-gray-100 px-3 py-1 rounded-full transition-colors hover:bg-gray-200 cursor-default">
                                 <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                                {profile?.follower_count || 0} ผู้ติดตาม
+                                {(profile?.follower_count)?.toLocaleString() || 0} ผู้ติดตาม
                             </span>
                             <span className="flex items-center gap-1.5 bg-gray-100 px-3 py-1 rounded-full transition-colors hover:bg-gray-200 cursor-default">
                                 <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-                                {profile?.book_count || 0} เรื่อง
+                                {(profile?.book_count)?.toLocaleString() || 0} เรื่อง
                             </span>
                         </div>
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-3 pb-2 w-full md:w-auto justify-center md:justify-start">
-                        <Button 
+                    <div className="flex gap-3 w-full md:w-auto justify-center md:justify-start">
+                        <Button
                             loading={followLoading}
                             onClick={handleFollow}
-                            className={`rounded-full px-6 h-10 font-medium transition-all flex items-center gap-2 shadow-sm ${
-                                isFollowing 
-                                ? "bg-white border border-gray-300 text-gray-800 hover:!border-red-600 hover:!text-red-600" 
+                            className={`rounded-full px-8 h-12 text-base font-medium transition-all flex items-center gap-2 shadow-sm ${isFollowing
+                                ? "bg-white border border-gray-300 text-gray-800 hover:!border-red-600 hover:!text-red-600"
                                 : "bg-white border border-gray-300 text-gray-800 hover:!border-red-600 hover:!text-red-600"
-                            }`}
+                                }`}
                         >
                             {isFollowing ? (
-                                <>  
+                                <>
                                     <div className="flex items-center gap-2">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
                                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                         </svg>
-                                        <span className="text-sm">กำลังติดตาม</span>
+                                        <span className="text-base">กำลังติดตาม</span>
                                     </div>
                                 </>
                             ) : (
@@ -206,11 +227,11 @@ function WriterProfileContent() {
                                 </>
                             )}
                         </Button>
-                         <Button 
+                        <Button
                             onClick={() => setShareModalOpen(true)}
-                            className="rounded-full w-10 h-10 flex items-center justify-center border-gray-200 text-gray-500 hover:!text-red-500 hover:!border-red-500 shadow-sm bg-white transition-colors"
-                         >
-                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                            className="rounded-full w-12 h-12 flex items-center justify-center border-gray-200 text-gray-500 hover:!text-red-500 hover:!border-red-500 shadow-sm bg-white transition-colors"
+                        >
+                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
                         </Button>
                     </div>
                 </div>
@@ -218,21 +239,20 @@ function WriterProfileContent() {
 
             {/* Main Content */}
             <div className="container mx-auto px-4 max-w-7xl">
-                
+
                 {/* Tabs & Filter Bar */}
                 <div className="flex flex-col md:flex-row justify-between items-center border-b border-gray-100 mb-6 gap-4">
-                    
+
                     {/* Custom Tabs */}
                     <div className="flex overflow-x-auto w-full md:w-auto pb-2 md:pb-0 gap-6 no-scrollbar">
                         {TABS.map((tab) => (
                             <button
                                 key={tab.key}
                                 onClick={() => handleTabChange(tab.key)}
-                                className={`text-sm font-medium whitespace-nowrap pb-3 border-b-2 transition-colors ${
-                                    activeTab === tab.key 
-                                    ? "border-red-600 text-red-600" 
+                                className={`text-sm font-medium whitespace-nowrap pb-3 border-b-2 transition-colors ${activeTab === tab.key
+                                    ? "border-red-600 text-red-600"
                                     : "border-transparent text-gray-500 hover:text-gray-800"
-                                }`}
+                                    }`}
                             >
                                 <span className={activeTab === tab.key ? "" : "opacity-80"}>
                                     {tab.label}
@@ -303,11 +323,11 @@ function WriterProfileContent() {
             >
                 <div className="flex flex-col items-center p-4">
                     <h3 className="text-lg font-bold mb-6 text-gray-800">แชร์โปรไฟล์นักเขียน</h3>
-                    
+
                     {/* Social Icons */}
                     <div className="flex gap-4 mb-6">
                         {/* Facebook */}
-                        <FacebookShareButton 
+                        <FacebookShareButton
                             url={typeof window !== 'undefined' ? window.location.href : ''}
                             className="hover:opacity-80 transition-opacity"
                         >
@@ -315,7 +335,7 @@ function WriterProfileContent() {
                         </FacebookShareButton>
 
                         {/* Twitter */}
-                        <TwitterShareButton 
+                        <TwitterShareButton
                             url={typeof window !== 'undefined' ? window.location.href : ''}
                             title={`ติดตามนักเขียน ${profile?.writer.writer_name || ''} ที่ EnjoyBook`}
                             className="hover:opacity-80 transition-opacity"
@@ -324,7 +344,7 @@ function WriterProfileContent() {
                         </TwitterShareButton>
 
                         {/* Line */}
-                        <LineShareButton 
+                        <LineShareButton
                             url={typeof window !== 'undefined' ? window.location.href : ''}
                             title={`ติดตามนักเขียน ${profile?.writer.writer_name || ''} ที่ EnjoyBook`}
                             className="hover:opacity-80 transition-opacity"
@@ -360,9 +380,9 @@ function WriterProfileContent() {
 }
 
 export default function WriterProfile() {
-  return (
-    <Suspense fallback={<GifLoader />}>
-        <WriterProfileContent />
-    </Suspense>
-  );
+    return (
+        <Suspense fallback={<GifLoader />}>
+            <WriterProfileContent />
+        </Suspense>
+    );
 }

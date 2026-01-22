@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useState } from 'react' // เพิ่ม useEffect, useState
-import NextImage from 'next/image'
+import Image from 'next/image'
 import { Image as AntdImage } from 'antd'
 import { useAuthStore } from '@/stores/authStore'
 import { useWebsiteStore } from '@/stores/websiteStore'
@@ -38,15 +38,15 @@ export default function UserProfileEvent({
 }: Props) {
   const { user, token, updateToken } = useAuthStore();
   const [isMounted, setIsMounted] = useState(false);
-  const {settings} = useWebsiteStore(); 
+  const { settings } = useWebsiteStore();
 
   // 2. เพิ่ม useEffect เพื่อ Force Update ข้อมูลจาก Token ตอนโหลดหน้า
   useEffect(() => {
     setIsMounted(true);
-    
+
     // พยายามดึง Token จาก Store หรือ LocalStorage
     const currentToken = token || localStorage.getItem('authToken');
-    
+
     if (currentToken) {
       // เรียก updateToken เพื่อให้มัน Decode ข้อมูลล่าสุดจาก Token ลง Store ทันที
       updateToken(currentToken);
@@ -60,7 +60,21 @@ export default function UserProfileEvent({
 
   const finalName = user?.fullname ?? name ?? 'Enjor Book (official)';
   const finalEmail = user?.email ?? email ?? 'enjoy@gmail.com';
-  const finalAvatar = user?.profileImage ?? avatar ?? '/images/ejb.png';
+
+  const getAvatarUrl = () => {
+    let src = user?.img ?? user?.profileImage ?? avatar ?? '/images/default-avatar.png';
+    if (!src || src === 'null') return '/images/default-avatar.png';
+
+    // ถ้าเป็นรูป default หรือ full url หรือ base64 ให้ใช้เลย
+    if (src.startsWith('http') || src.startsWith('data:') || src.startsWith('/')) {
+      return src.replace('http:', 'https:');
+    }
+
+    // ถ้าเป็นชื่อไฟล์จาก backend ให้ต่อ path
+    return `${process.env.NEXT_PUBLIC_IMAGE_URL}${src}`.replace('http:', 'https:');
+  };
+
+  const finalAvatar = getAvatarUrl();
 
   const finalStamps = user?.stamp ?? stamps ?? 0;
   const finalFlowers = user?.flower ?? flowers ?? 0;
@@ -75,12 +89,14 @@ export default function UserProfileEvent({
       {/* ... (ส่วนแสดงผลเหมือนเดิมทุกอย่าง) ... */}
       <div className="flex-shrink-0">
         <div className="rounded-full bg-gray-100 overflow-hidden flex items-center justify-center" style={{ width: 120, height: 120 }}>
-          <AntdImage
+          <Image
             src={finalAvatar}
             alt="avatar"
             width={120}
-            preview={{ src: finalAvatar }}
-            style={{ objectFit: 'cover', width: 120, height: 120, borderRadius: '50%' }}
+            height={120}
+            loader={imageLoader}
+            unoptimized
+            className="w-[120px] h-[120px] rounded-full object-cover"
           />
         </div>
       </div>
@@ -95,44 +111,44 @@ export default function UserProfileEvent({
           <div className="grid grid-cols-3 gap-y-6 gap-x-4 md:flex md:items-center md:gap-8 lg:gap-16 place-items-center w-full md:w-auto">
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-center justify-center">
-                <NextImage src={settings?.coin || '/images/coin.png'} alt="coin" width={40} height={40}  sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} />
+                <Image src={settings?.coin || '/images/coin.png'} alt="coin" width={40} height={40} sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} loader={imageLoader} unoptimized />
               </div>
               <div className="text-black  text-sm md:text-base mt-1">{finalCoins}</div>
             </div>
 
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-center justify-center">
-                <NextImage src={settings?.freecoin || '/images/freecoin.png'} alt="freecoin" width={40} height={40}  sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} />
+                <Image src={settings?.freecoin || '/images/freecoin.png'} alt="freecoin" width={40} height={40} sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} loader={imageLoader} unoptimized />
               </div>
               <div className="text-black  text-sm md:text-base mt-1">{finalFreecoins}</div>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-center justify-center">
-                <NextImage src={settings?.stamp || '/images/userstamp.png'} alt="stamp" width={40} height={40}  sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} />
+                <Image src={settings?.stamp || '/images/userstamp.png'} alt="stamp" width={40} height={40} sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} loader={imageLoader} unoptimized />
               </div>
               <div className="text-black  text-sm md:text-base mt-1">{finalStamps}</div>
             </div>
 
-            <div className="flex flex-col items-center gap-1">
+            {/* <div className="flex flex-col items-center gap-1">
               <div className="flex items-center justify-center">
-                <NextImage src={settings?.flower || '/images/flower.png'} alt="flower" width={40} height={40}  sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} />
+                <Image src={settings?.flower || '/images/flower.png'} alt="flower" width={40} height={40} sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} loader={imageLoader} unoptimized />
               </div>
               <div className="text-black  text-sm md:text-base mt-1">{finalFlowers}</div>
             </div>
 
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-center justify-center">
-                <NextImage src={settings?.heart || '/images/heart40.png'} alt="heart" width={40} height={40}  sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} />
+                <Image src={settings?.heart || '/images/heart40.png'} alt="heart" width={40} height={40} sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} loader={imageLoader} unoptimized />
               </div>
               <div className="text-black  text-sm md:text-base mt-1">{finalHearts}</div>
             </div>
 
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-center justify-center">
-                <NextImage src={settings?.coupon || '/images/coupon.png'} alt="coupon" width={40} height={40}  sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} />
+                <Image src={settings?.coupon || '/images/coupon.png'} alt="coupon" width={40} height={40} sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} loader={imageLoader} unoptimized />
               </div>
               <div className="text-black  text-sm md:text-base mt-1">{finalCoupons}</div>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

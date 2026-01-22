@@ -18,13 +18,11 @@ const LoginLine = () => {
       await loginWithLine();
 
       // if no error was thrown, consider login successful
-      message.success('เข้าสู่ระบบผ่าน LINE สำเร็จ!');
       closeLoginModal();
       setTimeout(() => {
-        router.push('/sprofile');
+        router.push('/');
       }, 500);
     } catch (error) {
-      console.error('LINE Login Error:', error);
       message.error('เกิดข้อผิดพลาดในการเข้าสู่ระบบผ่าน LINE');
     }
   };
@@ -32,9 +30,8 @@ const LoginLine = () => {
   return (
     <div
       onClick={!loading ? handleLineLogin : undefined}
-      className={`border border-gray-200 rounded-md py-2 flex justify-center items-center cursor-pointer hover:bg-green-50 transition-colors ${
-        loading ? 'opacity-50 cursor-wait' : ''
-      }`}
+      className={`border border-gray-200 rounded-md py-2 flex justify-center items-center cursor-pointer hover:bg-green-50 transition-colors ${loading ? 'opacity-50 cursor-wait' : ''
+        }`}
     >
       <Image
         className="inline-block h-[23px] w-[23px] rounded-full"

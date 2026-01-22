@@ -42,7 +42,6 @@ export default function SocketProvider({
         token = token.replace(/^Bearer\s+/i, '').trim();
     }
 
-    console.log('[Socket] Initializing connection to:', socketUrl);
 
     const socketInstance = io(socketUrl, {
       transports: ['polling', 'websocket'], 
@@ -57,12 +56,10 @@ export default function SocketProvider({
     });
 
     socketInstance.on('connect', () => {
-      console.log('✅ Socket connected:', socketInstance.id);
       setIsConnected(true);
     });
 
     socketInstance.on('disconnect', (reason) => {
-      console.log('❌ Socket disconnected:', reason);
       setIsConnected(false);
       
       if (reason === "io server disconnect") {
@@ -72,13 +69,11 @@ export default function SocketProvider({
 
     socketInstance.on('connect_error', (err) => {
         // Suppress bulky error logs, just show simple message
-        console.warn('⚠️ Socket Connection Error:', err.message);
     });
 
     setSocket(socketInstance);
 
     return () => {
-      console.log('Cleaning up socket instance...');
       socketInstance.disconnect();
     };
   }, []); // Run once on mount
@@ -95,7 +90,6 @@ export default function SocketProvider({
           }
 
           if (token) {
-              console.log('[Socket] Updating auth token...');
               socket.auth = { token };
               if (!socket.connected) {
                   socket.connect();
@@ -110,9 +104,7 @@ export default function SocketProvider({
 
       const handleVisibilityChange = () => {
           if (document.visibilityState === 'visible') {
-               console.log('[Socket] Tab visible, checking connection...');
                if (!socket.connected) {
-                   console.log('[Socket] Reconnecting...');
                    socket.connect();
                }
           }
@@ -120,7 +112,6 @@ export default function SocketProvider({
 
       const handleWindowFocus = () => {
           if (!socket.connected) {
-               console.log('[Socket] Window focused, reconnecting...');
                socket.connect();
           }
       };
@@ -131,11 +122,9 @@ export default function SocketProvider({
       // Periodic Heartbeat to handle idle disconnects
       const heartbeatInterval = setInterval(() => {
           if (!socket.connected) {
-               console.log(`💓 Heartbeat: Socket disconnected (${new Date().toLocaleTimeString()}). Attempting reconnect...`);
                socket.connect();
           } else {
                // Optional: Log healthy heartbeat for debugging (user requested logs)
-               console.log(`💓 Heartbeat: Alive (${new Date().toLocaleTimeString()})`);
           }
       }, 15000); // Check every 15 seconds
 

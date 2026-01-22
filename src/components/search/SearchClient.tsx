@@ -40,7 +40,6 @@ const searchBooks = async (
   queryParams.append("limit", limit.toString());
 
   const url = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.220.214:3331'}/book/search?${queryParams.toString()}`;
-  console.log("🔍 Search URL:", url);
 
   const response = await fetch(url);
 
@@ -49,7 +48,6 @@ const searchBooks = async (
   }
 
   const data = await response.json();
-  console.log("📦 Search response:", data);
 
   if (data.code === 200 && data.data) {
     return data.data;
@@ -61,7 +59,7 @@ const searchBooks = async (
 export default function SearchClient() {
   const searchParamsUrl = useSearchParams();
   const [currentPage, setCurrentPage] = useState(Number(searchParamsUrl?.get('page')) || 1);
-  
+
   const [searchParams, setSearchParams] = useState<SearchParams>({
     query: searchParamsUrl?.get('q') || "",
     categories: searchParamsUrl?.get('categories')?.split(',').map(Number) || [],
@@ -81,7 +79,6 @@ export default function SearchClient() {
       if (JSON.stringify(prev) === JSON.stringify(params)) {
         return prev;
       }
-      console.log("🔍 Search triggered with params:", params);
       setCurrentPage(1);
       return params;
     });
@@ -90,20 +87,19 @@ export default function SearchClient() {
   // Update state when URL changes (e.g. navigation from navbar)
   React.useEffect(() => {
     const paramsFromUrl: SearchParams = {
-        query: searchParamsUrl?.get('q') || "",
-        categories: searchParamsUrl?.get('categories')?.split(',').map(Number) || [],
-        types: searchParamsUrl?.get('types')?.split(',') || [],
-        status: searchParamsUrl?.get('status')?.split(',') || [],
-        end: searchParamsUrl?.get('end') || "all",
-        sortBy: searchParamsUrl?.get('sortBy') || "date_at",
-        order: searchParamsUrl?.get('order') || "DESC",
+      query: searchParamsUrl?.get('q') || "",
+      categories: searchParamsUrl?.get('categories')?.split(',').map(Number) || [],
+      types: searchParamsUrl?.get('types')?.split(',') || [],
+      status: searchParamsUrl?.get('status')?.split(',') || [],
+      end: searchParamsUrl?.get('end') || "all",
+      sortBy: searchParamsUrl?.get('sortBy') || "date_at",
+      order: searchParamsUrl?.get('order') || "DESC",
     };
 
     setSearchParams((prev) => {
       if (JSON.stringify(prev) === JSON.stringify(paramsFromUrl)) {
         return prev;
       }
-      console.log("[DEBUG] Updating state from URL:", paramsFromUrl);
       // If categories from URL changed significantly, we might want to reset page? 
       // But for now just sync state.
       return paramsFromUrl;
@@ -122,15 +118,11 @@ export default function SearchClient() {
   });
 
   const novels = useMemo(() => {
-    console.log("📦 API Response received:", apiResponse);
 
     if (!apiResponse?.items || !Array.isArray(apiResponse.items)) {
-      console.warn("⚠️ apiResponse.items is not an array or is empty");
       return [];
     }
 
-    console.log("📚 Total books on this page:", apiResponse.items.length);
-    console.log("📚 First book sample:", apiResponse.items[0]);
 
     // Normalize each item into the canonical shape CardBook expects
     const normalized = apiResponse.items.map((b: any) => {
@@ -138,8 +130,8 @@ export default function SearchClient() {
       const imageUrl = typeof imageRaw === 'string' && imageRaw.startsWith('http')
         ? imageRaw
         : imageRaw
-        ? imageRaw
-        : "https://img.enjoybook.co/img/avatar/avatar-default.png";
+          ? imageRaw
+          : "https://img.enjoybook.co/img/avatar/avatar-default.png";
 
       const book_id = b.book_id ?? (b.bookID ? Number(b.bookID) : 0);
       const bookID = b.bookID?.toString() || (book_id ? String(book_id) : "");
@@ -178,10 +170,7 @@ export default function SearchClient() {
         book_id: it.book_id ?? it.bookID,
         shelveCount_raw: it.shelveCount ?? it.shelfCount ?? it.shelve_count ?? it.shelf_count ?? null,
       }));
-      console.log('🔎 raw shelve info (from API items):', rawShelveInfo);
-      console.log('🔎 normalized sample (first book):', normalized[0]);
     } catch (e) {
-      console.warn('Could not print shelve debug info', e);
     }
 
     return normalized;
@@ -198,8 +187,8 @@ export default function SearchClient() {
     <>
       {/* Sidebar */}
       <div className="lg:col-span-3 xl:col-span-3">
-        <SearchBar 
-          onSearch={handleSearch} 
+        <SearchBar
+          onSearch={handleSearch}
           initialQuery={searchParams.query}
           initialFilters={{
             categories: searchParams.categories,
@@ -214,7 +203,7 @@ export default function SearchClient() {
       <div className="lg:col-span-9 xl:col-span-9" ref={topRef}>
         {/* Loading State */}
         {isLoading && (
-            <GifLoader className="h-64" width={150} height={150} />
+          <GifLoader className="h-64" width={150} height={150} />
         )}
 
         {/* Error State */}
@@ -286,7 +275,7 @@ export default function SearchClient() {
                     pageSize={pageSize}
                     showSizeChanger={false}
                     onChange={handlePageChange}
-                    className="ant-pagination-hover-red"
+                    className="ant-pagination-hover-red gap-2"
                     size="small"
                     responsive
                   />

@@ -40,7 +40,7 @@ const fetchCampaigns = async (): Promise<CampaignData[]> => {
   if (result.code === 200 && result.data) {
     return result.data;
   }
-  
+
   throw new Error(result.message || 'Failed to load data');
 };
 
@@ -101,7 +101,7 @@ function Campaign() {
 
       <div className="max-w-[1200px] mx-auto px-4 lg:px-6 mt-8">
         {isError && (
-           <Alert
+          <Alert
             message="เกิดข้อผิดพลาด"
             description={error instanceof Error ? error.message : "ไม่สามารถโหลดข้อมูลแคมเปญได้"}
             type="error"
@@ -117,7 +117,7 @@ function Campaign() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {campaigns?.map((campaign) => (
-              <Link 
+              <Link
                 key={campaign.cp_id}
                 href={`/campaign/${campaign.cp_id}`}
                 className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-100 flex flex-col group"
@@ -125,49 +125,49 @@ function Campaign() {
               >
                 {/* Banner Image */}
                 <div className="relative w-full aspect-[2/1] bg-gray-100">
-                   <Image
-                     src={campaign.img_banner}
-                     alt={campaign.name}
-                     fill
-                     className="object-cover"
-                     unoptimized
-                   />
+                  <Image
+                    src={campaign.img_banner}
+                    alt={campaign.name}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
                 </div>
 
                 {/* Content */}
                 <div className="p-5 flex flex-col flex-1">
-                   <div className="flex justify-between items-start mb-3 gap-4">
-                      {/* Name - Line clamped */}
-                      <h2 className="text-lg font-bold text-gray-900 line-clamp-2 leading-snug flex-1 group-hover:text-red-600 transition-colors">
-                        {campaign.name}
-                      </h2>
-                      
-                      {/* Countdown */}
-                      {campaign.status === 'active' && (
-                         <CountdownTimer targetDate={campaign.end_date} />
-                      )}
-                   </div>
+                  <div className="flex justify-between items-start mb-3 gap-4">
+                    {/* Name - Line clamped */}
+                    <h2 className="text-lg font-bold text-gray-900 line-clamp-2 leading-snug flex-1 group-hover:text-red-600 transition-colors">
+                      {campaign.name}
+                    </h2>
 
-                   {/* Detail */}
-                   <p className="text-gray-500 text-sm line-clamp-2 mb-4 flex-1">
-                     {campaign.detail}
-                   </p>
-                   
-                   {/* Date Footer */}
-                   <div className="mt-auto pt-4 border-t border-gray-50 text-xs text-gray-400">
-                      เวลาโปรโมชั่น: {dayjs(campaign.start_date).format('DD/MM/YYYY HH:mm')} - {dayjs(campaign.end_date).format('DD/MM/YYYY HH:mm')}
-                   </div>
+                    {/* Countdown */}
+                    {campaign.status === 'active' && (
+                      <CountdownTimer targetDate={campaign.end_date} />
+                    )}
+                  </div>
+
+                  {/* Detail */}
+                  <p className="text-gray-500 text-sm line-clamp-2 mb-4 flex-1">
+                    {campaign.detail}
+                  </p>
+
+                  {/* Date Footer */}
+                  <div className="mt-auto pt-4 border-t border-gray-50 text-xs text-gray-400">
+                    เวลาโปรโมชั่น: {dayjs(campaign.start_date).format('DD/MM/YYYY HH:mm')} - {dayjs(campaign.end_date).format('DD/MM/YYYY HH:mm')}
+                  </div>
                 </div>
               </Link>
             ))}
           </div>
         )}
-        
+
         {!isLoading && !isError && campaigns?.length === 0 && (
-           <div className="text-center py-20 text-gray-400">
-             <div className="text-6xl mb-4">📭</div>
-             <div className="text-xl">ไม่มีแคมเปญในขณะนี้</div>
-           </div>
+          <div className="text-center py-20 text-gray-400">
+            <div className="text-6xl mb-4">📭</div>
+            <div className="text-xl">ไม่มีแคมเปญในขณะนี้</div>
+          </div>
         )}
       </div>
     </div>

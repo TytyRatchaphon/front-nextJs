@@ -5,7 +5,7 @@ import 'swiper/css/navigation';
 import 'antd/dist/reset.css';
 import "./globals.css";
 import TanstackProvider from "./providers";
-import { Bai_Jamjuree, Sarabun, Prompt, Kanit, IBM_Plex_Sans_Thai, Mitr } from "next/font/google";
+import { Bai_Jamjuree, Sarabun, Prompt, Kanit, IBM_Plex_Sans_Thai, Mitr, Mali, Trirong, Maitree, Taviraj, Kodchasan, Chakra_Petch } from "next/font/google";
 import Navbar from "@/components/navbar/navbar";
 import FooterWrapper from "@/components/home/FooterWrapper";
 // import StyledComponentsRegistry from './AntdRegistry';
@@ -54,6 +54,49 @@ const mitr = Mitr({
   display: "swap",
 });
 
+const mali = Mali({
+  weight: ["300", "400", "500", "700"],
+  subsets: ["thai", "latin"],
+  variable: "--font-mali",
+  display: "swap",
+});
+
+const trirong = Trirong({
+  weight: ["300", "400", "500", "700"],
+  subsets: ["thai", "latin"],
+  variable: "--font-trirong",
+  display: "swap",
+});
+
+const maitree = Maitree({
+  weight: ["300", "400", "500", "700"],
+  subsets: ["thai", "latin"],
+  variable: "--font-maitree",
+  display: "swap",
+});
+
+const taviraj = Taviraj({
+  weight: ["300", "400", "500", "700"],
+  subsets: ["thai", "latin"],
+  variable: "--font-taviraj",
+  display: "swap",
+});
+
+const kodchasan = Kodchasan({
+  weight: ["300", "400", "500", "700"],
+  subsets: ["thai", "latin"],
+  variable: "--font-kodchasan",
+  display: "swap",
+});
+
+// Chakra Petch
+const chakraPetch = Chakra_Petch({
+  weight: ["300", "400", "500", "700"],
+  subsets: ["thai", "latin"],
+  variable: "--font-chakra-petch",
+  display: "swap",
+});
+
 import { fetchWebsiteSettings } from "@/services/apiServices";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -67,18 +110,26 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+import TokenUpdater from "@/components/auth/TokenUpdater";
+import { Suspense } from "react";
+
+// ... (existing imports)
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${baiJamjuree.variable} ${sarabun.variable} ${prompt.variable} ${kanit.variable} ${ibmPlexSansThai.variable} ${mitr.variable} font-bai-jamjuree font-medium`}>
+    <html lang="en" className={`${baiJamjuree.variable} ${sarabun.variable} ${prompt.variable} ${kanit.variable} ${ibmPlexSansThai.variable} ${mitr.variable} ${mali.variable} ${trirong.variable} ${maitree.variable} ${taviraj.variable} ${kodchasan.variable} ${chakraPetch.variable} font-bai-jamjuree font-medium`}>
       <body
         className={`flex flex-col w-full min-h-[100vh] overflow-x-hidden font-bai-jamjuree font-medium`}>
         <TanstackProvider>
           <SocketProvider>
             <App>
+              <Suspense fallback={null}>
+                <TokenUpdater />
+              </Suspense>
               <Navbar />
               {children}
               <FooterWrapper />
