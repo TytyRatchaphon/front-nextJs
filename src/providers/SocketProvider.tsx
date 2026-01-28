@@ -87,6 +87,44 @@ export default function SocketProvider({
 
     socketInstance.on('connect_error', (err) => {
         // Suppress bulky error logs, just show simple message
+        console.log('Socket connect error:', err.message);
+    });
+
+    // Handle force_refresh event
+    socketInstance.on('force_refresh', async (data: any) => {
+        console.log("📢 Received force_refresh:", data);
+        try {
+            // Get current token from store or local storage
+            let currentToken = useAuthStore.getState().token;
+            if (!currentToken) {
+                 const raw = localStorage.getItem('authToken');
+                 if (raw) currentToken = raw.replace(/^Bearer\s+/i, '').trim();
+            }
+
+            if (currentToken) {
+                 // Prevent race conditions or loops if needed, but for now just refresh
+                 const refreshToken = (await import('@/services/apiServices')).refreshToken;
+                 const newTokenResult = await refreshToken(currentToken);
+                 
+                 // refreshToken returns the whole response object { data: token } or typically just data if intercepted.
+                 // Looking at apiServices: return response.data
+                 
+                 // If the response structure is { data: { token: '...' } } or similar, we need to parse it.
+                 // Checking TokenUpdater usage (not visible now but usually standard)
+                 // Existing usage in Redeem.tsx: const newToken = refreshResp?.data;
+                 // Existing usage in BookInfoCard.tsx: const newToken = refreshRes?.data?.token || refreshRes?.token;
+                 
+                 // So let's handle potential shapes safely
+                 const newToken = newTokenResult?.data?.token || newTokenResult?.token || newTokenResult?.data;
+
+                 if (typeof newToken === 'string') {
+                     useAuthStore.getState().updateToken(newToken);
+                     console.log("✅ Token refreshed successfully via socket event");
+                 }
+            }
+        } catch (error) {
+            console.error("❌ Failed to refresh token via socket:", error);
+        }
     });
 
     setSocket(socketInstance);
@@ -141,23 +179,6 @@ export default function SocketProvider({
   useEffect(() => {
       if (!socket) return;
 
-      const handleVisibilityChange = () => {
-          if (document.visibilityState === 'visible') {
-               if (!socket.connected) {
-                   socket.connect();
-               }
-          }
-      };
-
-      const handleWindowFocus = () => {
-          if (!socket.connected) {
-               socket.connect();
-          }
-      };
-
-      window.addEventListener('focus', handleWindowFocus);
-      document.addEventListener('visibilitychange', handleVisibilityChange);
-
       // Periodic Heartbeat to handle idle disconnects
       const heartbeatInterval = setInterval(() => {
           if (!socket.connected) {
@@ -169,8 +190,6 @@ export default function SocketProvider({
 
       return () => {
           clearInterval(heartbeatInterval);
-          window.removeEventListener('focus', handleWindowFocus);
-          document.removeEventListener('visibilitychange', handleVisibilityChange);
       };
   }, [socket]);
 

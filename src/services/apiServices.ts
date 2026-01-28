@@ -803,6 +803,8 @@ export const getBankList = async () => {
   }
 };
 
+
+
 export const updateBankIdCardAccount = async (formData: FormData) => {
   try {
     const response = await apiClient.post('/writer/bank_idcard_account', formData, {
@@ -1956,23 +1958,24 @@ export const resolveBookId = async (bookId: string): Promise<ResolveBookResponse
   }
 };
 
-export const refreshToken = async () => {
+export const refreshToken = async (tokenOverride?: string) => {
   try {
-    const rawToken = Cookies.get('token')
-      || localStorage.getItem('token')
-      || localStorage.getItem('authToken');
+    let token = tokenOverride;
 
-    const token = rawToken ? rawToken.replace(/^['"]+|['"]+$/g, '') : '';
+    if (!token) {
+        const rawToken = Cookies.get('token')
+          || localStorage.getItem('token')
+          || localStorage.getItem('authToken');
+        token = rawToken ? rawToken.replace(/^['"]+|['"]+$/g, '') : '';
+    }
 
     if (!token) throw new Error("No token");
-
 
     const response = await apiClient.post('/refresh-token', {}, {
       headers: {
         'Authorization': token
       }
     });
-
 
     return response.data;
   } catch (error: any) {

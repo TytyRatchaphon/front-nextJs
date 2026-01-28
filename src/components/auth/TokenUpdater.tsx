@@ -36,32 +36,7 @@ export default function TokenUpdater() {
         }
     }, [searchParams, router, pathname, updateToken, message, oldToken])
 
-    // Focus Handler Effect
-    useEffect(() => {
-        const handleFocus = async () => {
-            const currentToken = useAuthStore.getState().token;
-            if (!currentToken) return;
 
-
-
-            try {
-                // Assuming refreshToken is exported from apiServices
-                const { refreshToken } = await import('@/services/apiServices');
-                const res = await refreshToken();
-
-                if (res?.data) {
-
-                    updateToken(res.data);
-                }
-            } catch (error: any) {
-
-                // Duplicate login handling is now done via apiClient interceptor globally
-            }
-        };
-
-        window.addEventListener('focus', handleFocus);
-        return () => window.removeEventListener('focus', handleFocus);
-    }, [updateToken, message]);
 
     return (
         <>
