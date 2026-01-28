@@ -1,0 +1,23 @@
+meta {
+  name: Buying Option By book_id
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{path}}/pack-campaign/buying-options/:bookId
+  body: none
+  auth: inherit
+}
+
+params:path {
+  bookId: 4618
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+settings {
+  encodeUrl: true
+}

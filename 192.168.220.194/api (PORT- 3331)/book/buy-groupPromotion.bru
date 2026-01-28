@@ -1,0 +1,27 @@
+meta {
+  name: /buy/groupPromotion
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{path}}/buy/groupPromotion
+  body: json
+  auth: inherit
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+body:json {
+  {
+      "dfb_id": 237,
+      "payWith": "coin"
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}

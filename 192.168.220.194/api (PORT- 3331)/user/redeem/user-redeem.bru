@@ -1,0 +1,25 @@
+meta {
+  name: /user/redeem
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/user/redeem
+  body: json
+  auth: inherit
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+body:json {
+  {
+      "redeemCode" : "EJB01"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

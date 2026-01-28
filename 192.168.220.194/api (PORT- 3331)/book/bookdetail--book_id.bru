@@ -1,0 +1,15 @@
+meta {
+  name: /bookdetail/:book_id
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{path}}/bookdetail/53
+  body: json
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

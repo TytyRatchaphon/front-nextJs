@@ -1,0 +1,30 @@
+meta {
+  name: /user/managebook/groups/promotion_1
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{path}}/user/managebook/groups/promotion
+  body: json
+  auth: inherit
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+body:json {
+  {
+      "dfb_id": 148, 
+      "groupIDs": "7060",
+      "subject": "test โปรโมชั่น",
+      "start_date": "2025/11/17 00:00",
+      "end_date": "2025/11/19 23:59",
+      "discount_percent": 20
+  }
+}
+
+settings {
+  encodeUrl: true
+}

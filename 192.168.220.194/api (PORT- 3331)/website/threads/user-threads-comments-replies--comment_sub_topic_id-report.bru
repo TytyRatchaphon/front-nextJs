@@ -1,0 +1,25 @@
+meta {
+  name: /user/threads/comments/replies/:comment_sub_topic_id/report
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{path}}/user/threads/comments/:comment_sub_topic_id/report
+  body: json
+  auth: inherit
+}
+
+params:path {
+  comment_sub_topic_id: 1
+}
+
+body:json {
+  {
+      "comment_sub_topic_id" : 1
+  }
+}
+
+settings {
+  encodeUrl: true
+}

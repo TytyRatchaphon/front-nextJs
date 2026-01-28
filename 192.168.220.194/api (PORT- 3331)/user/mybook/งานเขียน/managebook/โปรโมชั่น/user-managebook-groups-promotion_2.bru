@@ -1,0 +1,25 @@
+meta {
+  name: /user/managebook/groups/promotion_2
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{path}}/user/managebook/groups/promotion
+  body: text
+  auth: inherit
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+body:text {
+  {
+      "dfb_id": 147
+  }
+}
+
+settings {
+  encodeUrl: true
+}

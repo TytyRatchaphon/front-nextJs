@@ -1,0 +1,25 @@
+meta {
+  name: /user/managebook/group_1
+  type: http
+  seq: 2
+}
+
+delete {
+  url: {{path}}/user/managebook/group
+  body: json
+  auth: inherit
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+body:json {
+  {
+      "group_id":"7052"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

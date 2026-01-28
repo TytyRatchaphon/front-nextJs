@@ -1,0 +1,19 @@
+meta {
+  name: articles_1
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{path}}/articles/:id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 8
+}
+
+settings {
+  encodeUrl: true
+}

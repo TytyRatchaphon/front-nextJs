@@ -8,6 +8,17 @@ import { useUIStore } from '@/stores/uiStore';
 import axios from 'axios';
 import Image from 'next/image';
 
+interface UserData {
+  fullname?: string;
+  name?: string;
+  email?: string;
+  role?: string;
+  user_id?: string | number;
+  userID?: string | number;
+  token?: string;
+  pws?: string;
+}
+
 const LoginFacebook = () => {
   const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
@@ -19,6 +30,25 @@ const LoginFacebook = () => {
 
   const FACEBOOK_APP_ID = process.env.NEXT_PUBLIC_FACEBOOK_ID || '1967780540282892';
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.220.214:4005';
+
+  // Helper to set cookies
+  const setCookie = (name: string, value: string, days: number = 365) => {
+    if (typeof document === 'undefined') return;
+    const date = new Date();
+    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+    const expires = "expires=" + date.toUTCString();
+    document.cookie = name + "=" + (value || "") + ";" + expires + ";path=/";
+  };
+
+  // Helper to check token status before login
+  const checkBeforeLogin = (token: string): boolean => {
+    try {
+      if (!token) return false;
+      return false;
+    } catch (e) {
+      return false;
+    }
+  };
 
   // 1. ย้ายการ Initialize SDK มาไว้ใน useEffect ทำงานทันทีที่ Mount
   useEffect(() => {
@@ -96,7 +126,7 @@ const LoginFacebook = () => {
       });
 
       if (response.data && response.data.data) {
-        const userData = response.data.data;
+        const userData = response.data.data as UserData | string;
         let token = '';
         let userInfo = {
           fullname: 'Facebook User',
@@ -108,23 +138,33 @@ const LoginFacebook = () => {
         if (typeof userData === 'string') {
           token = userData;
         } else {
+          const dataObj = userData as UserData;
           userInfo = {
-            fullname: userData.fullname || userData.name || 'Facebook User',
-            email: userData.email || 'user@facebook.local',
-            role: userData.role || 'user',
-            userId: userData.user_id || userData.userID
+            fullname: dataObj.fullname || dataObj.name || 'Facebook User',
+            email: dataObj.email || 'user@facebook.local',
+            role: dataObj.role || 'user',
+            userId: String(dataObj.user_id || dataObj.userID || '')
           };
-          token = userData.token || userData.pws || response.headers?.authorization || response.headers?.['x-auth-token'];
+          token = dataObj.token || dataObj.pws || response.headers?.authorization || response.headers?.['x-auth-token'] || '';
         }
 
         if (token) {
+          // Set cookies as per legacy requirement
+          setCookie('token', token, 365);
+          setCookie('closePopupPolicy', '', 365);
+
           login(userInfo, token);
           updateToken(token);
           message.success('เข้าสู่ระบบผ่าน Facebook สำเร็จ!');
           closeLoginModal();
-          setTimeout(() => {
-            router.push('/');
-          }, 500);
+
+          // Check logical flow (replaces legacy checkBeforeLogin)
+          const navi = checkBeforeLogin(token);
+          if (navi) {
+            window.location.href = '/';
+          } else {
+            window.location.reload();
+          }
         } else {
           message.error('ไม่พบ token จาก Backend');
         }

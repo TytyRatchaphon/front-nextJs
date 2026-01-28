@@ -1,0 +1,19 @@
+meta {
+  name: /continueReading
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{path}}/continueReading
+  body: none
+  auth: inherit
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+settings {
+  encodeUrl: true
+}

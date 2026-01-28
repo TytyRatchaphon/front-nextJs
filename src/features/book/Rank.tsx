@@ -52,7 +52,7 @@ export default function Rank() {
         <div className="flex items-center gap-3">
           {/* Icon from design (cat reading?) - using placeholder or text for now if no asset */}
           <Image src="/images/warning_cat.png" width={40} height={40} className="w-10 h-10 object-contain" unoptimized alt="icon" onError={(e) => e.currentTarget.style.display = 'none'} />
-          <h1 className="text-3xl font-bold text-black">นิยายติดอันดับ</h1>
+          <h1 className="text-3xl font-bold text-black">นดับ</h1>
         </div>
 
         <div className="flex bg-gray-100 rounded-lg p-1 mt-4 md:mt-0">

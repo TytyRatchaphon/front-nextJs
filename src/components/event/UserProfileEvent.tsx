@@ -113,20 +113,20 @@ export default function UserProfileEvent({
               <div className="flex items-center justify-center">
                 <Image src={settings?.coin || '/images/coin.png'} alt="coin" width={40} height={40} sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} loader={imageLoader} unoptimized />
               </div>
-              <div className="text-black  text-sm md:text-base mt-1">{finalCoins}</div>
+              <div className="text-black  text-sm md:text-base mt-1">{finalCoins.toLocaleString()}</div>
             </div>
 
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-center justify-center">
                 <Image src={settings?.freecoin || '/images/freecoin.png'} alt="freecoin" width={40} height={40} sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} loader={imageLoader} unoptimized />
               </div>
-              <div className="text-black  text-sm md:text-base mt-1">{finalFreecoins}</div>
+              <div className="text-black  text-sm md:text-base mt-1">{finalFreecoins.toLocaleString()}</div>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-center justify-center">
                 <Image src={settings?.stamp || '/images/userstamp.png'} alt="stamp" width={40} height={40} sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} loader={imageLoader} unoptimized />
               </div>
-              <div className="text-black  text-sm md:text-base mt-1">{finalStamps}</div>
+              <div className="text-black  text-sm md:text-base mt-1">{finalStamps.toLocaleString()}</div>
             </div>
 
             {/* <div className="flex flex-col items-center gap-1">

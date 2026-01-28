@@ -1,0 +1,19 @@
+meta {
+  name: /writer/bank_list
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{path}}/writer/bank_list
+  body: none
+  auth: inherit
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,20 @@
+meta {
+  name: /user/cat-orderBy
+  type: http
+  seq: 5
+}
+
+get {
+  url: http://192.168.220.214:3331/user/cat-orderBy?start=0&end=5
+  body: none
+  auth: inherit
+}
+
+params:query {
+  start: 0
+  end: 5
+}
+
+settings {
+  encodeUrl: true
+}

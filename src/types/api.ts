@@ -490,6 +490,7 @@ export interface StorePack {
   img: string;
   price: number;
   type_use: string;
+  type: string;
   start_date: string;
   end_date: string;
   order_by: number;

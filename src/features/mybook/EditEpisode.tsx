@@ -215,7 +215,6 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
     const handleModalOk = () => {
         setIsSuccessModalOpen(false);
         router.refresh();
-        router.back();
     };
 
     return (

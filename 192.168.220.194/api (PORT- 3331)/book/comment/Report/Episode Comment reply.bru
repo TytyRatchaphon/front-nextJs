@@ -1,0 +1,43 @@
+meta {
+  name: Episode Comment reply
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{path}}/readep/comments/replies/:comment_sub_ep_id/report
+  body: json
+  auth: inherit
+}
+
+params:path {
+  comment_sub_ep_id: 444
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+body:json {
+  {
+      "comment_id": 53
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  - รีพอร์ต คอมเมนท์ตอบกลับ ในคอมเมนท์ตอนอ่านบท
+      
+  - Request
+      
+      - Param
+          
+          - comment_sub_ep_id: Number = ไอดีของคอมเมนท์ตอบกลับ
+              
+  - ผู้ใช้ไม่สามารถรีพอร์ตซ้ำของเดิมได้
+      
+  - ต้องล็อคอินก่อน
+}

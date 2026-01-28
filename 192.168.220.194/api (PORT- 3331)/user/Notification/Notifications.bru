@@ -1,0 +1,24 @@
+meta {
+  name: Notifications
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{path}}/user/notifications?limit=5&page=17
+  body: none
+  auth: inherit
+}
+
+params:query {
+  limit: 5
+  page: 17
+}
+
+headers {
+  Authorization: {{user1_token}}
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,37 @@
+meta {
+  name: All Comment
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{path}}/bookdetail/comments/:comment_ep_id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  comment_ep_id: 27664
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  - ลบ คอมเมนท์ตอบกลับรีวิว
+      
+  - Request
+      
+      - Param
+          
+          - comment_ep_id: Number = ไอดีคอมเมนท์ ใน คอมเมนท์ทั้งหมด
+              
+  - ต้องล็อคอินก่อน
+      
+  - ผู้ใช้ที่สร้างคอมเมนท์นี้เท่านั้นจึงจะสามารถลบเองได้
+}

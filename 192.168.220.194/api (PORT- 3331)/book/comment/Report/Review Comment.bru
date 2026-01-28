@@ -1,0 +1,37 @@
+meta {
+  name: Review Comment
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{path}}/bookdetail/reviews/:comment_book_id/report
+  body: none
+  auth: inherit
+}
+
+params:path {
+  comment_book_id: 138
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  - รีพอร์ตรีวิว
+      
+  - Request
+      
+      - Param
+          
+          - comment_book_id: Number = ไอดีของรีวิว
+              
+  - ผู้ใช้ไม่สามารถรีพอร์ตซ้ำรีวิวเดิมได้
+      
+  - ต้องล็อคอินก่อน
+}

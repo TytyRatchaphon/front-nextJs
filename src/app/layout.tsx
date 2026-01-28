@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { GoogleAnalytics } from '@next/third-parties/google';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
@@ -112,6 +113,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 import TokenUpdater from "@/components/auth/TokenUpdater";
 import { Suspense } from "react";
+import Script from "next/script";
 
 // ... (existing imports)
 
@@ -122,20 +124,65 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${baiJamjuree.variable} ${sarabun.variable} ${prompt.variable} ${kanit.variable} ${ibmPlexSansThai.variable} ${mitr.variable} ${mali.variable} ${trirong.variable} ${maitree.variable} ${taviraj.variable} ${kodchasan.variable} ${chakraPetch.variable} font-bai-jamjuree font-medium`}>
+      <Script src="https://t.contentsquare.net/uxa/c765809e7d7ef.js" strategy="afterInteractive" />
+      
+      {/* Google Ads Tag */}
+      <Script
+        src="https://www.googletagmanager.com/gtag/js?id=AW-16724162319"
+        strategy="afterInteractive"
+      />
+      <Script id="google-ads-tag" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'AW-16724162319');
+        `}
+      </Script>
+      <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID || ""} />
+
+      {/* Facebook Pixel */}
+      <Script id="facebook-pixel" strategy="afterInteractive">
+        {`
+          !function(f,b,e,v,n,t,s)
+          {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+          n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+          if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+          n.queue=[];t=b.createElement(e);t.async=!0;
+          t.src=v;s=b.getElementsByTagName(e)[0];
+          s.parentNode.insertBefore(t,s)}(window, document,'script',
+          'https://connect.facebook.net/en_US/fbevents.js');
+          fbq('init', '1597109174593241');
+          fbq('track', 'PageView');
+        `}
+      </Script>
+
       <body
         className={`flex flex-col w-full min-h-[100vh] overflow-x-hidden font-bai-jamjuree font-medium`}>
-        <TanstackProvider>
-          <SocketProvider>
-            <App>
-              <Suspense fallback={null}>
-                <TokenUpdater />
-              </Suspense>
-              <Navbar />
-              {children}
-              <FooterWrapper />
-            </App>
-          </SocketProvider>
-        </TanstackProvider>
+        {/* Facebook Pixel NoScript */}
+        <noscript>
+          <img
+            height="1"
+            width="1"
+            style={{ display: "none" }}
+            src="https://www.facebook.com/tr?id=1597109174593241&ev=PageView&noscript=1"
+            alt=""
+          />
+        </noscript>
+        
+          <TanstackProvider>
+            <SocketProvider>
+              <App>
+                <Suspense fallback={null}>
+                  <TokenUpdater />
+                </Suspense>
+                <Navbar />
+                {children}
+                <FooterWrapper />
+              </App>
+            </SocketProvider>
+          </TanstackProvider>
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID || "G-RTWVKZ2MVF"} />
       </body>
     </html>
   );

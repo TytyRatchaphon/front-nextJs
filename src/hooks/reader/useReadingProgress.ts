@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { syncReadingProgress, updateReadingProgress } from "@/services/apiServices";
 
 export function useReadingProgress(bookId: string, episodeId: string, user: any) {
-    const [showNav, setShowNav] = useState(false);
+    const [showNav, setShowNav] = useState(true);
     const contentRef = useRef<HTMLElement>(null);
     const isInitialSyncDone = useRef(false);
 

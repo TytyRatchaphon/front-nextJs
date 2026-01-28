@@ -59,7 +59,7 @@ const MyBookStatsTab: React.FC<MyBookStatsTabProps> = ({ myBooks, token }) => {
           end: formattedStatsRange[1],
           groupBy: 'day',
         };
-        const res = await apiClient.get('/user/bookstats', { params });
+        const res = await apiClient.get('/bookstats', { params });
         return res.data;
       } catch (e) {
         return null;

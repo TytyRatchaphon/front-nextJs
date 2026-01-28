@@ -1,0 +1,18 @@
+meta {
+  name: review
+  seq: 4
+}
+
+auth {
+  mode: inherit
+}
+
+docs {
+  GET
+  
+  - /getReview
+      
+  - /getReviewByID/:rv_id
+      
+  - /review_increase/:type/:id
+}

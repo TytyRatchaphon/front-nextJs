@@ -1,0 +1,37 @@
+meta {
+  name: article
+  seq: 1
+}
+
+auth {
+  mode: inherit
+}
+
+docs {
+  GET
+  
+  - /getarticle
+      
+      - ดีงบทความทั้งหมด เรียงตามวันที่ใหม่ไปเก่า
+          
+      - response ได้ data array ของ Article
+          
+  - /getarticledetail/:articleID
+      
+      - ดึงรายละเอียดของบทความจาก articleID ใช้ตอนกดอ่าน
+          
+      - response ได้ data
+          
+          - รายละเอียดของบทความ
+              
+          - list ของบทความอื่นๆที่แนะนำ
+              
+  
+  POST
+  
+  - /article_increase/:type/:id
+      
+      - เพิ่มค่า view หรือ shared ของ article นั้น
+          
+      - type = view || shared
+}

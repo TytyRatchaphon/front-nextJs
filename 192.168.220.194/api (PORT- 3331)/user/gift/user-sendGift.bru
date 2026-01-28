@@ -1,0 +1,27 @@
+meta {
+  name: /user/sendGift
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{path}}/user/sendGift
+  body: json
+  auth: inherit
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+body:json {
+  {
+      "sendType": "flower",
+      "amount": 9,
+      "book_id": 4503
+  }
+}
+
+settings {
+  encodeUrl: true
+}

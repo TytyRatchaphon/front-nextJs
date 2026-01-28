@@ -123,7 +123,7 @@ function MyCardBook({ book }: CardBookProps) {
   </div>
   {/* Content Container */}
   <div className="px-3 pt-3 pb-2 flex flex-col gap-1 flex-1">
-          <h3 className="text-black text-md font-primary font-medium group-hover:text-red-600 transition-colors duration-300 line-clamp-1 min-h-[2.5rem]">
+          <h3 className="text-black text-md font-primary font-medium group-hover:text-red-600 transition-colors duration-300 line-clamp-2 min-h-[2.5rem]">
             {book.name}
           </h3>
 

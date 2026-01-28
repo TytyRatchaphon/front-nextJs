@@ -1,0 +1,19 @@
+meta {
+  name: /user/threads/:topic_id/comments
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{path}}/user/threads/:topic_id/comments
+  body: none
+  auth: inherit
+}
+
+params:path {
+  topic_id: 2
+}
+
+settings {
+  encodeUrl: true
+}

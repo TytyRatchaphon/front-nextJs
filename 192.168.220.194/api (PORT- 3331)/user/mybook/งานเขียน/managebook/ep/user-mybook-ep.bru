@@ -1,0 +1,30 @@
+meta {
+  name: /user/mybook/ep
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{path}}/user/mybook/ep
+  body: json
+  auth: inherit
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+body:json {
+  {
+      "group_id": 7059,
+      "name": "ตอนที่ 3: การผจญภัยเริ่มต้น",
+      "detail": "<h1>ตอนที่ 1</h1><p>เช้าวันหนึ่sdfsfที่สดใส...</p><br><p>โปรดติดตามตอนต่อไป</p>",
+      "coin": 3,
+      "order_by": 1,
+      "publish_datetime": "2025-12-15 12:00:00"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

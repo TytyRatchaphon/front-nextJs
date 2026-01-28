@@ -1,0 +1,46 @@
+meta {
+  name: All Comments
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{path}}/bookdetail/:book_id/comments?page=1&limit=10
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 1
+  limit: 10
+}
+
+params:path {
+  book_id: 4546
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  - ดึงข้อมูลคอมเมนท์ของบททั้งหมด ของหนังสือนั้น
+      
+  - Request
+      
+      - Param เป็น book_id ไอดีของหนังสือ
+          
+      - Query มี limit (Default = 20) และ page (Default = 1)
+          
+  - Response
+      
+      - pagination
+          
+      - comment_data ข้อมูลของ comment
+          
+          - user
+              
+          - comment_sub_data? ข้อมูลของ comment ตอบกลับ
+              
+              - user
+}

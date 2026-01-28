@@ -1,0 +1,19 @@
+meta {
+  name: /book/resolve/:bookId
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{path}}/book/resolve/:bookId
+  body: none
+  auth: inherit
+}
+
+params:path {
+  bookId: B20253OM2k617iV1111092147
+}
+
+settings {
+  encodeUrl: true
+}

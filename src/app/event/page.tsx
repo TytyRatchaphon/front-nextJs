@@ -14,6 +14,9 @@ function Page() {
           <UserProfileEvent />
         </div>
         <div>
+          <SevenDaysLogin />
+        </div>
+        <div>
           {/* <AllEvent /> */}
         </div>
         <div className='mt-6 mb-6 flex flex-col gap-6'>

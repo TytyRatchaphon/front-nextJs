@@ -83,6 +83,7 @@ const DailyPromoPopup: React.FC = () => {
       centered
       footer={null}
       width={400}
+      zIndex={5000}
       closeIcon={null}
       styles={{
         content: { padding: 0, borderRadius: '16px', overflow: 'hidden', background: 'transparent', boxShadow: 'none' },

@@ -1,0 +1,19 @@
+meta {
+  name: Campaign
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{path}}/campaigns/:id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 83
+}
+
+settings {
+  encodeUrl: true
+}

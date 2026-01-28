@@ -79,8 +79,8 @@ export default function RecommendSwiper({ items, title, icon, link }: RecommendS
           </div>
         )}
         {title && (
-          <div className="h-10 flex items-center translate-y-4">
-            <h2 className="text-2xl font-bold [&_*]:m-0 leading-none">{parse(title)}</h2>
+          <div className="h-10 flex items-center translate-y-1.5">
+            <div className="text-xl font-bold">{parse(title)}</div>
           </div>
         )}
 

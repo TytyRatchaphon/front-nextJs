@@ -46,7 +46,7 @@ export default function RankingCategoryRight({ categoryId, categoryName }: Ranki
           <Image src={NavIcon} alt="Logo" width={32} height={32} className="object-contain" />
         </div>
 
-        <h2 className="text-lg font-bold absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 whitespace-nowrap">
+        <h2 className="text-base md:text-lg font-bold absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 whitespace-nowrap max-w-[50%] md:max-w-none truncate text-center">
           จัดอันดับหมวด{categoryName}
         </h2>
 

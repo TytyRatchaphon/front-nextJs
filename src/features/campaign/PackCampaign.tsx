@@ -167,6 +167,7 @@ function PackCampaign({ data }: PackCampaignProps) {
                     width={600}
                     style={{ maxWidth: '95vw' }}
                     centered
+                    zIndex={5000}
                     closeIcon={<CloseOutlined className="text-gray-500 text-xl" />}
                     destroyOnHidden
                     className="pack-modal"
@@ -255,6 +256,7 @@ function PackCampaign({ data }: PackCampaignProps) {
                     }}
                     footer={null}
                     centered
+                    zIndex={5000}
                     width={600}
                     style={{ maxWidth: '95vw' }}
                     closable={true}

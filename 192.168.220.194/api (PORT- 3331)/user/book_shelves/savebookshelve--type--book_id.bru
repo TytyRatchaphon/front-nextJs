@@ -1,0 +1,23 @@
+meta {
+  name: /savebookshelve/:type/:book_id
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://192.168.220.214:3331/user/savebookshelve/add/48
+  body: none
+  auth: inherit
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  type ( add, remove )
+}

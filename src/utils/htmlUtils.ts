@@ -54,7 +54,7 @@ export const modifiedHtml = (detailData: string, currentFont: string, userData: 
             .replace(/<(\/)?font[^>]*>/g, '')
             .replace(/font-size:\d+pt;/g, '')
             .replace(/font-family:.+?;/g, '')
-            .replace(/class/g, '')
+            .replace(/\s*class=(["'])[\s\S]*?\1/gi, '')
             .replace(/color:.+?;/g, '') 
             .replace(/<o:p>/g, '<span>')  // ลบ tag <o:p>
             .replace(/<p[^>]*>/g, `<p class="no-select" style="font-family: ${font} ">&emsp;&emsp;&emsp;`) // Format p tags with font and indentation

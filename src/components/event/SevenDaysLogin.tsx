@@ -8,12 +8,14 @@ import { useQuery } from '@tanstack/react-query'
 import { Modal, Button } from 'antd'
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { useWebsiteStore } from '@/stores/websiteStore'
 
 type LoginStatus = {
   latest_logged_in_day?: number
   current_reward_day?: number
   checked_in_today?: boolean
 }
+
 
 const fetchWeeklyLogin = async (token?: string | null): Promise<LoginStatus> => {
   const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? ''
@@ -62,10 +64,15 @@ function SevenDaysLogin() {
       setRewardUnit(unit)
 
       // 1. รับ Token ใหม่ และอัปเดตเข้า Store ก่อน (ถ้ามี)
-      const newToken = res.data?.token ?? res.data?.data?.token
+      // Check multiple paths for token: data.token, data.data.token (string), or data.data.token.token (object wrapper from screenshot)
+      let newToken = res.data?.token ?? res.data?.data?.token
+      if (typeof newToken === 'object' && newToken?.token) {
+          newToken = newToken.token
+      }
+      
       const activeToken = newToken ?? token;
 
-      if (newToken && typeof updateToken === 'function') {
+      if (newToken && typeof newToken === 'string' && typeof updateToken === 'function') {
         try {
           updateToken(newToken)
           try { axios.defaults.headers.common['Authorization'] = newToken } catch (e) { }
@@ -102,12 +109,16 @@ function SevenDaysLogin() {
       try { queryClient.invalidateQueries({ queryKey: ['weekly-login'] }) } catch (e) { /* ignore */ }
 
       setModalVisible(true)
-    } catch (e) {
-      Modal.error({ title: 'เช็คอินล้มเหลว', content: 'เกิดข้อผิดพลาดขณะเช็คอิน' })
+    } catch (e: any) {
+      console.error('Checkin Error:', e)
+      const errorMsg = e.response?.data?.message || 'เกิดข้อผิดพลาดขณะเช็คอิน'
+      Modal.error({ title: 'เช็คอินล้มเหลว', content: errorMsg })
     } finally {
       setConfirmLoading(false)
     }
   }
+
+  const { settings } = useWebsiteStore()
 
   const handleModalOk = () => {
     setModalVisible(false)
@@ -115,109 +126,155 @@ function SevenDaysLogin() {
     try { queryClient.invalidateQueries({ queryKey: ['weekly-login'] }) } catch (e) { }
   }
   return (
-    <div className="w-full flex justify-center px-4 py-6">
-      <div className="w-full max-w-[1040px] flex flex-col gap-6 md:gap-8">
-
-        {/* Header / Title */}
-        <div className="relative w-full rounded-3xl overflow-hidden shadow-xl bg-gradient-to-r from-red-600 via-red-500 to-orange-500 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between text-white gap-6">
-          <div className="text-center md:text-left z-10">
-            <h2 className="font-bold text-2xl md:text-3xl mb-2 drop-shadow-md">เช็คอินประจำวัน</h2>
-            <p className="text-red-100 text-sm md:text-lg opacity-90">รับของรางวัลสุดพิเศษฟรีทุกวัน เพียงแค่เข้าใช้งาน!</p>
-          </div>
-
-          {/* Check-in Button */}
-          <div className="z-10 w-full md:w-auto">
-            <Button
-              type="default"
-              size="large"
-              loading={confirmLoading}
-              onClick={handleCheckin}
-              disabled={checkedToday}
-              className={`w-full md:w-48 h-12 md:h-14 rounded-full font-bold text-lg hover:!text-red-600 hover:!border-red-600 transition-all duration-300 transform ${checkedToday
-                ? 'bg-white/20 text-white cursor-not-allowed'
-                : 'bg-white text-red-600 hover:bg-gray-100 shadow-lg hover:shadow-2xl hover:-translate-y-1'
-                }`}
-            >
-              {checkedToday ? '✔  เรียบร้อย' : 'กดเช็คอิน'}
-            </Button>
-          </div>
-
-          {/* Decorative Background Elements */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-yellow-400/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/4 pointer-events-none" />
+    <div className="w-full flex justify-center px-4 py-8">
+      <div className="w-full max-w-4xl bg-white rounded-[40px] shadow-sm p-8 flex flex-col items-center">
+        
+        {/* Title */}
+        <div className="bg-red-100 text-red-600 px-12 py-3 rounded-full mb-10">
+           <h2 className="text-2xl md:text-3xl font-bold m-0">เช็คอินรายวัน</h2>
         </div>
 
-        {/* Days Grid: 7 Cols on Desktop, 3 Cols on Mobile */}
-        <div className="grid grid-cols-3 md:grid-cols-7 gap-3 md:gap-4">
-          {[...Array(7)].map((_, i) => {
-            const day = i + 1;
-            const isRewardDay = day === 7;
-            const isChecked = day < currentRewardDay || (day === currentRewardDay && checkedToday);
-            const isToday = day === currentRewardDay && !checkedToday;
+        {/* Days Row */}
+        <div className="flex flex-wrap md:flex-nowrap justify-center gap-4 w-full mb-8">
+           {[...Array(7)].map((_, i) => {
+             const day = i + 1
+             const isRewardDay = day === 7
+             const isChecked = day < currentRewardDay || (day === currentRewardDay && checkedToday)
+             const isToday = day === currentRewardDay && !checkedToday;
+             
+             // Define styles based on state
+             let containerClass = "bg-gray-100/80"
+             let rewardBg = "bg-transparent text-gray-500"
+             let textClass = "text-gray-300"
+             let borderClass = "border-transparent"
 
-            // Image Sizing
-            const imgSize = isRewardDay ? 60 : 48;
+             if (isRewardDay) {
+                containerClass = "bg-yellow-200"
+                rewardBg = "bg-red-500 text-white"
+             }
 
-            return (
-              <div
-                key={day}
-                className={`
-                        group relative flex flex-col items-center justify-center p-3 md:p-4 rounded-2xl border-2 transition-all duration-300
-                        ${isRewardDay ? 'col-span-3 md:col-span-1 aspect-auto md:aspect-[4/5]' : 'aspect-[4/5]'}
-                        ${isChecked
-                    ? 'bg-green-50 border-green-200'
-                    : isToday
-                      ? 'bg-white border-red-500 shadow-lg scale-105 z-10 ring-4 ring-red-50'
-                      : 'bg-white border-gray-100 hover:border-red-200 hover:shadow-md'
-                  }
-                      `}
+             if (isToday) {
+                containerClass = "bg-gray-100/80 cursor-pointer hover:bg-red-50 transition-colors"
+                textClass = "text-red-500 font-bold"
+             }
+
+             // If just checked or past checked
+             if (isChecked && !isRewardDay) {
+                containerClass = "bg-gray-100 opacity-70"
+             }
+
+             return (
+               <div 
+                  key={day}
+                  onClick={isToday ? handleCheckin : undefined}
+                  className={`
+                    flex flex-col items-center justify-between 
+                    w-[100px] h-[140px] md:w-[110px] md:h-[160px] 
+                    rounded-2xl p-2 relative select-none
+                    ${containerClass}
+                  `}
+               >
+                  {/* Reward Badge */}
+                  <div className={`
+                    absolute top-0 left-0 right-0 h-8 
+                    flex items-center justify-center 
+                    text-base font-bold rounded-t-2xl
+                    ${isRewardDay ? 'bg-red-500 text-white' : 'text-gray-600'}
+                  `}>
+                    +1
+                  </div>
+
+                  {/* Icon */}
+                  <div className="flex-1 flex items-center justify-center mt-6">
+                     <div className="relative w-12 h-12 md:w-14 md:h-14">
+                        {settings?.stamp && (
+                          <Image 
+                            src={settings.stamp} 
+                            alt="reward" 
+                            fill 
+                            className="object-contain"
+                            unoptimized
+                          />
+                        )}
+                        {/* Overlay Checkmark if checked */}
+                        {isChecked && (
+                            <div className="absolute inset-0 bg-white/60 rounded-full flex items-center justify-center">
+                                {/* Can put check icon here if needed, or just fade it */}
+                            </div>
+                        )}
+                     </div>
+                  </div>
+
+                  {/* Day Label */}
+                  <div className={`mb-2 text-sm md:text-base ${textClass}`}>
+                    {isToday ? 'วันนี้' : `วันที่ ${day}`}
+                  </div>
+               </div>
+             )
+           })}
+        </div>
+
+        {/* Status Text */}
+        <div className="text-center mt-4">
+           {checkedToday ? (
+              <button 
+                disabled
+                className="bg-gray-100 text-gray-400 text-lg font-bold py-3 px-12 rounded-full cursor-not-allowed flex items-center justify-center gap-2 mx-auto"
               >
-                <div className={`font-bold text-sm mb-2 ${isChecked ? 'text-green-600' : isToday ? 'text-red-600' : 'text-gray-400'}`}>
-                  DAY {day}
-                </div>
-
-                <div className={`relative transition-transform duration-300 ${isToday ? 'scale-110' : 'group-hover:scale-110'}`} style={{ width: imgSize, height: imgSize }}>
-                  <Image src={`/images/day${day}.png`} alt={`day-${day}`} fill className="object-contain" />
-                </div>
-
-                {/* Status Indicator Overlay */}
-                {isChecked && (
-                  <div className="absolute inset-0 bg-green-500/10 rounded-2xl flex items-center justify-center backdrop-blur-[1px]">
-                    <div className="bg-white rounded-full p-1.5 shadow-md">
-                      <Image src="/images/check.png" alt="checked" width={24} height={24} />
-                    </div>
-                  </div>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                เช็คอินแล้ว
+              </button>
+           ) : (
+              <button 
+                onClick={handleCheckin}
+                disabled={confirmLoading}
+                className={`
+                  bg-red-500 
+                  hover:from-red-600 hover:to-red-700
+                  !text-white text-lg font-bold 
+                  py-3 px-12 rounded-full 
+                  transform transition-all duration-200
+                  hover:scale-105 active:scale-95
+                  flex items-center justify-center gap-2 mx-auto
+                  ${confirmLoading ? 'opacity-70 cursor-wait' : ''}
+                `}
+              >
+                {confirmLoading ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5 !text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    กำลังบันทึก...
+                  </>
+                ) : (
+                  'กดเช็คอินเพื่อรับรางวัล'
                 )}
-
-                {/* Reward Label for Day 7 */}
-                {isRewardDay && (
-                  <div className="mt-2 text-xs font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full">
-                    BIG REWARD
-                  </div>
-                )}
-              </div>
-            )
-          })}
+              </button>
+           )}
         </div>
-
+        
         {/* Modal Logic (Keep as is) */}
         <Modal open={modalVisible} onOk={handleModalOk} onCancel={() => setModalVisible(false)} centered footer={null} width={320} className="checkin-modal">
           <div className="flex flex-col items-center justify-center p-6 gap-4 text-center">
-            <div className="w-24 h-24 relative animate-bounce">
-              <Image src="/images/coupon.png" loader={imageLoader} alt="coupon" fill className="object-contain" />
+            <div className="w-24 h-24 relative">
+              <Image src={settings?.stamp || '/images/stamp.png'} loader={imageLoader} alt="stamp" fill className="object-contain" unoptimized/>
             </div>
             <div>
               <h3 className="text-2xl font-bold text-gray-800 m-0">ยินดีด้วย!</h3>
-              <p className="text-gray-500 mt-2">คุณได้รับกาชาปอง</p>
+              <p className="text-gray-500 mt-2">คุณได้รับสแตมป์</p>
             </div>
             <div className="text-4xl font-black text-red-500 my-2">
-              {rewardUnit ?? 1} <span className="text-lg text-gray-400 font-medium">ลูก</span>
+              {rewardUnit ?? 1} <span className="text-lg text-gray-400 font-medium">ดวง</span>
             </div>
             <Button type="primary" size="large" onClick={handleModalOk} className="w-full !bg-red-600 hover:!bg-red-700 h-10 rounded-full font-bold">
               ตกลง
             </Button>
           </div>
         </Modal>
+
       </div>
     </div>
   )

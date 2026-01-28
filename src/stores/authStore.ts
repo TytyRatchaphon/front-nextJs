@@ -127,7 +127,14 @@ export const useAuthStore = create<AuthState>()(
           const decodedToken = JSON.parse(jsonPayload)
 
           const currentUser = get().user
-          if (currentUser) {
+          
+          // If no current user, initialize a fresh one
+          const baseUser = currentUser || {
+             fullname: '',
+             email: '',
+             role: 'user', 
+          } as UserData;
+
             // Helper to safely parse numbers
             const getNumber = (key: string, fallback: number) => {
               const v = decodedToken[key]
@@ -135,61 +142,60 @@ export const useAuthStore = create<AuthState>()(
               return fallback
             }
 
-            const flower = getNumber('flower', Number(currentUser.flower ?? 0))
-            const heart = getNumber('heart', Number(currentUser.heart ?? 0))
-            const stamp = getNumber('stamp', Number(currentUser.stamp ?? 0))
-            const coupon = getNumber('coupon', Number(currentUser.coupon ?? 0))
+            const flower = getNumber('flower', Number(baseUser.flower ?? 0))
+            const heart = getNumber('heart', Number(baseUser.heart ?? 0))
+            const stamp = getNumber('stamp', Number(baseUser.stamp ?? 0))
+            const coupon = getNumber('coupon', Number(baseUser.coupon ?? 0))
 
             // Check multiple keys for coin
             const coinRaw = decodedToken.coin ?? decodedToken.coins ?? decodedToken.goldCoins ?? decodedToken.gold_coin;
             const coin = (coinRaw !== undefined && coinRaw !== null && !Number.isNaN(Number(coinRaw)))
               ? Number(coinRaw)
-              : Number(currentUser.coin ?? 0);
+              : Number(baseUser.coin ?? 0);
 
             // Check multiple keys for freecoin
             const freecoinRaw = decodedToken.freecoin ?? decodedToken.free_coin;
             const freecoin = (freecoinRaw !== undefined && freecoinRaw !== null && !Number.isNaN(Number(freecoinRaw)))
               ? Number(freecoinRaw)
-              : Number(currentUser.freecoin ?? 0);
-            const exp = getNumber('exp_point', Number(currentUser.exp ?? 0)) // Token key is exp_point based on JSON
-            const user_id = getNumber('user_id', Number(currentUser.user_id ?? 0))
+              : Number(baseUser.freecoin ?? 0);
+            const exp = getNumber('exp_point', Number(baseUser.exp ?? 0)) // Token key is exp_point based on JSON
+            const user_id = getNumber('user_id', Number(baseUser.user_id ?? 0))
 
             // ✅ เพิ่มการอัปเดต Field ใหม่ๆ จาก Token
             const updatedUser: UserData = {
-              ...currentUser,
+              ...baseUser,
               user_id,
 
-              writer_name: decodedToken.writer_name !== undefined ? decodedToken.writer_name : currentUser.writer_name,
-              fullname: decodedToken.fullname !== undefined ? decodedToken.fullname : currentUser.fullname,
-              email: decodedToken.email !== undefined ? decodedToken.email : currentUser.email,
+              writer_name: decodedToken.writer_name !== undefined ? decodedToken.writer_name : baseUser.writer_name,
+              fullname: decodedToken.fullname !== undefined ? decodedToken.fullname : baseUser.fullname,
+              email: decodedToken.email !== undefined ? decodedToken.email : baseUser.email,
 
               // Map fields (ยอมรับ null)
-              phone: decodedToken.phone !== undefined ? decodedToken.phone : currentUser.phone,
-              address_main: decodedToken.address_main !== undefined ? decodedToken.address_main : currentUser.address_main,
-              des: decodedToken.des !== undefined ? decodedToken.des : currentUser.des,
-              facebook: decodedToken.facebook !== undefined ? decodedToken.facebook : currentUser.facebook,
-              twitter: decodedToken.twitter !== undefined ? decodedToken.twitter : currentUser.twitter,
-              gender: decodedToken.gender !== undefined ? decodedToken.gender : currentUser.gender,
-              birthday: decodedToken.birthday !== undefined ? decodedToken.birthday : currentUser.birthday,
-              cat1: decodedToken.cat1 !== undefined ? decodedToken.cat1 : currentUser.cat1,
-              cat2: decodedToken.cat2 !== undefined ? decodedToken.cat2 : currentUser.cat2,
+              phone: decodedToken.phone !== undefined ? decodedToken.phone : baseUser.phone,
+              address_main: decodedToken.address_main !== undefined ? decodedToken.address_main : baseUser.address_main,
+              des: decodedToken.des !== undefined ? decodedToken.des : baseUser.des,
+              facebook: decodedToken.facebook !== undefined ? decodedToken.facebook : baseUser.facebook,
+              twitter: decodedToken.twitter !== undefined ? decodedToken.twitter : baseUser.twitter,
+              gender: decodedToken.gender !== undefined ? decodedToken.gender : baseUser.gender,
+              birthday: decodedToken.birthday !== undefined ? decodedToken.birthday : baseUser.birthday,
+              cat1: decodedToken.cat1 !== undefined ? decodedToken.cat1 : baseUser.cat1,
+              cat2: decodedToken.cat2 !== undefined ? decodedToken.cat2 : baseUser.cat2,
 
               // Images & Frames (ยอมรับ null)
-              banner: decodedToken.banner !== undefined ? decodedToken.banner : currentUser.banner,
-              img: decodedToken.img !== undefined ? decodedToken.img : currentUser.img,
+              banner: decodedToken.banner !== undefined ? decodedToken.banner : baseUser.banner,
+              img: decodedToken.img !== undefined ? decodedToken.img : baseUser.img,
 
               // *** จุดสำคัญที่แก้ ***
-              frame_id: decodedToken.frame_id !== undefined ? decodedToken.frame_id : currentUser.frame_id,
-              aka_id: decodedToken.aka_id !== undefined ? decodedToken.aka_id : currentUser.aka_id,
-              frame: decodedToken.frame !== undefined ? decodedToken.frame : currentUser.frame,
-              aka: decodedToken.aka !== undefined ? decodedToken.aka : currentUser.aka,
+              frame_id: decodedToken.frame_id !== undefined ? decodedToken.frame_id : baseUser.frame_id,
+              aka_id: decodedToken.aka_id !== undefined ? decodedToken.aka_id : baseUser.aka_id,
+              frame: decodedToken.frame !== undefined ? decodedToken.frame : baseUser.frame,
+              aka: decodedToken.aka !== undefined ? decodedToken.aka : baseUser.aka,
 
               flower, heart, stamp, coupon, coin, freecoin, exp,
             }
 
             set({ user: updatedUser })
             try { localStorage.setItem('userData', JSON.stringify(updatedUser)) } catch (e) { }
-          }
         } catch (error) {
         }
       },

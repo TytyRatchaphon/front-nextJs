@@ -1,0 +1,25 @@
+meta {
+  name: /writer/withdraw
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{path}}/writer/withdraw
+  body: json
+  auth: inherit
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+body:json {
+  {
+      "amount":"1000"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

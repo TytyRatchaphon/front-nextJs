@@ -3,8 +3,8 @@ import LineCallbackContent from '@/features/auth/LineCallbackContent';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'LINE Login Callback | EnjoyQuiz',
-    description: 'LINE Login Callback - EnjoyQuiz',
+    title: 'LINE Login Callback | Enjoybook',
+    description: 'LINE Login Callback - Enjoybook',
 };
 
 export default function LineCallbackPage() {

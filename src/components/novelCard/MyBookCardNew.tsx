@@ -90,7 +90,7 @@ const MyBookCardNew: React.FC<MyBookCardNewProps> = ({ book }) => {
       {/* Info Section */}
       <div className="flex flex-col gap-1">
         {/* Title */}
-        <h3 className="text-base font-bold text-gray-900 line-clamp-1" title={book.name}>
+        <h3 className="text-base font-bold text-gray-900 line-clamp-2 min-h-[3rem] hover:!text-red-600 transition-colors duration-300" title={book.name}>
           {book.name || 'No Title'}
         </h3>
 

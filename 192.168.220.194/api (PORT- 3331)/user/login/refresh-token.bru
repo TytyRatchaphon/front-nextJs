@@ -1,0 +1,19 @@
+meta {
+  name: /refresh-token
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{path}}/refresh-token
+  body: none
+  auth: inherit
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+settings {
+  encodeUrl: true
+}

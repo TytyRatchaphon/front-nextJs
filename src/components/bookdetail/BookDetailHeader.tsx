@@ -206,8 +206,8 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
 
   const coverImageUrl = book.cover
     ? book.cover.trim().startsWith("http")
-      ? book.cover.trim()
-      : `https://img.enjoybook.co/img/book/tn/${book.cover.trim()}`
+      ? book.cover
+      : `https://img.enjoybook.co/img/book/thumbnail/${book.cover.trim()}`
     : "/images/book.png";
 
   const handleTrackShare = (platform: 'facebook' | 'twitter' | 'line') => {

@@ -1,0 +1,25 @@
+meta {
+  name: /user/getbookshelvecontinue/:limit
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{path}}/user/getbookshelvecontinue?limit=20
+  body: none
+  auth: inherit
+}
+
+params:query {
+  limit: 20
+  ~page: 2
+  ~order: desc
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+settings {
+  encodeUrl: true
+}

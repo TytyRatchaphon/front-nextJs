@@ -3,6 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { Plus } from 'lucide-react';
+import { Tooltip } from 'antd';
 
 import { useAuthStore } from '@/stores/authStore';
 import { useWebsiteStore } from '@/stores/websiteStore';
@@ -52,10 +53,12 @@ function AmountPill({ amount, icon, onAddClick, className = "" }: AmountPillProp
             </div>
 
             {/* Amount Text */}
-            <div className="flex-1 text-center mx-1 overflow-hidden">
-                <span className="text-sm font-medium text-gray-800 truncate block leading-none" title={amount.toLocaleString()}>
-                    {formattedAmount}
-                </span>
+            <div className="flex-1 text-center mx-1 overflow-hidden cursor-pointer">
+                <Tooltip title={amount.toLocaleString()} trigger={['click', 'hover']} placement="bottom">
+                    <span className="text-sm font-medium text-gray-800 truncate block leading-none">
+                        {formattedAmount}
+                    </span>
+                </Tooltip>
             </div>
 
             {/* Add Button */}

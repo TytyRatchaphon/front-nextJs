@@ -1,0 +1,24 @@
+meta {
+  name: /books/ranking
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{path}}/books/ranking/:categoryId/:range?limit=1
+  body: none
+  auth: inherit
+}
+
+params:query {
+  limit: 1
+}
+
+params:path {
+  categoryId: 3
+  range: 7
+}
+
+settings {
+  encodeUrl: true
+}

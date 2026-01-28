@@ -1,0 +1,45 @@
+meta {
+  name: Review Reply
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{path}}/bookdetail/reviews/:comment_book_id/replies
+  body: json
+  auth: inherit
+}
+
+params:path {
+  comment_book_id: 2324
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+body:json {
+  {
+      "comment": "Test Notification"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  - เพิ่มคอมเมนท์ตอบกลับ ของ รีวิว
+      
+  - Request
+      
+      - Param
+          
+          - comment_book_id: Number = ไอดีของ comment รีวิว
+              
+      - Body
+          
+          - comment: Text = ข้อความคอมเมนท์
+              
+  - ต้องล็อคอินก่อน
+}

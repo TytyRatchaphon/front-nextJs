@@ -83,6 +83,7 @@ function CardBook({ book }: CardBookProps) {
     <div className="w-full max-w-[180px] h-[380px] flex-shrink-0 relative z-0">
       <Link
         href={`/book/${encodeURIComponent(bookParam)}`}
+        prefetch={false}
         className="flex flex-col cursor-pointer p-1 text-start hover:text-red-600 bg-transparent relative overflow-visible h-full"
         style={{ width: '100%' }}
         onClick={() => {

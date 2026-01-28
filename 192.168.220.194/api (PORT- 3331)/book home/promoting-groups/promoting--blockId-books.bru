@@ -1,0 +1,19 @@
+meta {
+  name: /promoting/:blockId/books
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{path}}/promoting/:blockId/books
+  body: none
+  auth: inherit
+}
+
+params:path {
+  blockId: 6
+}
+
+settings {
+  encodeUrl: true
+}

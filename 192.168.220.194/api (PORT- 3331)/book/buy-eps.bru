@@ -1,0 +1,27 @@
+meta {
+  name: /buy/eps
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{path}}/buy/eps
+  body: json
+  auth: inherit
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+body:json {
+  {
+      "eps": [
+          1599430,1599427,1599428,1599429
+      ], "payWith": "coin"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

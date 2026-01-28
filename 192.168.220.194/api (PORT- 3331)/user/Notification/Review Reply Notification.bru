@@ -1,0 +1,23 @@
+meta {
+  name: Review Reply Notification
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{path}}/user/notifications/reviews/replies/:commentId
+  body: none
+  auth: inherit
+}
+
+params:path {
+  commentId: 285
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+settings {
+  encodeUrl: true
+}

@@ -77,6 +77,84 @@ export interface HomeDataResponse {
 
 
 
+export interface PromotingGroup {
+  id: number;
+  name: string;
+  banner: string;
+  status: number;
+  publish_date: string;
+  update_at: string;
+}
+
+export const fetchPromotingGroups = async (): Promise<PromotingGroup[]> => {
+  try {
+    const response = await apiClient.get<{ code: number; data: PromotingGroup[] }>("/promoting-groups");
+    return response.data?.data || [];
+  } catch (error) {
+    return [];
+  }
+};
+
+export interface PromotingBook {
+  book_id: number;
+  name: string;
+  title: string;
+  img: string;
+  user_id: number;
+  view: number;
+  end: string;
+  status: string;
+  tag: string[];
+  date_at: string;
+  img_full: string;
+  bgimg: string | null;
+  writer_name: string;
+  chapter: number;
+  shelve_count: number;
+  isBestSeller: boolean;
+  isNew: boolean;
+  isNewEp: boolean;
+  discount: any;
+  discount_ep_count: any;
+}
+
+export interface PromotingBlock {
+  id: number;
+  group_id: number;
+  type: string;
+  banner: string;
+  book: string;
+  order_by: number;
+  update_at: string;
+  books: PromotingBook[];
+  total_books: number;
+  has_more: boolean;
+}
+
+export interface PromotingGroupDetail extends PromotingGroup {
+  blocks: PromotingBlock[];
+}
+
+export const fetchPromotingGroupDetail = async (id: string | number): Promise<PromotingGroupDetail | null> => {
+  try {
+    const response = await apiClient.get<{ code: number; data: PromotingGroupDetail }>(`/promoting-group/${id}`);
+    return response.data?.data || null;
+  } catch (error) {
+    return null;
+  }
+};
+
+export const fetchPromotingBlock = async (blockId: string | number, page: number = 1): Promise<PromotingBlock | null> => {
+  try {
+    const response = await apiClient.get<{ code: number; data: PromotingBlock }>(`/promoting-group/block/${blockId}`, {
+      params: { page }
+    });
+    return response.data?.data || null;
+  } catch (error) {
+    return null;
+  }
+};
+
 export const fetchHomeData = async (): Promise<HomeDataResponse | null> => {
   try {
     const response = await apiClient.get<HomeDataResponse>("/getAllBookHome");
@@ -703,6 +781,18 @@ export const deleteGroup = async (groupId: string | number) => {
     throw error;
   }
 }
+
+export const updateUserAddress = async (formData: FormData, token: string) => {
+  try {
+     // Use axios directly to hit Next.js API route (relative path) instead of backend (apiClient base URL)
+     const response = await axios.post('/api/save_profile', formData, {
+       headers: { 'Authorization': token }
+     });
+     return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
 
 export const getBankList = async () => {
   try {
@@ -1916,3 +2006,45 @@ export const buyGroupPromotion = async (data: { dfb_id: number; payWith: string 
     throw error;
   }
 };
+
+export interface LogActivityPayload {
+  session_id?: string;
+  page_session_id?: string;
+  action: string;
+  target_type?: string;
+  target_id?: string;
+  path?: string;
+  duration?: number; // seconds
+  metadata?: any;
+}
+
+export const logActivity = async (payload: LogActivityPayload) => {
+  try {
+    if (process.env.NODE_ENV === 'development') {
+        console.log("Creating Activity Log:", payload);
+    }
+    // Fire and forget strategy often used for logging, but here we await to ensure it's sent
+    const response = await apiClient.post('/log/activity', payload);
+    return response.data;
+  } catch (error) {
+    // Fail silently for logging to not disrupt user experience
+    console.error("Failed to log activity", error);
+    return null;
+  }
+};
+
+export interface FaqItem {
+  id: number;
+  question: string;
+  answer: string;
+}
+
+export const fetchFaqs = async (): Promise<FaqItem[]> => {
+    try {
+        const response = await apiClient.get<{ code: number; data: FaqItem[] }>('/faq');
+        // Based on typical response structure { code: 200, data: [...] }
+        return response.data?.data || [];
+    } catch (error) {
+        return [];
+    }
+}

@@ -1,0 +1,19 @@
+meta {
+  name: /promoting-group/:groupId
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{path}}/promoting-group/:groupId
+  body: none
+  auth: inherit
+}
+
+params:path {
+  groupId: 2
+}
+
+settings {
+  encodeUrl: true
+}

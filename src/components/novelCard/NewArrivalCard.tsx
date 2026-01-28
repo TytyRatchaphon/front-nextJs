@@ -21,7 +21,7 @@ export default function NewArrivalCard({ book }: NewArrivalCardProps) {
   };
 
   return (
-    <Link href={`/book/${book.book_id}`} className="block w-full hover:bg-gray-50 rounded-lg transition-colors p-2 group">
+    <Link href={`/book/${book.book_id}`} prefetch={false} className="block w-full hover:bg-gray-50 rounded-lg transition-colors p-2 group">
       <div className="flex gap-4 items-start">
         {/* Book Cover */}
         <div className="w-[91px] h-[128px] rounded overflow-hidden flex-shrink-0 relative shadow-sm">

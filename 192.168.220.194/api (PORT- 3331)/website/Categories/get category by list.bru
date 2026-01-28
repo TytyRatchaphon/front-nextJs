@@ -1,0 +1,23 @@
+meta {
+  name: get category by list
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{path}}/book-category/list?type=tran&categoryId=5&tab=new&limit=10&page=1
+  body: none
+  auth: inherit
+}
+
+params:query {
+  type: tran
+  categoryId: 5
+  tab: new
+  limit: 10
+  page: 1
+}
+
+settings {
+  encodeUrl: true
+}

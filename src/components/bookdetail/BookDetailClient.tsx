@@ -14,6 +14,7 @@ import { useWebsiteStore } from '@/stores/websiteStore';
 import { useBookDetailData } from "@/hooks/book/useBookDetailData";
 import { BookAboutTab } from "@/components/bookdetail/BookAboutTab";
 import { BookEpisodesTab } from "@/components/bookdetail/BookEpisodesTab";
+import { useLogger } from "@/hooks/useLogger";
 
 const collapseTabs = ["แนะแนวเรื่อง", "สารบัญ"] as const;
 const segmentedTabs = ["รีวิวทั้งหมด", "ความคิดเห็นทั้งหมด"] as const;
@@ -21,6 +22,7 @@ type TabKey = (typeof collapseTabs)[number] | (typeof segmentedTabs)[number];
 
 export default function BookDetailClient({ bookId }: { bookId: string }) {
   const [activeSegmentedTab, setActiveSegmentedTab] = useState<(typeof segmentedTabs)[number]>(segmentedTabs[0]);
+  const { log, trackTimeSpent } = useLogger();
   const { token, hasMounted } = useAuthStore() as any;
   const { settings } = useWebsiteStore();
 
@@ -44,7 +46,19 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
     } else {
       document.title = "EnjoyBook - อ่านนิยายออนไลน์";
     }
-  }, [book]);
+
+    if (book) {
+       // Log Page View
+       log('page_view', 'book', String(book.id), {
+          name: book.title,
+       });
+
+       // Start Tracking Time
+       // The function returns a cleanup function that logs 'time_spent' on unmount
+       const stopTracking = trackTimeSpent('book', String(book.id), { name: book.title });
+       return stopTracking;
+    }
+  }, [book, log, trackTimeSpent]);
 
   const tabContents: Record<TabKey, React.ReactElement> = {
     แนะแนวเรื่อง: <BookAboutTab bookDetail={bookDetail ?? null} />,

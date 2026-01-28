@@ -1,0 +1,19 @@
+meta {
+  name: /user/mybook/list-names
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{path}}/user/mybook/list-names
+  body: none
+  auth: inherit
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+settings {
+  encodeUrl: true
+}

@@ -305,7 +305,7 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
 
           return (
             <div key={item.book_id || index} className={`flex flex-col gap-2 ${visibilityClass}`}>
-              <Link href={`/book/${item.book_id}`} className="relative w-full aspect-[2/3] rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            <Link href={`/book/${item.book_id}`} prefetch={false} className="relative w-full aspect-[2/3] rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                 <Image
                   src={getImageUrl(item.img || item.img_full)}
                   alt={item.name}

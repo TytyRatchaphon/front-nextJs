@@ -1,0 +1,30 @@
+meta {
+  name: /user/mybook/search
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{path}}/user/mybook/search?sortBy=date_at&order=asc&page=1&limit=10&type=tran
+  body: none
+  auth: inherit
+}
+
+params:query {
+  sortBy: date_at
+  order: asc
+  page: 1
+  limit: 10
+  type: tran
+  ~q: asss
+  ~status: publish
+  ~end: end
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+settings {
+  encodeUrl: true
+}

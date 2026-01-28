@@ -31,15 +31,16 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
   }, [salesDateRange]);
 
   const { data: salesResponse = null, isLoading: isLoadingSales, refetch: refetchSales } = useQuery({
-    queryKey: ['salesReport', formattedSalesRange[0], formattedSalesRange[1]],
+    queryKey: ['salesReport', formattedSalesRange[0], formattedSalesRange[1], currentPage],
     queryFn: async () => {
       try {
         const params = {
           start: formattedSalesRange[0],
           end: formattedSalesRange[1],
-        } as Record<string, string>;
+          page: currentPage,
+        } as Record<string, any>;
 
-        const res = await apiClient.get('/user/sales-report', { params });
+        const res = await apiClient.get('/sales-report', { params });
         return res.data;
       } catch (err) {
         return [];
@@ -56,7 +57,7 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
         end: formattedSalesRange[1],
       } as Record<string, string>;
 
-      const res = await apiClient.get('/user/sales-report/export', { params, responseType: 'blob' as const });
+      const res = await apiClient.get('/sales-report/export', { params, responseType: 'blob' as const });
 
       const contentType = res.headers?.['content-type'] || res.headers?.['Content-Type'] || 'application/octet-stream';
       const blob = new Blob([res.data], { type: contentType });
@@ -86,11 +87,32 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
       const msg = err?.response?.data?.message || err?.message || 'ไม่สามารถดาวน์โหลดไฟล์ได้';
       api.error({ message: msg });
     } finally {
-      setExporting(false);
     }
   };
 
-  const salesColumns: ColumnsType<{ key: any; name: any; coin_sales_total: any; freecoin_sales_total: any; revenue: any; }> = [
+  const paginationData = useMemo(() => {
+    // API structure check: data.data.total, data.data.limit, etc.
+    const d = salesResponse?.data;
+    if (d) {
+        return {
+            total: d.total ?? d.pagination?.total ?? 0,
+            limit: d.limit ?? d.pagination?.limit ?? 20,
+            page: d.page ?? d.pagination?.page ?? 1
+        };
+    }
+    return { total: 0, limit: 20, page: 1 };
+  }, [salesResponse]);
+
+  const salesColumns: ColumnsType<{ key: any; name: any; coin_sales_total: any; freecoin_sales_total: any; revenue: any; }> = useMemo(() => [
+    {
+      title: 'ลำดับ',
+      key: 'index',
+      width: 80,
+      render: (_: any, __: any, index: number) => {
+        const pageSize = paginationData.limit || 20;
+        return (currentPage - 1) * pageSize + index + 1;
+      },
+    },
     {
       title: 'เรื่อง',
       dataIndex: 'name',
@@ -104,7 +126,7 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
       align: 'right',
       render: (v: any) => {
         const n = Number(v) || 0;
-        return `${n.toLocaleString('en-US')}`;
+        return `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       }
     },
     {
@@ -114,7 +136,7 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
       align: 'right',
       render: (v: any) => {
         const n = Number(v) || 0;
-        return `${n.toLocaleString('en-US')}`;
+        return `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       }
     },
     {
@@ -125,10 +147,10 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
       render: (v: any, record: any) => {
         const raw = v ?? record.total ?? record.income ?? record.revenue ?? record.amount ?? record.total_money ?? record.money ?? 0;
         const n = Number(raw) || 0;
-        return `${n.toLocaleString('en-US', { minimumFractionDigits: 0 })}`;
+        return `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       }
     },
-  ];
+  ], [currentPage, paginationData]);
 
   const salesRows: any[] = useMemo(() => {
     if (!salesResponse) return [];
@@ -149,13 +171,20 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
     return d?.data?.totals ?? null;
   }, [salesResponse]);
 
-  const salesData = Array.isArray(salesRows) ? salesRows.map((r: any, idx: number) => ({
-    key: r.book_id || r.id || r._id || `sales-${idx}`, 
-    name: r.name ?? r.title ?? r.book_name ?? '-',
-    coin_sales_total: r.coin_sales_total ?? r.coin_sales ?? r.coin_sales_total_amount ?? 0,
-    freecoin_sales_total: r.freecoin_sales_total ?? r.freecoin_sales ?? r.freecoin_sales_total_amount ?? 0,
-    revenue: r.income_baht ?? r.total ?? r.income ?? r.revenue ?? r.amount ?? r.total_money ?? r.money ?? 0,
-  })) : [];
+
+
+  const salesData = useMemo(() => {
+    console.log('Calculating salesData. Rows count:', salesRows.length, 'Page:', currentPage);
+    if (!Array.isArray(salesRows)) return [];
+    
+    return salesRows.map((r: any, idx: number) => ({
+      key: r.book_id || r.id || r._id || `sales-${currentPage}-${idx}`, 
+      name: r.name ?? r.title ?? r.book_name ?? '-',
+      coin_sales_total: r.coin_sales_total ?? r.coin_sales ?? r.coin_sales_total_amount ?? 0,
+      freecoin_sales_total: r.freecoin_sales_total ?? r.freecoin_sales ?? r.freecoin_sales_total_amount ?? 0,
+      revenue: r.income_baht ?? r.total ?? r.income ?? r.revenue ?? r.amount ?? r.total_money ?? r.money ?? 0,
+    }));
+  }, [salesRows, currentPage]);
 
   return (
     <div className='py-6'>
@@ -241,12 +270,12 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
             <div className='flex items-center gap-2'>
               <div className='flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-50 border border-yellow-200'>
                 <Image src="/images/e-coin.png" alt="Coins" width={20} height={20} />
-                <span className='text-sm font-medium'>{salesTotals ? (Number(salesTotals.coin_sales_total || 0)).toLocaleString('en-US') : '0'}</span>
+                <span className='text-sm font-medium'>{salesTotals ? (Number(salesTotals.coin_sales_total || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</span>
               </div>
 
               <div className='flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 border border-red-200'>
                 <Image src="/images/money-bag.png" alt="Freecoin" width={20} height={20} />
-                <span className='text-sm font-medium'>{salesTotals ? (Number(salesTotals.freecoin_sales_total || 0)).toLocaleString('en-US') : '0'}</span>
+                <span className='text-sm font-medium'>{salesTotals ? (Number(salesTotals.freecoin_sales_total || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</span>
               </div>
             </div>
           </div>
@@ -254,7 +283,7 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
           <div className='text-right mt-3 md:mt-0'>
             <div className='text-sm text-gray-600'>รวมรายได้</div>
             <div className='text-lg font-semibold'>
-              {salesTotals ? (Number(salesTotals.overall_income_baht ?? salesTotals.total_income_baht ?? salesTotals.overall_income ?? salesTotals.income_baht ?? 0)).toLocaleString('en-US') : '0'} บาท
+              {salesTotals ? (Number(salesTotals.overall_income_baht ?? salesTotals.total_income_baht ?? salesTotals.overall_income ?? salesTotals.income_baht ?? 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'} บาท
             </div>
           </div>
         </div>
@@ -265,7 +294,8 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
         <Pagination
           current={currentPage}
           onChange={setCurrentPage}
-          total={10}
+          total={paginationData.total}
+          pageSize={paginationData.limit || 20}
           showSizeChanger={false}
         />
       </div>

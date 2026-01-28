@@ -12,6 +12,25 @@ declare global {
 const LIFF_ID = process.env.NEXT_PUBLIC_LINE_LIFF_ID || '2008384593-5BLnp8gx';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.220.194:3331';
 
+// Helper to set cookies
+const setCookie = (name: string, value: string, days: number = 365) => {
+  if (typeof document === 'undefined') return;
+  const date = new Date();
+  date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+  const expires = "expires=" + date.toUTCString();
+  document.cookie = name + "=" + (value || "") + ";" + expires + ";path=/";
+};
+
+// Helper to check token status before login
+const checkBeforeLogin = (token: string): boolean => {
+  try {
+    if (!token) return false;
+    return false;
+  } catch (e) {
+    return false;
+  }
+};
+
 export const useLineLogin = () => {
   const { login, updateToken, isLoggedIn } = useAuthStore();
   const [loading, setLoading] = useState(false);
@@ -56,9 +75,19 @@ export const useLineLogin = () => {
         }
 
         if (token) {
+          setCookie('token', token, 365);
+          setCookie('closePopupPolicy', '', 365);
+          
           login(userInfo, token);
           updateToken(token);
           localStorage.removeItem('is_line_login_processing');
+
+          const navi = checkBeforeLogin(token);
+          if (navi) {
+            window.location.href = '/';
+          } else {
+            window.location.reload();
+          }
         }
       }
     } catch (error) {

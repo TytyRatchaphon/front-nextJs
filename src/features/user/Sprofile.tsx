@@ -13,7 +13,7 @@ import {
   Modal
 } from 'antd';
 import type { TabsProps, UploadProps } from 'antd';
-import { UploadOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { UploadOutlined, CheckCircleOutlined, LockOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import axios from 'axios';
 import { useFormStore } from '@/stores/formStore';
@@ -285,7 +285,20 @@ const ProfilePictureTab = ({ onProfileFileChange }: ProfilePictureTabProps) => {
         timeout: 30000,
       });
       if (response.data.code === 200 || response.data.status === 'success') {
-        setFrames(response.data.data?.frames || []);
+        const fetchedFrames = response.data.data?.frames || [];
+        setFrames(fetchedFrames);
+
+        // Sync selection with server data
+        const currentFrameId = response.data.data?.currentFrameId;
+        if (currentFrameId) {
+          const activeFrame = fetchedFrames.find((f: any) => f.frame_id === currentFrameId);
+          if (activeFrame) {
+            setSelectedFrameInModal(activeFrame);
+          }
+        } else {
+             // If 0 or null, it means no frame equipped
+             setSelectedFrameInModal(null);
+        }
       }
     } catch (error: any) {
       message.error('ไม่สามารถโหลดข้อมูลกรอบได้');
@@ -297,6 +310,13 @@ const ProfilePictureTab = ({ onProfileFileChange }: ProfilePictureTabProps) => {
   const handleOpenFrameModal = () => {
     setIsFrameModalOpen(true);
     fetchFrames();
+    
+    // Set initially selected frame based on current user frame
+    if ((user as any)?.frame && (user as any).frame.frame_id) {
+      setSelectedFrameInModal((user as any).frame);
+    } else {
+      setSelectedFrameInModal(null);
+    }
   };
 
   const handleSelectFrameInModal = (frame: any) => {
@@ -383,22 +403,73 @@ const ProfilePictureTab = ({ onProfileFileChange }: ProfilePictureTabProps) => {
           </div>
         </div>
 
-        <Modal title={<span className='font-primary text-xl font-bold'>เลือกกรอบ</span>} open={isFrameModalOpen} onCancel={() => setIsFrameModalOpen(false)} footer={[<Button key="submit" type="primary" onClick={handleConfirmFrame} className='font-primary font-medium' style={{ backgroundColor: '#FF0037', borderColor: '#FF0037' }}>ยืนยัน</Button>]} width={600} centered>
+        <Modal 
+          title={<span className='font-primary text-xl font-bold'>เลือกกรอบ</span>} 
+          open={isFrameModalOpen} 
+          onCancel={() => setIsFrameModalOpen(false)} 
+          footer={
+            <div className="flex flex-col sm:flex-row justify-between items-center w-full gap-4 sm:gap-0">
+              <span className="text-sm font-primary text-gray-500 text-center sm:text-left leading-relaxed">
+                กรอบและฉายา สามารถได้รับผ่านการซื้อในร้านค้า{' '}
+                <a href="/store" className="!text-red-500 hover:!text-red-700 underline inline-flex items-center gap-1 align-bottom" rel="noopener noreferrer">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M3.00977 11.22V15.71C3.00977 20.2 4.80977 22 9.29977 22H14.6898C19.1798 22 20.9798 20.2 20.9798 15.71V11.22" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M12.0005 12C13.8305 12 15.1805 10.51 15.0005 8.68L14.3405 2H9.67048L9.00048 8.68C8.82048 10.51 10.1705 12 12.0005 12Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M18.3098 12C20.3298 12 21.8098 10.36 21.6098 8.35L21.3298 5.6C20.9698 3 19.9698 2 17.3498 2H14.2998L14.9998 9.01C15.1698 10.66 16.6598 12 18.3098 12Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M5.64037 12C7.29037 12 8.78037 10.66 8.94037 9.01L9.16037 6.8L9.64037 2H6.59037C3.97037 2 2.97037 3 2.61037 5.6L2.34037 8.35C2.14037 10.36 3.62037 12 5.64037 12Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M12 17C10.33 17 9.5 17.83 9.5 19.5V22H14.5V19.5C14.5 17.83 13.67 17 12 17Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  ไปที่ร้านค้า
+                </a>
+              </span>
+              <Button key="submit" type="primary" onClick={handleConfirmFrame} className='font-primary font-medium w-full sm:w-auto' style={{ backgroundColor: '#FF0037', borderColor: '#FF0037' }}>ยืนยัน</Button>
+            </div>
+          } 
+          width={1000} 
+          centered
+          zIndex={5000}
+        >
           {loadingFrames ? (
             <div className='flex justify-center py-10'><GifLoader className="h-64" width={150} height={150} /></div>
           ) : (
-            <div className='grid grid-cols-2 sm:grid-cols-3 gap-4 py-4'>
-              <div onClick={() => handleSelectFrameInModal(null)} className={`border-2 rounded-lg p-4 cursor-pointer flex flex-col items-center justify-center h-40 transition-all ${selectedFrameInModal === null ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-400'}`}>
-                <span className='font-primary text-sm'>ไม่ใส่กรอบ</span>
-              </div>
-              {frames.map((frame) => (
-                <div key={frame.frame_id} onClick={() => handleSelectFrameInModal(frame)} className={`border-2 rounded-lg p-2 cursor-pointer flex flex-col items-center transition-all ${selectedFrameInModal?.frame_id === frame.frame_id ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-400'}`}>
-                  <div className='relative w-full h-28 mb-2'>
-                    <Image src={frame.img} alt={frame.name} fill className='object-contain' unoptimized={frame.img?.endsWith('.gif')} />
-                  </div>
-                  <span className='text-xs'>{frame.name}</span>
+            <div className='max-h-[60vh] overflow-y-auto p-4'>
+              <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 py-4'>
+                <div onClick={() => handleSelectFrameInModal(null)} className={`border-2 rounded-lg p-4 cursor-pointer flex flex-col items-center justify-center h-40 transition-all ${selectedFrameInModal === null ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-400'}`}>
+                  <span className='font-primary text-sm'>ไม่ใส่กรอบ</span>
                 </div>
-              ))}
+              {frames.map((frame) => {
+                const isLocked = frame.isUnlocked === false;
+                return (
+                  <div
+                    key={frame.frame_id}
+                    onClick={() => !isLocked && handleSelectFrameInModal(frame)}
+                    className={`border-2 rounded-lg p-2 flex flex-col items-center transition-all relative overflow-hidden
+                    ${isLocked ? 'border-none bg-gray-400 cursor-not-allowed' : 'cursor-pointer'}
+                    ${!isLocked && selectedFrameInModal?.frame_id === frame.frame_id ? 'border-green-500 bg-green-50' : ''}
+                    ${!isLocked && selectedFrameInModal?.frame_id !== frame.frame_id ? 'border-gray-200 hover:border-gray-400' : ''}
+                  `}
+                  >
+                    {isLocked && (
+                      <>
+                        <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/10">
+                          <div className="bg-transparent p-2 rounded-xl">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                              <path d="M6 10V8C6 4.69 7 2 12 2C17 2 18 4.69 18 8V10" stroke="#DFDFEC" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M12 18.5C13.3807 18.5 14.5 17.3807 14.5 16C14.5 14.6193 13.3807 13.5 12 13.5C10.6193 13.5 9.5 14.6193 9.5 16C9.5 17.3807 10.6193 18.5 12 18.5Z" stroke="#DFDFEC" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M17 22H7C3 22 2 21 2 17V15C2 11 3 10 7 10H17C21 10 22 11 22 15V17C22 21 21 22 17 22Z" stroke="#DFDFEC" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    <div className={`relative w-full h-28 mb-2 ${isLocked ? 'opacity-50' : ''}`}>
+                      <Image src={frame.img} alt={frame.name} fill className='object-contain' unoptimized={frame.img?.endsWith('.gif')} />
+                    </div>
+                    <span className={`text-xs ${isLocked ? 'text-white font-bold' : ''}`}>{frame.name}</span>
+                  </div>
+                );
+              })}
+            </div>
             </div>
           )}
         </Modal>
@@ -463,13 +534,17 @@ const UserInfoTab = () => {
         formData.append(key, String(value));
       };
 
-      append('fullname', userProfileForm.fullname || user?.fullname || "");
-      append('writer_name', (user as any)?.writer_name || "");
-      append('phone', userProfileForm.phone || (user as any)?.phone || "");
-      append('address_main', userProfileForm.address_main || (user as any)?.address_main || "");
-      append('des', userProfileForm.des || (user as any)?.des || "");
-      append('facebook', userProfileForm.facebook || (user as any)?.facebook || "");
-      append('twitter', userProfileForm.twitter || (user as any)?.twitter || "");
+      // Use a helper or logic that respects empty strings
+      const getVal = (formVal: any, userVal: any) => {
+        return formVal !== undefined && formVal !== null ? formVal : (userVal || "");
+      };
+
+      append('fullname', getVal(userProfileForm.fullname, user?.fullname));
+      append('phone', getVal(userProfileForm.phone, (user as any)?.phone));
+      append('address_main', getVal(userProfileForm.address_main, (user as any)?.address_main));
+      append('des', getVal(userProfileForm.des, (user as any)?.des));
+      append('facebook', getVal(userProfileForm.facebook, (user as any)?.facebook));
+      append('twitter', getVal(userProfileForm.twitter, (user as any)?.twitter));
 
       let genderVal = userProfileForm.gender || (user as any)?.gender || "no";
       if (genderVal === 'ชาย') genderVal = 'm';

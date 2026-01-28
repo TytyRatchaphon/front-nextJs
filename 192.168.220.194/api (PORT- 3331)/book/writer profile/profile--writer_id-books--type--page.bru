@@ -1,0 +1,26 @@
+meta {
+  name: /profile/:writer_id/books/:type/:page
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{path}}/profile/:writer_id/books/:type/:page?limit=20&sortBy=view
+  body: none
+  auth: inherit
+}
+
+params:query {
+  limit: 20
+  sortBy: view
+}
+
+params:path {
+  writer_id: 17966
+  type: new
+  page: 1
+}
+
+settings {
+  encodeUrl: true
+}

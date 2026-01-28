@@ -1,0 +1,23 @@
+meta {
+  name: /getbookcate
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{path}}/getbookcate?category=13&type=new&tabs=bestseller&pageNo=1&pageSize=5
+  body: json
+  auth: inherit
+}
+
+params:query {
+  category: 13
+  type: new
+  tabs: bestseller
+  pageNo: 1
+  pageSize: 5
+}
+
+settings {
+  encodeUrl: true
+}

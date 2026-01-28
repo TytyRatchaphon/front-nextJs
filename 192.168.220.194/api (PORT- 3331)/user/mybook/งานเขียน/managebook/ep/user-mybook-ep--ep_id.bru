@@ -1,0 +1,19 @@
+meta {
+  name: /user/mybook/ep/:ep_id
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{path}}/user/mybook/ep/100000002
+  body: none
+  auth: inherit
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+settings {
+  encodeUrl: true
+}

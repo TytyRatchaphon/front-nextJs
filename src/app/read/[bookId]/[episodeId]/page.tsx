@@ -1,4 +1,4 @@
-import ReadEpisodeClient from "./ReadEpisodeClient";
+import ReadEpisodeClient from "@/features/read/ReadEpisodeClient";
 
 type Params = {
   params: { bookId: string; episodeId: string };

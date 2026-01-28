@@ -10,7 +10,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/parallax';
 import { Slide, postBannerClick } from '@/services/apiServices';
 import { useWebsiteStore } from '@/stores/websiteStore';
-import SmartDownloadButton from '@/components/utility/SmartDownloadButton';
+
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 
@@ -31,24 +31,9 @@ function Banner({ slides = [] }: BannerProps) {
 
   return (
     <div className="w-full flex justify-center bg-white group/banner banner-scale-context">
-      <style jsx global>{`
-          .banner-scale-context .swiper-slide {
-            transition: transform 0.3s;
-            transform: scale(0.8) !important;
-          }
-          @media (min-width: 1024px) {
-            .banner-scale-context .swiper-slide {
-              width: 976px !important;
-            }
-          }
-          .banner-scale-context .swiper-slide-active {
-            transform: scale(1) !important;
-            z-index: 10;
-          }
-        `}</style>
       <div className="w-full flex flex-col relative">
-        <div className="h-auto lg:h-[446px] flex justify-center items-center mt-4 lg:mt-8 mb-2 lg:mb-4 relative">
-          <div className="w-full h-auto lg:h-[446px] relative group/banner-inner">
+        <div className="w-full flex justify-center items-center mt-4 lg:mt-8 mb-2 lg:mb-4 relative">
+          <div className="w-full relative group/banner-inner">
             {/* Navigation Buttons */}
             <button
               ref={prevRef}
@@ -84,8 +69,8 @@ function Banner({ slides = [] }: BannerProps) {
                     spaceBetween: 10,
                   },
                   1024: {
-                    slidesPerView: 'auto',
-                    spaceBetween: -80,
+                    slidesPerView: 3,
+                    spaceBetween: 12,
                   },
                 }}
                 autoplay={{
@@ -115,7 +100,7 @@ function Banner({ slides = [] }: BannerProps) {
                   return (
 
                     <SwiperSlide key={`${slide.banner_id}-${index}`} className="overflow-hidden">
-                      <div className="relative w-full h-full cursor-pointer" onClick={() => {
+                      <div className="relative w-full aspect-[680/310] cursor-pointer" onClick={() => {
                         postBannerClick(slide.banner_id);
                         if (slide.type_link === 'novel') {
                           window.location.href = `/book/${slide.ref_id}`;
@@ -136,12 +121,12 @@ function Banner({ slides = [] }: BannerProps) {
                         <Image
                           src={imageUrl}
                           alt={slide.name}
-                          width={976}
-                          height={446}
-                          className="object-fill w-full h-full rounded-2xl"
+                          width={0}
+                          height={0}
+                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          className="w-full h-full object-cover rounded-2xl"
                           priority
                           loader={imageLoader}
-                          sizes="(max-width: 1024px) 100vw, 976px"
                           quality={100}
                         />
                       </div>
@@ -161,123 +146,7 @@ function Banner({ slides = [] }: BannerProps) {
             )}
           </div>
         </div>
-        <div className="relative w-full lg:w-[976px] mx-auto grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-4 z-20 px-1 lg:px-0 mt-2 lg:-mt-2">
-          <SmartDownloadButton className="w-full lg:w-[232px] h-auto lg:h-[61px]">
-            {/* Mobile Image */}
-            <div className="w-full block lg:hidden">
-              <Image
-                src={settings?.home_howtouse_mobile || "/images/howtomobile.png"}
-                alt="Howto Mobile"
-                className="w-full h-auto rounded-lg hover:opacity-90 transition object-contain"
-                width={232}
-                height={61}
-                loader={imageLoader}
-                sizes="100vw"
-                quality={100}
-              />
-            </div>
-            {/* Desktop Image */}
-            <div className="w-full h-full hidden lg:block">
-              <Image
-                src={settings?.home_howtouse || "/images/HowtoUse.png"}
-                alt="Howto"
-                className="w-full h-full rounded-lg hover:opacity-90 transition object-fill lg:object-cover"
-                width={232}
-                height={61}
-                loader={imageLoader}
-              />
-            </div>
-          </SmartDownloadButton>
-          <Link href="/campaign-discount" className="w-full lg:w-[232px] h-auto lg:h-[61px]">
-            {/* Mobile Image */}
-            <div className="w-full block lg:hidden">
-              <Image
-                src={settings?.home_discount_mobile || "/images/discountmobile.png"}
-                alt="Promotion Mobile"
-                className="w-full h-auto rounded-lg hover:opacity-90 transition object-contain"
-                width={232}
-                height={61}
-                loader={imageLoader}
-              />
-            </div>
-            {/* Desktop Image */}
-            <div className="w-full h-full hidden lg:block">
-              <Image
-                src={settings?.home_discount || "/images/Discount.png"}
-                alt="Promotion"
-                className="w-full h-full rounded-lg hover:opacity-90 transition object-fill lg:object-cover"
-                width={232}
-                height={61}
-                loader={imageLoader}
-                sizes="232px"
-                quality={100}
-              />
-            </div>
-          </Link>
-          <div onClick={() => {
-            if (isLoggedIn) {
-              const targetUrl = "https://coinenjoy.enjoybook.co";
-              const finalUrl = token ? `${targetUrl}?tk=${token}` : targetUrl;
-              window.location.href = finalUrl;
-            } else {
-              openLoginModal();
-              setLoginAnimation('fade-in');
-            }
-          }} className="w-full lg:w-[232px] h-auto lg:h-[61px] cursor-pointer">
-            {/* Mobile Image */}
-            <div className="w-full block lg:hidden">
-              <Image
-                src={settings?.home_review_mobile || "/images/topupmobile.png"}
-                alt="Blog Mobile"
-                className="w-full h-auto rounded-lg hover:opacity-90 transition object-contain"
-                width={232}
-                height={61}
-                loader={imageLoader}
-                quality={100}
-              />
-            </div>
-            {/* Desktop Image */}
-            <div className="w-full h-full hidden lg:block">
-              <Image
-                src={settings?.home_review || "/images/Review.png"}
-                alt="Blog"
-                className="w-full h-full rounded-lg hover:opacity-90 transition object-fill lg:object-cover"
-                width={232}
-                height={61}
-                loader={imageLoader}
-                sizes="232px"
-                quality={100}
-              />
-            </div>
-          </div>
-          <Link href="/campaign" className="w-full lg:w-[232px] h-auto lg:h-[61px]">
-            {/* Mobile Image */}
-            <div className="w-full block lg:hidden">
-              <Image
-                src={settings?.home_event_mobile || "/images/eventmobile.png"}
-                alt="Campaign Mobile"
-                className="w-full h-auto rounded-lg hover:opacity-90 transition object-contain"
-                width={232}
-                height={61}
-                loader={imageLoader}
-                quality={100}
-              />
-            </div>
-            {/* Desktop Image */}
-            <div className="w-full h-full hidden lg:block">
-              <Image
-                src={settings?.home_event || "/images/Event.png"}
-                alt="Campaign"
-                className="w-full h-full rounded-lg hover:opacity-90 transition object-fill lg:object-cover"
-                width={232}
-                height={61}
-                loader={imageLoader}
-                sizes="232px"
-                quality={100}
-              />
-            </div>
-          </Link>
-        </div>
+
       </div>
     </div>
   )

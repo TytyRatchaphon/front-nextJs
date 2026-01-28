@@ -1,0 +1,30 @@
+meta {
+  name: /user/mybook/ep/update
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{path}}/user/mybook/ep/update
+  body: json
+  auth: inherit
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+body:json {
+  {
+      "ep_id": 100000002,
+      "name": "บทที่ 1 (ฉบับสมบูรณ์)",
+      "detail": "<p>เนื้อหาใหม่ทั้งหมดsdfsdfsdfsdfsdfsdf...</p>",
+      "coin": 5,
+      "order_by": 2,
+      "publish_datetime": "2025-12-01 09:00:00"
+  }
+}
+
+settings {
+  encodeUrl: true
+}

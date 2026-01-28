@@ -1,0 +1,19 @@
+meta {
+  name: /books/ranking/categories
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{path}}/books/ranking/categories
+  body: none
+  auth: inherit
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+settings {
+  encodeUrl: true
+}

@@ -5,6 +5,7 @@ import DailyPopup from "@/components/utility/DailyPopup";
 import { BackToTopButton } from "@/components/utility/BackToTopButton";
 import Link from "next/link";
 import Banner from "@/components/home/Banner";
+import BannerButtons from "@/components/home/BannerButtons";
 import Image from "next/image";
 import BookGroups from "@/components/home/BookGroups";
 import TopRanking from "@/components/home/TopRanking";
@@ -66,9 +67,19 @@ export default function HomeContent({ initialData }: HomeContentProps) {
       {/* Main Content Section */}
       <div className="w-full flex justify-center mt-4 lg:mt-16">
         <div className="max-w-[1440px] w-full px-4 lg:px-[156px]">  {/* Edit Widht of Home Content Here */}
+          
+          <div className="w-full max-w-[976px] mx-auto mb-2">
+            <BannerButtons />
+          </div>
+
+          {continueBooks && continueBooks.length > 0 && (
+            <div className="w-full">
+              <ContinueReadingSwiper books={continueBooks} />
+            </div>
+          )}
 
           {/* Spotlight & New Novels Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 mb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 mb-4 mt-2">
             {/* Spotlight Column */}
             <div className="w-full h-auto">
               <h2 className="font-bold text-2xl mb-2 text-black">เรื่องเด่น !!</h2>
@@ -128,11 +139,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
               </div>
             </div>
           </div>
-          {continueBooks && continueBooks.length > 0 && (
-            <div className="w-full">
-              <ContinueReadingSwiper books={continueBooks} />
-            </div>
-          )}
+
           {/* Other Groups Section */}
           <BookGroups groupBookHome={groupBookHome} />
 

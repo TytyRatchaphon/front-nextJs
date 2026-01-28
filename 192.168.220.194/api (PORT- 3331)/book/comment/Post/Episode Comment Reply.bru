@@ -1,0 +1,45 @@
+meta {
+  name: Episode Comment Reply
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{path}}/readep/comments/:comment_ep_id/replies
+  body: json
+  auth: inherit
+}
+
+params:path {
+  comment_ep_id: 27663
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+body:json {
+  {
+      "comment": "test"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
+
+docs {
+  - เพิ่มข้อความตอบกลับของคอมเมนท์ ในตอนอ่าน บท
+      
+  - Request
+      
+      - Param
+          
+          - comment_ep_id: Number = ไอดีของคอมเมนท์ในบท
+              
+      - Body
+          
+          - comment: Text = ข้อความคอมเมนท์
+              
+  - ต้องล็อคอินก่อน
+}

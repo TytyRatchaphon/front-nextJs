@@ -1,0 +1,23 @@
+meta {
+  name: Read Notification
+  type: http
+  seq: 7
+}
+
+patch {
+  url: {{path}}/user/notifications/:id/read
+  body: none
+  auth: inherit
+}
+
+params:path {
+  id: 423877
+}
+
+headers {
+  Authorization: {{token}}
+}
+
+settings {
+  encodeUrl: true
+}

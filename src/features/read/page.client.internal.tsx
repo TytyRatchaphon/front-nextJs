@@ -154,6 +154,41 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     } catch (err) { }
   }, []);
 
+  // Effect to Auto-Expand Group containing current episode
+  useEffect(() => {
+    if (episodesData?.groups && episodeId) {
+      const targetGroupId = episodesData.groups.find((group: any) => 
+        group.list.some((ep: any) => String(ep.ep_id ?? ep.epID) === String(episodeId))
+      )?.group_id;
+
+      if (targetGroupId) {
+        setExpandedGroups(prev => ({ ...prev, [targetGroupId]: true }));
+      }
+    }
+  }, [episodesData, episodeId]);
+
+  // Effect to Scroll to Active Episode when Popover opens
+  useEffect(() => {
+    if (isListPopoverOpen) {
+      setTimeout(() => {
+        const container = document.getElementById('episode-list-container');
+        const activeItem = document.getElementById('active-episode-item');
+        
+        if (container && activeItem) {
+          const containerHeight = container.clientHeight;
+          const itemHeight = activeItem.clientHeight;
+          const itemTop = activeItem.offsetTop; 
+          const containerRect = container.getBoundingClientRect();
+          const itemRect = activeItem.getBoundingClientRect();
+          const relativeTop = itemRect.top - containerRect.top;
+          const currentScrollTop = container.scrollTop;
+          const newScrollTop = currentScrollTop + relativeTop - (containerHeight / 2) + (itemHeight / 2); 
+          container.scrollTo({ top: newScrollTop, behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  }, [isListPopoverOpen]);
+
   useEffect(() => {
     if (bookDetail?.title) {
       document.title = displayTitle ? `${displayTitle} - ${bookDetail.title} | EnjoyBook` : `${bookDetail.title} | EnjoyBook`;
@@ -179,15 +214,6 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
       document.removeEventListener("contextmenu", disableRightClick);
       document.removeEventListener("keydown", disableDevTools);
     }
-  }, []);
-
-  // Hide Navbar
-  useEffect(() => {
-    const navbar = document.getElementById("GlobalNavbarWrapper");
-    if (navbar) navbar.style.display = "none";
-    return () => {
-      if (navbar) navbar.style.display = "";
-    };
   }, []);
 
   const expandAllGroups = () => {
@@ -309,7 +335,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   const renderEpisodesList = () => {
     if (!episodesData?.groups) return <div className="p-4">ไม่พบรายการตอน</div>;
     return (
-      <div className="max-h-64 w-72 overflow-auto">
+      <div id="episode-list-container" className="max-h-64 w-72 overflow-auto">
         <div className="px-3 py-2 flex gap-2">
           <button onClick={expandAllGroups} className="text-xs px-2 py-1 bg-gray-100 rounded">แสดงทั้งหมด</button>
           <button onClick={collapseAllGroups} className="text-xs px-2 py-1 bg-gray-100 rounded">ย่อทั้งหมด</button>
@@ -327,18 +353,22 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
               </button>
               {isExpanded && (
                 <div>
-                  {group.list.map((ep: any) => (
-                    <button
-                      key={ep.ep_id ?? ep.epID}
-                      onClick={() => {
-                        setIsListPopoverOpen(false);
-                        router.push(`/read/${bookId}/${String(ep.ep_id ?? ep.epID)}`);
-                      }}
-                      className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${String(ep.epID) === String(episodeId) ? 'bg-red-50 text-red-600 font-medium' : 'text-gray-700'}`}
-                    >
-                      <div className="truncate text-sm">{ep.name?.trim()}</div>
-                    </button>
-                  ))}
+                  {group.list.map((ep: any) => {
+                    const isCurrent = String(ep.ep_id ?? ep.epID) === String(episodeId);
+                    return (
+                      <button
+                        key={ep.ep_id ?? ep.epID}
+                        id={isCurrent ? 'active-episode-item' : undefined}
+                        onClick={() => {
+                          setIsListPopoverOpen(false);
+                          router.push(`/read/${bookId}/${String(ep.ep_id ?? ep.epID)}`);
+                        }}
+                        className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${isCurrent ? 'bg-red-50 text-red-600 font-medium' : 'text-gray-700'}`}
+                      >
+                        <div className="truncate text-sm">{ep.name?.trim()}</div>
+                      </button>
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -422,7 +452,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                       {isExpanded && (
                         <div className="divide-y divide-gray-50">
                           {group.list.map((ep: any) => {
-                            const isCurrentEpisode = (ep.epID != null ? String(ep.epID) : null) === episodeId;
+                            const isCurrentEpisode = String(ep.ep_id ?? ep.epID) === String(episodeId);
                             return (
                               <button
                                 key={ep.ep_id}
@@ -555,9 +585,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
               style={{ userSelect: "none", WebkitUserSelect: "none", MozUserSelect: "none", msUserSelect: "none" }}
               onClick={() => {
                 if (!isFocused) { setIsFocused(true); return; }
-                if (episode?.content || episode?.des) {
-                  setShowNav(!showNav);
-                }
+                setShowNav(!showNav);
               }}
             >
               <div
@@ -594,7 +622,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
             </article>
 
             {/* Sticky Navigation Footer */}
-            {(showNav && (episode?.content || episode?.des)) && (
+            {(showNav) && (
               <div className={`w-full cursor-pointer border-t grid grid-cols-2 items-center sticky bottom-0 z-[1001] transition-all duration-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] ${currentBg?.paper || currentBg?.bg}`}
                 style={{ borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)" }}>
                 <div className={`group w-full p-4 flex flex-row gap-2 items-center justify-center border-r hover:bg-black/5 transition-all ${!prevEpId ? "opacity-30 cursor-not-allowed" : "cursor-pointer active:scale-[0.98]"}`}
@@ -617,31 +645,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
               </div>
             )}
 
-            {/* Static Navigation Buttons */}
-            <div className={`w-full grid grid-cols-2 gap-4 mb-10 mt-24 transition-colors`}>
-              <div className={`group w-full p-4 flex flex-row gap-3 items-center justify-start rounded-xl border transition-all ${!prevEpId ? "opacity-30 cursor-not-allowed border-transparent bg-black/5" : "cursor-pointer hover:shadow-md active:scale-[0.98] bg-white/5"}`}
-                style={{ borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.1)" }}
-                onClick={(e) => { e.stopPropagation(); if (prevEpId && bookId) router.push(`/read/${bookId}/${prevEpId}`); }}>
-                <div className={`p-2 rounded-full ${currentBg?.key === "dark" ? "bg-white/10" : "bg-black/5"} group-hover:bg-[#E31C3D] group-hover:text-white transition-colors`}>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                </div>
-                <div className="flex flex-col items-start leading-none gap-1">
-                  <span className="text-xs opacity-60 font-medium">ตอนก่อนหน้า</span>
-                  <span className="font-bold text-base">ก่อนหน้า</span>
-                </div>
-              </div>
-              <div className={`group w-full p-4 flex flex-row gap-3 items-center justify-end rounded-xl border transition-all ${!nextEpId ? "opacity-30 cursor-not-allowed border-transparent bg-black/5" : "cursor-pointer hover:shadow-md active:scale-[0.98] bg-white/5"}`}
-                style={{ borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.1)" }}
-                onClick={(e) => { e.stopPropagation(); window.scrollTo(0, 0); if (nextEpId && bookId) router.push(`/read/${bookId}/${nextEpId}`); }}>
-                <div className="flex flex-col items-end leading-none gap-1">
-                  <span className="text-xs opacity-60 font-medium">ตอนต่อไป</span>
-                  <span className="font-bold text-base">ถัดไป</span>
-                </div>
-                <div className={`p-2 rounded-full ${currentBg?.key === "dark" ? "bg-white/10" : "bg-black/5"} group-hover:bg-[#E31C3D] group-hover:text-white transition-colors`}>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                </div>
-              </div>
-            </div>
+            
 
             {/* Comment Section */}
             {episodeId && (

@@ -21,9 +21,9 @@ const MyBookHeader: React.FC<MyBookHeaderProps> = ({ user, coinIncome, myBooksTo
   const totalFollowers = rawTotalFollowers ? rawTotalFollowers.toLocaleString('en-US') : '0';
   return (
     <div className='bg-white rounded-2xl mb-6 overflow-hidden min-h-[120px] py-6'>
-      <div className='flex flex-col md:flex-row items-center justify-between h-full px-6 gap-6 md:gap-0'>
+      <div className='flex flex-col xl:flex-row items-center justify-between h-full px-6 gap-6 xl:gap-0'>
         {/* Profile Section */}
-        <div className='flex items-center gap-6 w-full md:w-auto justify-start'>
+        <div className='flex items-center gap-6 w-full xl:w-auto justify-start'>
           {/* Profile Image */}
           <div className='flex-shrink-0'>
             <div className='w-20 h-20 rounded-full overflow-hidden bg-gray-100'>
@@ -59,9 +59,9 @@ const MyBookHeader: React.FC<MyBookHeaderProps> = ({ user, coinIncome, myBooksTo
         </div>
         
         {/* Stats */}
-        <div className='flex flex-col md:flex-row items-center gap-4 md:gap-6 w-full md:w-auto'>
+        <div className='grid grid-cols-1 md:grid-cols-3 gap-4 w-full xl:w-auto'>
           {/* ยอดที่ถอนได้ */}
-          <div className='flex items-center gap-0 bg-white shadow-sm overflow-hidden w-full md:w-[242px] h-[89px] rounded-xl border border-gray-100'>
+          <div className='flex items-center gap-0 bg-white shadow-sm overflow-hidden w-full h-[89px] rounded-xl border border-gray-100'>
             <div className='bg-gray-100 flex items-center justify-center w-[105px] h-full flex-shrink-0'>
               <svg xmlns="http://www.w3.org/2000/svg" width="65" height="65" viewBox="0 0 65 65" fill="none">
                 <path d="M29.1186 45.6636V51.1616C29.1186 55.8199 24.7852 59.5844 19.4498 59.5844C14.1144 59.5844 9.75391 55.8199 9.75391 51.1616V45.6636C9.75391 50.3219 14.0873 53.6261 19.4498 53.6261C24.7852 53.6261 29.1186 50.2948 29.1186 45.6636Z" stroke="#2C2C2C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -92,7 +92,7 @@ const MyBookHeader: React.FC<MyBookHeaderProps> = ({ user, coinIncome, myBooksTo
 
           
           {/* นิยายทั้งหมด */}
-          <div className='flex items-center gap-0 bg-white shadow-sm overflow-hidden w-full md:w-[242px] h-[89px] rounded-xl border border-gray-100'>
+          <div className='flex items-center gap-0 bg-white shadow-sm overflow-hidden w-full h-[89px] rounded-xl border border-gray-100'>
             <div className='bg-gray-100 flex items-center justify-center w-[105px] h-full flex-shrink-0'>
               <svg width="65" height="65" viewBox="0 0 65 65" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M24.3743 59.5832H40.6243C54.166 59.5832 59.5827 54.1665 59.5827 40.6248V24.3748C59.5827 10.8332 54.166 5.4165 40.6243 5.4165H24.3743C10.8327 5.4165 5.41602 10.8332 5.41602 24.3748V40.6248C5.41602 54.1665 10.8327 59.5832 24.3743 59.5832Z" stroke="#2C2C2C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -109,7 +109,7 @@ const MyBookHeader: React.FC<MyBookHeaderProps> = ({ user, coinIncome, myBooksTo
           </div>
           
           {/* ผู้ติดตาม */}
-          <div className='flex items-center gap-0 bg-white shadow-sm overflow-hidden w-full md:w-[242px] h-[89px] rounded-xl border border-gray-100'>
+          <div className='flex items-center gap-0 bg-white shadow-sm overflow-hidden w-full h-[89px] rounded-xl border border-gray-100'>
             <div className='bg-gray-100 flex items-center justify-center w-[105px] h-full flex-shrink-0'>
               <svg width="65" height="65" viewBox="0 0 65 65" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M24.8079 29.4394C24.5371 29.4123 24.2121 29.4123 23.9142 29.4394C17.4684 29.2228 12.3496 23.9415 12.3496 17.4415C12.3496 10.8061 17.7121 5.4165 24.3746 5.4165C31.01 5.4165 36.3996 10.8061 36.3996 17.4415C36.3725 23.9415 31.2538 29.2228 24.8079 29.4394Z" stroke="#2C2C2C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>

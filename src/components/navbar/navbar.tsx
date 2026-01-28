@@ -9,7 +9,7 @@ import Image from 'next/image';
 import NotificationList from './NotificationList';
 import { useSocket } from '@/providers/SocketProvider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchRecentNotifications } from '@/services/apiServices';
+import { fetchRecentNotifications, fetchPromotingGroups } from '@/services/apiServices';
 import { useAuthStore } from '@/stores/authStore';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { useLineLogin } from '@/hooks/useLineLogin';
@@ -20,19 +20,6 @@ import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill';
 
 
-
-// const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-//   // If external image, return as is
-//   if (src.startsWith('http')) return src;
-//   // If data URI (base64), return as is
-//   if (src.startsWith('data:')) return src;
-//   // If local image (starts with /), return as is (to avoid query params issues with static files)
-//   if (src === '/images/default-avatar.png' || src.startsWith('/images/')) return src;
-
-//   const hasQuery = src.includes('?');
-//   const separator = hasQuery ? '&' : '?';
-//   return `${src}${separator}w=${width ?? ''}&q=${quality ?? 75}`;
-// }
 
 function Navbar() {
   const { user, isLoggedIn, hasMounted, logout, setMounted, token } = useAuthStore();
@@ -53,6 +40,12 @@ function Navbar() {
     queryFn: fetchRecentNotifications,
     refetchInterval: 30000,
     enabled: !!isLoggedIn && !!user, // Only fetch if logged in
+  });
+  
+  const { data: promotingGroups } = useQuery({
+    queryKey: ['promotingGroups'],
+    queryFn: fetchPromotingGroups,
+    staleTime: 5 * 60 * 1000,
   });
 
   const unreadCount = notifications ? notifications.filter(n => n.readed === 'N').length : 0;
@@ -158,7 +151,7 @@ function Navbar() {
 
   const userMenuContent = (
     <>
-      <div className="p-2 rounded-lg" style={{ width: '320px', backgroundColor: '#FFE8F0' }}>
+      <div className="p-2 rounded-lg" style={{ width: '320px', backgroundColor: '#FFE8F0' }} >
         <div className="bg-white rounded-full mb-2 shadow-sm" style={{ width: '304px', height: '65px' }}>
           <div className="flex items-center justify-between h-full px-4">
             <div className="flex items-center gap-3">
@@ -319,7 +312,7 @@ function Navbar() {
   }
 
   return (
-    <div id="GlobalNavbarWrapper" className="sticky top-0 z-[1000] w-full flex flex-col">
+    <div id="GlobalNavbarWrapper" className="sticky top-0 z-[1200] w-full flex flex-col">
       <div
         className="select-none flex justify-center items-center h-[60px] lg:h-[80px] header bg-white text-gray-700 shadow-sm w-full"
         id="Navbar"
@@ -361,6 +354,12 @@ function Navbar() {
             <Link href="/ranking" className={getLinkClasses('/ranking')}>จัดอันดับ</Link>
             <Link href="/article" className={getLinkClasses('/article')}>บทความ</Link>
             <Link href="/campaign" className={getLinkClasses('/campaign')}>แคมเปญ</Link>
+
+            {promotingGroups?.map((group) => (
+              <Link key={group.id} href={`/promotion/${group.id}`} className={getLinkClasses(`/promotion/${group.id}`)}>
+                {group.name}
+              </Link>
+            ))}
             {/* <Link href="/reel" className={getLinkClasses('/reel')}>Reel</Link> */}
           </div>
           {/* Right Side: SVG icons and LoginButton */}
@@ -380,6 +379,7 @@ function Navbar() {
                 placement="bottomRight"
                 arrow={false}
                 styles={{ body: { padding: 0 } }}
+                zIndex={2000}
               >
                 <span className="mr-2 lg:mr-0 text-black hover:text-red-600 transition-colors duration-300 cursor-pointer relative">
                   <div className="relative">
@@ -405,6 +405,7 @@ function Navbar() {
                   trigger="click"
                   open={isUserMenuOpen}
                   onOpenChange={setIsUserMenuOpen}
+                  zIndex={2000}
                 // overlayInnerStyle={{ padding: '8px' }}
                 >
                   <div id="UserProfileDropdown" className="flex items-center gap-2 px-2 lg:px-4 py-2 border-2 border-transparent hover:bg-gray-200 transition-colors duration-300 lg:border-gray-800 rounded-full h-[48px] outline-none">
@@ -517,6 +518,12 @@ function Navbar() {
           <Link href="/ranking" className="px-4 py-3 hover:bg-red-50 border-b border-gray-100 font-primary" onClick={() => setIsMobileMenuOpen(false)}>จัดอันดับ</Link>
           <Link href="/article" className="px-4 py-3 hover:bg-red-50 border-b border-gray-100 font-primary" onClick={() => setIsMobileMenuOpen(false)}>บทความ</Link>
           <Link href="/campaign" className="px-4 py-3 hover:bg-red-50 border-b border-gray-100 font-primary" onClick={() => setIsMobileMenuOpen(false)}>แคมเปญ</Link>
+
+          {promotingGroups?.map((group) => (
+            <Link key={group.id} href={`/promotion/${group.id}`} className="px-4 py-3 hover:bg-red-50 border-b border-gray-100 font-primary" onClick={() => setIsMobileMenuOpen(false)}>
+              {group.name}
+            </Link>
+          ))}
           {/* <Link href="/reel" className="px-4 py-3 hover:bg-red-50 border-b border-gray-100 font-primary" onClick={() => setIsMobileMenuOpen(false)}>Reel</Link> */}
         </div>
       </div>

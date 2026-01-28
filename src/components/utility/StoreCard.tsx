@@ -2,6 +2,9 @@ import React from 'react';
 import Image from 'next/image';
 import { StorePack } from '@/types/api';
 import { useWebsiteStore } from '@/stores/websiteStore';
+import { App } from 'antd';
+import { useAuthStore } from '@/stores/authStore';
+import { useRouter } from 'next/navigation';
 
 interface StoreCardProps {
   pack: StorePack;
@@ -14,6 +17,10 @@ const imageLoader = ({ src, width, quality }: { src: string; width?: number; qua
 
 const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
   const { settings } = useWebsiteStore()
+  const { user } = useAuthStore();
+  const { modal } = App.useApp();
+  const router = useRouter();
+
   return (
     <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col items-center text-center h-full hover:shadow-md transition-shadow">
       <div className="w-24 h-24 sm:w-28 sm:h-28 mb-3 relative flex-shrink-0">
@@ -62,7 +69,7 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
           <button
             onClick={() => {
               if (pack.can_purchase !== false) {
-                onBuy(pack)
+                  onBuy(pack)
               }
             }}
             disabled={pack.can_purchase === false}
@@ -78,5 +85,6 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
     </div>
   );
 };
+
 
 export default StoreCard;

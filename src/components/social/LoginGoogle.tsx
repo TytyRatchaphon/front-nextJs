@@ -24,6 +24,25 @@ const LoginGoogle = () => {
   const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '639784580623-vcqnb3bqkkt04s4597u6hqmdbmhv0vie.apps.googleusercontent.com';
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.220.194:3331';
 
+  // Helper to set cookies
+  const setCookie = (name: string, value: string, days: number = 365) => {
+    if (typeof document === 'undefined') return;
+    const date = new Date();
+    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+    const expires = "expires=" + date.toUTCString();
+    document.cookie = name + "=" + (value || "") + ";" + expires + ";path=/";
+  };
+
+  // Helper to check token status before login
+  const checkBeforeLogin = (token: string): boolean => {
+    try {
+      if (!token) return false;
+      return false;
+    } catch (e) {
+      return false;
+    }
+  };
+
   useEffect(() => {
     // Load Google Sign-In SDK
     if (!document.querySelector('script[src="https://accounts.google.com/gsi/client"]')) {
@@ -43,6 +62,9 @@ const LoginGoogle = () => {
       setLoading(false);
       return;
     }
+
+    // Reset One Tap cooldown (Clear g_state cookie)
+    document.cookie = `g_state=;path=/;expires=Thu, 01 Jan 1970 00:00:01 GMT`;
 
     // Initialize Google Sign-In with callback
     window.google.accounts.id.initialize({
@@ -140,6 +162,10 @@ const LoginGoogle = () => {
 
 
         if (token) {
+          // Set cookies
+          setCookie('token', token, 365);
+          setCookie('closePopupPolicy', '', 365);
+
           login(userInfo, token);
 
           // Update user data from token payload immediately
@@ -150,10 +176,13 @@ const LoginGoogle = () => {
           // ปิด Modal
           closeLoginModal();
 
-          // Redirect ไปหน้า profile
-          setTimeout(() => {
-            router.push('/');
-          }, 500);
+          // Redirect Logic
+          const navi = checkBeforeLogin(token);
+          if (navi) {
+            window.location.href = '/';
+          } else {
+            window.location.reload();
+          }
         } else {
           message.error('ไม่พบ token จาก Backend - กรุณาติดต่อผู้ดูแลระบบ');
         }

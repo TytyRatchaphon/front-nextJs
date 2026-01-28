@@ -21,7 +21,7 @@ export default function SpotlightCard({ book }: SpotlightCardProps) {
   };
 
   return (
-    <Link href={`/book/${book.book_id}`} className="w-full">
+    <Link href={`/book/${book.book_id}`} prefetch={false} className="w-full">
       <div className="flex flex-col w-full h-auto group bg-transparent">
         <div className="relative shadow-md rounded-lg overflow-hidden bg-white aspect-[168/237]">
           <Image 

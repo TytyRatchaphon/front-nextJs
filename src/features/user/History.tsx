@@ -323,7 +323,7 @@ function History() {
       date: it.get_date ? use_date(it.get_date) : it.date ? new Date(it.date).toLocaleString() : it.update_at ? new Date(it.update_at).toLocaleString() : '',
       detail: it.name_gift ?? (it.Gift && Array.isArray(it.Gift) && it.Gift[0]?.name_gift) ?? '-',
       status: it.status ?? '',
-      extra: '-',
+      extra: it.reason ?? 'ยังไม่จัดส่ง',
       raw: it,
       key: `${it.id ?? it.txId ?? it.giftID ?? 'gift'}-${idx}`,
     }))
