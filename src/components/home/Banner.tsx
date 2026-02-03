@@ -13,6 +13,7 @@ import { useWebsiteStore } from '@/stores/websiteStore';
 
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
+import TopUpBanner from '@/components/home/TopUpBanner';
 
 interface BannerProps {
   slides?: Slide[];
@@ -29,11 +30,24 @@ function Banner({ slides = [] }: BannerProps) {
   const prevRef = React.useRef<HTMLButtonElement>(null);
   const nextRef = React.useRef<HTMLButtonElement>(null);
 
+  // Create a looped set of slides if there are few items to ensure infinite loop works visually
+  const displaySlides = React.useMemo(() => {
+    if (slides.length > 1 && slides.length < 6) {
+      return [...slides, ...slides, ...slides];
+    }
+    return slides;
+  }, [slides]);
+
+  const [activeIndex, setActiveIndex] = React.useState(0);
+  // @ts-ignore
+  const [swiperInstance, setSwiperInstance] = React.useState<any>(null);
+
   return (
     <div className="w-full flex justify-center bg-white group/banner banner-scale-context">
       <div className="w-full flex flex-col relative">
-        <div className="w-full flex justify-center items-center mt-4 lg:mt-8 mb-2 lg:mb-4 relative">
-          <div className="w-full relative group/banner-inner">
+        <div className="w-full flex justify-center items-center mb-0 relative">
+          <div className="w-full relative group/banner-inner"> 
+            
             {/* Navigation Buttons */}
             <button
               ref={prevRef}
@@ -52,33 +66,35 @@ function Banner({ slides = [] }: BannerProps) {
               </svg>
             </button>
             {slides.length > 0 ? (
+              <>
               <Swiper
-                spaceBetween={10}
+                onSwiper={(swiper) => setSwiperInstance(swiper)}
+                spaceBetween={0}
                 centeredSlides={true}
-                loop={slides.length > 1}
+                loop={true}
                 speed={600}
                 parallax={true}
                 slidesPerView={1}
                 breakpoints={{
-                  640: {
-                    slidesPerView: 1,
-                    spaceBetween: 10,
+                  320: {
+                    slidesPerView:'auto',
+                    spaceBetween: 1,
+                    centeredSlides: true,
                   },
-                  768: {
-                    slidesPerView: 2,
-                    spaceBetween: 10,
+                  640: {
+                    slidesPerView: 'auto',
+                    spaceBetween: 1,
+                    centeredSlides: true,
                   },
                   1024: {
-                    slidesPerView: 3,
-                    spaceBetween: 12,
+                    slidesPerView: 'auto',
+                    spaceBetween: 1,
+                    centeredSlides: true,
                   },
                 }}
                 autoplay={{
                   delay: 5000,
                   disableOnInteraction: false,
-                }}
-                pagination={{
-                  clickable: true,
                 }}
                 navigation={{
                   prevEl: prevRef.current,
@@ -90,17 +106,19 @@ function Banner({ slides = [] }: BannerProps) {
                   // @ts-ignore
                   swiper.params.navigation.nextEl = nextRef.current;
                 }}
-                modules={[Autoplay, Pagination, Navigation, Parallax]}
+                onSlideChange={(swiper) => {
+                   setActiveIndex(swiper.realIndex % slides.length);
+                }}
+                modules={[Autoplay, Navigation, Parallax]}
                 className="w-full h-full rounded-2xl overflow-hidden"
               >
-                {(slides.length > 1 && slides.length < 6 ? [...slides, ...slides, ...slides] : slides).map((slide, index) => {
+                {displaySlides.map((slide, index) => {
                   const imageUrl = slide.img.startsWith('http')
                     ? slide.img
                     : `https://img.enjoybook.co/img/banner/${slide.img}`;
                   return (
-
-                    <SwiperSlide key={`${slide.banner_id}-${index}`} className="overflow-hidden">
-                      <div className="relative w-full aspect-[680/310] cursor-pointer" onClick={() => {
+                    <SwiperSlide key={`${slide.banner_id}-${index}`} className="!w-auto overflow-hidden">
+                      <div className="relative w-full max-w-[680px] aspect-[680/310] cursor-pointer" onClick={() => {
                         postBannerClick(slide.banner_id);
                         if (slide.type_link === 'novel') {
                           window.location.href = `/book/${slide.ref_id}`;
@@ -124,7 +142,7 @@ function Banner({ slides = [] }: BannerProps) {
                           width={0}
                           height={0}
                           sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                          className="w-full h-full object-cover rounded-2xl"
+                          className="w-full h-full object-fill rounded-lg"
                           priority
                           loader={imageLoader}
                           quality={100}
@@ -134,6 +152,23 @@ function Banner({ slides = [] }: BannerProps) {
                   )
                 })}
               </Swiper>
+              
+              {/* Custom Pagination - Changed to relative and mt-4 to sit below Swiper */}
+               <div className="flex justify-center gap-2 mt-4 relative w-full z-10">
+                {slides.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                        // @ts-ignore
+                        swiperInstance?.slideToLoop(index);
+                    }}
+                    className={`block h-2 rounded-full transition-all duration-300 ${
+                      activeIndex === index ? 'w-6 bg-red-600' : 'w-2 bg-gray-300'
+                    }`}
+                  />
+                ))}
+              </div>
+              </>
 
             ) : (
               <Image
@@ -143,6 +178,11 @@ function Banner({ slides = [] }: BannerProps) {
                 width={976}
                 height={446}
               />
+            )}
+            {isLoggedIn && (
+              <div className="mt-4 w-full max-w-[680px] mx-auto px-4 md:px-0 flex justify-start">
+                 <TopUpBanner />
+              </div>
             )}
           </div>
         </div>

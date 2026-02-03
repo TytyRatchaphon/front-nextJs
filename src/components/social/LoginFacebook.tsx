@@ -5,7 +5,7 @@ import { App } from 'antd';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
-import axios from 'axios';
+import apiClient from '@/services/apiClient';
 import Image from 'next/image';
 
 interface UserData {
@@ -28,8 +28,8 @@ const LoginFacebook = () => {
   const { login, updateToken } = useAuthStore();
   const { closeLoginModal } = useUIStore();
 
-  const FACEBOOK_APP_ID = process.env.NEXT_PUBLIC_FACEBOOK_ID || '1967780540282892';
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.220.214:4005';
+  const FACEBOOK_APP_ID = process.env.NEXT_PUBLIC_FACEBOOK_ID;
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   // Helper to set cookies
   const setCookie = (name: string, value: string, days: number = 365) => {
@@ -121,7 +121,7 @@ const LoginFacebook = () => {
 
   const sendToBackend = async (accessToken: string) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/login/facebook`, {
+      const response = await apiClient.post(`${API_BASE_URL}/login/facebook`, {
         accessToken: accessToken
       });
 

@@ -17,6 +17,44 @@ interface CommentItemProps {
     theme?: { bg: string; text: string; key: string };
 }
 
+// Helper Component for safe avatar loading
+const SafeAvatar = ({ src, alt, className, theme, isReply = false }: { src?: string | null, alt: string, className?: string, theme?: any, isReply?: boolean }) => {
+    const [hasError, setHasError] = useState(false);
+
+    const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
+        return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
+    }
+
+    if (!src || hasError) {
+        // Fallback Image
+        return (
+            <Image
+                src="/images/default-avatar.png"
+                alt={alt || "Default User"}
+                fill={!isReply}
+                width={isReply ? 20 : undefined}
+                height={isReply ? 20 : undefined}
+                className={className}
+                unoptimized
+            />
+        );
+    }
+
+    return (
+        <Image
+            src={src}
+            alt={alt}
+            fill={!isReply}
+            width={isReply ? 20 : undefined}
+            height={isReply ? 20 : undefined}
+            className={className}
+            loader={imageLoader}
+            onError={() => setHasError(true)}
+            unoptimized // Add unoptimized to reduce issues with external images if needed, but loader handles it mostly.
+        />
+    );
+};
+
 export default function CommentItem({
     review,
     onReplySuccess,
@@ -52,9 +90,6 @@ export default function CommentItem({
         day: "numeric",
     });
 
-    const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-        return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
-    }
     // Type Guards
     const isReview = (item: CommentData | CommentEpData): item is CommentData => {
         return (item as CommentData).comment_book_id !== undefined;
@@ -247,22 +282,12 @@ export default function CommentItem({
                     <div className="relative w-10 h-10 sm:w-12 sm:h-12">
                         {/* Base Avatar */}
                         <div className={`relative w-full h-full rounded-full overflow-hidden border ${theme?.key === 'black' ? 'bg-[#1f1f1f] border-[#333]' : theme?.key === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-gray-100 border-gray-200'}`}>
-                            {userAvatar ? (
-                                <Image
-                                    src={userAvatar}
-                                    alt={review.user?.fullname || "User"}
-                                    fill
-                                    className="object-cover"
-                                    loader={imageLoader}
-                                />
-                            ) : (
-                                // Default Avatar Icon if no URL
-                                <div className="w-full h-full flex items-center justify-center text-gray-400">
-                                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                                    </svg>
-                                </div>
-                            )}
+                            <SafeAvatar 
+                                src={userAvatar} 
+                                alt={review.user?.fullname || "User"} 
+                                className="object-cover"
+                                theme={theme}
+                            />
                         </div>
 
                         {/* Frame Overlay (if exists) */}
@@ -273,7 +298,7 @@ export default function CommentItem({
                                     alt="User Frame"
                                     fill
                                     className="object-contain"
-                                    loader={imageLoader}
+                                    loader={({ src, width, quality }) => `${src}?w=${width ?? ''}&q=${quality ?? 75}`}
                                 />
                             </div>
                         )}
@@ -361,15 +386,13 @@ export default function CommentItem({
                                         <div className="flex items-center gap-2">
                                             {/* Small Avatar for Replier */}
                                             <div className={`w-5 h-5 rounded-full overflow-hidden shrink-0 ${theme?.key === 'black' ? 'bg-[#333]' : theme?.key === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}>
-                                                {reply.user?.img ? (
-                                                    <Image src={reply.user.img} alt="Replier" width={20} height={20} className="object-cover w-full h-full" />
-                                                ) : (
-                                                    <div className="w-full h-full bg-red-600 flex items-center justify-center">
-                                                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                                                        </svg>
-                                                    </div>
-                                                )}
+                                                <SafeAvatar 
+                                                    src={reply.user?.img} 
+                                                    alt="Replier" 
+                                                    className="object-cover w-full h-full"
+                                                    isReply={true}
+                                                    theme={theme}
+                                                />
                                             </div>
                                             <span className={`text-xs sm:text-sm font-bold ${theme ? theme.text : 'text-gray-800'}`}>
                                                 {reply.user?.fullname || "Admin"}

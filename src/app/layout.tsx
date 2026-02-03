@@ -158,7 +158,7 @@ export default function RootLayout({
       </Script>
 
       <body
-        className={`flex flex-col w-full min-h-[100vh] overflow-x-hidden font-bai-jamjuree font-medium`}>
+        className={`flex flex-col w-full min-h-[100vh] font-bai-jamjuree font-medium`}>
         {/* Facebook Pixel NoScript */}
         <noscript>
           <img

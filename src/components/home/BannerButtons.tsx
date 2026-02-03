@@ -3,12 +3,24 @@ import React from 'react';
 
 const BannerButtons = () => {
   return (
-    <div className="w-full mt-6 lg:mt-4 mb-4">
+    <div className="w-full -mt-2 mb-4">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-4">
         
         {/* Discount */}
-        <Link href="/campaign-discount" className="group flex items-center justify-center gap-3 bg-white border border-gray-100 shadow-sm hover:shadow-sm rounded-xl py-2 px-4 transition-all duration-300 hover:-translate-y-1">
+        <Link href="/cat/all?type=all&categoryId=all&tab=bestseller&limit=10&page=1" className="group flex items-center justify-center gap-3 bg-white border border-gray-100 shadow-sm hover:shadow-sm rounded-xl py-2 px-4 transition-all duration-300 hover:-translate-y-1">
           <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-500 group-hover:bg-red-500 group-hover:text-white transition-colors duration-300">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M10.7499 2.44982C11.4399 1.85982 12.5699 1.85982 13.2699 2.44982L14.8499 3.80993C15.1499 4.06993 15.7099 4.2799 16.1099 4.2799H17.8099C18.8699 4.2799 19.7399 5.14983 19.7399 6.20983V7.90991C19.7399 8.29991 19.9499 8.86992 20.2099 9.16992L21.5699 10.7499C22.1599 11.4399 22.1599 12.5699 21.5699 13.2699L20.2099 14.8498C19.9499 15.1498 19.7399 15.7099 19.7399 16.1099V17.8099C19.7399 18.8699 18.8699 19.7399 17.8099 19.7399H16.1099C15.7199 19.7399 15.1499 19.9498 14.8499 20.2098L13.2699 21.5698C12.5799 22.1598 11.4499 22.1598 10.7499 21.5698L9.16989 20.2098C8.86989 19.9498 8.30988 19.7399 7.90988 19.7399H6.17987C5.11987 19.7399 4.24988 18.8699 4.24988 17.8099V16.0998C4.24988 15.7098 4.03989 15.1498 3.78989 14.8498L2.43988 13.2599C1.85988 12.5699 1.85988 11.4499 2.43988 10.7599L3.78989 9.16992C4.03989 8.86992 4.24988 8.30992 4.24988 7.91992V6.20983C4.24988 5.14983 5.11987 4.2799 6.17987 4.2799H7.90988C8.29988 4.2799 8.86989 4.06993 9.16989 3.80993L10.7499 2.44982Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M9.89014 14.82L11.3401 15.94C11.5301 16.13 11.9501 16.22 12.2301 16.22H14.0001C14.5601 16.22 15.1701 15.8 15.3101 15.24L16.4301 11.82C16.6601 11.17 16.2401 10.6 15.5401 10.6H13.6701C13.3901 10.6 13.1601 10.3701 13.2001 10.0401L13.4301 8.54008C13.5201 8.12008 13.2401 7.65005 12.8201 7.51005C12.4501 7.37005 11.9801 7.56 11.7901 7.84L9.87012 10.69" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10"/>
+              <path d="M7.5 14.8201V10.2401C7.5 9.58011 7.78 9.3501 8.44 9.3501H8.91C9.56 9.3501 9.85001 9.58011 9.85001 10.2401V14.8201C9.85001 15.4701 9.57 15.7101 8.91 15.7101H8.44C7.78 15.7101 7.5 15.4801 7.5 14.8201Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <span className="font-bold text-gray-700 group-hover:text-red-600 transition-colors text-sm lg:text-lg">นิยายขายดี</span>
+        </Link>
+
+        {/* Campaign */}
+        <Link href="/campaign-discount" className="group flex items-center justify-center gap-3 bg-white border border-gray-100 shadow-sm hover:shadow-sm rounded-xl py-2 px-4 transition-all duration-300 hover:-translate-y-1">
+          <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 group-hover:bg-amber-500 group-hover:text-white transition-colors duration-300">
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none">
               <path d="M6.73 19.7C7.55 18.82 8.8 18.89 9.52 19.85L10.53 21.2C11.34 22.27 12.65 22.27 13.46 21.2L14.47 19.85C15.19 18.89 16.44 18.82 17.26 19.7C19.04 21.6 20.49 20.97 20.49 18.31V7.04C20.5 3.01 19.56 2 15.78 2H8.22C4.44 2 3.5 3.01 3.5 7.04V18.3C3.5 20.97 4.96 21.59 6.73 19.7Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M9 13L15 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -16,17 +28,7 @@ const BannerButtons = () => {
               <path d="M8.99451 7.5H9.00349" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          <span className="font-bold text-gray-700 group-hover:text-red-600 transition-colors text-sm lg:text-lg">ส่วนลด</span>
-        </Link>
-
-        {/* Campaign */}
-        <Link href="/campaign" className="group flex items-center justify-center gap-3 bg-white border border-gray-100 shadow-sm hover:shadow-sm rounded-xl py-2 px-4 transition-all duration-300 hover:-translate-y-1">
-          <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center text-amber-500 group-hover:bg-amber-500 group-hover:text-white transition-colors duration-300">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
-            </svg>
-          </div>
-          <span className="font-bold text-gray-700 group-hover:text-amber-600 transition-colors text-sm lg:text-lg">กิจกรรม</span>
+          <span className="font-bold text-gray-700 group-hover:text-amber-600 transition-colors text-sm lg:text-lg">ส่วนลด</span>
         </Link>
 
         {/* Top Charts */}

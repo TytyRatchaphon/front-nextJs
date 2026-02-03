@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 import { useWebsiteStore } from '@/stores/websiteStore'; // Direct import
+import BlockedUserModal from '@/components/auth/BlockedUserModal';
 
 export default function TanstackProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -30,6 +31,7 @@ export default function TanstackProvider({ children }: { children: React.ReactNo
     <QueryClientProvider client={queryClient}>
       {children}
       <ReactQueryDevtools initialIsOpen={false} />
+      <BlockedUserModal />
     </QueryClientProvider>
   );
 }

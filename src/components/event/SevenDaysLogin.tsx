@@ -3,9 +3,10 @@
 import React from 'react'
 import Image from 'next/image'
 import { useAuthStore } from '@/stores/authStore'
-import axios from 'axios'
+import apiClient from '@/services/apiClient'
 import { useQuery } from '@tanstack/react-query'
-import { Modal, Button } from 'antd'
+import { Modal, Button, Popover } from 'antd'
+import { InfoCircleOutlined } from '@ant-design/icons'
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useWebsiteStore } from '@/stores/websiteStore'
@@ -20,10 +21,11 @@ type LoginStatus = {
 const fetchWeeklyLogin = async (token?: string | null): Promise<LoginStatus> => {
   const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? ''
   const url = `${base}/user/event/login`
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  if (token) headers['Authorization'] = token
+  // const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  // if (token) headers['Authorization'] = token
+  // apiClient uses localStorage token automatically
 
-  const res = await axios.get(url, { headers })
+  const res = await apiClient.get(url)
   // axios throws for non-2xx, so if we get here assume data present
   return res.data?.data ?? {}
 }
@@ -31,7 +33,11 @@ const imageLoader = ({ src, width, quality }: { src: string; width?: number; qua
   return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
 }
 
-function SevenDaysLogin() {
+export interface SevenDaysLoginProps {
+  onClose?: () => void;
+}
+
+function SevenDaysLogin({ onClose }: SevenDaysLoginProps) {
   const { user, token, updateToken } = useAuthStore()
   const queryClient = useQueryClient()
   const { data, isLoading, error } = useQuery({ queryKey: ['weekly-login', token], queryFn: () => fetchWeeklyLogin(token), retry: 1, staleTime: 60_000 })
@@ -49,13 +55,10 @@ function SevenDaysLogin() {
   const handleCheckin = async () => {
     try {
       setConfirmLoading(true)
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (token) headers['Authorization'] = token
-
       // Capture current coupon before API call
       const currentCoupon = Number(useAuthStore.getState().user?.coupon ?? 0)
 
-      const res = await axios.post(checkinUrl, {}, { headers })
+      const res = await apiClient.post(checkinUrl, {})
       const unit = res.data?.data?.unit ?? null
       const rewardAmount = Number(unit ?? 0)
 
@@ -75,7 +78,7 @@ function SevenDaysLogin() {
       if (newToken && typeof newToken === 'string' && typeof updateToken === 'function') {
         try {
           updateToken(newToken)
-          try { axios.defaults.headers.common['Authorization'] = newToken } catch (e) { }
+          try { /* apiClient uses localStorage */ } catch (e) { }
         } catch (e) { }
       }
 
@@ -91,19 +94,7 @@ function SevenDaysLogin() {
         localStorage.setItem('userData', JSON.stringify(optimisticUser))
       }
 
-      // --- [เพิ่มส่วนนี้] : เรียก /user/me เพื่ออัปเดต Coupon ทันที ---
-      try {
-        const meRes = await axios.get(`${base}/user/me`, {
-          headers: { 'Authorization': activeToken }
-        });
-        const realProfile = meRes.data?.data || meRes.data;
-        if (realProfile) {
-          useAuthStore.setState({ user: realProfile });
-          localStorage.setItem('userData', JSON.stringify(realProfile));
-        }
-      } catch (e) {
-      }
-      // -----------------------------------------------------------
+
 
       // refresh weekly-login data
       try { queryClient.invalidateQueries({ queryKey: ['weekly-login'] }) } catch (e) { /* ignore */ }
@@ -124,18 +115,59 @@ function SevenDaysLogin() {
     setModalVisible(false)
     // ensure latest data
     try { queryClient.invalidateQueries({ queryKey: ['weekly-login'] }) } catch (e) { }
+
+    // If parent provided onClose, call it to close the DailyCheckinModal too
+    if (onClose) {
+        onClose();
+    }
   }
   return (
     <div className="w-full flex justify-center px-4 py-8">
-      <div className="w-full max-w-4xl bg-white rounded-[40px] shadow-sm p-8 flex flex-col items-center">
+      <div className="w-full max-w-4xl bg-white rounded-[40px] shadow-sm p-4 md:p-8 flex flex-col items-center relative">
+        {/* Close Button (if onClose provided) */}
+        {onClose && (
+            <button 
+                onClick={onClose}
+                className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-2 rounded-full transition-all duration-200 z-10"
+                aria-label="Close"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        )}
         
         {/* Title */}
-        <div className="bg-red-100 text-red-600 px-12 py-3 rounded-full mb-10">
-           <h2 className="text-2xl md:text-3xl font-bold m-0">เช็คอินรายวัน</h2>
+        <div className="mb-8 text-center relative flex flex-col items-center">
+           <div className="flex items-center gap-2 mb-1">
+             <h2 className="text-2xl md:text-3xl font-bold text-gray-800 m-0">เช็คอินรายวัน</h2>
+             <Popover
+                content={
+                  <div className="max-w-xs md:max-w-sm text-sm p-2 space-y-1">
+                    <p>• จำกัดการรับสแตมป์ 1 ดวง ต่อการล็อกอิน 1 ครั้ง / วัน / บัญชี</p>
+                    <p>• ไม่สามารถรับสแตมป์ย้อนหลังได้</p>
+                    <p>• แจกสแตมป์ถึงวันที่ 31 มีนาคม 2569</p>
+                    <p>• สแตมป์ใช้แลกรางวัลได้ถึงวันที่ 30 เมษายน 2569</p>
+                    <p>• สแตมป์จะถูกลบออกจากระบในวันที่ 1 พฤษภาคม 2569</p>
+                    <p>• สแตมป์และรางวัลไม่สามารถโอนหรือแลกเป็นเงินสด</p>
+                    <p>• รางวัลบางรายการมีจำนวนจำกัด</p>
+                    <p>• เงื่อนไขเป็นไปตามที่บริษัทฯ กำหนด</p>
+                  </div>
+                }
+                trigger="click"
+                placement="bottom"
+              >
+                <button className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none">
+                  <InfoCircleOutlined className="text-lg md:text-xl" />
+                </button>
+              </Popover>
+           </div>
+           <h3>ของรางวัลจะเข้าบัญชีของคุณโดยอัตโนมัติเมื่อกดเช็คอิน</h3>
+           <span className='text-gray-500 mt-2'>รีเซ็ตทุกวัน เวลา 00:00</span>
         </div>
 
         {/* Days Row */}
-        <div className="flex flex-wrap md:flex-nowrap justify-center gap-4 w-full mb-8">
+        <div className="flex flex-wrap md:flex-nowrap justify-center gap-2 md:gap-4 w-full mb-8">
            {[...Array(7)].map((_, i) => {
              const day = i + 1
              const isRewardDay = day === 7
@@ -144,23 +176,19 @@ function SevenDaysLogin() {
              
              // Define styles based on state
              let containerClass = "bg-gray-100/80"
-             let rewardBg = "bg-transparent text-gray-500"
              let textClass = "text-gray-300"
              let borderClass = "border-transparent"
-
-             if (isRewardDay) {
-                containerClass = "bg-yellow-200"
-                rewardBg = "bg-red-500 text-white"
-             }
 
              if (isToday) {
                 containerClass = "bg-gray-100/80 cursor-pointer hover:bg-red-50 transition-colors"
                 textClass = "text-red-500 font-bold"
+             } else if (isChecked) {
+                containerClass = "bg-gray-100 opacity-70"
              }
 
-             // If just checked or past checked
-             if (isChecked && !isRewardDay) {
-                containerClass = "bg-gray-100 opacity-70"
+             // Highlight current day frame (only if not checked in yet)
+             if (day === currentRewardDay && !checkedToday) {
+                 borderClass = "ring-2 ring-red-500 shadow-lg shadow-red-200"
              }
 
              return (
@@ -169,9 +197,11 @@ function SevenDaysLogin() {
                   onClick={isToday ? handleCheckin : undefined}
                   className={`
                     flex flex-col items-center justify-between 
-                    w-[100px] h-[140px] md:w-[110px] md:h-[160px] 
+                    w-[30%] md:w-[110px] h-[120px] md:h-[160px] 
                     rounded-2xl p-2 relative select-none
+                    transition-all duration-300
                     ${containerClass}
+                    ${borderClass}
                   `}
                >
                   {/* Reward Badge */}
@@ -179,7 +209,7 @@ function SevenDaysLogin() {
                     absolute top-0 left-0 right-0 h-8 
                     flex items-center justify-center 
                     text-base font-bold rounded-t-2xl
-                    ${isRewardDay ? 'bg-red-500 text-white' : 'text-gray-600'}
+                    bg-red-500 text-white
                   `}>
                     +1
                   </div>
@@ -199,7 +229,11 @@ function SevenDaysLogin() {
                         {/* Overlay Checkmark if checked */}
                         {isChecked && (
                             <div className="absolute inset-0 bg-white/60 rounded-full flex items-center justify-center">
-                                {/* Can put check icon here if needed, or just fade it */}
+                                <div className="bg-green-500 text-white rounded-full p-1 shadow-sm">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
                             </div>
                         )}
                      </div>

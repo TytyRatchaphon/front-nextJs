@@ -64,7 +64,7 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pt-6 border-t border-gray-100">
           <div className="flex items-center gap-4">
             <div className="relative w-12 h-12">
-              <Image src="/images/ejb-footer.png" alt="EnjoyBook Logo" fill className="object-contain" />
+              <Image src={settings?.logo || '/images/ejb-footer.png'} alt="EnjoyBook Logo" fill className="object-contain" unoptimized/>
             </div>
             {settings?.img_play_store && (
               <Link href={settings?.play_store || '#'} className="relative w-[140px] h-[45px] block">

@@ -19,6 +19,7 @@ import axios from 'axios';
 import { useFormStore } from '@/stores/formStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
+import apiClient from '@/services/apiClient';
 import Image from 'next/image';
 import GifLoader from '@/components/utility/GifLoader';
 
@@ -44,7 +45,7 @@ const UserInfoForm = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await axios.get('/api/category');
+        const res = await apiClient.get('/category');
         const data = Array.isArray(res.data) ? res.data : (res.data.data || []);
         setCategories(data);
       } catch (error) {
@@ -84,8 +85,17 @@ const UserInfoForm = () => {
       };
       form.setFieldsValue(formValues);
 
-      // Also update redundant store to keep it in sync (optional but safe)
-      // resetUserProfile(); // Maybe we should reset store?
+      // Sync to store
+      if (formValues.fullname) updateUserProfile('fullname', formValues.fullname);
+      if (formValues.birthday) updateUserProfile('birthday', formValues.birthday.format('YYYY-MM-DD'));
+      if (formValues.gender) updateUserProfile('gender', String(formValues.gender));
+      if (formValues.cat1) updateUserProfile('cat1', formValues.cat1);
+      if (formValues.cat2) updateUserProfile('cat2', formValues.cat2);
+      if (formValues.phone) updateUserProfile('phone', formValues.phone);
+      if (formValues.des) updateUserProfile('des', formValues.des);
+      if (formValues.address_main) updateUserProfile('address_main', formValues.address_main);
+      if (formValues.facebook) updateUserProfile('facebook', formValues.facebook);
+      if (formValues.twitter) updateUserProfile('twitter', formValues.twitter);
     }
   }, [user, form]);
 
@@ -201,7 +211,7 @@ const ChangePasswordForm = () => {
         token: token,
       };
 
-      const response = await axios.post('/api/changepass', requestData);
+      const response = await apiClient.post('/user/changepass', requestData);
 
       if (response.status === 200 && (response.data.status === 'success' || response.data.code === 200)) {
         message.success(response.data.message || 'เปลี่ยนรหัสผ่านสำเร็จ!');

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 // 👇 ตรวจสอบ URL Backend
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3331';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export async function POST(request: Request) {
   try {
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
     //  // เปิดดูถ้าอยากเช็ค
 
-    const backendResponse = await fetch(`${BACKEND_URL}/user/save_profile_image`, {
+    const backendResponse = await fetch(`${BACKEND_URL}/save_profile_image`, {
         method: 'POST',
         headers: {
             'Authorization': finalToken, // ส่ง Token ที่จัด Format แล้ว
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
         },
         body: formData, 
     });
-
+    
     const data = await backendResponse.json();
 
     if (!backendResponse.ok) {

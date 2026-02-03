@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import Image from 'next/image';
-import axios from 'axios';
+import apiClient from '@/services/apiClient';
 
 declare global {
     interface Window {
@@ -21,8 +21,8 @@ const LoginApple = () => {
     const { login, updateToken } = useAuthStore();
     const { closeLoginModal } = useUIStore();
 
-    const APPLE_CLIENT_ID = process.env.NEXT_PUBLIC_APPLE_CLIENT_ID || 'com.enjoybook.enjoyread-service'; // Replace with actual Client ID
-    const APPLE_REDIRECT_URI = process.env.NEXT_PUBLIC_APPLE_REDIRECT_URI || 'https://enjoybook.co/login/apple/callback'; // Replace with actual Redirect URI
+    const APPLE_CLIENT_ID = process.env.NEXT_PUBLIC_APPLE_CLIENT_ID ; // Replace with actual Client ID
+    const APPLE_REDIRECT_URI = process.env.NEXT_PUBLIC_APPLE_REDIRECT_URI ; // Replace with actual Redirect URI
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
     useEffect(() => {
@@ -90,7 +90,7 @@ const LoginApple = () => {
                 user: appleResponse.user ? JSON.stringify(appleResponse.user) : undefined
             };
 
-            const response = await axios.post(`${API_BASE_URL}/login/apple`, payload);
+            const response = await apiClient.post(`${API_BASE_URL}/login/apple`, payload);
 
             if (response.data && response.data.data) {
                 const userData = response.data.data;

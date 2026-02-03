@@ -3,7 +3,7 @@ import React, { useState, useRef } from 'react'
 import Image from 'next/image'
 import { Modal, Button, notification } from 'antd'
 import { useAuthStore } from '@/stores/authStore'
-import axios from 'axios'
+import apiClient from '@/services/apiClient'
 import { useWebsiteStore } from '@/stores/websiteStore'
 
 function AllEvent() {
@@ -59,14 +59,12 @@ function AllEvent() {
 
     setStampLoading(true)
     try {
-      const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://192.168.220.214:3331'
+      const base = process.env.NEXT_PUBLIC_API_BASE_URL
       const url = `${base}/user/event/stamp-exchange`
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (token) headers['Authorization'] = token
       const body = { amount: String(stampAmount), type: stampType }
 
       // 2. ยิง API แลกสแตมป์
-      const res = await axios.post(url, body, { headers })
+      const res = await apiClient.post(url, body)
 
       // 3. จัดการ Token
       const rawTokenCandidate = extractTokenFromResponse(res) ?? res.data?.token ?? res.data?.data?.token ?? res.headers?.authorization ?? res.headers?.Authorization
@@ -75,7 +73,7 @@ function AllEvent() {
       if (newToken && typeof updateToken === 'function') {
         try {
           updateToken(newToken)
-          try { axios.defaults.headers.common['Authorization'] = newToken } catch (e) { /* ignore */ }
+          try { /* apiClient uses localStorage */ } catch (e) { /* ignore */ }
         } catch (e) { }
       }
 
@@ -107,9 +105,7 @@ function AllEvent() {
       if (authForFetch) {
         setTimeout(async () => {
           try {
-            const headersMe: Record<string, string> = { 'Content-Type': 'application/json' }
-            headersMe['Authorization'] = authForFetch
-            const meRes = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://192.168.220.214:3331'}/user/me`, { headers: headersMe })
+            const meRes = await apiClient.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/me`)
             const profile = meRes.data?.data ?? meRes.data
             if (profile) {
               useAuthStore.setState({ user: profile, token: authForFetch, isLoggedIn: true })
@@ -214,13 +210,10 @@ function AllEvent() {
     setGachaResult(null)
 
     try {
-      const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://192.168.220.214:3331'
+      const base = process.env.NEXT_PUBLIC_API_BASE_URL 
       const url = `${base}/user/event/gacha`
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (token) headers['Authorization'] = token
-
       // 1. ยิง API
-      const res = await axios.post(url, {}, { headers })
+      const res = await apiClient.post(url, {})
       const data = res.data?.data ?? res.data
       setGachaResult(data)
 
@@ -238,7 +231,7 @@ function AllEvent() {
       if (gachaToken && typeof updateToken === 'function') {
         try {
           updateToken(gachaToken)
-          try { axios.defaults.headers.common['Authorization'] = gachaToken } catch (e) { /* ignore */ }
+          try { /* apiClient uses localStorage */ } catch (e) { /* ignore */ }
         } catch (e) { }
       }
 
@@ -284,9 +277,7 @@ function AllEvent() {
       if (activeToken) {
         setTimeout(async () => {
           try {
-            const meRes = await axios.get(`${base}/user/me`, {
-              headers: { 'Authorization': activeToken }
-            })
+            const meRes = await apiClient.get(`${base}/user/me`)
             const profile = meRes.data?.data ?? meRes.data
 
             if (profile) {

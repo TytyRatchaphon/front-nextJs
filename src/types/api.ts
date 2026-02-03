@@ -42,6 +42,7 @@ export interface WebsiteSettingsData {
   seo_title: string;
   seo_keyword: string;
   seo_description: string;
+  '7D_Checkin'?: string;
   [key: string]: string | undefined;
 }
 

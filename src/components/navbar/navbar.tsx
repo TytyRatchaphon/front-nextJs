@@ -1,6 +1,6 @@
 "use client";
 
-import NovelMenu, { categories } from './NovelMenu';
+import NovelMenu from './NovelMenu';
 import { Popover, App, Empty } from 'antd';
 import LoginButtonHeader from './LoginButtonHeader';
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -9,7 +9,7 @@ import Image from 'next/image';
 import NotificationList from './NotificationList';
 import { useSocket } from '@/providers/SocketProvider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchRecentNotifications, fetchPromotingGroups } from '@/services/apiServices';
+import { fetchRecentNotifications, fetchPromotingGroups, fetchActiveTypes, fetchActiveCategories } from '@/services/apiServices';
 import { useAuthStore } from '@/stores/authStore';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { useLineLogin } from '@/hooks/useLineLogin';
@@ -18,6 +18,8 @@ import Link from 'next/link';
 import NavIcon from '@/assets/images/icon.png';
 import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill';
+import SmartAppBanner from '@/components/utility/SmartAppBanner';
+
 
 
 
@@ -45,6 +47,19 @@ function Navbar() {
   const { data: promotingGroups } = useQuery({
     queryKey: ['promotingGroups'],
     queryFn: fetchPromotingGroups,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: activeTypes = [] } = useQuery({
+    queryKey: ['activeTypes'],
+    queryFn: fetchActiveTypes,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: mobileCategories = [] } = useQuery({
+    queryKey: ['mobileCategories', openMobileCategoryId],
+    queryFn: () => fetchActiveCategories(openMobileCategoryId!),
+    enabled: !!openMobileCategoryId,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -138,7 +153,7 @@ function Navbar() {
     if (pathname.startsWith('/writer')) return 'นักเขียน';
     if (pathname.startsWith('/ranking')) return 'จัดอันดับ';
     if (pathname.startsWith('/article')) return 'บทความ';
-    if (pathname.startsWith('/campaign')) return 'แคมเปญ';
+    // if (pathname.startsWith('/campaign')) return 'แคมเปญ';
     return 'หน้าหลัก';
   };
 
@@ -312,8 +327,10 @@ function Navbar() {
   }
 
   return (
-    <div id="GlobalNavbarWrapper" className="sticky top-0 z-[1200] w-full flex flex-col">
-      <div
+    <>
+      <SmartAppBanner />
+      <div id="GlobalNavbarWrapper" className="sticky top-0 z-[1200] w-full flex flex-col">
+        <div
         className="select-none flex justify-center items-center h-[60px] lg:h-[80px] header bg-white text-gray-700 shadow-sm w-full"
         id="Navbar"
         style={{
@@ -353,7 +370,7 @@ function Navbar() {
 
             <Link href="/ranking" className={getLinkClasses('/ranking')}>จัดอันดับ</Link>
             <Link href="/article" className={getLinkClasses('/article')}>บทความ</Link>
-            <Link href="/campaign" className={getLinkClasses('/campaign')}>แคมเปญ</Link>
+            {/* <Link href="/campaign" className={getLinkClasses('/campaign')}>แคมเปญ</Link> */}
 
             {promotingGroups?.map((group) => (
               <Link key={group.id} href={`/promotion/${group.id}`} className={getLinkClasses(`/promotion/${group.id}`)}>
@@ -376,7 +393,7 @@ function Navbar() {
               <Popover
                 content={<NotificationList />}
                 trigger="click"
-                placement="bottomRight"
+                placement="bottom"
                 arrow={false}
                 styles={{ body: { padding: 0 } }}
                 zIndex={2000}
@@ -450,6 +467,11 @@ function Navbar() {
         >
           <Link href="/" className="px-4 py-3 hover:bg-red-50 border-b border-gray-100 font-primary" onClick={() => setIsMobileMenuOpen(false)}>หน้าหลัก</Link>
 
+
+
+
+// ... inside rendering ...
+
           {/* Novel Mobile Menu Wrapper */}
           <div className="border-b border-gray-100">
             <div
@@ -475,13 +497,13 @@ function Navbar() {
 
             {/* Sub-menu */}
             <div className={`overflow-hidden transition-all duration-300 ease-in-out bg-gray-50 ${isMobileNovelOpen ? 'max-h-[1500px] opacity-100' : 'max-h-0 opacity-0'}`}>
-              {categories.map((cat) => (
-                <div key={cat.id} className="border-b border-gray-100 last:border-b-0">
+              {activeTypes?.map((type) => (
+                <div key={type.type} className="border-b border-gray-100 last:border-b-0">
                   <div
                     className="px-6 py-3 text-sm font-semibold text-gray-700 bg-gray-100/50 flex justify-between items-center cursor-pointer hover:bg-gray-200/50 transition-colors"
-                    onClick={() => setOpenMobileCategoryId(openMobileCategoryId === cat.id ? null : cat.id)}
+                    onClick={() => setOpenMobileCategoryId(openMobileCategoryId === type.type ? null : type.type)}
                   >
-                    <span>{cat.label}</span>
+                    <span>{type.label}</span>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="14"
@@ -492,23 +514,31 @@ function Navbar() {
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className={`transition-transform duration-200 text-gray-500 ${openMobileCategoryId === cat.id ? 'rotate-180' : ''}`}
+                      className={`transition-transform duration-200 text-gray-500 ${openMobileCategoryId === type.type ? 'rotate-180' : ''}`}
                     >
                       <polyline points="6 9 12 15 18 9"></polyline>
                     </svg>
                   </div>
 
-                  <div className={`grid grid-cols-2 gap-2 px-6 overflow-hidden transition-all duration-300 ease-in-out ${openMobileCategoryId === cat.id ? 'max-h-[1000px] py-2 pb-4 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
-                    {cat.genres.map((genre) => (
-                      <Link
-                        key={genre.id}
-                        href={`/cat/list?type=${cat.id}&categoryId=${genre.id}&tab=new&limit=10&page=1`}
-                        className="text-[13px] text-gray-600 hover:text-red-600 truncate py-1"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        {genre.name}
-                      </Link>
-                    ))}
+                  <div className={`grid grid-cols-2 gap-2 px-6 overflow-hidden transition-all duration-300 ease-in-out ${openMobileCategoryId === type.type ? 'max-h-[1000px] py-2 pb-4 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
+                    {openMobileCategoryId === type.type && mobileCategories?.length > 0 ? (
+                      mobileCategories.map((cat) => (
+                        <Link
+                          key={cat.id}
+                          href={`/cat/list?type=${type.type}&categoryId=${cat.id}&tab=new&limit=10&page=1`}
+                          className="text-[13px] text-gray-600 hover:text-red-600 truncate py-1"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          {cat.name}
+                        </Link>
+                      ))
+                    ) : (
+                       openMobileCategoryId === type.type && (
+                         <div className="col-span-2 text-center text-gray-400 py-2 text-xs">
+                           กำลังโหลด...
+                         </div>
+                       )
+                    )}
                   </div>
                 </div>
               ))}
@@ -517,7 +547,7 @@ function Navbar() {
 
           <Link href="/ranking" className="px-4 py-3 hover:bg-red-50 border-b border-gray-100 font-primary" onClick={() => setIsMobileMenuOpen(false)}>จัดอันดับ</Link>
           <Link href="/article" className="px-4 py-3 hover:bg-red-50 border-b border-gray-100 font-primary" onClick={() => setIsMobileMenuOpen(false)}>บทความ</Link>
-          <Link href="/campaign" className="px-4 py-3 hover:bg-red-50 border-b border-gray-100 font-primary" onClick={() => setIsMobileMenuOpen(false)}>แคมเปญ</Link>
+          {/* <Link href="/campaign" className="px-4 py-3 hover:bg-red-50 border-b border-gray-100 font-primary" onClick={() => setIsMobileMenuOpen(false)}>แคมเปญ</Link> */}
 
           {promotingGroups?.map((group) => (
             <Link key={group.id} href={`/promotion/${group.id}`} className="px-4 py-3 hover:bg-red-50 border-b border-gray-100 font-primary" onClick={() => setIsMobileMenuOpen(false)}>
@@ -527,8 +557,9 @@ function Navbar() {
           {/* <Link href="/reel" className="px-4 py-3 hover:bg-red-50 border-b border-gray-100 font-primary" onClick={() => setIsMobileMenuOpen(false)}>Reel</Link> */}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 
-export default Navbar
+export default Navbar;

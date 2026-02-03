@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import TextEditorTiny from "@/components/editor/TextEditorTiny";
 import GifLoader from '@/components/utility/GifLoader';
 import { fetchGroupEpisodes } from "@/services/apiServices";
+import apiClient from '@/services/apiClient';
 
 dayjs.extend(customParseFormat);
 
@@ -36,7 +37,7 @@ interface ChapterFormValues {
 }
 
 // Configs
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3331';
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 const ACCESS_TOKEN = process.env.NEXT_PUBLIC_ACCESS_TOKEN || '';
 
 // --- Constants ---
@@ -84,7 +85,7 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
                 setSpinLoading(true);
                 try {
                     // GET ข้อมูลเดิม
-                    const response = await axios.get(`${API_URL}/user/mybook/ep/${epID}`, {
+                    const response = await apiClient.get(`/user/mybook/ep/${epID}`, {
                         headers: getHeaders()
                     });
                     const resData = response.data;
@@ -186,7 +187,7 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
 
 
             // ยิง PUT ไปที่ /user/mybook/ep/update
-            const response = await axios.put(`${API_URL}/user/mybook/ep/update`, payload, {
+            const response = await apiClient.put(`/user/mybook/ep/update`, payload, {
                 headers: getHeaders()
             });
 

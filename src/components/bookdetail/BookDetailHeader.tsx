@@ -1,12 +1,13 @@
 "use client";
 
 import NextImage from "next/image";
+import axios from "axios";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Image as AntImage, App, Modal } from "antd";
 import apiClient from "@/services/apiClient";
 import { fetchLatestReadEpisode } from "@/services/apiServices";
-import axios from "axios";
+
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
 import { FacebookShareButton, TwitterShareButton, LineShareButton } from "react-share";
@@ -181,9 +182,7 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
         writer_id: book.writer.user_id,
         action: action
       }, {
-        headers: {
-          Authorization: token
-        }
+        headers: { 'Authorization': token }
       });
       setIsFollowed(!isFollowed);
       messageApi.success(isFollowed ? "เลิกติดตามแล้ว" : "ติดตามแล้ว");

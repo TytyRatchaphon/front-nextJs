@@ -120,6 +120,7 @@ export interface PromotingBook {
 
 export interface PromotingBlock {
   id: number;
+  block_name?: string;
   group_id: number;
   type: string;
   banner: string;
@@ -144,10 +145,25 @@ export const fetchPromotingGroupDetail = async (id: string | number): Promise<Pr
   }
 };
 
-export const fetchPromotingBlock = async (blockId: string | number, page: number = 1): Promise<PromotingBlock | null> => {
+export interface PromotingBlockBooksResponse {
+  page: number;
+  limit: number;
+  offset: number;
+  total: number;
+  totalPages: number;
+  nextPage: number | null;
+  prevPage: number | null;
+  block_id: number;
+  block_type: string;
+  banner: string | null;
+  block_name: string;
+  books: PromotingBook[];
+}
+
+export const fetchPromotingBlockBooks = async (blockId: string | number, page: number = 1, limit?: number): Promise<PromotingBlockBooksResponse | null> => {
   try {
-    const response = await apiClient.get<{ code: number; data: PromotingBlock }>(`/promoting-group/block/${blockId}`, {
-      params: { page }
+    const response = await apiClient.get<{ code: number; data: PromotingBlockBooksResponse }>(`/promoting/${blockId}/books`, {
+      params: { page, limit }
     });
     return response.data?.data || null;
   } catch (error) {
@@ -785,7 +801,7 @@ export const deleteGroup = async (groupId: string | number) => {
 export const updateUserAddress = async (formData: FormData, token: string) => {
   try {
      // Use axios directly to hit Next.js API route (relative path) instead of backend (apiClient base URL)
-     const response = await axios.post('/api/save_profile', formData, {
+     const response = await axios.post('/user/save_profile', formData, {
        headers: { 'Authorization': token }
      });
      return response.data;
@@ -833,6 +849,7 @@ export const createPromotion = async (payload: {
   start_date: string;
   end_date: string;
   discount_percent: string | number;
+  book_id?: string | number;
 }) => {
   try {
     const response = await apiClient.post('/user/managebook/groups/promotion', payload);
@@ -858,6 +875,7 @@ export const updatePromotion = async (payload: {
   start_date: string;
   end_date: string;
   discount_percent: string | number;
+  book_id?: string | number;
 }) => {
   try {
     const response = await apiClient.put('/user/managebook/groups/promotion', payload);
@@ -1090,7 +1108,9 @@ export interface WriterProfileResponse {
   };
 }
 
-export const fetchWriterProfile = async (writerId: string | number): Promise<WriterProfileResponse['data'] | null> => {
+
+
+export const fetchPublicWriterProfile = async (writerId: string | number): Promise<WriterProfileResponse['data'] | null> => {
   try {
     const response = await apiClient.get<WriterProfileResponse>(`/profile/${writerId}`);
     return response.data?.data ?? null;
@@ -1848,13 +1868,14 @@ export const updateReadingProgress = async (book_id: string | number, ep_id: str
 export const fetchCategoryBooks = async (
   type: string,
   categoryId: string | number,
-  tab: string = 'new',
+  tab: string = 'bestseller',
   page: number = 1,
-  limit: number = 20
+  limit: number = 20,
+  period?: string
 ): Promise<CategoryBookListResponse | null> => {
   try {
     const response = await apiClient.get<CategoryBookListResponse>(`/book-category/list`, {
-      params: { type, categoryId, tab, limit, page }
+      params: { type, categoryId, tab, limit, page, period }
     });
     return response.data;
   } catch (error) {
@@ -1880,11 +1901,37 @@ export const fetchLatestReadEpisode = async (bookId: string | number): Promise<L
   }
 };
 
-export const fetchUserMyBookInfo = async () => {
+export const fetchUserMyBookInfo = async (token?: string | null) => {
   try {
-    const response = await apiClient.get('/user/writer/info');
+    const config = token ? { headers: { Authorization: token } } : {};
+    const response = await apiClient.get('/user/writer/info', config);
     return response.data;
   } catch (error) {
+    console.error("fetchUserMyBookInfo error:", error);
+    return null;
+  }
+};
+
+export const fetchWriterProfile = async (token?: string | null) => {
+  try {
+    const config = token ? { headers: { Authorization: token } } : {};
+    const response = await apiClient.get('/writer/info', config);
+    return response.data;
+  } catch (error) {
+    console.error("fetchWriterProfile error:", error);
+    return null;
+  }
+};
+
+
+
+export const checkWriterStatus = async (token?: string | null) => {
+  try {
+    const config = token ? { headers: { Authorization: token } } : {};
+    const response = await apiClient.get('/user/writer/check', config);
+    return response.data;
+  } catch (error) {
+    console.error("checkWriterStatus error:", error);
     return null;
   }
 };
@@ -1984,6 +2031,28 @@ export const refreshToken = async (tokenOverride?: string) => {
   }
 };
 
+export interface BookRecommendationResponse {
+  code: number;
+  status: string;
+  message: string;
+  data: any[]; // Using any[] to match CardCard input flexibility, or could use Partial<Book>[]
+}
+
+export const fetchBookRecommendation = async (bookId: string | number): Promise<any[]> => {
+  try {
+    const response = await apiClient.get<BookRecommendationResponse>(`/bookdetail/recommend/${bookId}`, {
+      params: { limit: 5 }
+    });
+    
+    if (response.data && response.data.code === 200 && Array.isArray(response.data.data)) {
+        return response.data.data;
+    }
+    return [];
+  } catch (error) {
+    return [];
+  }
+};
+
 export const fetchBookPromotionOptions = async (bookId: number): Promise<BookPromotionOption[]> => {
   try {
     const response = await apiClient.get<any>(`/pack-campaign/buying-options/${bookId}`);
@@ -2051,3 +2120,36 @@ export const fetchFaqs = async (): Promise<FaqItem[]> => {
         return [];
     }
 }
+
+export interface ActiveType {
+  type: string;
+  label: string;
+}
+
+export interface ActiveCategory {
+  id: string;
+  name: string;
+  color?: string;
+  img_bg?: string;
+  order_by?: number;
+}
+
+export const fetchActiveTypes = async (): Promise<ActiveType[]> => {
+  try {
+    const response = await apiClient.get<{ code: number; data: ActiveType[] }>('/active-types');
+    return response.data?.data || [];
+  } catch (error) {
+    return [];
+  }
+};
+
+export const fetchActiveCategories = async (type: string = 'all'): Promise<ActiveCategory[]> => {
+  try {
+    const response = await apiClient.get<{ code: number; data: ActiveCategory[] }>('/active-categories', {
+      params: { type }
+    });
+    return response.data?.data || [];
+  } catch (error) {
+    return [];
+  }
+};

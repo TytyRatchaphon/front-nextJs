@@ -3,8 +3,10 @@
 import React from 'react';
 import DailyPopup from "@/components/utility/DailyPopup";
 import { BackToTopButton } from "@/components/utility/BackToTopButton";
+import FloatingGiftButton from "@/components/utility/FloatingGiftButton";
 import Link from "next/link";
 import Banner from "@/components/home/Banner";
+import DailyCheckinModal from "@/components/home/DailyCheckinModal";
 import BannerButtons from "@/components/home/BannerButtons";
 import Image from "next/image";
 import BookGroups from "@/components/home/BookGroups";
@@ -63,12 +65,13 @@ export default function HomeContent({ initialData }: HomeContentProps) {
 
   return (
     <div className="bg-white font-primary font-medium flex flex-col items-center transition-colors duration-300 w-full overflow-x-hidden">
+      <DailyCheckinModal />
       <Banner slides={slides} />
       {/* Main Content Section */}
       <div className="w-full flex justify-center mt-4 lg:mt-16">
         <div className="max-w-[1440px] w-full px-4 lg:px-[156px]">  {/* Edit Widht of Home Content Here */}
           
-          <div className="w-full max-w-[976px] mx-auto mb-2">
+          <div className="w-full max-w mx-auto mb-2">
             <BannerButtons />
           </div>
 
@@ -196,6 +199,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
           </div>
 
           <BackToTopButton />
+          <FloatingGiftButton />
           <DailyPopup />
         </div>
       </div>

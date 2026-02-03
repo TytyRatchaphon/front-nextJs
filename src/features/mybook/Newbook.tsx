@@ -47,6 +47,7 @@ interface BookFormValues {
 }
 
 import { useRouter } from "next/navigation";
+import apiClient from '@/services/apiClient';
 
 // ... [Imports]
 
@@ -113,8 +114,8 @@ const NewBook: React.FC = () => {
 
                 // ยิง API
                 const [catRes, webRes] = await Promise.all([
-                    axios.get(`${API_URL}/category`, config),
-                    axios.get(`${API_URL}/get_website`, config)
+                    apiClient.get(`/category`, config),
+                    apiClient.get(`/get_website`, config)
                 ]);
 
                 // ถ้าผ่านจะมาทำงานตรงนี้
@@ -255,10 +256,10 @@ const NewBook: React.FC = () => {
                 ? btoa(ACCESS_TOKEN)
                 : Buffer.from(ACCESS_TOKEN).toString('base64');
 
-            const response = await axios.post(`${API_URL}/user/mybook`, formdata, {
+            const response = await apiClient.post(`/user/mybook`, formdata, {
                 headers: {
-                    'Authorization': cleanToken || '',
-                    'X-API-Key': encodedApiKey
+                    "Content-Type": "multipart/form-data",
+                    "Authorization": `Bearer ${token}`
                 }
             });
 
@@ -395,7 +396,7 @@ const NewBook: React.FC = () => {
                                             <span className='body-text'>หมวดหมู่รอง</span>
                                             <Form.Item name='cat2' rules={[{ required: true, message: 'กรุณาเลือกหมวดหมู่' }]}>
                                                 <Select placeholder="Select an option">
-                                                    {category2 && category2.map((item, i) => (
+                                                    {category1 && category1.map((item, i) => (
                                                         <Select.Option key={i} value={item.id}>{item.name}</Select.Option>
                                                     ))}
                                                 </Select>

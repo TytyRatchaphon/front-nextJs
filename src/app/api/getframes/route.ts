@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
 
     // เรียก backend API พร้อม timeout
-    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3331'}/user/getFrameUser`, {
+    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/getFrameUser`, {
       headers: {
         'Authorization': token,
         'Content-Type': 'application/json',

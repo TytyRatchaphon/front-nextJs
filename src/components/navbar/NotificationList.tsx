@@ -141,7 +141,7 @@ const NotificationList: React.FC = () => {
             .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #e5e7eb; border-radius: 20px; }
             .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #d1d5db; }
         `}</style>
-            <div className="w-[calc(100vw-32px)] sm:w-[420px] md:w-[480px] flex flex-col bg-white rounded-xl overflow-hidden font-bai-jamjuree shadow-2xl border border-gray-100 ring-1 ring-black/5">
+            <div className="w-[85vw] max-w-[380px] sm:w-[420px] md:w-[480px] flex flex-col bg-white rounded-xl overflow-hidden font-bai-jamjuree shadow-2xl border border-gray-100 ring-1 ring-black/5">
                 {/* Header */}
                 <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-20 shadow-sm">
                     <div className="flex items-center gap-2">

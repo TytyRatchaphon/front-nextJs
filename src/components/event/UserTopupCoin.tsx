@@ -4,7 +4,7 @@ import React from 'react'
 import Image from 'next/image'
 import { Progress, Button, App } from 'antd'
 import { GiftOutlined } from '@ant-design/icons'
-import axios from 'axios'
+import apiClient from '@/services/apiClient'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -25,9 +25,7 @@ export default function UserTopupCoin({
         const currentToken = overrideToken || useAuthStore.getState().token
         const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? ''
         const url = `${base}/user/event`
-        const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-        if (currentToken) headers['Authorization'] = currentToken
-        const res = await axios.get(url, { headers })
+        const res = await apiClient.get(url)
         return res.data?.data ?? {}
     }
 

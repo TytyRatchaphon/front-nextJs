@@ -15,6 +15,8 @@ import LoginFacebook from '../social/LoginFacebook';
 import LoginGoogle from '../social/LoginGoogle';
 import LoginLine from '../social/LoginLine';
 import LoginApple from '../social/LoginApple';
+import DuplicateLoginModal from '@/components/auth/DuplicateLoginModal';
+import BlockedUserModal from '@/components/auth/BlockedUserModal';
 
 type LoginFieldType = {
   email?: string;
@@ -326,8 +328,8 @@ const LoginButtonHeader: React.FC = () => {
     onSuccess: (responseData, variables) => {
       // แสดง notification แทน message
       api.success({
-        message: 'ส่งลิงก์รีเซ็ตรหัสผ่านสำเร็จ',
-        description: `เราได้ส่งลิงก์สำหรับรีเซ็ต Password ไปให้คุณเรียบร้อยแล้ว กรุณาตรวจสอบที่ ${variables.email} อีกครั้ง`,
+        message: 'ส่งคำขอรีเซ็ตรหัสผ่านสำเร็จ',
+        description: responseData.message,
         placement: 'topRight',
         duration: 6,
       });
@@ -412,6 +414,7 @@ const LoginButtonHeader: React.FC = () => {
           body: { padding: 0 },
           content: { padding: 0 }
         }}
+        zIndex={10000}
       >
 
         <div className={loginAnimationClass}>
@@ -687,6 +690,8 @@ const LoginButtonHeader: React.FC = () => {
           )}
         </div>
       </Modal>
+      <DuplicateLoginModal />
+      <BlockedUserModal />
     </>
   );
 };

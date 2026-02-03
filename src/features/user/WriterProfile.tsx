@@ -4,7 +4,7 @@ import React, { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
 import { Image as AntdImage } from "antd";
 import { Pagination, Select, Tabs, Empty, Button, message, Modal } from "antd";
-import { fetchWriterBooks, fetchWriterProfile, followWriter, WriterBook, WriterProfileResponse } from "@/services/apiServices";
+import { fetchWriterBooks, fetchPublicWriterProfile, followWriter, WriterBook, WriterProfileResponse } from "@/services/apiServices";
 import CardBook from "@/components/novelCard/CardBook";
 import { useSearchParams } from "next/navigation";
 import { FacebookShareButton, TwitterShareButton, LineShareButton } from "react-share";
@@ -47,11 +47,17 @@ function WriterProfileContent() {
 
     // Profile State
     const [profile, setProfile] = useState<WriterProfileResponse['data'] | null>(null);
+    const [bannerError, setBannerError] = useState(false);
+
+    // Reset banner error when data changes
+    useEffect(() => {
+        setBannerError(false);
+    }, [profile?.writer?.banner]);
 
     // Fetch Profile
     useEffect(() => {
         const loadProfile = async () => {
-            const data = await fetchWriterProfile(writerId);
+            const data = await fetchPublicWriterProfile(writerId);
             if (data) {
                 setProfile(data);
                 setIsFollowing(data.isFollowing);
@@ -141,7 +147,7 @@ function WriterProfileContent() {
             {contextHolder}
             {/* Banner Section */}
             <div className="w-full h-[200px] md:h-[280px] relative overflow-hidden bg-gray-100">
-                {profile?.writer.banner ? (
+                {profile?.writer?.banner && !bannerError ? (
                     <AntdImage
                         src={imageLoader({
                             src: profile.writer.banner.startsWith('http') || profile.writer.banner.startsWith('data:') || profile.writer.banner.startsWith('/')
@@ -154,6 +160,7 @@ function WriterProfileContent() {
                         height="100%"
                         style={{ objectFit: "cover" }}
                         preview={{}}
+                        onError={() => setBannerError(true)}
                     />
                 ) : (
                     <div className="w-full h-full bg-gradient-to-r from-red-600 to-rose-500" />
@@ -169,7 +176,7 @@ function WriterProfileContent() {
                         <div className="w-28 h-28 md:w-40 md:h-40 rounded-full border-[4px] md:border-[6px] border-white shadow-lg overflow-hidden bg-gray-50 relative group">
                             <AntdImage
                                 src={imageLoader({
-                                    src: profile?.writer.img
+                                    src: profile?.writer?.img
                                         ? (profile.writer.img.startsWith('http') || profile.writer.img.startsWith('data:') || profile.writer.img.startsWith('/')
                                             ? profile.writer.img
                                             : `https://img.enjoybook.co/${profile.writer.img}`)
@@ -189,7 +196,7 @@ function WriterProfileContent() {
 
                     {/* Info */}
                     <div className="flex-1 text-center md:text-left w-full md:w-auto">
-                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 truncate px-2 md:px-0">{profile?.writer.writer_name || "กำลังโหลด..."}</h1>
+                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 truncate px-2 md:px-0">{profile?.writer?.writer_name || "กำลังโหลด..."}</h1>
                         <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 md:gap-4 text-gray-600 text-sm font-medium">
                             <span className="flex items-center gap-1.5 bg-gray-100 px-3 py-1 rounded-full transition-colors hover:bg-gray-200 cursor-default">
                                 <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
@@ -337,7 +344,7 @@ function WriterProfileContent() {
                         {/* Twitter */}
                         <TwitterShareButton
                             url={typeof window !== 'undefined' ? window.location.href : ''}
-                            title={`ติดตามนักเขียน ${profile?.writer.writer_name || ''} ที่ EnjoyBook`}
+                            title={`ติดตามนักเขียน ${profile?.writer?.writer_name || ''} ที่ EnjoyBook`}
                             className="hover:opacity-80 transition-opacity"
                         >
                             <Image src="/images/social-3.png" alt="Twitter" width={48} height={48} unoptimized />
@@ -346,7 +353,7 @@ function WriterProfileContent() {
                         {/* Line */}
                         <LineShareButton
                             url={typeof window !== 'undefined' ? window.location.href : ''}
-                            title={`ติดตามนักเขียน ${profile?.writer.writer_name || ''} ที่ EnjoyBook`}
+                            title={`ติดตามนักเขียน ${profile?.writer?.writer_name || ''} ที่ EnjoyBook`}
                             className="hover:opacity-80 transition-opacity"
                         >
                             <Image src="/images/social-2.png" alt="Line" width={48} height={48} unoptimized />

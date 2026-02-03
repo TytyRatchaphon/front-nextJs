@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.220.214:3331';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export async function POST(request: Request) {
   let body;

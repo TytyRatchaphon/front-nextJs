@@ -53,6 +53,8 @@ type Book = {
     book_enabled: boolean;
   };
   use_freecoin?: number;
+  end?: string;
+  status?: string;
 };
 
 const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
@@ -890,6 +892,19 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                       </Radio.Group>
                     </div>
                   )}
+
+                  {/* หมายเหตุการซื้อ */}
+                  <div className="bg-red-50 border border-red-100 p-3 rounded-xl text-xs text-gray-700 mt-3">
+                      {book.end === 'end' ? (
+                          <p>
+                              <span className="font-bold text-red-700">กรณีซื้อทั้งเรื่องที่สถานะจบ :</span> คุณจะได้รับสิทธิ์ในการเข้าถึงเนื้อหา "ทุกตอนที่ท่านยังไม่เคยทำการซื้อ" ทั้งหมด โดยราคาจะคำนวนเฉพาะตอนที่ยังไม่เคยซื้อ
+                          </p>
+                      ) : (
+                          <p>
+                              <span className="font-bold text-red-700">สำหรับผลงานที่ยังไม่จบ:</span> คุณจะได้รับสิทธิ์ในการเข้าถึงเนื้อหา "ทุกตอนที่ท่านยังไม่เคยทำการซื้อ" ราคาที่แสดงจะเป็นการคำนวณยอดรวมเฉพาะ "ตอนที่อัปเดตล่าสุด ณ วันที่ทำรายการซื้อ" เท่านั้น (ไม่รวมถึงตอนที่จะอัปเดตเพิ่มในอนาคต)
+                          </p>
+                      )}
+                  </div>
 
                   <div className="flex gap-3 justify-center mt-4">
                     <Button onClick={() => setBuyAllModalOpen(false)} className="w-1/2 !bg-white !text-red-600 hover:!border-red-600">ยกเลิก</Button>

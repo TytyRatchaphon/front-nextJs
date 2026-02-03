@@ -4,7 +4,7 @@ import React from 'react'
 import Image from 'next/image'
 import { Progress, Button, App } from 'antd'
 import { GiftOutlined } from '@ant-design/icons'
-import axios from 'axios'
+import apiClient from '@/services/apiClient'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -39,9 +39,7 @@ export default function UserUseCoin({
     const currentToken = overrideToken || useAuthStore.getState().token
     const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? ''
     const url = `${base}/user/event`
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (currentToken) headers['Authorization'] = currentToken
-    const res = await axios.get(url, { headers })
+    const res = await apiClient.get(url)
     return res.data?.data ?? {}
   }
 
@@ -49,9 +47,7 @@ export default function UserUseCoin({
     const currentToken = useAuthStore.getState().token
     const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? ''
     const url = `${base}/user/event/get-stamp`
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    if (currentToken) headers['Authorization'] = currentToken
-    const res = await axios.post(url, {}, { headers })
+    const res = await apiClient.post(url, {})
     return res.data
   }
 
@@ -125,9 +121,7 @@ export default function UserUseCoin({
 
         // 2. Fetch User Profile ล่าสุดจาก Server (เพื่อความชัวร์ 100%)
         try {
-          const meRes = await axios.get(`${base}/user/me`, {
-            headers: { 'Authorization': currentToken }
-          });
+          const meRes = await apiClient.get(`${base}/user/me`);
           const realProfile = meRes.data?.data || meRes.data;
           if (realProfile) {
             useAuthStore.setState({ user: realProfile });

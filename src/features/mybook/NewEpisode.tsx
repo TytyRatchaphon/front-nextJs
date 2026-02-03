@@ -9,6 +9,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation"; // ✨ เพิ่ม useRouter
 import { fetchGroupEpisodes } from "@/services/apiServices";
+import apiClient from '@/services/apiClient';
 
 // Import TextEditor
 import TextEditorTiny from "@/components/editor/TextEditorTiny";
@@ -83,7 +84,7 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
             if (epID) {
                 setSpinLoading(true);
                 try {
-                    const response = await axios.get(`${API_URL}/user/mybook/ep/${epID}`, {
+                    const response = await apiClient.get(`/user/mybook/ep/${epID}`, {
                         headers: getHeaders()
                     });
                     const resData = response.data;
@@ -164,7 +165,7 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
                 publish: values.publish || 'publish',
             };
 
-            const response = await axios.post(`${API_URL}/user/mybook/ep`, payload, {
+            const response = await apiClient.post(`/user/mybook/ep`, payload, {
                 headers: getHeaders()
             });
 

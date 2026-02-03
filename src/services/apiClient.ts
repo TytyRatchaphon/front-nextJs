@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useUIStore } from "@/stores/uiStore";
+import { getDeviceId } from "@/utils/deviceUtils";
 
 // API Response Interface
 export interface ApiResponse<T = any> {
@@ -19,14 +20,24 @@ const apiClient = axios.create({
 
 
 // Request Interceptor - เพิ่ม token ใน header
-apiClient.interceptors.request.use(
-    (config) => {
+apiClient.interceptors.request.use( 
+    async (config) => {
         // Log method/url and request body (headers may be augmented below)
         const fullUrl = `${config.baseURL || ''}${config.url}`;
 
 
         // เช็คว่าอยู่ใน browser environment
         if (typeof window !== 'undefined') {
+            // Add device ID header
+            try {
+                const deviceId = await getDeviceId();
+                if (deviceId) {
+                    config.headers['x-device-id'] = deviceId;
+                }
+            } catch (error) {
+                console.error('Error getting device ID:', error);
+            }
+
             const raw = localStorage.getItem('authToken');
             if (raw) {
                 // Sanitize stored token: remove any accidental 'Bearer ' prefix and trim whitespace
@@ -59,6 +70,27 @@ apiClient.interceptors.response.use(
                 useUIStore.getState().openDuplicateLoginModal();
             }
             // Return a dummy resolved promise to prevent error propagation (and other toasts)
+            return { data: null, status: 200, headers: {}, config: error.config };
+        }
+
+        // Debug Error Response
+        console.log('API Error Interceptor:', {
+            status: error.response?.status,
+            code: error.response?.data?.code,
+            message: error.response?.data?.message,
+            url: error.config?.url
+        });
+
+        // Handle Blocked User (401001 or specific message)
+        const isBlocked = error.response?.data?.code === 401001 || 
+                          error.response?.data?.message === "บัญชีของคุณถูกระงับการใช้งาน" ||
+                          (error.response?.status === 401 && error.response?.data?.code === "401001"); // In case it's a string
+
+        if (isBlocked) {
+            if (typeof window !== 'undefined') {
+                 useUIStore.getState().openBlockedUserModal();
+            }
+             // Return a dummy resolved promise to prevent error propagation
             return { data: null, status: 200, headers: {}, config: error.config };
         }
 

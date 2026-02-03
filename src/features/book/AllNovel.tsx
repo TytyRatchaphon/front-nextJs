@@ -35,7 +35,7 @@ const searchBooks = async (
   queryParams.append("page", page.toString());
   queryParams.append("limit", limit.toString());
 
-  const url = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.220.214:3331'}/book/search?${queryParams.toString()}`;
+  const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/book/search?${queryParams.toString()}`;
 
   const response = await fetch(url);
 

@@ -15,8 +15,9 @@ import { useBookDetailData } from "@/hooks/book/useBookDetailData";
 import { BookAboutTab } from "@/components/bookdetail/BookAboutTab";
 import { BookEpisodesTab } from "@/components/bookdetail/BookEpisodesTab";
 import { useLogger } from "@/hooks/useLogger";
+import RecommendedBooks from "@/components/bookdetail/RecommendedBooks";
 
-const collapseTabs = ["แนะแนวเรื่อง", "สารบัญ"] as const;
+const collapseTabs = ["รายละเอียดเรื่อง", "สารบัญ"] as const;
 const segmentedTabs = ["รีวิวทั้งหมด", "ความคิดเห็นทั้งหมด"] as const;
 type TabKey = (typeof collapseTabs)[number] | (typeof segmentedTabs)[number];
 
@@ -61,7 +62,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
   }, [book, log, trackTimeSpent]);
 
   const tabContents: Record<TabKey, React.ReactElement> = {
-    แนะแนวเรื่อง: <BookAboutTab bookDetail={bookDetail ?? null} />,
+    รายละเอียดเรื่อง: <BookAboutTab bookDetail={bookDetail ?? null} />,
     สารบัญ: (
       <BookEpisodesTab
         episodesData={episodesData}
@@ -157,7 +158,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
                   key: tab,
                   label: (
                     <div className="flex items-center gap-3 py-1">
-                      <div className={`w-1 h-6 rounded-full ${tab === 'แนะแนวเรื่อง' ? 'bg-blue-500' : 'bg-orange-500'}`} />
+                      <div className={`w-1 h-6 rounded-full ${tab === 'รายละเอียดเรื่อง' ? 'bg-blue-500' : 'bg-orange-500'}`} />
                       <span className="font-bold text-lg text-gray-800">{tab}</span>
                     </div>
                   ),
@@ -180,7 +181,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
                   }
                 }))}
               />
-
+              <RecommendedBooks bookId={String(book.id)} />
               {/* Segmented Control */}
               <div className="bg-white rounded-[16px] border border-gray-100 shadow-sm p-4 sm:p-6 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -209,6 +210,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
             </div>
           </div>
         </div>
+
       </main>
       <BackToTopButton />
     </div>

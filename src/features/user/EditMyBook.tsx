@@ -231,6 +231,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 			messageApi.success('ลบโปรโมชั่นเรียบร้อย')
 			setOpenPromoId(null)
 			query.refetch()
+			purchaseQuery.refetch()
 		} catch (e: any) {
 			messageApi.error(e?.response?.data?.message ?? 'ไม่สามารถลบโปรโมชั่นได้')
 		}
@@ -291,7 +292,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 		if (!promoName.trim()) return messageApi.error('กรุณากรอกชื่อโปรโมชั่น')
 		if (!promoDiscount) return messageApi.error('กรุณากรอกส่วนลด')
 		if (!promoStart || !promoEnd) return messageApi.error('กรุณาเลือกวันเวลา')
-		if (promoSelectedGroups.length === 0) return messageApi.error('กรุณาเลือกกลุ่มหนังสือ')
+
 
 		try {
 			setCreatingPromo(true)
@@ -304,7 +305,8 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 					subject: promoName,
 					start_date: promoStart.format('YYYY/MM/DD HH:mm'),
 					end_date: promoEnd.format('YYYY/MM/DD HH:mm'),
-					discount_percent: promoDiscount
+					discount_percent: promoDiscount,
+					book_id: bookId ?? undefined
 				}
 				await updatePromotion(payload)
 				messageApi.success('แก้ไขโปรโมชั่นเรียบร้อย')
@@ -315,7 +317,8 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 					subject: promoName,
 					start_date: promoStart.format('YYYY/MM/DD HH:mm'),
 					end_date: promoEnd.format('YYYY/MM/DD HH:mm'),
-					discount_percent: promoDiscount
+					discount_percent: promoDiscount,
+					book_id: bookId ?? undefined
 				}
 				await createPromotion(payload)
 				messageApi.success('สร้างโปรโมชั่นเรียบร้อย')
@@ -331,6 +334,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 			setEditingPromoId(null)
 			// Refresh data
 			query.refetch()
+			purchaseQuery.refetch()
 		} catch (e: any) {
 			messageApi.error(e?.response?.data?.message ?? 'ไม่สามารถบันทึกโปรโมชั่นได้')
 		} finally {

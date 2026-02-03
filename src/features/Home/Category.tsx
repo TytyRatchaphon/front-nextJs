@@ -8,13 +8,17 @@ import CategoryHorizontalCard from "@/components/novelCard/CategoryHorizontalCar
 import { Pagination } from "antd";
 import GifLoader from '@/components/utility/GifLoader';
 import { CategoryBookListResponse, CategoryBook, CategoryDetail } from "@/types/api";
+import { Swiper, SwiperSlide } from 'swiper/react';
+import 'swiper/css';
+import CategoryTypeSwiper from "./CategoryTypeSwiper";
+import CategoryGenreSwiper from "./CategoryGenreSwiper";
 
 const TABS = [
-  { key: "new", label: "มาใหม่" },
-  { key: "bestseller", label: "Best Seller" },
-  { key: "topchart", label: "Top Chart" },
-  { key: "end", label: "จบแล้ว" },
-  { key: "recommend", label: "แนะนำ" },
+  { key: "bestseller", label: "นิยายขายดี" },
+  { key: "topchart", label: "นิยายยอดฮิต" },
+  { key: "new", label: "นิยายมาใหม่" },
+  { key: "end", label: "นิยายจบแล้ว" },
+  { key: "recommend", label: "นิยายแนะนำ" },
 ];
 
 const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
@@ -24,38 +28,9 @@ const imageLoader = ({ src, width, quality }: { src: string; width?: number; qua
 const TYPE_LABELS: Record<string, string> = {
   tran: "นิยายแปล",
   write: "นิยายแต่ง",
-  fanfic: "แฟนฟิค"
+  fanfic: "แฟนฟิค",
+  all: "นิยายทั้งหมด"
 };
-
-const genresCommon = [
-  { name: "แฟนตาซี", id: '8' },
-  { name: "ย้อนเวลา", id: '7' },
-  { name: "กีฬา", id: '5' },
-  { name: "Boylove โรแมนซ์", id: '20' },
-  { name: "ระบบ", id: '18' },
-  { name: "รักโรแมนซ์", id: '19' },
-  { name: "Girl love โรแมนซ์", id: '21' },
-  { name: "เรื่องสั้น", id: '22' },
-  { name: "ย้อนยุค / วินเทจ / โบราณ", id: '16' },
-  { name: "ผจญภัย", id: '6' },
-  { name: "Boyslove(BL)", id: '14' },
-  { name: "สืบสวนสอบสวน", id: '4' },
-  { name: "รักวัยรุ่น", id: '3' },
-  { name: "เกมออนไลน์", id: '17' },
-  { name: "กำลังภายใน", id: '13' },
-  { name: "GirlsLove(GL)", id: '15' },
-];
-
-const translatedSpecifics = [
-  { name: "นิยายแปลจีน", id: '23' },
-  { name: "นิยายแปลเกาหลี", id: '24' },
-  { name: "นิยายแปลญี่ปุ่น", id: '25' },
-  { name: "นิยายแปลอังกฤษ", id: '26' },
-  { name: "นิยายแปลอื่นๆ", id: '27' },
-  { name: "โรแมนติก", id: '2' },
-];
-
-const ALL_GENRES = [...genresCommon, ...translatedSpecifics];
 
 export default function Category() {
   const params = useParams();
@@ -66,26 +41,39 @@ export default function Category() {
   const categoryId = idParam === 'list' ? searchParams.get('categoryId') || '' : idParam;
   const type = searchParams.get("type") || "tran";
   const tab = searchParams.get("tab") || "new";
+  const period = searchParams.get("period") || "1"; // Default to today (1)
   const page = Number(searchParams.get("page")) || 1;
-
-  const categoryNameParam = searchParams.get("name") || "";
-  const matchedGenre = ALL_GENRES.find(g => g.id === categoryId);
-  const categoryName = categoryNameParam || matchedGenre?.name || "";
 
   // React Query to fetch books
   const { data, isLoading, isError } = useQuery<CategoryBookListResponse | null>({
-    queryKey: ["categoryBooks", type, categoryId, tab, page],
-    queryFn: () => fetchCategoryBooks(type, categoryId, tab, page, 20),
+    queryKey: ["categoryBooks", type, categoryId, tab, page, period],
+    queryFn: () => fetchCategoryBooks(type, categoryId, tab, page, 20, period),
   });
 
   // Use banner from API response
   const categoryDetail = data?.data?.banner;
+  
+  const categoryNameParam = searchParams.get("name") || "";
+  const categoryName = categoryNameParam || categoryDetail?.name || "";
 
   const handleTabChange = (newTab: string) => {
     const newParams = new URLSearchParams(searchParams.toString());
     newParams.set("tab", newTab);
     newParams.set("page", "1"); // Reset to page 1
+    // If switching to non-ranking tabs, remove period to avoid confusion/URL clutter
+    if (newTab !== 'bestseller' && newTab !== 'topchart') {
+      newParams.delete("period");
+    } else if (!newParams.get("period")) {
+       newParams.set("period", "1");
+    }
     router.push(`/cat/${categoryId}?${newParams.toString()}`);
+  };
+
+  const handlePeriodChange = (newPeriod: string) => {
+     const newParams = new URLSearchParams(searchParams.toString());
+     newParams.set("period", newPeriod);
+     newParams.set("page", "1");
+     router.push(`/cat/${categoryId}?${newParams.toString()}`);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -95,10 +83,16 @@ export default function Category() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const typeLabel = TYPE_LABELS[type] || type;
+  const typeLabel = TYPE_LABELS[type] || (type === 'all' ? "นิยายทั้งหมด" : type);
 
   return (
     <div className="min-h-screen bg-white pb-20">
+      {/* Mobile Type Swiper */}
+      <div className="sticky top-[100px] lg:top-[80px] z-[1000] bg-white shadow-sm">
+        <CategoryTypeSwiper />
+        <CategoryGenreSwiper />
+      </div>
+
       <div className="container mx-auto px-4 lg:px-8 max-w-[1200px] py-8">
 
         {/* Header */}
@@ -128,20 +122,52 @@ export default function Category() {
           </h1>
         </div>
 
-        {/* Tabs */}
-        <div className="flex flex-wrap items-center gap-6 border-b border-gray-200 mb-8 mt-4">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => handleTabChange(t.key)}
-              className={`pb-3 text-lg font-medium transition-colors relative ${tab === t.key
-                ? "text-red-600 border-b-2 border-red-600 -mb-[1px]"
-                : "text-gray-500 hover:text-red-600"
-                }`}
-            >
-              {t.label}
-            </button>
-          ))}
+        {/* Tabs - Sticky Swiper */}
+        <div className="sticky top-[150px] lg:top-[170px] z-[990] bg-white border-b border-gray-200 mb-8 pt-2 flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-2">
+          <Swiper
+            spaceBetween={20}
+            slidesPerView="auto"
+            className="w-full md:flex-1"
+            freeMode={true}
+          >
+            {TABS.map((t) => (
+              <SwiperSlide key={t.key} className="!w-auto">
+                <button
+                  onClick={() => handleTabChange(t.key)}
+                  className={`pb-3 text-lg font-medium transition-colors relative whitespace-nowrap px-1 ${tab === t.key
+                    ? "text-red-600 border-b-2 border-red-600 -mb-[1px]"
+                    : "text-gray-500 hover:text-red-600"
+                    }`}
+                >
+                  {t.label}
+                </button>
+              </SwiperSlide>
+            ))}
+          </Swiper>
+          
+          {/* Period Filter - Only for Best Seller & Top Chart */}
+          {(tab === 'bestseller' || tab === 'topchart') && (
+            <div className="flex items-center gap-2 pb-2 md:pb-0 overflow-x-auto no-scrollbar w-full md:w-auto px-1 md:px-0">
+              {[
+                { label: 'วันนี้', value: '1' },
+                { label: 'สัปดาห์', value: '7' },
+                { label: 'เดือน', value: '30' },
+                { label: 'ตลอดกาล', value: 'all' },
+              ].map((p) => (
+                 <button
+                   key={p.value}
+                   onClick={() => handlePeriodChange(p.value)}
+                   className={`px-3 py-1 text-sm rounded-full border transition-all whitespace-nowrap flex-shrink-0 ${
+                     period === p.value 
+                       ? 'bg-red-600 !text-white border-red-600' 
+                       : 'bg-white text-gray-500 border-gray-200 hover:border-red-600 hover:text-red-600'
+                   }`}
+                 >
+                   {p.label}
+                 </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Content */}

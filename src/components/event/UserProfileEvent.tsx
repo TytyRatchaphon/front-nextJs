@@ -67,11 +67,14 @@ export default function UserProfileEvent({
 
     // ถ้าเป็นรูป default หรือ full url หรือ base64 ให้ใช้เลย
     if (src.startsWith('http') || src.startsWith('data:') || src.startsWith('/')) {
+      // If it starts with slash, it might be a local public asset or relative path
+      // logic here was returning it directly
       return src.replace('http:', 'https:');
     }
 
-    // ถ้าเป็นชื่อไฟล์จาก backend ให้ต่อ path
-    return `${process.env.NEXT_PUBLIC_IMAGE_URL}${src}`.replace('http:', 'https:');
+    // ถ้าเป็นชื่อไฟล์จาก backend ให้ต่อ path profile/
+    // Explicitly using https://img.enjoybook.co/img/profile/ as per MyBookHeader fix
+    return `https://img.enjoybook.co/img/profile/${src}`;
   };
 
   const finalAvatar = getAvatarUrl();
@@ -97,6 +100,7 @@ export default function UserProfileEvent({
             loader={imageLoader}
             unoptimized
             className="w-[120px] h-[120px] rounded-full object-cover"
+            onError={(e) => { (e.target as HTMLImageElement).src = '/images/default-avatar.png'; }}
           />
         </div>
       </div>

@@ -26,6 +26,10 @@ export default function SocketProvider({
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const { token: authToken, user } = useAuthStore() as any;
+  
+  // Calculate dependencies at component level
+  const resolvedUserId = user?.user_id || (user as any)?.id || (user as any)?.userId;
+  const fullname = user?.fullname;
 
   useEffect(() => {
     // ใช้ URL เดียวกับ API โดย fallback ไปที่ค่า default ถ้าไม่มี env
@@ -52,11 +56,22 @@ export default function SocketProvider({
         token = token.replace(/^Bearer\s+/i, '').trim();
     }
 
+    const currentUserId = currentUser?.user_id || (currentUser as any)?.id || (currentUser as any)?.userId;
+    
+    // 1. If we have a token (Logged in) but User ID is missing, wait (Race condition protection).
+    // Note: If !token (Guest), we proceed to connect as guest.
+    if (token && !currentUserId) {
+        console.log("⏳ Socket waiting for user_id resolution...");
+        setSocket(null); // Ensure we don't hold onto a stale socket
+        return;
+    }
+
     console.log('Socket Initial Query:', {
-      user_id: currentUser?.user_id,
-      'fullname': currentUser?.fullname
+      user_id: currentUserId || 'undefined',
+      'fullname': currentUser?.fullname || 'undefined'
     });
 
+    // 2. Initialize Socket
     const socketInstance = io(socketUrl, {
       transports: ['polling', 'websocket'], 
       reconnection: true,
@@ -64,12 +79,19 @@ export default function SocketProvider({
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       timeout: 20000,
-      auth: {
-        token: token,
+      forceNew: true, // Ensure a fresh connection
+      auth: (cb) => {
+        // ⚡ Dynamic Auth: Fetch latest token on every connection/reconnection attempt
+        let latestToken = useAuthStore.getState().token;
+        if (!latestToken && typeof window !== 'undefined') {
+            const raw = localStorage.getItem('authToken');
+            if (raw) latestToken = raw.replace(/^Bearer\s+/i, '').trim();
+        }
+        cb({ token: latestToken });
       },
       query: {
-        user_id: currentUser?.user_id,
-        fullname: currentUser?.fullname,
+        user_id: currentUserId || 'undefined',
+        fullname: currentUser?.fullname || 'undefined',
       }
     });
 
@@ -79,14 +101,12 @@ export default function SocketProvider({
 
     socketInstance.on('disconnect', (reason) => {
       setIsConnected(false);
-      
       if (reason === "io server disconnect") {
         socketInstance.connect();
       }
     });
 
     socketInstance.on('connect_error', (err) => {
-        // Suppress bulky error logs, just show simple message
         console.log('Socket connect error:', err.message);
     });
 
@@ -94,7 +114,6 @@ export default function SocketProvider({
     socketInstance.on('force_refresh', async (data: any) => {
         console.log("📢 Received force_refresh:", data);
         try {
-            // Get current token from store or local storage
             let currentToken = useAuthStore.getState().token;
             if (!currentToken) {
                  const raw = localStorage.getItem('authToken');
@@ -102,19 +121,8 @@ export default function SocketProvider({
             }
 
             if (currentToken) {
-                 // Prevent race conditions or loops if needed, but for now just refresh
                  const refreshToken = (await import('@/services/apiServices')).refreshToken;
                  const newTokenResult = await refreshToken(currentToken);
-                 
-                 // refreshToken returns the whole response object { data: token } or typically just data if intercepted.
-                 // Looking at apiServices: return response.data
-                 
-                 // If the response structure is { data: { token: '...' } } or similar, we need to parse it.
-                 // Checking TokenUpdater usage (not visible now but usually standard)
-                 // Existing usage in Redeem.tsx: const newToken = refreshResp?.data;
-                 // Existing usage in BookInfoCard.tsx: const newToken = refreshRes?.data?.token || refreshRes?.token;
-                 
-                 // So let's handle potential shapes safely
                  const newToken = newTokenResult?.data?.token || newTokenResult?.token || newTokenResult?.data;
 
                  if (typeof newToken === 'string') {
@@ -132,48 +140,7 @@ export default function SocketProvider({
     return () => {
       socketInstance.disconnect();
     };
-  }, []); // Run once on mount
-
-  // Watch for token/user changes and update auth/query
-  useEffect(() => {
-      if (socket) {
-          let token = authToken;
-          let currentUser = user;
-
-          if (typeof window !== 'undefined') {
-              if (!token) {
-                  const raw = localStorage.getItem('authToken');
-                  if (raw) token = raw.replace(/^Bearer\s+/i, '').trim();
-              }
-              if (!currentUser) {
-                  const rawUser = localStorage.getItem('userData');
-                  if (rawUser) {
-                      try { currentUser = JSON.parse(rawUser); } catch {}
-                  }
-              }
-          } else if (token) {
-              token = token.replace(/^Bearer\s+/i, '').trim();
-          }
-
-          if (token) {
-              socket.auth = { token };
-          }
-          
-          if (currentUser) {
-              socket.io.opts.query = {
-                  user_id: currentUser.user_id,
-                  fullname: currentUser.fullname
-              };
-              console.log('Socket Updated Query:', socket.io.opts.query);
-          }
-
-          if (token || currentUser) {
-              if (!socket.connected) {
-                  socket.connect();
-              }
-          }
-      }
-  }, [authToken, user, socket]);
+  }, [authToken, resolvedUserId, fullname]);
 
   // Handle visibility separate from socket creation
   useEffect(() => {
@@ -182,6 +149,9 @@ export default function SocketProvider({
       // Periodic Heartbeat to handle idle disconnects
       const heartbeatInterval = setInterval(() => {
           if (!socket.connected) {
+               const resolvedUserId = user?.user_id || (user as any)?.id || (user as any)?.userId;
+               if (authToken && !resolvedUserId) return; // Don't reconnect if ID is missing
+
                socket.connect();
           } else {
                // Optional: Log healthy heartbeat for debugging (user requested logs)
@@ -191,7 +161,18 @@ export default function SocketProvider({
       return () => {
           clearInterval(heartbeatInterval);
       };
-  }, [socket]);
+  }, [socket, authToken, user]);
+
+  // 🔧 Auto-heal: Recovery for missing user_id in stale localStorage data
+  useEffect(() => {
+    if (authToken && user) {
+        // If user logged in but missing ID, force re-parse of token
+        if (!user.user_id && !(user as any).id && !(user as any).userId) {
+             console.log("🔧 Auto-healing: Triggering token update to recover missing user_id");
+             useAuthStore.getState().updateToken(authToken);
+        }
+    }
+  }, [authToken, user]);
 
   return (
     <SocketContext.Provider value={{ socket, isConnected }}>

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 // 👇 ตรวจสอบ URL Backend (Port 3331)
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3331';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export async function POST(request: Request) {
   try {

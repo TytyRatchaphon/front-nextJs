@@ -29,7 +29,7 @@ interface CampaignData {
 }
 
 const fetchCampaigns = async (): Promise<CampaignData[]> => {
-  const url = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.220.214:3331'}/campaigns`;
+  const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/campaigns`;
   const response = await fetch(url);
 
   if (!response.ok) {

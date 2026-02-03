@@ -1,11 +1,13 @@
-import axios, { AxiosProgressEvent } from "axios";
+import { AxiosProgressEvent } from "axios";
+import apiClient from "@/services/apiClient";
 import Cookies from "js-cookie"; // ดึง cookie โดยตรง
 import CryptoJS from "crypto-js"; // ดึง lib โดยตรง
+import { useUIStore } from "@/stores/uiStore";
 
 // 1. ประกาศตัวแปร Config ในไฟล์นี้เลย
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3331';
-const ACCESS_TOKEN = process.env.NEXT_PUBLIC_ACCESS_TOKEN || '';
-const SECRET_KEY = process.env.NEXT_PUBLIC_SECRET_KEY || '';
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const ACCESS_TOKEN = process.env.NEXT_PUBLIC_ACCESS_TOKEN;
+const SECRET_KEY = process.env.NEXT_PUBLIC_SECRET_KEY;
 const IMAGE_URL = process.env.NEXT_PUBLIC_IMAGE_URL;
 
 // 2. สร้างฟังก์ชันสร้าง Headers ในไฟล์นี้ (ใช้ภายใน)
@@ -26,16 +28,7 @@ const getHeaders = () => {
     };
 };
 
-// 3. ฟังก์ชันถอดรหัส (ใช้ภายใน)
-// const decryptData = (encryptedData: string) => {
-//     try {
-//         if (!encryptedData) return null;
-//         const bytes = CryptoJS.AES.decrypt(encryptedData, SECRET_KEY);
-//         return JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-//     } catch (error) {
-//         return null;
-//     }
-// };
+
 
 // Interface สำหรับ TinyMCE
 interface BlobInfo {
@@ -54,18 +47,16 @@ export const uploadDesImage = async (file: File | Blob): Promise<string> => {
     formdata.append('img', file); // ✅ ถูกต้อง: Key ชื่อ img ตรงกับ Postman
 
     try {
-        // ⚠️ แก้ไข: ลบ / หน้า user ออก (ถ้า API_URL มี / ปิดท้ายอยู่แล้ว)
-        const response = await axios.post(`${API_URL}user/image_text_editor`, formdata, {
+        const response = await apiClient.post('/user/image_text_editor', formdata, {
             headers: getHeaders() 
         });
         
-        // ⚠️ แก้ไข: เปลี่ยนจาก .img เป็น .imageURL ตาม Postman Response
         if (response.data?.data?.imageURL) {
             return response.data.data.imageURL;
         }
         
         return '';
-    } catch (error) {
+    } catch (error: any) {
         return '';
     }
 };
@@ -79,7 +70,7 @@ export const imageUploadHandler = (blobInfo: BlobInfo, progress: (percent: numbe
 
             // ยิง Axios
             // หมายเหตุ: ตรวจสอบ API_URL ใน env อีกทีว่ามี / ปิดท้ายหรือไม่ ถ้ามีแล้วให้ลบ / หน้า user ออก
-            const res = await axios.post(`${API_URL}/user/image_text_editor`, formData, {
+            const res = await apiClient.post('/user/image_text_editor', formData, {
                 headers: getHeaders(), 
                 onUploadProgress: (e: AxiosProgressEvent) => {
                     if (progress && e.total) {
@@ -97,7 +88,7 @@ export const imageUploadHandler = (blobInfo: BlobInfo, progress: (percent: numbe
             } else {
                 reject(responseBody.message || 'อัปโหลดล้มเหลว');
             }
-        } catch (err) {
+        } catch (err: any) {
             reject('เกิดข้อผิดพลาดในการอัปโหลด');
         }
     });

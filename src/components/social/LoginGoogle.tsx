@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import Image from 'next/image';
-import axios from 'axios';
+import apiClient from '@/services/apiClient';
 
 declare global {
   interface Window {
@@ -21,8 +21,8 @@ const LoginGoogle = () => {
   const { login, updateToken } = useAuthStore();
   const { closeLoginModal } = useUIStore();
 
-  const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '639784580623-vcqnb3bqkkt04s4597u6hqmdbmhv0vie.apps.googleusercontent.com';
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.220.194:3331';
+  const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   // Helper to set cookies
   const setCookie = (name: string, value: string, days: number = 365) => {
@@ -125,7 +125,7 @@ const LoginGoogle = () => {
 
   const sendToBackend = async (idToken: string) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/login/google`, {
+      const response = await apiClient.post(`${API_BASE_URL}/login/google`, {
         idToken: idToken,
       });
 

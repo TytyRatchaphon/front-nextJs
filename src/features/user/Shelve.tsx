@@ -194,7 +194,7 @@ function Shelve() {
                     author: b.writer_name ?? b.user_name ?? b.author ?? '',
                     view: Number(b.view ?? 0),
                     chapter: Number(b.chapter ?? b.chapters ?? 0),
-                    shelveCount: Number(b.shelveCount ?? b.shelf_count ?? 0),
+                    shelve_count: Number(b.shelve_count ?? b.shelveCount ?? 0),
                     end: b.end ?? b.status ?? '',
                   }
                   return <CardBook key={mapped.book_id ?? mapped.bookID} book={mapped} />;

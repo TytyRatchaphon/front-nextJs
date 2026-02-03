@@ -1,7 +1,7 @@
 import React from 'react'
 import UserProfileEvent from '@/components/event/UserProfileEvent'
 import UserUseCoin from '@/components/event/UserUseCoin'
-import SevenDaysLogin from '@/components/event/SevenDaysLogin'
+import SevenDaysLoginWrapper from '@/components/event/SevenDaysLoginWrapper'
 import AllEvent from '@/components/event/AllEvent'
 import UserTopupCoin from '@/components/event/UserTopupCoin'
 import AuthGuard from '@/components/auth/AuthGuard'
@@ -13,9 +13,7 @@ function Page() {
         <div className='mt-6'>
           <UserProfileEvent />
         </div>
-        <div>
-          <SevenDaysLogin />
-        </div>
+        <SevenDaysLoginWrapper />
         <div>
           {/* <AllEvent /> */}
         </div>

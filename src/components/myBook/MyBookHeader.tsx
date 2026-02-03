@@ -11,9 +11,9 @@ interface MyBookHeaderProps {
 }
 
 const MyBookHeader: React.FC<MyBookHeaderProps> = ({ user, coinIncome, myBooksTotal, myBooksCount, tokenProfileImage, tokenTotalFollowers }) => {
-  const rawProfileImage = tokenProfileImage || user?.profileImage;
+  const rawProfileImage = tokenProfileImage || user?.img || user?.profileImage;
   const profileImageSrc = rawProfileImage 
-    ? (rawProfileImage.startsWith('http') 
+    ? (rawProfileImage.startsWith('http') || rawProfileImage.startsWith('/')
         ? rawProfileImage 
         : `https://img.enjoybook.co/img/profile/${rawProfileImage}`)
     : null;
@@ -36,6 +36,7 @@ const MyBookHeader: React.FC<MyBookHeaderProps> = ({ user, coinIncome, myBooksTo
                   style={{ objectFit: 'cover' }}
                   className='w-full h-full'
                   referrerPolicy="no-referrer"
+                  fallback="/images/default-avatar.png"
                   preview={{
                      mask: <div className="text-xs">ดูรูป</div>
                   }}

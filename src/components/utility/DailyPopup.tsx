@@ -31,7 +31,7 @@ interface PromoItem {
 }
 
 const DailyPromoPopup: React.FC = () => {
-  const { isDailyPopupOpen, openDailyPopup, closeDailyPopup } = useUIStore();
+  const { isDailyPopupOpen, openDailyPopup, closeDailyPopup, setDailyPopupProcessComplete } = useUIStore();
   const [promoItems, setPromoItems] = useState<PromoItem[]>([]);
 
   useEffect(() => {
@@ -57,13 +57,22 @@ const DailyPromoPopup: React.FC = () => {
           const lastCloseDate = localStorage.getItem(STORAGE_KEY);
           if (!lastCloseDate || !isSameDay(parseInt(lastCloseDate, 10), Date.now())) {
             openDailyPopup();
+            // Don't set complete yet, waiting for user to close
+          } else {
+            // Suppressed by local storage
+            setDailyPopupProcessComplete(true);
           }
+        } else {
+             // No popup data found
+             setDailyPopupProcessComplete(true);
         }
       } catch (error) {
+        // Error fetching
+        setDailyPopupProcessComplete(true);
       }
     };
     initPopup();
-  }, [openDailyPopup]);
+  }, [openDailyPopup, setDailyPopupProcessComplete]);
 
   const handleNormalClose = () => {
     closeDailyPopup();

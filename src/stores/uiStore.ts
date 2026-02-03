@@ -26,10 +26,22 @@ interface UIState {
   // Daily popup actions
   openDailyPopup: () => void;
   closeDailyPopup: () => void;
+  isDailyPopupProcessComplete: boolean;
+  setDailyPopupProcessComplete: (isComplete: boolean) => void;
 
   // Duplicate login actions
   openDuplicateLoginModal: () => void;
   closeDuplicateLoginModal: () => void;
+
+  // Blocked User actions
+  isBlockedUserModalOpen: boolean;
+  openBlockedUserModal: () => void;
+  closeBlockedUserModal: () => void;
+
+  // Checkin modal actions
+  isCheckinModalOpen: boolean;
+  openCheckinModal: () => void;
+  closeCheckinModal: () => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -62,8 +74,21 @@ export const useUIStore = create<UIState>((set) => ({
 
   // Daily popup actions
   openDailyPopup: () => set({ isDailyPopupOpen: true }),
-  closeDailyPopup: () => set({ isDailyPopupOpen: false }),
+  closeDailyPopup: () => set({ isDailyPopupOpen: false, isDailyPopupProcessComplete: true }),
+  
+  isDailyPopupProcessComplete: false,
+  setDailyPopupProcessComplete: (isComplete: boolean) => set({ isDailyPopupProcessComplete: isComplete }),
 
   openDuplicateLoginModal: () => set({ isDuplicateLoginModalOpen: true }),
   closeDuplicateLoginModal: () => set({ isDuplicateLoginModalOpen: false }),
+
+  // Blocked User actions
+  isBlockedUserModalOpen: false,
+  openBlockedUserModal: () => set({ isBlockedUserModalOpen: true }),
+  closeBlockedUserModal: () => set({ isBlockedUserModalOpen: false }),
+
+  // Checkin modal actions
+  isCheckinModalOpen: false,
+  openCheckinModal: () => set({ isCheckinModalOpen: true }),
+  closeCheckinModal: () => set({ isCheckinModalOpen: false }),
 }))

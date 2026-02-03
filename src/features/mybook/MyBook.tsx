@@ -251,8 +251,8 @@ function MyBook() {
   ], [myBooks, isLoadingMyBooks, token, coinIncome, setCoinIncome, updateToken, user, isWriter, booksPage, myBooksTotal, filterStatus, filterSortBy, filterOrder, filterEnd, filterQ]);
 
   const { data: writerInfoData } = useQuery({
-    queryKey: ['writerInfo'],
-    queryFn: fetchUserMyBookInfo,
+    queryKey: ['writerInfo', token],
+    queryFn: () => fetchUserMyBookInfo(token),
     enabled: !!token && isWriter,
   });
 
@@ -281,7 +281,7 @@ function MyBook() {
           coinIncome={(writerInfoData as any)?.data?.withdrawable_amount ?? coinIncome}
           myBooksTotal={(writerInfoData as any)?.data?.total_books ?? myBooksTotal}
           myBooksCount={Array.isArray(myBooks) ? myBooks.length : 0}
-          tokenProfileImage={userProfileImage}
+          tokenProfileImage={(writerInfoData as any)?.data?.profile_image ?? (writerInfoData as any)?.data?.img ?? userProfileImage}
           tokenTotalFollowers={(writerInfoData as any)?.data?.total_followers ?? userTotalFollowers}
         />
 

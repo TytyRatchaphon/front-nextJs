@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import axios from 'axios'
 import { useFormStore } from '@/stores/formStore';
+import Cookies from 'js-cookie'
 
 // ✅ อัปเดต Interface ให้ครบถ้วนตามที่ใช้จริงใน Sprofile และ Token
 export interface UserData {
@@ -81,11 +82,16 @@ export const useAuthStore = create<AuthState>()(
         set({ user: userData, token: token, isLoggedIn: true });
         localStorage.setItem('authToken', token);
         localStorage.setItem('userData', JSON.stringify(userData));
+        
+        // Immediately refine data from token to ensure user_id is correct
+        get().updateToken(token);
       },
 
       logout: () => {
         localStorage.removeItem('authToken');
         localStorage.removeItem('userData');
+        Cookies.remove('token');
+        Cookies.remove('tk');
         try { useFormStore.getState().resetUserProfile(); } catch (e) { } // Clear form data
         set({ user: null, token: null, isLoggedIn: false });
         window.location.reload();
@@ -159,12 +165,17 @@ export const useAuthStore = create<AuthState>()(
               ? Number(freecoinRaw)
               : Number(baseUser.freecoin ?? 0);
             const exp = getNumber('exp_point', Number(baseUser.exp ?? 0)) // Token key is exp_point based on JSON
-            const user_id = getNumber('user_id', Number(baseUser.user_id ?? 0))
+            
+            // Prioritize userId from token as confirmed by debugging
+            const userIdRaw = decodedToken.userId ?? decodedToken.user_id ?? decodedToken.id ?? decodedToken.sub;
+            const user_id = (userIdRaw !== undefined && userIdRaw !== null && !Number.isNaN(Number(userIdRaw)))
+              ? Number(userIdRaw)
+              : Number(baseUser.user_id ?? 0);
 
             // ✅ เพิ่มการอัปเดต Field ใหม่ๆ จาก Token
             const updatedUser: UserData = {
               ...baseUser,
-              user_id,
+              user_id: decodedToken.user_id ?? decodedToken.userId ?? decodedToken.id ?? decodedToken.sub ?? baseUser.user_id,
 
               writer_name: decodedToken.writer_name !== undefined ? decodedToken.writer_name : baseUser.writer_name,
               fullname: decodedToken.fullname !== undefined ? decodedToken.fullname : baseUser.fullname,
