@@ -17,7 +17,7 @@ import { BookEpisodesTab } from "@/components/bookdetail/BookEpisodesTab";
 import { useLogger } from "@/hooks/useLogger";
 import RecommendedBooks from "@/components/bookdetail/RecommendedBooks";
 
-const collapseTabs = ["รายละเอียดเรื่อง", "สารบัญ"] as const;
+const collapseTabs = ["รายละเอียดเรื่อง", "ชุดมัดแพ็ค", "รายตอน"] as const;
 const segmentedTabs = ["รีวิวทั้งหมด", "ความคิดเห็นทั้งหมด"] as const;
 type TabKey = (typeof collapseTabs)[number] | (typeof segmentedTabs)[number];
 
@@ -63,14 +63,26 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
 
   const tabContents: Record<TabKey, React.ReactElement> = {
     รายละเอียดเรื่อง: <BookAboutTab bookDetail={bookDetail ?? null} />,
-    สารบัญ: (
+    ชุดมัดแพ็ค: (
       <BookEpisodesTab
-        episodesData={episodesData}
+        episodesData={{ groups: episodesData?.pack || [] }}
         bookId={bookId}
-        bookDetail={bookDetail} // for use_freecoin check inside
+        bookDetail={bookDetail}
         settings={settings}
         isLoading={isLoadingEpisodes}
         latestUpdate={book?.update_at}
+        emptyMessage="ยังไม่มีชุดมัดแพ็ค"
+      />
+    ),
+    รายตอน: (
+      <BookEpisodesTab
+        episodesData={{ groups: episodesData?.normal || episodesData?.groups || [] }}
+        bookId={bookId}
+        bookDetail={bookDetail}
+        settings={settings}
+        isLoading={isLoadingEpisodes}
+        latestUpdate={book?.update_at}
+        emptyMessage="ยังไม่มีรายตอน"
       />
     ),
     รีวิวทั้งหมด: <CommentSection bookId={String(bookId)} mode="comment" />,
@@ -124,6 +136,22 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
     );
   }
 
+  // Determine available tabs based on data or loading state
+  const hasPack = episodesData?.pack && episodesData.pack.length > 0;
+  const hasNormal = (episodesData?.normal && episodesData.normal.length > 0) || (episodesData?.groups && episodesData.groups.length > 0);
+  
+  // Show tabs if data exists OR if currently loading episodes (to show loading spinner)
+  const showPack = hasPack || isLoadingEpisodes;
+  const showNormal = hasNormal || isLoadingEpisodes;
+
+  const validTabs = collapseTabs.filter(tab => {
+    if (tab === 'ชุดมัดแพ็ค') return showPack;
+    if (tab === 'รายตอน') return showNormal;
+    return true; // Always show 'รายละเอียดเรื่อง'
+  });
+
+  const defaultActiveKey = showPack ? ['ชุดมัดแพ็ค'] : (showNormal ? ['รายตอน'] : ['รายละเอียดเรื่อง']);
+
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Full-width Header Container - Responsive */}
@@ -145,7 +173,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
           <div className="flex-1 w-full lg:max-w-[calc(100%-320px-1.5rem)]">
             <div className="space-y-4">
               <Collapse
-                defaultActiveKey={['สารบัญ']}
+                defaultActiveKey={defaultActiveKey}
                 expandIconPosition="end"
                 ghost
                 expandIcon={({ isActive }) => (
@@ -154,11 +182,14 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
                   />
                 )}
                 className="bg-transparent flex flex-col gap-4"
-                items={collapseTabs.map((tab) => ({
+                items={validTabs.map((tab) => ({
                   key: tab,
                   label: (
                     <div className="flex items-center gap-3 py-1">
-                      <div className={`w-1 h-6 rounded-full ${tab === 'รายละเอียดเรื่อง' ? 'bg-blue-500' : 'bg-orange-500'}`} />
+                      <div className={`w-1 h-6 rounded-full ${
+                        tab === 'รายละเอียดเรื่อง' ? 'bg-blue-500' :
+                        tab === 'ชุดมัดแพ็ค' ? 'bg-purple-500' : 'bg-orange-500'
+                      }`} />
                       <span className="font-bold text-lg text-gray-800">{tab}</span>
                     </div>
                   ),

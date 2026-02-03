@@ -11,9 +11,10 @@ type Props = {
     settings: any;
     isLoading: boolean;
     latestUpdate?: string;
+    emptyMessage?: string;
 };
 
-export const BookEpisodesTab = ({ episodesData, bookId, bookDetail, settings, isLoading, latestUpdate }: Props) => {
+export const BookEpisodesTab = ({ episodesData, bookId, bookDetail, settings, isLoading, latestUpdate, emptyMessage }: Props) => {
     const [expandedGroups, setExpandedGroups] = useState<Record<number, boolean>>({});
 
     if (isLoading) {
@@ -23,7 +24,7 @@ export const BookEpisodesTab = ({ episodesData, bookId, bookDetail, settings, is
     if (!episodesData || !episodesData.groups || episodesData.groups.length === 0) {
         return (
             <div className="text-center py-12">
-                <p className="text-sm text-gray-500">ยังไม่มีตอนที่เผยแพร่</p>
+                <p className="text-sm text-gray-500">{emptyMessage || "ยังไม่มีตอนที่เผยแพร่"}</p>
             </div>
         );
     }

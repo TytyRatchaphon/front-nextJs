@@ -49,7 +49,7 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
         staleTime: 5 * 60 * 1000,
     });
 
-    const firstEpisodeId = episodesData?.groups?.[0]?.list?.[0]?.ep_id;
+    const firstEpisodeId = episodesData?.normal?.[0]?.list?.[0]?.ep_id || episodesData?.groups?.[0]?.list?.[0]?.ep_id;
 
     const isInShelf = userShelf && Array.isArray(userShelf)
         ? userShelf.some((b: any) => String(b.book_id) === String(bookId))
@@ -58,12 +58,11 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
     // Calculate latest episode date
     let latestEpisodeDate = bookDetail?.update_at;
 
-    if (episodesData?.groups) {
-        let maxDate = bookDetail?.update_at ? new Date(bookDetail.update_at).getTime() : 0;
-        episodesData.groups.forEach((group: any) => {
+    const processGroups = (groups: any[]) => {
+        let maxDate = latestEpisodeDate ? new Date(latestEpisodeDate).getTime() : 0;
+        groups.forEach((group: any) => {
             if (group.list) {
                 group.list.forEach((ep: any) => {
-                    // Check various potential date fields
                     const dateStr = ep.publish_datetime || ep.date_at || ep.created_at || ep.update_at || ep.create_date;
                     if (dateStr) {
                         const t = new Date(dateStr).getTime();
@@ -75,6 +74,12 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
                 });
             }
         });
+    };
+
+    if (episodesData?.normal) {
+        processGroups(episodesData.normal);
+    } else if (episodesData?.groups) {
+        processGroups(episodesData.groups);
     }
 
     const book = bookDetail
