@@ -53,7 +53,7 @@ export default function BookSwiper({ books, title, icon, link }: BookSwiperProps
 
   return (
     <div className="w-full relative group/swiper py-1">
-      <div className="flex items-center gap-3 mb-4 px-4 bg-white/50 backdrop-blur-sm rounded-lg p-2">
+      <div className="flex items-center gap-3 mb-1 px-4 bg-white/50 backdrop-blur-sm rounded-lg p-1">
         {icon && (
           <div className="relative w-10 h-10 flex-shrink-0 rounded-full overflow-hidden">
             <Image
@@ -67,7 +67,9 @@ export default function BookSwiper({ books, title, icon, link }: BookSwiperProps
         )}
         {title && (
           <div className="h-10 flex items-center translate-y-4">
-            <h2 className="text-2xl font-bold [&_*]:m-0 leading-none">{parse(title)}</h2>
+           <h2 className="text-lg sm:text-xl lg:text-2xl font-bold [&_*]:m-0 leading-none">
+            {parse(title)}
+          </h2>
           </div>
         )}
 
@@ -104,7 +106,7 @@ export default function BookSwiper({ books, title, icon, link }: BookSwiperProps
         speed={500}
         breakpoints={breakpoints}
         modules={[Navigation, Pagination, Scrollbar, A11y, EffectFade, FreeMode]}
-        className="z-0 px-4 !pb-8"
+        // className="z-0 px-4 !pb-1"
         navigation={{
           prevEl: prevRef.current,
           nextEl: nextRef.current,

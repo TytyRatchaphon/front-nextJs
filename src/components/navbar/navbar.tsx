@@ -53,14 +53,16 @@ function Navbar() {
   const { data: activeTypes = [] } = useQuery({
     queryKey: ['activeTypes'],
     queryFn: fetchActiveTypes,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 60 * 1000, // 1 hour
+    gcTime: 2 * 60 * 60 * 1000, // 2 hours
   });
 
   const { data: mobileCategories = [] } = useQuery({
     queryKey: ['mobileCategories', openMobileCategoryId],
     queryFn: () => fetchActiveCategories(openMobileCategoryId!),
     enabled: !!openMobileCategoryId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 60 * 1000, // 1 hour
+    gcTime: 2 * 60 * 60 * 1000, // 2 hours
   });
 
   const unreadCount = notifications ? notifications.filter(n => n.readed === 'N').length : 0;

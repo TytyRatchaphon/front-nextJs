@@ -39,9 +39,9 @@ export default function RankingCategoryRight({ categoryId, categoryName }: Ranki
   if (!categoryId || !categoryName) return null;
 
   return (
-    <div className="w-full max-w-[540px] h-[889px] mx-auto bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100 font-primary">
+    <div className="w-full max-w-[540px] h-[855px] mx-auto bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100 font-primary">
       {/* Header */}
-      <div className="bg-gradient-to-r from-rose-500 to-pink-500 p-4 flex items-center justify-between text-white relative h-[76px]">
+      <div className="bg-gradient-to-r from-rose-500 to-pink-500 p-4 flex items-center justify-between text-white relative h-[50px]">
         <div className="w-10 h-10 bg-white rounded-full p-1 flex items-center justify-center flex-shrink-0 shadow-sm z-10">
           <Image src={NavIcon} alt="Logo" width={32} height={32} className="object-contain" />
         </div>
@@ -102,7 +102,7 @@ export default function RankingCategoryRight({ categoryId, categoryName }: Ranki
             <div key={book.book_id} className="flex items-center gap-2 md:gap-4 py-2 px-2 border-b border-gray-50 last:border-0 hover:bg-gray-50 rounded-xl transition-colors group cursor-pointer">
               {/* Rank Number */}
               <div className="w-6 md:w-10 flex-shrink-0 text-center">
-                <span className={`text-xl md:text-3xl font-bold ${book.rank <= 3 ? 'text-black' : 'text-black'}`}>
+                <span className={`text-xl md:text-2xl font-bold ${book.rank <= 3 ? 'text-gray-500' : 'text-gray-500'}`}>
                   {book.rank}
                 </span>
               </div>

@@ -34,7 +34,7 @@ export default function BookGroups({ groupBookHome }: BookGroupsProps) {
           }
           if (group.type === 'recommend') {
             return (
-              <div key={index} className="-mb-8">
+              <div key={index} className="-mb-1">
                 <RecommendSwiper
                   title={group.name_web || group.name}
                   items={group.list || []}
@@ -46,7 +46,7 @@ export default function BookGroups({ groupBookHome }: BookGroupsProps) {
           }
           if (group.type === 'article') {
             return (
-              <div key={index} className="-mb-8">
+              <div key={index} className="-mb-1">
                 <ArticleSwiper
                   title={group.name_web || group.name}
                   items={group.list || []}
@@ -57,7 +57,7 @@ export default function BookGroups({ groupBookHome }: BookGroupsProps) {
             );
           }
           return (
-            <div key={index} className="-mb-8">
+            <div key={index} className="-mb-1">
               <BookSwiper
                 title={group.name_web || group.name}
                 books={group.list || []}

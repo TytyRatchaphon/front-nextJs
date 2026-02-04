@@ -66,7 +66,7 @@ export default function RecommendSwiper({ items, title, icon, link }: RecommendS
 
   return (
     <div className="w-full relative group/swiper py-4">
-      <div className="flex items-center gap-3 mb-4 px-4 bg-white/50 backdrop-blur-sm rounded-lg p-2">
+      <div className="flex items-center gap-3 mb-2 px-4 bg-white/50 backdrop-blur-sm rounded-lg p-2">
         {icon && (
           <div className="relative w-10 h-10 flex-shrink-0 rounded-full overflow-hidden">
              <Image 
@@ -117,7 +117,7 @@ export default function RecommendSwiper({ items, title, icon, link }: RecommendS
         speed={500}
         breakpoints={breakpoints}
         modules={[Navigation, Pagination, Scrollbar, A11y, EffectFade, FreeMode]}
-        className="z-0 px-4 !pb-8"
+        className="z-0 px-4 !pb-6"
         navigation={{
           prevEl: prevRef.current,
           nextEl: nextRef.current,
@@ -138,7 +138,7 @@ export default function RecommendSwiper({ items, title, icon, link }: RecommendS
             </SwiperSlide>
           ))
         ) : (
-          <div className="text-center py-10 text-gray-400">ไม่มีหนังสือแนะนำ</div>
+          <div className="text-center py-8 text-gray-400">ไม่มีหนังสือแนะนำ</div>
         )}
       </Swiper>
     </div>

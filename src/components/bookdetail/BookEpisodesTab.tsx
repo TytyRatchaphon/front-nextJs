@@ -111,6 +111,7 @@ export const BookEpisodesTab = ({ episodesData, bookId, bookDetail, settings, is
                                             <Link
                                                 key={episode.ep_id}
                                                 href={`/read/${bookId}/${episode.ep_id}`}
+                                                prefetch={false}
                                                 className="flex items-center justify-between px-4 sm:px-6 py-3 hover:bg-gray-50 transition-colors group gap-2"
                                             >
                                                 <div className="flex-1 min-w-0 pr-2">
