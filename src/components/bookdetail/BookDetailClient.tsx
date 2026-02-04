@@ -47,8 +47,10 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
     } else {
       document.title = "EnjoyBook - อ่านนิยายออนไลน์";
     }
+  }, [book?.title]);
 
-    if (book) {
+  useEffect(() => {
+    if (book?.id && book?.title) {
        // Log Page View
        log('page_view', 'book', String(book.id), {
           name: book.title,
@@ -59,7 +61,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
        const stopTracking = trackTimeSpent('book', String(book.id), { name: book.title });
        return stopTracking;
     }
-  }, [book, log, trackTimeSpent]);
+  }, [book?.id, book?.title, log, trackTimeSpent]);
 
   const tabContents: Record<TabKey, React.ReactElement> = {
     รายละเอียดเรื่อง: <BookAboutTab bookDetail={bookDetail ?? null} />,

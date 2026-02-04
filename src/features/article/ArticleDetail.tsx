@@ -8,6 +8,7 @@ import { Eye, Clock, Share2, User, ChevronRight, Calendar } from 'lucide-react';
 import { fetchArticleDetail } from '@/services/apiServices';
 import type { ArticleResponse, ArticleDetail as ArticleDetailType, ArticleRecommend } from '@/types/api';
 import GifLoader from '@/components/utility/GifLoader';
+import { useLogger } from '@/hooks/useLogger';
 
 
 // Helper for date formatting
@@ -31,6 +32,7 @@ export default function ArticleDetail({ id }: { id: string }) {
   const [data, setData] = useState<ArticleResponse['data'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { log, trackTimeSpent } = useLogger();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -53,6 +55,26 @@ export default function ArticleDetail({ id }: { id: string }) {
       fetchData();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (data?.result?.[0]) {
+      const detail = data.result[0];
+      
+      // Log Page View
+      log('page_view', 'article', id, {
+        title: detail.title,
+        category: detail.type,
+        writer: detail.post_by,
+      });
+
+      // Track Time
+      const stopTracking = trackTimeSpent('article', id, {
+         title: detail.title,
+      });
+
+      return stopTracking;
+    }
+  }, [data, id, log, trackTimeSpent]);
 
   if (loading) {
     return (

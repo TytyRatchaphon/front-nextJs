@@ -4,6 +4,12 @@ import { usePathname } from 'next/navigation';
 
 export const useLogger = () => {
     const pathname = usePathname();
+    const pathnameRef = useRef(pathname);
+
+    useEffect(() => {
+        pathnameRef.current = pathname;
+    }, [pathname]);
+
     const pageSessionIdRef = useRef<string | null>(null);
 
     // Generic UUID generator fallback
@@ -60,13 +66,13 @@ export const useLogger = () => {
             action,
             target_type: targetType,
             target_id: targetId,
-            path: pathname || window.location.pathname,
+            path: pathnameRef.current || window.location.pathname,
             metadata
         };
 
         // Optional: Include duration or other metrics if passed in metadata or handled here
         await logActivity(payload);
-    }, [pathname]);
+    }, []);
 
     const trackTimeSpent = useCallback((
         targetType: string,
