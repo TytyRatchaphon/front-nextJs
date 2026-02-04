@@ -65,7 +65,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
     รายละเอียดเรื่อง: <BookAboutTab bookDetail={bookDetail ?? null} />,
     ชุดมัดแพ็ค: (
       <BookEpisodesTab
-        episodesData={{ groups: episodesData?.pack || [] }}
+        episodesData={{ groups: episodesData?.novel_packpack || episodesData?.novel_pack || episodesData?.pack || [] }}
         bookId={bookId}
         bookDetail={bookDetail}
         settings={settings}
@@ -76,7 +76,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
     ),
     รายตอน: (
       <BookEpisodesTab
-        episodesData={{ groups: episodesData?.normal || episodesData?.groups || [] }}
+        episodesData={{ groups: episodesData?.novel || episodesData?.normal || episodesData?.groups || [] }}
         bookId={bookId}
         bookDetail={bookDetail}
         settings={settings}
@@ -137,8 +137,8 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
   }
 
   // Determine available tabs based on data or loading state
-  const hasPack = episodesData?.pack && episodesData.pack.length > 0;
-  const hasNormal = (episodesData?.normal && episodesData.normal.length > 0) || (episodesData?.groups && episodesData.groups.length > 0);
+  const hasPack = (episodesData?.novel_packpack && episodesData.novel_packpack.length > 0) || (episodesData?.novel_pack && episodesData.novel_pack.length > 0) || (episodesData?.pack && episodesData.pack.length > 0);
+  const hasNormal = (episodesData?.novel && episodesData.novel.length > 0) || (episodesData?.normal && episodesData.normal.length > 0) || (episodesData?.groups && episodesData.groups.length > 0);
   
   // Show tabs if data exists OR if currently loading episodes (to show loading spinner)
   const showPack = hasPack || isLoadingEpisodes;

@@ -49,7 +49,7 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
         staleTime: 5 * 60 * 1000,
     });
 
-    const firstEpisodeId = episodesData?.normal?.[0]?.list?.[0]?.ep_id || episodesData?.groups?.[0]?.list?.[0]?.ep_id;
+    const firstEpisodeId = episodesData?.novel?.[0]?.list?.[0]?.ep_id || episodesData?.normal?.[0]?.list?.[0]?.ep_id || episodesData?.groups?.[0]?.list?.[0]?.ep_id;
 
     const isInShelf = userShelf && Array.isArray(userShelf)
         ? userShelf.some((b: any) => String(b.book_id) === String(bookId))
@@ -76,10 +76,20 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
         });
     };
 
-    if (episodesData?.normal) {
+    if (episodesData?.novel) {
+        processGroups(episodesData.novel);
+    } else if (episodesData?.normal) {
         processGroups(episodesData.normal);
     } else if (episodesData?.groups) {
         processGroups(episodesData.groups);
+    }
+
+    if (episodesData?.novel_packpack) { // Handle screenshot key
+        processGroups(episodesData.novel_packpack);
+    } else if (episodesData?.novel_pack) {
+        processGroups(episodesData.novel_pack);
+    } else if (episodesData?.pack) {
+        processGroups(episodesData.pack);
     }
 
     const book = bookDetail
