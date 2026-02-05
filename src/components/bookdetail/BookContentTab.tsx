@@ -59,11 +59,10 @@ export const BookContentTab = ({ episodesData, bookId, bookDetail, settings, isL
     }
 
     return (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white">
             {/* Header with Segmented Control */}
             <div className="p-4 border-b border-gray-100 flex flex-col gap-4">
-                <div className="flex justify-between items-center bg-gray-50/50 p-2 rounded-xl">
-                    <h3 className="text-xl font-bold border-l-4 border-red-600 pl-3 text-red-700">สารบัญ</h3>
+                <div className="flex justify-end items-center bg-gray-50/50 p-2 rounded-xl">
                     <button 
                         onClick={onOpenPurchaseModal}
                         className="h-10 px-4 rounded-xl border border-red-200 text-red-600 text-sm font-bold hover:bg-red-50 transition-colors flex items-center gap-1 bg-white shadow-sm"

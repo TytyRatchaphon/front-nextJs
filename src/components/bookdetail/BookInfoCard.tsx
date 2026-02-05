@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import React, { useState, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
+import React, { useState, useEffect, useMemo, forwardRef, useImperativeHandle, useRef } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { Modal, Checkbox, Spin, Button, App, Radio, Segmented } from "antd";
 import { useQuery } from "@tanstack/react-query";
@@ -200,12 +200,22 @@ const BookInfoCard = forwardRef<BookInfoCardHandle, BookInfoCardProps>(({ book, 
   const hasNormalInModal = normalGroups.length > 0;
   
   const [modalSegment, setModalSegment] = useState<string>(hasPackInModal ? 'มัดแพ็ค' : 'รายตอน');
+  const isModalInitializedRef = useRef(false);
 
   // Sync modal segment when data loads/changes if needed, similar to Tab
   useEffect(() => {
-      if (hasPackInModal && !hasNormalInModal) setModalSegment('มัดแพ็ค');
-      else if (!hasPackInModal && hasNormalInModal) setModalSegment('รายตอน');
-      else if (hasPackInModal && hasNormalInModal && !modalSegment) setModalSegment('มัดแพ็ค');
+      // If manually changed by user (implied by interaction), we might not want to reset? 
+      // But here we want to ensure default is correct on load.
+      
+      if (!isModalInitializedRef.current) {
+          if (hasPackInModal) {
+              setModalSegment('มัดแพ็ค');
+              isModalInitializedRef.current = true;
+          } else if (hasNormalInModal) {
+              setModalSegment('รายตอน');
+              isModalInitializedRef.current = true;
+          }
+      }
   }, [hasPackInModal, hasNormalInModal]);
 
   // Helper to calculate stats for a set of groups

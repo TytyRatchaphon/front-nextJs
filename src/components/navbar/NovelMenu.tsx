@@ -71,20 +71,6 @@ const NovelMenu = () => {
                     <h3 className="text-lg font-bold text-gray-800">
                         {activeTypes.find((t: any) => t.type === selectedType)?.label || 'หมวดหมู่'}
                     </h3>
-                    <Link 
-                        href={`/cat/list?type=${selectedType}&tab=new&limit=10&page=1`}
-                        className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1 group/all"
-                    >
-                        ดูทั้งหมด
-                         <svg 
-                            className="w-4 h-4 group-hover/all:translate-x-1 transition-transform" 
-                            fill="none" 
-                            viewBox="0 0 24 24" 
-                            stroke="currentColor"
-                        >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                        </svg>
-                    </Link>
                 </div>
 
                 {isLoadingCategories ? (
