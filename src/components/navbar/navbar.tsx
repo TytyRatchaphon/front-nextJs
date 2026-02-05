@@ -472,7 +472,7 @@ function Navbar() {
 
 
 
-// ... inside rendering ...
+
 
           {/* Novel Mobile Menu Wrapper */}
           <div className="border-b border-gray-100">
@@ -527,7 +527,7 @@ function Navbar() {
                       mobileCategories.map((cat) => (
                         <Link
                           key={cat.id}
-                          href={`/cat/list?type=${type.type}&categoryId=${cat.id}&tab=new&limit=10&page=1`}
+                          href={`/cat/list?type=${type.type}&categoryId=${cat.id}&tab=bestseller&limit=10&page=1`}
                           className="text-[13px] text-gray-600 hover:text-red-600 truncate py-1"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >

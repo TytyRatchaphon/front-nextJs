@@ -87,9 +87,9 @@ export default function Article() {
                     <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md text-white text-xs rounded mb-3">
                       นิยาย
                     </span>
-                    <h3 className="text-white text-2xl md:text-3xl font-bold mb-4 leading-tight line-clamp-2">
+                    <div className="text-white text-2xl md:text-3xl font-bold mb-4 leading-tight line-clamp-2">
                       {parse(mainArticle.title)}
-                    </h3>
+                    </div>
                     <div className="flex items-center text-gray-300 text-xs md:text-sm gap-4">
                       <span className="font-semibold text-red-500">By {mainArticle.post_by || 'Admin'}</span>
                       <div className="flex items-center gap-1">
@@ -130,9 +130,9 @@ export default function Article() {
                         </span>
                       </div>
 
-                      <h4 className="text-white text-sm font-bold mb-2 line-clamp-2 leading-snug">
+                      <div className="text-white text-sm font-bold mb-2 line-clamp-2 leading-snug">
                         {parse(article.title)}
-                      </h4>
+                      </div>
                       
                       <div className="flex items-center text-gray-300 text-[10px] gap-2">
                         <span className="font-semibold text-red-500">By {article.post_by || 'Admin'}</span>
@@ -184,13 +184,10 @@ export default function Article() {
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                       loader={ArticleLoader}
                     />
-                    <div className="absolute top-2 right-2">
-                         <span className="bg-red-600 text-white text-[10px] px-2 py-1 rounded">กิจกรรม</span>
-                    </div>
                   </div>
-                  <h4 className="font-bold text-black text-lg line-clamp-2 mb-2 leading-snug group-hover:text-red-500 transition-colors">
+                  <div className="font-bold text-black text-lg line-clamp-2 mb-2 leading-snug group-hover:text-red-500 transition-colors">
                     {parse(title)}
-                  </h4>
+                  </div>
                   <div className="flex items-center text-gray-500 text-sm gap-3">
                      <div className="flex items-center gap-1">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

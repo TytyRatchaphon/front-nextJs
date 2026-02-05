@@ -23,7 +23,8 @@ export const getDeviceId = async (): Promise<string> => {
     const result = await fp.get();
 
     // Debug: Log all components
-    console.log('Fingerprint Result:', result);
+    // Debug: Log all components
+    // console.log('Fingerprint Result:', result);
     
     const deviceId = result.visitorId;
 

@@ -250,10 +250,10 @@ export default function ArticleDetail({ id }: { id: string }) {
                                         />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h4 
+                                        <div 
                                             className="text-sm font-medium text-gray-900 group-hover:text-red-600 transition-colors line-clamp-2 mb-1 leading-snug"
                                             dangerouslySetInnerHTML={{ __html: item.name }} // Name seems to contain HTML based on JSON
-                                        />
+                                        ></div>
                                         <div className="flex items-center text-xs text-gray-400 gap-2">
                                             <div className="flex items-center gap-1">
                                                 <Eye className="w-3 h-3" />
