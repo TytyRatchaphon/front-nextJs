@@ -1,22 +1,20 @@
 "use client";
 
 import Image from "next/image";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, forwardRef, useImperativeHandle } from "react";
 import { useAuthStore } from "@/stores/authStore";
-import { Modal, Checkbox, Spin, Button, App, Radio } from "antd";
+import { Modal, Checkbox, Spin, Button, App, Radio, Segmented } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import { fetchBookEpisodes, refreshToken } from "@/services/apiServices";
 import apiClient from "@/services/apiClient";
 import { useQueryClient } from '@tanstack/react-query';
 import { useUIStore } from '@/stores/uiStore';
-// import { Minus, Plus } from "lucide-react";
 import GifLoader from '@/components/utility/GifLoader';
 import SuccessAnimation from '@/components/utility/SuccessAnimation';
 import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { jwtDecode } from "jwt-decode";
-
 
 type Book = {
   cover: string;
@@ -130,13 +128,6 @@ const CountdownTimer = ({ endDate }: { endDate: string }) => {
   );
 };
 
-
-
-interface BookInfoCardProps {
-  book: Book;
-  bookId?: string | number | null;
-}
-
 const Pill = ({
   children,
   className = "",
@@ -151,7 +142,17 @@ const Pill = ({
   </div>
 );
 
-const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
+export interface BookInfoCardHandle {
+  openSelectionModal: () => void;
+}
+
+interface BookInfoCardProps {
+  book: Book;
+  bookId?: string | number | null;
+  episodesData?: any;
+}
+
+const BookInfoCard = forwardRef<BookInfoCardHandle, BookInfoCardProps>(({ book, bookId, episodesData: propEpisodesData }, ref) => {
   const [heartQty, setHeartQty] = useState<number>(0);
   const [roseQty, setRoseQty] = useState<number>(0);
   const { token, isLoggedIn, updateToken, user } = useAuthStore();
@@ -168,156 +169,97 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [showSuccess, setShowSuccess] = useState(false);
   const [payWith, setPayWith] = useState<'coin' | 'freecoin'>('coin');
-
-  // Fetch episodes when modal opens
-  const queryResult: any = useQuery({
-    queryKey: ["bookEpisodes", String(bookId ?? ""), token],
-    queryFn: () => fetchBookEpisodes(String(bookId ?? "")),
-    enabled: isModalOpen && !!bookId,
-    staleTime: 5 * 60 * 1000,
-  });
-  const episodesData = queryResult.data as any;
-  const isFetching = queryResult.isFetching as boolean;
-
-  const openModal = () => {
-    if (!isLoggedIn) {
-      openLoginModal();
-      return;
-    }
-    setSelectedEpisodeIds([]);
-    // expand first group by default when opening
-    if (episodesData?.groups && episodesData.groups.length > 0) {
-      const firstId = String(episodesData.groups[0].group_id);
-      const map: Record<string, boolean> = {};
-      for (const g of episodesData.groups) map[String(g.group_id)] = false;
-      map[firstId] = true;
-      setExpandedGroups(map);
-    }
-    setPayWith('coin');
-    setIsModalOpen(true);
-  };
-
-  const handleBuyPromotion = async () => {
-    if (buyLoading) return;
-    if (!isLoggedIn) {
-      openLoginModal();
-      return;
-    }
-    if (!book.promotion?.id) {
-      messageApi.error('ไม่พบข้อมูลโปรโมชั่น');
-      return;
-    }
-
-    modalApi.confirm({
-      title: 'ยืนยันการซื้อโปรโมชั่น',
-      content: (
-        <div>
-          <div>คุณต้องการซื้อโปรโมชั่น "{book.promotion.title}" หรือไม่?</div>
-          <div className="flex mt-2">ราคาโปรโมชั่น: <b className="text-red-600 flex mr-2">{book.promotion.price.toLocaleString()}</b><Image src="/images/e-coin.png" alt="Coin" width={24} height={24} /></div>
-        </div>
-      ),
-      okText: 'ยืนยัน',
-      cancelText: 'ยกเลิก',
-      okButtonProps: { className: '!bg-red-600 hover:!bg-red-700 !border-red-600 !text-white' },
-      onOk: async () => {
-        try {
-          setBuyLoading(true);
-          const payload = { dfb_id: book.promotion?.id, payWith: 'coin' };
-          const res = await apiClient.post(`/buy/groupPromotion`, payload);
-          if (res?.data?.code === 200) {
-            const respMsg = res.data?.message || 'ซื้อโปรโมชั่นสำเร็จ!';
-            setShowSuccess(true);
-
-            if (res.data?.data?.token) {
-              const newToken = res.data.data.token;
-              const decoded = decodeToken(newToken);
-              // Force use of calculated coin if token is stale (higher than expected)
-              if (user && book.promotion?.price) {
-                const expectedCoin = (Number(user.coin) || 0) - (Number(book.promotion.price) || 0);
-                const tokenCoin = Number(decoded.coin ?? decoded.coins ?? decoded.goldCoins ?? decoded.gold_coin ?? 0);
-
-                // Construct merged user. If token coin is > expected, force expected.
-                const finalCoin = (tokenCoin > expectedCoin) ? expectedCoin : tokenCoin;
-
-                const mergedUser = { ...user, ...decoded, coin: finalCoin };
-                useAuthStore.getState().login(mergedUser, newToken);
-              } else {
-                updateToken(newToken);
-              }
-            }
-            // Temporarily disabled eager refresh to prevent stale token overwrite
-            // else {
-            //   try {
-            //     const refreshRes = await refreshToken();
-            //     const newToken = refreshRes?.data?.token || refreshRes?.token;
-            //     if (newToken) updateToken(newToken);
-            //   } catch (e) {}
-            // }
-          } else {
-            const errMsg = res?.data?.message || 'ไม่สามารถทำการซื้อได้';
-            messageApi.error(errMsg);
-          }
-        } catch (err: any) {
-          const msg = err?.response?.data?.message || err?.message || 'เกิดข้อผิดพลาดขณะซื้อ';
-          messageApi.error(msg);
-        } finally {
-          setBuyLoading(false);
-        }
-      },
-      onCancel: () => {
-        setBuyLoading(false);
-      },
-    });
-  };
-
   const [buyAllModalOpen, setBuyAllModalOpen] = useState(false);
   const [manualBuyConfirmModalOpen, setManualBuyConfirmModalOpen] = useState(false);
   const [buyAllIds, setBuyAllIds] = useState<number[]>([]);
   const [buyAllTotal, setBuyAllTotal] = useState(0);
+  const { settings } = useWebsiteStore();
+  const episodesData = propEpisodesData;
+  const isFetching = !episodesData;
 
-  const handleBuyAllClick = async () => {
+  // Resolve Group Types
+  const packGroups = useMemo(() => {
+    return episodesData?.novel_packpack || episodesData?.novel_pack || episodesData?.pack || [];
+  }, [episodesData]);
+
+  const normalGroups = useMemo(() => {
+    return episodesData?.novel || episodesData?.normal || episodesData?.groups || [];
+  }, [episodesData]);
+
+  // Combine groups for Modal and Selection Logic
+  const allGroups = useMemo(() => {
+      // Tag groups with their type so we can filter in the modal
+      const taggedPack = packGroups.map((g: any) => ({ ...g, _type: 'มัดแพ็ค' }));
+      const taggedNormal = normalGroups.map((g: any) => ({ ...g, _type: 'รายตอน' }));
+      
+      return [...taggedPack, ...taggedNormal];
+  }, [packGroups, normalGroups]);
+
+  // Determine availability for modal default
+  const hasPackInModal = packGroups.length > 0;
+  const hasNormalInModal = normalGroups.length > 0;
+  
+  const [modalSegment, setModalSegment] = useState<string>(hasPackInModal ? 'มัดแพ็ค' : 'รายตอน');
+
+  // Sync modal segment when data loads/changes if needed, similar to Tab
+  useEffect(() => {
+      if (hasPackInModal && !hasNormalInModal) setModalSegment('มัดแพ็ค');
+      else if (!hasPackInModal && hasNormalInModal) setModalSegment('รายตอน');
+      else if (hasPackInModal && hasNormalInModal && !modalSegment) setModalSegment('มัดแพ็ค');
+  }, [hasPackInModal, hasNormalInModal]);
+
+  // Helper to calculate stats for a set of groups
+  const calculateGroupStats = (groups: any[]) => {
+    let unownedCount = 0;
+    let totalPrice = 0;
+    const ids: number[] = [];
+
+    if (groups) {
+      for (const g of groups) {
+        if (g.list) {
+          for (const ep of g.list) {
+            if (ep.coin > 0 && !ep.isBuy) {
+              unownedCount++;
+              totalPrice += Number(ep.coin);
+              ids.push(Number(ep.ep_id));
+            }
+          }
+        }
+      }
+    }
+    return { unownedCount, totalPrice, ids };
+  };
+
+  const packStats = useMemo(() => calculateGroupStats(packGroups), [packGroups]);
+  const normalStats = useMemo(() => calculateGroupStats(normalGroups), [normalGroups]);
+
+  const handleBuySet = async (ids: number[], total: number) => {
     if (buyLoading) return;
     if (!isLoggedIn) {
       openLoginModal();
       return;
     }
-    if (!bookId) {
-      messageApi.error('ไม่พบข้อมูลหนังสือ');
+    if (ids.length === 0) {
+      messageApi.info('ไม่มีตอนที่ต้องชำระเงินในชุดนี้');
       return;
     }
 
-    try {
-      setBuyLoading(true);
-      const epsData: any = await fetchBookEpisodes(String(bookId));
-      const groups = epsData?.groups ?? [];
-      const selectableIds: number[] = [];
-      let total = 0;
-      for (const g of groups) {
-        for (const ep of g.list) {
-          if (ep.coin > 0 && !ep.isBuy) {
-            selectableIds.push(Number(ep.ep_id));
-            total += Number(ep.coin || 0);
-          }
-        }
-      }
-
-      if (selectableIds.length === 0) {
-        messageApi.info('ไม่มีตอนที่ต้องชำระเงินให้ซื้อทั้งหมด');
-        setBuyLoading(false);
-        return;
-      }
-
-      setBuyAllIds(selectableIds);
-      setBuyAllTotal(total);
-      setPayWith('coin'); // Default to coin
-      setBuyAllModalOpen(true);
-      setBuyLoading(false);
-
-    } catch (err) {
-      messageApi.error('เกิดข้อผิดพลาด ขณะเตรียมการซื้อ');
-      setBuyLoading(false);
-    }
+    setBuyAllIds(ids);
+    setBuyAllTotal(total);
+    setPayWith('coin');
+    setBuyAllModalOpen(true);
   };
+
+  useImperativeHandle(ref, () => ({
+    openSelectionModal: () => {
+      setIsModalOpen(true);
+    },
+  }));
+
+    // ... existing handleBuyAllClick (we might repurpose or remove it, but let's keep it for now as handleBuySet replaces it for specific sets)
+    // Actually, let's redefine handleBuyAllClick to be unused or remove it.
+  
+  // NOTE: I will replace the component body below.
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -338,9 +280,8 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   };
 
   const toggleGroupSelect = (group: any) => {
-    // select all selectable episodes in group, or deselect if all already selected
-    const selectable = group.list.filter((ep: any) => ep.coin > 0 && !ep.isBuy).map((ep: any) => ep.ep_id);
-    const allSelected = selectable.every((id: number) => selectedEpisodeIds.includes(id));
+    const selectable = group?.list?.filter((ep: any) => ep.coin > 0 && !ep.isBuy).map((ep: any) => ep.ep_id) || [];
+    const allSelected = selectable.length > 0 && selectable.every((id: number) => selectedEpisodeIds.includes(id));
     if (allSelected) {
       setSelectedEpisodeIds((prev) => prev.filter((id) => !selectable.includes(id)));
     } else {
@@ -348,64 +289,60 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     }
   };
 
-  // Helper to resolve price (Regular vs Promo)
   const resolveEpisodePrice = (episode: any) => {
     const regularPrice = Number(episode.coin ?? 0);
     let promoPrice: number | undefined = undefined;
-
-    // Helper to safe parse price
     const getPrice = (val: any) => {
       if (val === null || val === undefined) return undefined;
       const v = Number(val);
       return isNaN(v) ? undefined : v;
     };
-
-    // 1. Check Discount Object (Priority 1)
     if (episode.Discount) {
       const p = getPrice(episode.Discount.discount_price);
       if (p !== undefined) promoPrice = p;
     }
-    // 2. Fallback: Nested promotions
     else if (Array.isArray(episode.promotions) && episode.promotions.length > 0) {
       const p = getPrice(episode.promotions[0].discount_price);
       if (p !== undefined) promoPrice = p;
     }
-    // 3. Fallback: Direct property
     else if (episode.discount_price !== undefined) {
       const p = getPrice(episode.discount_price);
       if (p !== undefined) promoPrice = p;
     }
-
     const hasPromo = !episode.isBuy && promoPrice !== undefined && promoPrice < regularPrice && promoPrice >= 0;
     const finalPrice = hasPromo ? (promoPrice as number) : regularPrice;
-
     return { regularPrice, promoPrice, hasPromo, finalPrice };
   };
 
   const selectedSummary = useMemo(() => {
-    if (!episodesData?.groups) return { count: 0, total: 0 };
+    if (!allGroups || allGroups.length === 0) return { count: 0, total: 0 };
     let total = 0;
-    for (const g of episodesData.groups) {
-      for (const ep of g.list) {
-        if (selectedEpisodeIds.includes(ep.ep_id) && ep.coin > 0) {
-          const { finalPrice } = resolveEpisodePrice(ep);
-          total += finalPrice;
-        }
+    for (const g of allGroups) {
+      if(g?.list) {
+          for (const ep of g.list) {
+            if (selectedEpisodeIds.includes(ep.ep_id) && ep.coin > 0) {
+              const { finalPrice } = resolveEpisodePrice(ep);
+              total += finalPrice;
+            }
+          }
       }
     }
     return { count: selectedEpisodeIds.length, total };
-  }, [selectedEpisodeIds, episodesData]);
+  }, [selectedEpisodeIds, allGroups]);
 
   const allSelectableIds = useMemo(() => {
-    if (!episodesData?.groups) return [] as number[];
+    if (!allGroups || allGroups.length === 0) return [] as number[];
     const ids: number[] = [];
-    for (const g of episodesData.groups) {
-      for (const ep of g.list) {
-        if (ep.coin > 0 && !ep.isBuy) ids.push(ep.ep_id);
+    const visibleGroups = allGroups.filter((g: any) => g._type === modalSegment);
+    for (const g of visibleGroups) {
+      if(g?.list) {
+          for (const ep of g.list) {
+            if (ep.coin > 0 && !ep.isBuy) ids.push(ep.ep_id);
+          }
       }
     }
     return ids;
-  }, [episodesData]);
+  }, [allGroups, modalSegment]);
 
   const allSelected = allSelectableIds.length > 0 && allSelectableIds.every((id) => selectedEpisodeIds.includes(id));
 
@@ -416,228 +353,132 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       setSelectedEpisodeIds((prev) => Array.from(new Set([...prev, ...allSelectableIds])));
     }
   };
-
-  // useEffect for syncing local state removed - accessing user.coin directly in render
-
-  const { settings } = useWebsiteStore()
-
-  const handleSendGift = async (sendType: 'heart' | 'flower', amount: number) => {
-    if (!isLoggedIn) {
-      openLoginModal();
-      return;
-    }
-    if (amount <= 0) return;
-
-    try {
-      const payload = {
-        sendType,
-        amount,
-        book_id: bookId,
-      };
-      const res = await apiClient.post('/user/sendGift', payload);
-      if (res?.data?.code === 200) {
-        notificationApi.success({
-          message: 'สำเร็จ',
-          description: 'ส่งของขวัญสำเร็จแล้ว',
-          placement: 'topRight',
-          icon: <div className="text-green-500">🎁</div>,
-        });
-
-        // Reset quantity
-        if (sendType === 'heart') setHeartQty(0);
-        else setRoseQty(0);
-
-        // Update user balance if token is returned
-        const responseData = res?.data?.data;
-        const maybeToken = typeof responseData === 'string' ? responseData : (responseData?.token ?? res?.data?.token);
-
-        if (maybeToken && typeof updateToken === 'function') {
-          updateToken(String(maybeToken));
-        }
-      } else {
-        messageApi.error(res?.data?.message || 'ส่งของขวัญไม่สำเร็จ');
-      }
-    } catch (err: any) {
-      messageApi.error(err?.response?.data?.message || 'เกิดข้อผิดพลาดขณะส่งของขวัญ');
-    }
-  };
-
-  // Helper for Stepper
-  const Stepper = ({ value, onChange, min = 0 }: { value: number, onChange: (val: number) => void, min?: number }) => (
-    <div className="flex items-center border border-gray-200 rounded-lg bg-gray-50 h-8 w-fit mx-auto">
-      <button
-        onClick={() => onChange(Math.max(min, value - 1))}
-        className="w-8 h-full flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-l-lg transition-colors"
-        disabled={value <= min}
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-      </button>
-      <input
-        type="number"
-        value={value}
-        onChange={(e) => {
-          const val = parseInt(e.target.value);
-          if (!isNaN(val)) onChange(val);
-          else onChange(min);
-        }}
-        className="w-12 h-full text-center bg-transparent border-x border-gray-200 text-sm font-semibold text-gray-900 focus:outline-none no-spinners"
-      />
-      <button
-        onClick={() => onChange(value + 1)}
-        className="w-8 h-full flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-r-lg transition-colors"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-      </button>
-      <style jsx global>{`
-        .no-spinners::-webkit-outer-spin-button,
-        .no-spinners::-webkit-inner-spin-button {
-          -webkit-appearance: none;
-          appearance: none;
-          margin: 0;
-        }
-        .no-spinners {
-          -moz-appearance: textfield;
-          appearance: textfield;
-        }
-      `}</style>
-    </div>
-  );
-
+  
   return (
-    <aside className="w-full">
-      {/* Outer card */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm sticky top-4">
-        {/* Title row and coins pill */}
-        <div className="px-5 pt-5 pb-2 flex items-center justify-between gap-3">
-          <h3 className="text-xl font-extrabold text-gray-900">ซื้อหลายตอน</h3>
-          <div className="relative flex-shrink-0">
+    <aside className="w-full sticky top-4 space-y-4">
+      {/* 1. Header Card (Coins/Pills) */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden p-5">
+          <div className="w-full">
             <div
               role="button"
               tabIndex={0}
               onClick={() => { if (!isLoggedIn) openLoginModal(); }}
               onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') && !isLoggedIn) openLoginModal(); }}
-              className={`inline-block`}
+              className="w-full"
             >
               {isLoggedIn ? (
-                <>
-                  <div className="flex flex-col items-end gap-2">
-                    <AmountPill
-                      amount={user && user.coin !== undefined ? Number(user.coin) : (book.remaining_paid_total ?? book.price ?? 0)}
-                    />
-                    {book.use_freecoin === 1 && (
-                      <FreeCoinPill
-                        amount={user && user.freecoin !== undefined ? Number(user.freecoin) : 0}
-                      />
-                    )}
-                  </div>
-                </>
+                <div className="flex items-center justify-between w-full">
+                   <AmountPill amount={Number(user?.coin || 0)} />
+                   {book.use_freecoin === 1 && (
+                      <FreeCoinPill amount={Number(user?.freecoin || 0)} className="bg-gray-50 !border-gray-200" />
+                   )}
+                </div>
               ) : (
-                <Pill className="px-6 bg-gray-50 border-dashed border-gray-200 text-gray-600 cursor-pointer justify-center">
-                  <span className="text-sm font-medium">เข้าสู่ระบบ</span>
-                </Pill>
-              )}
+                <div className="flex justify-center">
+                  <Pill className="px-6 bg-gray-50 border-dashed border-gray-200 text-gray-600 cursor-pointer justify-center">
+                    <span className="text-sm font-medium">เข้าสู่ระบบ</span>
+                  </Pill>
+                </div>
+              )}  
             </div>
           </div>
-        </div>
+      </div>
 
-        <div className="px-5 pb-5">
-          {isLoggedIn && Number(book.remaining_paid_count ?? 0) === 0 ? (
-            <div className="mt-2 px-5 pb-5">
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm text-center">
-                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-green-100">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
+           {/* Pack Section */}
+           {packGroups.length > 0 && (
+             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden relative group">
+                {/* Red Vertical Bar */}
+                {/* <div className="absolute left-0 top-3 bottom-3 w-1.5 bg-red-600 rounded-r-full"></div> */}
+                
+                <div className="p-4 pl-5">
+                    <h4 className="text-lg font-bold text-gray-900 mb-2">มัดแพ็ค</h4>
+                    
+                    {/* Remaining Count or Owned State */}
+                    {packStats.unownedCount > 0 ? (
+                        <div className="text-sm text-gray-600 mb-3">
+                            คุณยังไม่ได้เป็นเจ้าของอีก <span className="text-red-600 font-bold">{packStats.unownedCount.toLocaleString()} ตอน</span>
+                        </div>
+                    ) : null}
+
+                    {/* Buy Button or Owned Banner */}
+                    {packStats.unownedCount > 0 ? (
+                        <button 
+                            onClick={() => handleBuySet(packStats.ids, packStats.totalPrice)}
+                            disabled={packStats.unownedCount === 0}
+                            className="w-full bg-gray-100 hover:bg-gray-200 active:bg-gray-300 transition-colors rounded-lg p-2 px-3 flex items-center justify-between group disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                             <span className="text-gray-900 font-bold text-sm">เหมาทั้งเรื่อง</span>
+                             <div className="flex items-center gap-2">
+                                 <div className="flex items-center gap-1">
+                                     <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={18} height={18} loader={imageLoader} />
+                                     <span className="text-lg font-extrabold text-gray-900">{packStats.totalPrice.toLocaleString()}</span>
+                                 </div>
+                                 <div className="bg-blue-400 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">
+                                     มัดแพ็ค
+                                 </div>
+                             </div>
+                        </button>
+                    ) : (
+                        <div className="w-full bg-emerald-50 border border-emerald-200 rounded-lg py-3 flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-emerald-600">
+                                <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+                            </svg>
+                            <span className="text-emerald-700 font-bold text-sm">เป็นเจ้าของแล้ว</span>
+                        </div>
+                    )}
                 </div>
-                <div className=" text-green-800 text-base">คุณเป็นเจ้าของนิยายเรื่องนี้ครบทุกตอนแล้ว</div>
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* Ownership Status */}
-              {isLoggedIn && (
-                <p className="text-[14px] text-gray-800 mb-3">
-                  คุณยังไม่ได้เป็นเจ้าของอีก{" "}
-                  <span className="text-red-600 font-semibold">{book.remaining_paid_count ?? 0} ตอน</span>
-                </p>
-              )}
+             </div>
+           )}
 
-              {/* Promotion Banner */}
-              {book.promotion && (
-                <div className="mb-3 rounded-xl overflow-hidden bg-gradient-to-r from-red-600 to-pink-600 text-white shadow-md">
-                  <div className="px-4 py-3">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <div className="text-xs font-medium opacity-90 mb-0.5 drop-shadow-sm">โปรโมชั่นพิเศษ</div>
-                        <h4 className="font-bold text-lg leading-tight drop-shadow-md">{book.promotion.title}</h4>
-                      </div>
-                      <div className="bg-white text-red-600 text-xs font-bold px-2 py-1 rounded-lg shadow-sm whitespace-nowrap">
-                        ลด {book.promotion.percent}%
-                      </div>
-                    </div>
+           {/* Normal Section */}
+           {normalGroups.length > 0 && (
+             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden relative group">
+                {/* Red Vertical Bar */}
+                {/* <div className="absolute left-0 top-3 bottom-3 w-1.5 bg-red-600 rounded-r-full"></div> */}
+                
+                <div className="p-4 pl-5">
+                    <h4 className="text-lg font-bold text-gray-900 mb-2">รายตอน</h4>
+                    
+                    {/* Remaining Count or Owned State */}
+                    {normalStats.unownedCount > 0 ? (
+                        <div className="text-sm text-gray-600 mb-3">
+                            คุณยังไม่ได้เป็นเจ้าของอีก <span className="text-red-600 font-bold">{normalStats.unownedCount.toLocaleString()} ตอน</span>
+                        </div>
+                    ) : null}
 
-                    <div className="flex items-center justify-between mt-3 mb-2 pt-3 border-t border-white/20">
-                      <div className="text-xs opacity-90 drop-shadow-sm">เหลือเวลาอีก</div>
-                      <CountdownTimer endDate={book.promotion.endDate} />
-                    </div>
-
-                    <button
-                      onClick={handleBuyPromotion}
-                      disabled={buyLoading}
-                      className="group w-full mt-4 bg-white !text-red-600 font-bold py-3 rounded-xl text-sm hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 shadow-lg border-2 border-white/50"
-                    >
-                      {buyLoading ? <Spin size="small" /> : (
-                        <>
-                          <span className="text-lg !text-red-600 ">ซื้อราคาโปรโมชั่น</span>
-                          <div className="flex items-center gap- bg-red-50 px-3 py-1 rounded-full border border-red-100 group-hover:bg-red-100 transition-colors">
-                            <span className="!text-red-600 font-extrabold text-base">{book.promotion.price.toLocaleString()}</span>
-                            <Image src="/images/e-coin.png" alt="Coin" width={18} height={18} className="drop-shadow-sm" loader={imageLoader} />
-                          </div>
-                        </>
-                      )}
-                    </button>
-                  </div>
+                    {/* Buy Button or Owned Banner */}
+                    {normalStats.unownedCount > 0 ? (
+                        <button 
+                            onClick={() => handleBuySet(normalStats.ids, normalStats.totalPrice)}
+                             disabled={normalStats.unownedCount === 0}
+                            className="w-full bg-gray-100 hover:bg-gray-200 active:bg-gray-300 transition-colors rounded-lg p-2 px-3 flex items-center justify-between group disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                             <span className="text-gray-900 font-bold text-sm">เหมาทั้งเรื่อง</span>
+                             <div className="flex items-center gap-2">
+                                 <div className="flex items-center gap-1">
+                                     <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={18} height={18} loader={imageLoader} />
+                                     <span className="text-lg font-extrabold text-gray-900">{normalStats.totalPrice.toLocaleString()}</span>
+                                 </div>
+                                 <div className="bg-orange-400 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">
+                                     รายตอน
+                                 </div>
+                             </div>
+                        </button>
+                    ) : (
+                        <div className="w-full bg-emerald-50 border border-emerald-200 rounded-lg py-3 flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-emerald-600">
+                                <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+                            </svg>
+                            <span className="text-emerald-700 font-bold text-sm">เป็นเจ้าของแล้ว</span>
+                        </div>
+                    )}
                 </div>
-              )}
+             </div>
+           )}
 
-              {/* Price box */}
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={handleBuyAllClick}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') { handleBuyAllClick(); } }}
-                className="rounded-2xl bg-gradient-to-b from-gray-100 to-gray-200 border border-gray-200 shadow-inner px-5 py-3 mb-4 cursor-pointer hover:shadow-md hover:border-gray-300 transition-all"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[14px] font-bold text-gray-800">
-                      เหมาทั้งเรื่อง
-                    </span>
-                    <Image src={settings?.coin || '/images/e-coin.png'} alt="Coin" width={20} height={20} loader={imageLoader} />
-                  </div>
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-2xl leading-none font-extrabold text-red-600">
-                      {(book.remaining_paid_total ?? book.price ?? 0).toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-center text-gray-500 text-xs mb-3">หรือ</div>
-              <button
-                onClick={openModal}
-                className="w-full h-12 rounded-2xl border-2 border-red-600 text-red-600 text-lg font-bold hover:bg-red-50 transition-colors"
-              >
-                เลือกตอนเอง
-              </button>
-
-              <Modal
-                wrapClassName="book-select-modal"
+        {/* The Modal below remains unchanged in this replacement block, wait, line 645 is Modal start */}
+        <Modal
+            wrapClassName="book-select-modal"
                 title={null}
                 open={isModalOpen}
                 onCancel={closeModal}
@@ -701,8 +542,25 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                       </div>
                     </div>
 
+                    {(hasPackInModal && hasNormalInModal) && (
+                      <div className="mb-4">
+                        <Segmented
+                           options={['มัดแพ็ค', 'รายตอน']}
+                           value={modalSegment}
+                           onChange={(val) => setModalSegment(val as string)}
+                           block
+                           className="bg-red-50 p-1 text-red-600 font-medium"
+                           size="large"
+                           style={{
+                                backgroundColor: '#FEF2F2',
+                                borderRadius: '0.5rem',
+                           }}
+                         />
+                      </div>
+                    )}
+
                     <div className="space-y-4 max-h-[60vh] overflow-auto">
-                      {episodesData?.groups?.map((group: any) => {
+                      {allGroups.filter((g: any) => g._type === modalSegment).map((group: any) => {
                         const gid = String(group.group_id);
                         const isExpanded = expandedGroups[gid] ?? false;
                         const selectableIds = group.list.filter((ep: any) => ep.coin > 0 && !ep.isBuy).map((ep: any) => ep.ep_id);
@@ -957,14 +815,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                   </div>
                 </div>
               </Modal>
-            </>
-          )}
 
-          {/* Divider */}
-          <div className="hidden lg:block my-5 border-t border-gray-200" />
 
-        </div >
-      </div >
+      
       {showSuccess && <SuccessAnimation onComplete={async () => {
         setShowSuccess(false);
         await queryClient.invalidateQueries({ queryKey: ["bookEpisodes", String(bookId ?? "")] });
@@ -1019,7 +872,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
             background-color: #e11d48 !important;
            }
         `}</style>
-    </aside >
+    </aside>
   );
-};
+});
 export default BookInfoCard;

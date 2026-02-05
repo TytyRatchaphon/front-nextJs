@@ -22,34 +22,52 @@ export function useEpisodeNavigation(bookId: string, episodeId: string, episode:
         staleTime: 10 * 60 * 1000,
     });
 
-    // Derive Flat List
-    const allEpisodes = useMemo(() => {
-        if (!episodesData?.groups) return [];
-
-        const all: any[] = [];
-        const sortedGroups = [...episodesData.groups].sort(
-            (a: any, b: any) => (a.group_id || 0) - (b.group_id || 0)
-        );
-
-        sortedGroups.forEach((group: any, groupIndex: number) => {
-            if (group.list && Array.isArray(group.list)) {
-                const episodesWithGroupInfo = group.list.map((ep: any) => ({
-                    ...ep,
-                    _groupId: group.group_id,
-                    _groupIndex: groupIndex,
-                    _groupName: group.name,
-                }));
-                all.push(...episodesWithGroupInfo);
-            }
-        });
-
-        return all.sort((a: any, b: any) => {
-            if (a._groupIndex !== b._groupIndex) {
-                return a._groupIndex - b._groupIndex;
-            }
-            return (a.order_by || 0) - (b.order_by || 0);
-        });
+    // Normalize Groups - Separate Normal vs Pack
+    const normalGroups = useMemo(() => {
+        return episodesData?.novel || episodesData?.normal || episodesData?.groups || [];
     }, [episodesData]);
+
+    const packGroups = useMemo(() => {
+        return episodesData?.novel_packpack || episodesData?.novel_pack || episodesData?.pack || [];
+    }, [episodesData]);
+
+    // Determine Context & Derive Flat List
+    const { allEpisodes, groups } = useMemo(() => {
+        const flatten = (gs: any[]) => {
+            if (!gs || !Array.isArray(gs)) return [];
+            const all: any[] = [];
+            const sorted = [...gs].sort((a: any, b: any) => (a.group_id || 0) - (b.group_id || 0));
+            sorted.forEach((g: any, gIdx: number) => {
+                if (g.list && Array.isArray(g.list)) {
+                    all.push(...g.list.map((ep: any) => ({
+                        ...ep,
+                        _groupId: g.group_id,
+                        _groupIndex: gIdx,
+                        _groupName: g.name
+                    })));
+                }
+            });
+            return all.sort((a: any, b: any) => {
+                if (a._groupIndex !== b._groupIndex) return a._groupIndex - b._groupIndex;
+                return (a.order_by || 0) - (b.order_by || 0);
+            });
+        };
+
+        const flatNormal = flatten(normalGroups);
+        const flatPack = flatten(packGroups);
+
+        // Check where the current episode is
+        const isMatch = (ep: any) => String(ep?.ep_id ?? ep?.epID ?? "") === String(episodeId);
+        const inPack = flatPack.some(isMatch);
+        const inNormal = flatNormal.some(isMatch);
+
+        // If found in Pack, prioritize Pack context. Otherwise default to Normal.
+        if (inPack) {
+            return { allEpisodes: flatPack, groups: packGroups };
+        } else {
+            return { allEpisodes: flatNormal, groups: normalGroups };
+        }
+    }, [normalGroups, packGroups, episodeId]);
 
     const isMatch = (ep: any, targetId: string) => {
         const target = String(targetId);
@@ -69,36 +87,26 @@ export function useEpisodeNavigation(bookId: string, episodeId: string, episode:
             return result;
         }
 
-        let flatList: any[] = [];
-        if (allEpisodes) {
-            if ((allEpisodes as any).groups && Array.isArray((allEpisodes as any).groups)) {
-                (allEpisodes as any).groups.forEach((g: any) => {
-                    if (g.list) flatList.push(...g.list);
-                });
-            } else if (Array.isArray(allEpisodes)) {
-                flatList = allEpisodes;
-            }
-        }
-
-        let currentIndex = flatList.findIndex((ep: any) => isMatch(ep, episodeId));
+        let currentIndex = allEpisodes.findIndex((ep: any) => isMatch(ep, episodeId));
 
         if (currentIndex === -1 && episode) {
-            const ep = episode as any;
-            if (ep.ep_id) currentIndex = flatList.findIndex((x: any) => isMatch(x, String(ep.ep_id)));
-            if (currentIndex === -1 && ep.epID) currentIndex = flatList.findIndex((x: any) => isMatch(x, String(ep.epID)));
+             const ep = episode as any;
+             if (ep.ep_id) currentIndex = allEpisodes.findIndex((x: any) => isMatch(x, String(ep.ep_id)));
+             if (currentIndex === -1 && ep.epID) currentIndex = allEpisodes.findIndex((x: any) => isMatch(x, String(ep.epID)));
         }
 
         if (currentIndex !== -1) {
-            result.displayTitle = flatList[currentIndex].name?.trim();
+            result.displayTitle = allEpisodes[currentIndex].name?.trim();
             if (currentIndex > 0) {
-                const prev = flatList[currentIndex - 1];
+                const prev = allEpisodes[currentIndex - 1];
                 result.prevEpId = String(prev.ep_id || prev.epID);
             }
-            if (currentIndex < flatList.length - 1) {
-                const next = flatList[currentIndex + 1];
+            if (currentIndex < allEpisodes.length - 1) {
+                const next = allEpisodes[currentIndex + 1];
                 result.nextEpId = String(next.ep_id || next.epID);
             }
         } else {
+            // Fallback Title
             const ep = episode as any;
             if (ep) {
                 const candidates = [ep.name, ep.title];
@@ -117,5 +125,5 @@ export function useEpisodeNavigation(bookId: string, episodeId: string, episode:
         return result;
     }, [allEpisodes, episode, episodeId, isListLoading]);
 
-    return { episodesData, allEpisodes, displayTitle, prevEpId, nextEpId, isListLoading, episodesError };
+    return { episodesData, groups, allEpisodes, displayTitle, prevEpId, nextEpId, isListLoading, episodesError };
 }

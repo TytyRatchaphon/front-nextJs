@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Alert, Collapse, Segmented } from "antd";
 import { ChevronDown } from 'lucide-react';
 import BookDetailHeader from "@/components/bookdetail/BookDetailHeader";
-import BookInfoCard from "@/components/bookdetail/BookInfoCard";
+import BookInfoCard, { BookInfoCardHandle } from "@/components/bookdetail/BookInfoCard";
 import Footer from "@/components/home/Footer";
 import CommentSection from "@/components/bookdetail/CommentSection";
 import { BackToTopButton } from "@/components/utility/BackToTopButton";
@@ -14,10 +14,11 @@ import { useWebsiteStore } from '@/stores/websiteStore';
 import { useBookDetailData } from "@/hooks/book/useBookDetailData";
 import { BookAboutTab } from "@/components/bookdetail/BookAboutTab";
 import { BookEpisodesTab } from "@/components/bookdetail/BookEpisodesTab";
+import { BookContentTab } from "@/components/bookdetail/BookContentTab";
 import { useLogger } from "@/hooks/useLogger";
 import RecommendedBooks from "@/components/bookdetail/RecommendedBooks";
 
-const collapseTabs = ["รายละเอียดเรื่อง", "ชุดมัดแพ็ค", "รายตอน"] as const;
+const collapseTabs = ["รายละเอียดเรื่อง", "สารบัญ"] as const;
 const segmentedTabs = ["รีวิวทั้งหมด", "ความคิดเห็นทั้งหมด"] as const;
 type TabKey = (typeof collapseTabs)[number] | (typeof segmentedTabs)[number];
 
@@ -61,28 +62,19 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
     }
   }, [book, log, trackTimeSpent]);
 
+  const bookInfoCardRef = useRef<BookInfoCardHandle>(null);
+
   const tabContents: Record<TabKey, React.ReactElement> = {
     รายละเอียดเรื่อง: <BookAboutTab bookDetail={bookDetail ?? null} />,
-    ชุดมัดแพ็ค: (
-      <BookEpisodesTab
-        episodesData={{ groups: episodesData?.novel_packpack || episodesData?.novel_pack || episodesData?.pack || [] }}
+    สารบัญ: (
+      <BookContentTab
+        episodesData={episodesData}
         bookId={bookId}
         bookDetail={bookDetail}
         settings={settings}
         isLoading={isLoadingEpisodes}
         latestUpdate={book?.update_at}
-        emptyMessage="ยังไม่มีชุดมัดแพ็ค"
-      />
-    ),
-    รายตอน: (
-      <BookEpisodesTab
-        episodesData={{ groups: episodesData?.novel || episodesData?.normal || episodesData?.groups || [] }}
-        bookId={bookId}
-        bookDetail={bookDetail}
-        settings={settings}
-        isLoading={isLoadingEpisodes}
-        latestUpdate={book?.update_at}
-        emptyMessage="ยังไม่มีรายตอน"
+        onOpenPurchaseModal={() => bookInfoCardRef.current?.openSelectionModal()}
       />
     ),
     รีวิวทั้งหมด: <CommentSection bookId={String(bookId)} mode="comment" />,
@@ -140,17 +132,15 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
   const hasPack = (episodesData?.novel_packpack && episodesData.novel_packpack.length > 0) || (episodesData?.novel_pack && episodesData.novel_pack.length > 0) || (episodesData?.pack && episodesData.pack.length > 0);
   const hasNormal = (episodesData?.novel && episodesData.novel.length > 0) || (episodesData?.normal && episodesData.normal.length > 0) || (episodesData?.groups && episodesData.groups.length > 0);
   
-  // Show tabs if data exists OR if currently loading episodes (to show loading spinner)
-  const showPack = hasPack || isLoadingEpisodes;
-  const showNormal = hasNormal || isLoadingEpisodes;
+  const hasContent = hasPack || hasNormal;
+  const showContent = hasContent || isLoadingEpisodes;
 
   const validTabs = collapseTabs.filter(tab => {
-    if (tab === 'ชุดมัดแพ็ค') return showPack;
-    if (tab === 'รายตอน') return showNormal;
+    if (tab === 'สารบัญ') return showContent;
     return true; // Always show 'รายละเอียดเรื่อง'
   });
 
-  const defaultActiveKey = showPack ? ['ชุดมัดแพ็ค'] : (showNormal ? ['รายตอน'] : ['รายละเอียดเรื่อง']);
+  const defaultActiveKey = showContent ? ['สารบัญ'] : ['รายละเอียดเรื่อง'];
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -188,7 +178,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
                     <div className="flex items-center gap-3 py-1">
                       <div className={`w-1 h-6 rounded-full ${
                         tab === 'รายละเอียดเรื่อง' ? 'bg-blue-500' :
-                        tab === 'ชุดมัดแพ็ค' ? 'bg-purple-500' : 'bg-orange-500'
+                        tab === 'สารบัญ' ? 'bg-red-500' : 'bg-orange-500'
                       }`} />
                       <span className="font-bold text-lg text-gray-800">{tab}</span>
                     </div>
@@ -237,7 +227,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
           {/* Right Sidebar */}
           <div className="hidden lg:block lg:w-80 lg:flex-shrink-0">
             <div className="sticky top-24">
-              <BookInfoCard book={book} bookId={String(book.id)} />
+              <BookInfoCard ref={bookInfoCardRef} book={book} bookId={String(book.id)} episodesData={episodesData} />
             </div>
           </div>
         </div>

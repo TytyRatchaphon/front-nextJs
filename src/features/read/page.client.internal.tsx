@@ -123,6 +123,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
 
   const {
     episodesData,
+    groups,
     allEpisodes,
     displayTitle,
     prevEpId,
@@ -156,8 +157,8 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
 
   // Effect to Auto-Expand Group containing current episode
   useEffect(() => {
-    if (episodesData?.groups && episodeId) {
-      const targetGroupId = episodesData.groups.find((group: any) => 
+    if (groups && episodeId) {
+      const targetGroupId = groups.find((group: any) => 
         group.list.some((ep: any) => String(ep.ep_id ?? ep.epID) === String(episodeId))
       )?.group_id;
 
@@ -217,9 +218,9 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   }, []);
 
   const expandAllGroups = () => {
-    if (!episodesData?.groups) return;
+    if (!groups) return;
     const map: Record<number, boolean> = {};
-    episodesData.groups.forEach((g: any) => { map[g.group_id] = true; });
+    groups.forEach((g: any) => { map[g.group_id] = true; });
     setExpandedGroups(map);
   };
 
@@ -333,14 +334,14 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   }
 
   const renderEpisodesList = () => {
-    if (!episodesData?.groups) return <div className="p-4">ไม่พบรายการตอน</div>;
+    if (!groups || groups.length === 0) return <div className="p-4">ไม่พบรายการตอน</div>;
     return (
       <div id="episode-list-container" className="max-h-64 w-72 overflow-auto">
         <div className="px-3 py-2 flex gap-2">
           <button onClick={expandAllGroups} className="text-xs px-2 py-1 bg-gray-100 rounded">แสดงทั้งหมด</button>
           <button onClick={collapseAllGroups} className="text-xs px-2 py-1 bg-gray-100 rounded">ย่อทั้งหมด</button>
         </div>
-        {episodesData.groups.map((group: any, groupIndex: number) => {
+        {groups.map((group: any, groupIndex: number) => {
           const isExpanded = expandedGroups[group.group_id] ?? groupIndex === 0;
           const toggleGroup = () => setExpandedGroups((prev) => ({ ...prev, [group.group_id]: !isExpanded }));
           return (
@@ -436,9 +437,9 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                 <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-            {episodesData?.groups?.length > 0 ? (
+            {groups?.length > 0 ? (
               <div className="divide-y divide-gray-100">
-                {episodesData.groups.map((group: any, groupIndex: number) => {
+                {groups.map((group: any, groupIndex: number) => {
                   const isExpanded = expandedGroups[group.group_id] ?? groupIndex === 0;
                   const toggleGroup = () => setExpandedGroups((prev) => ({ ...prev, [group.group_id]: !isExpanded }));
                   return (

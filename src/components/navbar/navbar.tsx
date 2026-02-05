@@ -470,7 +470,6 @@ function Navbar() {
 
 
 
-// ... inside rendering ...
 
           {/* Novel Mobile Menu Wrapper */}
           <div className="border-b border-gray-100">
