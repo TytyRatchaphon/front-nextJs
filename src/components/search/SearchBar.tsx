@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState, useEffect, useCallback } from "react";
 import { Drawer, Button } from "antd";
 import { FilterOutlined } from "@ant-design/icons";
@@ -17,6 +18,7 @@ interface SelectedFilters {
   types: string[];
   status: string[];
   end: string; // "all", "end", หรือ "notend"
+  content_type: string;
 }
 
 interface SearchBarProps {
@@ -30,8 +32,213 @@ interface SearchBarProps {
     end: string;
     sortBy: string;
     order: string;
+    content_type: string;
   }) => void;
 }
+
+const FilterPanel = ({
+  isInDrawer = false,
+  allFilters,
+  clearAllFilters,
+  removeFilter,
+  categories,
+  isLoadingCategories,
+  selectedFilters,
+  handleCategoryChange,
+  handleTypeChange,
+  handleEndChange,
+  handleContentTypeChange,
+  handleSearchClick,
+}: {
+  isInDrawer?: boolean;
+  allFilters: any[];
+  clearAllFilters: () => void;
+  removeFilter: (type: any, value: any) => void;
+  categories: Category[];
+  isLoadingCategories: boolean;
+  selectedFilters: SelectedFilters;
+  handleCategoryChange: (id: number, name: string) => void;
+  handleTypeChange: (val: string) => void;
+  handleEndChange: (val: string) => void;
+  handleContentTypeChange: (val: string) => void;
+  handleSearchClick: () => void;
+}) => (
+  <div
+    className={`bg-white rounded-xl p-5 shadow-md ${isInDrawer ? "h-full flex flex-col" : "h-full overflow-y-auto"
+      }`}
+  >
+    <div className={isInDrawer ? "flex-1 overflow-y-auto" : ""}>
+      <div className="mb-5">
+        <div className="flex justify-between items-center mb-2">
+          <p className="text-sm font-medium">ตัวกรอง</p>
+          <button
+            onClick={clearAllFilters}
+            className="text-red-500 text-sm hover:text-red-600"
+          >
+            ล้าง
+          </button>
+        </div>
+
+        {allFilters.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-3">
+            {allFilters.map((filter, index) => (
+              <div
+                key={`${filter.type}-${filter.value}-${index}`}
+                className="flex items-center gap-1 bg-red-50 text-red-600 text-xs px-3 py-1 rounded-full"
+              >
+                <span>{filter.label}</span>
+                <button
+                  onClick={() => removeFilter(filter.type, filter.value)}
+                  className="hover:bg-red-100 rounded-full p-0.5"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 14 14"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <hr className="border-t border-gray-300 mb-3" />
+      </div>
+
+      {/* ประเภทเนื้อหา */}
+      <div className="mb-5">
+        <p className="font-medium mb-2">ประเภทเนื้อหา</p>
+        <div className="flex flex-col gap-2 text-sm">
+          {[
+            { value: "", label: "ทั้งหมด" },
+            { value: "novel", label: "รายตอน" },
+            { value: "novel_pack", label: "มัดแพ็ค" },
+          ].map((item) => (
+            <label
+              key={item.value}
+              className="flex items-center gap-2 cursor-pointer hover:text-red-500"
+            >
+              <input
+                type="radio"
+                name={`contentType_${isInDrawer ? "mobile" : "desktop"}`}
+                className="accent-red-500 cursor-pointer w-4 h-4"
+                checked={(selectedFilters.content_type || "") === item.value}
+                onChange={() => handleContentTypeChange(item.value)}
+              />
+              <span className="select-none">{item.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* หมวดหมู่ */}
+      <div className="mb-5">
+        <p className="font-medium mb-2">หมวดหมู่</p>
+        <div className="flex flex-col gap-2 text-sm max-h-48 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+          {isLoadingCategories ? (
+            <GifLoader width={80} height={80} className="py-4" />
+          ) : categories.length > 0 ? (
+            categories.map((item, index) => {
+              const cateId = item.id;
+              const cateName = item.name;
+              return (
+                <label
+                  key={cateId || index}
+                  className="flex items-center gap-2 cursor-pointer hover:text-red-500"
+                >
+                  <input
+                    type="checkbox"
+                    className="accent-red-500 cursor-pointer w-4 h-4"
+                    checked={selectedFilters.categories.includes(cateId)}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      handleCategoryChange(cateId, cateName);
+                    }}
+                  />
+                  <span className="select-none">{cateName}</span>
+                </label>
+              );
+            })
+          ) : (
+            <p className="text-gray-400 text-center py-2">ไม่มีหมวดหมู่</p>
+          )}
+        </div>
+      </div>
+
+      {/* รูปแบบ */}
+      <div className="mb-5">
+        <p className="font-medium mb-2">รูปแบบ</p>
+        <div className="flex flex-col gap-2 text-sm">
+          {[
+            { value: "tran", label: "นิยายแปล" },
+            { value: "chat", label: "นิยายแต่ง" },
+            { value: "fan", label: "แฟนฟิค" },
+            { value: "redroom", label: "เรดรูม" },
+          ].map((item) => (
+            <label
+              key={item.value}
+              className="flex items-center gap-2 cursor-pointer hover:text-red-500"
+            >
+              <input
+                type="checkbox"
+                className="accent-red-500 cursor-pointer w-4 h-4"
+                checked={selectedFilters.types.includes(item.value)}
+                onChange={() => handleTypeChange(item.value)}
+              />
+              <span className="select-none">{item.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* สถานะเรื่อง */}
+      <div className="mb-5">
+        <p className="font-medium mb-2">สถานะเรื่อง</p>
+        <div className="flex flex-col gap-2 text-sm">
+          {[
+            { value: "all", label: "ทั้งหมด" },
+            { value: "end", label: "จบแล้ว" },
+            { value: "notend", label: "ยังไม่จบ" },
+          ].map((item) => (
+            <label
+              key={item.value}
+              className="flex items-center gap-2 cursor-pointer hover:text-red-500"
+            >
+              <input
+                type="radio"
+                name={`endStatus_${isInDrawer ? "mobile" : "desktop"}`}
+                className="accent-red-500 cursor-pointer w-4 h-4"
+                checked={selectedFilters.end === item.value}
+                onChange={() => handleEndChange(item.value)}
+              />
+              <span className="select-none">{item.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <div
+      className={
+        isInDrawer
+          ? "sticky bottom-0 bg-white pt-3 pb-3 px-1 border-t"
+          : "mt-5"
+      }
+    >
+      <button
+        onClick={handleSearchClick}
+        className={`w-full bg-red-500 rounded-md hover:bg-red-600 !text-white font-semibold ${isInDrawer ? "py-4 text-base" : "py-2 text-sm"
+          }`}
+      >
+        ดูผลลัพธ์
+      </button>
+    </div>
+  </div>
+);
 
 function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarProps) {
   const [open, setOpen] = useState(false);
@@ -45,6 +252,7 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
     types: [],
     status: [],
     end: "all",
+    content_type: "all",
   });
 
   // Sync with props when they change (e.g. navigation)
@@ -186,8 +394,15 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
     }));
   }, []);
 
+  const handleContentTypeChange = useCallback((value: string) => {
+    setSelectedFilters((prev) => ({
+      ...prev,
+      content_type: value,
+    }));
+  }, []);
+
   const removeFilter = (
-    type: "categories" | "types" | "status" | "end",
+    type: "categories" | "types" | "status" | "end" | "content_type",
     value: number | string
   ) => {
     if (type === "end") {
@@ -195,6 +410,11 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
       setSelectedFilters((prev) => ({
         ...prev,
         end: "all",
+      }));
+    } else if (type === "content_type") {
+      setSelectedFilters((prev) => ({
+        ...prev,
+        content_type: "",
       }));
     } else {
       setSelectedFilters((prev) => ({
@@ -210,12 +430,13 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
       types: [],
       status: [],
       end: "all",
+      content_type: "",
     });
   };
 
   const getAllSelectedFilters = () => {
     const filters: Array<{
-      type: "categories" | "types" | "status" | "end";
+      type: "categories" | "types" | "status" | "end" | "content_type";
       value: number | string;
       label: string;
     }> = [
@@ -259,6 +480,14 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
       });
     }
 
+    if (selectedFilters.content_type && selectedFilters.content_type !== "" && selectedFilters.content_type !== "all") {
+        filters.push({
+            type: "content_type" as const,
+            value: selectedFilters.content_type,
+            label: selectedFilters.content_type === "novel" ? "รายตอน" : selectedFilters.content_type === "novel_pack" ? "มัดแพ็ค" : selectedFilters.content_type
+        });
+    }
+
     return filters;
   };
 
@@ -286,6 +515,7 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
         end: selectedFilters.end,
         sortBy,
         order,
+        content_type: selectedFilters.content_type || ""
       });
     }
   }, [debouncedQuery, selectedFilters, sortBy, order, onSearch]);
@@ -297,182 +527,6 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
       onClose();
     }
   };
-
-  const FilterContent = ({ isInDrawer = false }: { isInDrawer?: boolean }) => (
-    <div
-      className={`bg-white rounded-xl p-5 shadow-md ${isInDrawer ? "h-full flex flex-col" : "h-full overflow-y-auto"
-        }`}
-    >
-      <div className={isInDrawer ? "flex-1 overflow-y-auto" : ""}>
-        <div className="mb-5">
-          <div className="flex justify-between items-center mb-2">
-            <p className="text-sm font-medium">ตัวกรอง</p>
-            <button
-              onClick={clearAllFilters}
-              className="text-red-500 text-sm hover:text-red-600"
-            >
-              ล้าง
-            </button>
-          </div>
-
-          {allFilters.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {allFilters.map((filter, index) => (
-                <div
-                  key={`${filter.type}-${filter.value}-${index}`}
-                  className="flex items-center gap-1 bg-red-50 text-red-600 text-xs px-3 py-1 rounded-full"
-                >
-                  <span>{filter.label}</span>
-                  <button
-                    onClick={() => removeFilter(filter.type, filter.value)}
-                    className="hover:bg-red-100 rounded-full p-0.5"
-                  >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 14 14"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5" />
-                    </svg>
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-          <hr className="border-t border-gray-300 mb-3" />
-        </div>
-
-        {/* หมวดหมู่ */}
-        <div className="mb-5">
-          <p className="font-medium mb-2">หมวดหมู่</p>
-          <div className="flex flex-col gap-2 text-sm max-h-48 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-            {isLoadingCategories ? (
-              <GifLoader width={80} height={80} className="py-4" />
-            ) : categories.length > 0 ? (
-              categories.map((item, index) => {
-                const cateId = item.id;
-                const cateName = item.name;
-                return (
-                  <label
-                    key={cateId || index}
-                    className="flex items-center gap-2 cursor-pointer hover:text-red-500"
-                  >
-                    <input
-                      type="checkbox"
-                      className="accent-red-500 cursor-pointer w-4 h-4"
-                      checked={selectedFilters.categories.includes(cateId)}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        handleCategoryChange(cateId, cateName);
-                      }}
-                    />
-                    <span className="select-none">{cateName}</span>
-                  </label>
-                );
-              })
-            ) : (
-              <p className="text-gray-400 text-center py-2">ไม่มีหมวดหมู่</p>
-            )}
-          </div>
-        </div>
-
-        {/* รูปแบบ */}
-        <div className="mb-5">
-          <p className="font-medium mb-2">รูปแบบ</p>
-          <div className="flex flex-col gap-2 text-sm">
-            {[
-              { value: "tran", label: "นิยายแปล" },
-              { value: "chat", label: "นิยายแต่ง" },
-              { value: "fan", label: "แฟนฟิค" },
-              { value: "redroom", label: "เรดรูม" },
-            ].map((item) => (
-              <label
-                key={item.value}
-                className="flex items-center gap-2 cursor-pointer hover:text-red-500"
-              >
-                <input
-                  type="checkbox"
-                  className="accent-red-500 cursor-pointer w-4 h-4"
-                  checked={selectedFilters.types.includes(item.value)}
-                  onChange={() => handleTypeChange(item.value)}
-                />
-                <span className="select-none">{item.label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* สถานะการเขียน */}
-        {/* <div className="mb-5">
-          <p className="font-medium mb-2">สถานะการเขียน</p>
-          <div className="flex flex-col gap-2 text-sm">
-            {[
-              { value: "publish", label: "สำเร็จแล้ว" },
-              { value: "draft", label: "ยังไม่เสร็จ" },
-            ].map((item) => (
-              <label
-                key={item.value}
-                className="flex items-center gap-2 cursor-pointer hover:text-red-500"
-              >
-                <input
-                  type="checkbox"
-                  className="accent-red-500 cursor-pointer w-4 h-4"
-                  checked={selectedFilters.status.includes(item.value)}
-                  onChange={() => handleStatusChange(item.value)}
-                />
-                <span className="select-none">{item.label}</span>
-              </label>
-            ))}
-          </div>
-        </div> */}
-
-        {/* สถานะเรื่อง */}
-        <div className="mb-5">
-          <p className="font-medium mb-2">สถานะเรื่อง</p>
-          <div className="flex flex-col gap-2 text-sm">
-            {[
-              { value: "all", label: "ทั้งหมด" },
-              { value: "end", label: "จบแล้ว" },
-              { value: "notend", label: "ยังไม่จบ" },
-            ].map((item) => (
-              <label
-                key={item.value}
-                className="flex items-center gap-2 cursor-pointer hover:text-red-500"
-              >
-                <input
-                  type="radio"
-                  name="endStatus"
-                  className="accent-red-500 cursor-pointer w-4 h-4"
-                  checked={selectedFilters.end === item.value}
-                  onChange={() => handleEndChange(item.value)}
-                />
-                <span className="select-none">{item.label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div
-        className={
-          isInDrawer
-            ? "sticky bottom-0 bg-white pt-3 pb-3 px-1 border-t"
-            : "mt-5"
-        }
-      >
-        <button
-          onClick={handleSearchClick}
-          className={`w-full bg-red-500 rounded-md hover:bg-red-600 !text-white font-semibold ${isInDrawer ? "py-4 text-base" : "py-2 text-sm"
-            }`}
-        >
-          ดูผลลัพธ์
-        </button>
-      </div>
-    </div>
-  );
 
   return (
     <>
@@ -536,7 +590,20 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
 
       {/* ตัวกรองแบบปกติสำหรับหน้าจอใหญ่ */}
       <div className="hidden lg:block">
-        <FilterContent isInDrawer={false} />
+        <FilterPanel
+          isInDrawer={false}
+          allFilters={allFilters}
+          clearAllFilters={clearAllFilters}
+          removeFilter={removeFilter}
+          categories={categories}
+          isLoadingCategories={isLoadingCategories}
+          selectedFilters={selectedFilters}
+          handleCategoryChange={handleCategoryChange}
+          handleTypeChange={handleTypeChange}
+          handleEndChange={handleEndChange}
+          handleContentTypeChange={handleContentTypeChange}
+          handleSearchClick={handleSearchClick}
+        />
       </div>
 
       {/* Drawer สำหรับมือถือ */}
@@ -573,7 +640,20 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
         <div
           style={{ height: "100%", overflow: "auto" }}
         >
-          <FilterContent isInDrawer={true} />
+          <FilterPanel
+            isInDrawer={true}
+            allFilters={allFilters}
+            clearAllFilters={clearAllFilters}
+            removeFilter={removeFilter}
+            categories={categories}
+            isLoadingCategories={isLoadingCategories}
+            selectedFilters={selectedFilters}
+            handleCategoryChange={handleCategoryChange}
+            handleTypeChange={handleTypeChange}
+            handleEndChange={handleEndChange}
+            handleContentTypeChange={handleContentTypeChange}
+            handleSearchClick={handleSearchClick}
+          />
         </div>
       </Drawer>
     </>

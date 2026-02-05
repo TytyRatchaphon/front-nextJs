@@ -71,7 +71,7 @@ const CategoryHorizontalCard: React.FC<CategoryHorizontalCardProps> = ({ book })
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-xs text-gray-400 mt-1 border-t pt-2 w-full">
+        <div className="flex items-center gap-4 text-xs text-gray-600 mt-1 border-t border-gray-200 pt-2 w-full">
           <div className="flex items-center gap-1">
             <Eye size={14} />
             <span>{formatViews(book.view)}</span>

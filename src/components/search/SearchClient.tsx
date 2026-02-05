@@ -16,6 +16,7 @@ interface SearchParams {
   end: string;
   sortBy: string;
   order: string;
+  content_type: string;
 }
 
 
@@ -24,7 +25,7 @@ const searchBooks = async (
   page: number,
   limit: number
 ) => {
-  const { query, categories, types, status, end, sortBy, order } = params;
+  const { query, categories, types, status, end, sortBy, order, content_type } = params;
 
   // --- กรณีที่ 2: ถ้าไม่มีคำค้นหา (ใช้ระบบ API เดิมของคุณ) ---
   // (Original logic restored for all cases)
@@ -36,6 +37,8 @@ const searchBooks = async (
   if (end && end !== "all") queryParams.append("end", end);
   if (sortBy) queryParams.append("sortBy", sortBy);
   if (order) queryParams.append("order", order);
+  if (content_type && content_type !== "all") queryParams.append("content_type", content_type);
+  
   queryParams.append("page", page.toString());
   queryParams.append("limit", limit.toString());
 
@@ -68,6 +71,7 @@ export default function SearchClient() {
     end: searchParamsUrl?.get('end') || "all",
     sortBy: searchParamsUrl?.get('sortBy') || "date_at",
     order: searchParamsUrl?.get('order') || "DESC",
+    content_type: searchParamsUrl?.get('content_type') || "all",
   });
 
   const topRef = useRef<HTMLDivElement>(null);
@@ -94,6 +98,7 @@ export default function SearchClient() {
       end: searchParamsUrl?.get('end') || "all",
       sortBy: searchParamsUrl?.get('sortBy') || "date_at",
       order: searchParamsUrl?.get('order') || "DESC",
+      content_type: searchParamsUrl?.get('content_type') || "all",
     };
 
     setSearchParams((prev) => {
@@ -194,7 +199,8 @@ export default function SearchClient() {
             categories: searchParams.categories,
             types: searchParams.types,
             status: searchParams.status,
-            end: searchParams.end
+            end: searchParams.end,
+            content_type: (searchParams.content_type === "all" ? "" : searchParams.content_type) || ""
           }}
         />
       </div>

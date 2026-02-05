@@ -1,4 +1,5 @@
 import React from "react";
+import Link from 'next/link';
 
 type BookDetail = {
     category1?: { name: string } | string;
@@ -24,8 +25,18 @@ export const BookAboutTab = ({ bookDetail }: Props) => {
         <div className="text-left px-2 sm:px-4 lg:px-6">
             <div className="mb-4 sm:mb-6 space-y-2">
                 <p className="text-xs sm:text-sm text-gray-700">
-                    <strong>หมวดหมู่:</strong> {(bookDetail.category1 as any)?.name || bookDetail["category1.name"]} /{" "}
-                    {(bookDetail.category2 as any)?.name || bookDetail["category2.name"]}
+                    <strong>หมวดหมู่:</strong>{" "}
+                    {((bookDetail.category1 as any)?.name || bookDetail["category1.name"]) ? (
+                        <Link href={`/search?q=${(bookDetail.category1 as any)?.name || bookDetail["category1.name"]}`} className="hover:text-red-600 transition-colors">
+                            {(bookDetail.category1 as any)?.name || bookDetail["category1.name"]}
+                        </Link>
+                    ) : null}
+                    {((bookDetail.category1 as any)?.name || bookDetail["category1.name"]) && ((bookDetail.category2 as any)?.name || bookDetail["category2.name"]) ? " / " : ""}
+                    {((bookDetail.category2 as any)?.name || bookDetail["category2.name"]) ? (
+                        <Link href={`/search?q=${(bookDetail.category2 as any)?.name || bookDetail["category2.name"]}`} className="hover:text-red-600 transition-colors">
+                            {(bookDetail.category2 as any)?.name || bookDetail["category2.name"]}
+                        </Link>
+                    ) : null}
                 </p>
                 <p className="text-xs sm:text-sm text-gray-700">
                     <strong>สถานะ:</strong>{" "}

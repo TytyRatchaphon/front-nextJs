@@ -401,7 +401,7 @@ const BookInfoCard = forwardRef<BookInfoCardHandle, BookInfoCardProps>(({ book, 
                 {/* <div className="absolute left-0 top-3 bottom-3 w-1.5 bg-red-600 rounded-r-full"></div> */}
                 
                 <div className="p-4 pl-5">
-                    <h4 className="text-lg font-bold text-gray-900 mb-2">มัดแพ็ค</h4>
+                    <h4 className="text-lg font-bold text-gray-900 mb-2 border-l-4 border-red-500 pl-3 ">มัดแพ็ค</h4>
                     
                     {/* Remaining Count or Owned State */}
                     {packStats.unownedCount > 0 ? (
@@ -447,7 +447,7 @@ const BookInfoCard = forwardRef<BookInfoCardHandle, BookInfoCardProps>(({ book, 
                 {/* <div className="absolute left-0 top-3 bottom-3 w-1.5 bg-red-600 rounded-r-full"></div> */}
                 
                 <div className="p-4 pl-5">
-                    <h4 className="text-lg font-bold text-gray-900 mb-2">รายตอน</h4>
+                    <h4 className="text-lg font-bold text-gray-900 mb-2 border-l-4 border-red-500 pl-3">รายตอน</h4>
                     
                     {/* Remaining Count or Owned State */}
                     {normalStats.unownedCount > 0 ? (
