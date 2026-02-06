@@ -3,7 +3,7 @@
 import React from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { fetchCategoryBooks } from "@/services/apiServices";
+import { fetchCategoryBooks, fetchActiveCategories } from "@/services/apiServices";
 import CategoryHorizontalCard from "@/components/novelCard/CategoryHorizontalCard";
 import { Pagination } from "antd";
 import GifLoader from '@/components/utility/GifLoader';
@@ -21,9 +21,7 @@ const TABS = [
   { key: "recommend", label: "นิยายแนะนำ" },
 ];
 
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-  return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
-}
+
 
 const TYPE_LABELS: Record<string, string> = {
   tran: "นิยายแปล",
@@ -50,8 +48,33 @@ export default function Category() {
     queryFn: () => fetchCategoryBooks(type, categoryId, tab, page, 20, period),
   });
 
-  // Use banner from API response
-  const categoryDetail = data?.data?.banner;
+  // Use Active Categories to get immediate banner if available
+  const { data: activeCategories = [] } = useQuery({
+    queryKey: ['activeCategories', type],
+    queryFn: () => fetchActiveCategories(type),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const activeCategory = activeCategories.find((c: any) => String(c.id) === String(categoryId));
+  
+
+
+
+  // Use banner from API response or Fallback to activeCategory
+  const bannerFromApi = data?.data?.banner;
+  
+  // Prioritize activeCategory as it is the source user explicitly mentioned
+  const activeCategoryDetail = activeCategory ? {
+    name: activeCategory.name,
+    img_bg: activeCategory.img_bg || (activeCategory as any).img || (activeCategory as any).banner || (activeCategory as any).image || "",
+    color: activeCategory.color ? (Array.isArray(activeCategory.color) ? activeCategory.color : [activeCategory.color, activeCategory.color]) : [],
+    id: Number(activeCategory.id),
+    description: "",
+    order_by: activeCategory.order_by || 0
+  } as unknown as CategoryDetail : undefined;
+
+  const categoryDetail = activeCategoryDetail?.img_bg ? activeCategoryDetail : (bannerFromApi || activeCategoryDetail);
+
   
   const categoryNameParam = searchParams.get("name") || "";
   const categoryName = categoryNameParam || categoryDetail?.name || "";
@@ -75,6 +98,8 @@ export default function Category() {
      newParams.set("page", "1");
      router.push(`/cat/${categoryId}?${newParams.toString()}`);
   };
+
+  
 
   const handlePageChange = (newPage: number) => {
     const newParams = new URLSearchParams(searchParams.toString());
