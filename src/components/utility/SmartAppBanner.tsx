@@ -17,11 +17,23 @@ const SmartAppBanner = () => {
         } else if (/iPad|iPhone|iPod/i.test(userAgent) && !(window as any).MSStream) {
             setOs('ios');
         } 
-        // We might want to show it on mobile web regardless of precise OS, but link changes.
+        
+        const closedAt = localStorage.getItem('smart_app_banner_closed_at');
+        if (closedAt) {
+            const date = new Date(parseInt(closedAt, 10));
+            const now = new Date();
+            const diffTime = Math.abs(now.getTime() - date.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            
+            if (diffDays < 30) {
+                setIsVisible(false);
+            }
+        }
     }, []);
 
     const handleClose = () => {
         setIsVisible(false);
+        localStorage.setItem('smart_app_banner_closed_at', Date.now().toString());
     };
 
     const DEFAULT_APP_STORE_URL = 'https://bit.ly/47zskk0';

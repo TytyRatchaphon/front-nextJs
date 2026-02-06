@@ -86,13 +86,13 @@ function Shelve() {
       key: '1',
       label: 'ชั้นหนังสือ',
       children: (
-        <div className='py-6'>
+        <div className='py-2'>
           {isLoading ? (
             <GifLoader className="h-[400px]" />
           ) : isError ? (
-            <div className='py-6 text-center text-red-500'>เกิดข้อผิดพลาดในการโหลดข้อมูล</div>
+            <div className='py-4 text-center text-red-500'>เกิดข้อผิดพลาดในการโหลดข้อมูล</div>
           ) : books.length === 0 ? (
-            <div className='py-8'>
+            <div className='py-4'>
               <Empty description="ยังไม่มีหนังสือ" />
             </div>
           ) : (
@@ -124,13 +124,13 @@ function Shelve() {
       key: '2',
       label: 'อ่านต่อ',
       children: (
-        <div className='py-6'>
+        <div className='py-2'>
           {contLoading ? (
             <GifLoader className="h-[400px]" />
           ) : contError ? (
-            <div className='py-6 text-center text-red-500'>เกิดข้อผิดพลาดในการโหลดข้อมูล</div>
+            <div className='py-2 text-center text-red-500'>เกิดข้อผิดพลาดในการโหลดข้อมูล</div>
           ) : continueBooks.length === 0 ? (
-            <div className='py-8'>
+            <div className='py-4'>
               <Empty description="ยังไม่มีหนังสือที่อ่านต่อ" />
             </div>
           ) : (
@@ -172,13 +172,13 @@ function Shelve() {
       key: '3',
       label: 'ซื้อแล้ว',
       children: (
-        <div className='py-6'>
+        <div className='py-2'>
           {buyLoading ? (
             <GifLoader className="h-[400px]" />
           ) : buyError ? (
-            <div className='py-6 text-center text-red-500'>เกิดข้อผิดพลาดในการโหลดข้อมูล</div>
+            <div className='py-2 text-center text-red-500'>เกิดข้อผิดพลาดในการโหลดข้อมูล</div>
           ) : buyBooks.length === 0 ? (
-            <div className='py-8'>
+            <div className='py-4'>
               <Empty description="ยังไม่มีหนังสือที่ซื้อแล้ว" />
             </div>
           ) : (
@@ -209,9 +209,9 @@ function Shelve() {
   ];
 
   return (
-    <div className="min-h-screen bg-white py-8">
+    <div className="min-h-screen bg-white py-6">
       <div className="container mx-auto px-4" style={{ maxWidth: '1200px' }}>
-        <h1 className='text-3xl font-semibold mb-8 text-center'>ชั้นหนังสือ</h1>
+        <h1 className='text-3xl font-semibold mb-6 text-center'>ชั้นหนังสือ</h1>
 
         <Tabs
           activeKey={activeTab}

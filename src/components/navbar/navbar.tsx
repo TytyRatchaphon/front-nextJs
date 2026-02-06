@@ -53,14 +53,16 @@ function Navbar() {
   const { data: activeTypes = [] } = useQuery({
     queryKey: ['activeTypes'],
     queryFn: fetchActiveTypes,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 60 * 1000, // 1 hour
+    gcTime: 2 * 60 * 60 * 1000, // 2 hours
   });
 
   const { data: mobileCategories = [] } = useQuery({
     queryKey: ['mobileCategories', openMobileCategoryId],
     queryFn: () => fetchActiveCategories(openMobileCategoryId!),
     enabled: !!openMobileCategoryId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 60 * 60 * 1000, // 1 hour
+    gcTime: 2 * 60 * 60 * 1000, // 2 hours
   });
 
   const unreadCount = notifications ? notifications.filter(n => n.readed === 'N').length : 0;
@@ -524,7 +526,7 @@ function Navbar() {
                       mobileCategories.map((cat) => (
                         <Link
                           key={cat.id}
-                          href={`/cat/list?type=${type.type}&categoryId=${cat.id}&tab=new&limit=10&page=1`}
+                          href={`/cat/list?type=${type.type}&categoryId=${cat.id}&tab=bestseller&limit=10&page=1`}
                           className="text-[13px] text-gray-600 hover:text-red-600 truncate py-1"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >

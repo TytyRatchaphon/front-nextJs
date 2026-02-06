@@ -74,12 +74,13 @@ apiClient.interceptors.response.use(
         }
 
         // Debug Error Response
-        console.log('API Error Interceptor:', {
+        // Debug Error Response
+        /* console.log('API Error Interceptor:', {
             status: error.response?.status,
             code: error.response?.data?.code,
             message: error.response?.data?.message,
             url: error.config?.url
-        });
+        }); */
 
         // Handle Blocked User (401001 or specific message)
         const isBlocked = error.response?.data?.code === 401001 || 

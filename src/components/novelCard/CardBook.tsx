@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link'
 import React from 'react'
 import { postBookClick } from '@/services/apiServices';
+import FlashSaleSVG from './FlashSaleSvg';
 
 interface Book {
   book_id?: number;
@@ -118,8 +119,12 @@ function CardBook({ book }: CardBookProps) {
               />
             )}
 
-            {/* Discount Episode Overlay */}
-            {book.discount_ep_count && book.discount_ep_count > 0 && (
+            {/* Flash Sale / Discount Overlay */}
+            {(book.discount && book.discount > 0) ? (
+                 <div className="absolute bottom-0 left-0 right-0 z-10 w-full">
+                    <FlashSaleSVG className="w-full h-auto" endtime={book.time_end || new Date().setHours(23, 59, 59, 999)} />
+                 </div>
+            ) : book.discount_ep_count && book.discount_ep_count > 0 ? (
               <div className="absolute bottom-0 left-0 right-0 z-10 w-full">
                 <Image
                   src="/images/sale-ep.png"
@@ -133,7 +138,7 @@ function CardBook({ book }: CardBookProps) {
                   ลดราคา <span className="text-[#FFD700] text-xs mx-0.5">{book.discount_ep_count}</span> ตอน
                 </div>
               </div>
-            )}
+            ) : null}
 
             {/* Rank Badge */}
             {book.rank && (

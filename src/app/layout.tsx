@@ -112,6 +112,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 import TokenUpdater from "@/components/auth/TokenUpdater";
+import GlobalLogger from "@/components/utility/GlobalLogger";
 import { Suspense } from "react";
 import Script from "next/script";
 
@@ -177,6 +178,7 @@ export default function RootLayout({
                   <TokenUpdater />
                 </Suspense>
                 <Navbar />
+                <GlobalLogger />
                 {children}
                 <FooterWrapper />
               </App>

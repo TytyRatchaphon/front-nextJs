@@ -8,6 +8,7 @@ import { Eye, Clock, Share2, User, ChevronRight, Calendar } from 'lucide-react';
 import { fetchArticleDetail } from '@/services/apiServices';
 import type { ArticleResponse, ArticleDetail as ArticleDetailType, ArticleRecommend } from '@/types/api';
 import GifLoader from '@/components/utility/GifLoader';
+import { useLogger } from '@/hooks/useLogger';
 
 
 // Helper for date formatting
@@ -31,6 +32,7 @@ export default function ArticleDetail({ id }: { id: string }) {
   const [data, setData] = useState<ArticleResponse['data'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { log, trackTimeSpent } = useLogger();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -53,6 +55,26 @@ export default function ArticleDetail({ id }: { id: string }) {
       fetchData();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (data?.result?.[0]) {
+      const detail = data.result[0];
+      
+      // Log Page View
+      log('page_view', 'article', id, {
+        title: detail.title,
+        category: detail.type,
+        writer: detail.post_by,
+      });
+
+      // Track Time
+      const stopTracking = trackTimeSpent('article', id, {
+         title: detail.title,
+      });
+
+      return stopTracking;
+    }
+  }, [data, id, log, trackTimeSpent]);
 
   if (loading) {
     return (
@@ -228,10 +250,10 @@ export default function ArticleDetail({ id }: { id: string }) {
                                         />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h4 
+                                        <div 
                                             className="text-sm font-medium text-gray-900 group-hover:text-red-600 transition-colors line-clamp-2 mb-1 leading-snug"
                                             dangerouslySetInnerHTML={{ __html: item.name }} // Name seems to contain HTML based on JSON
-                                        />
+                                        ></div>
                                         <div className="flex items-center text-xs text-gray-400 gap-2">
                                             <div className="flex items-center gap-1">
                                                 <Eye className="w-3 h-3" />

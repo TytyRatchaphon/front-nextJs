@@ -58,7 +58,7 @@ export default function ExclusiveSwiper({ items, title, icon, link }: ExclusiveS
 
   return (
     <div className="w-full relative group/swiper py-4">
-      <div className="flex items-center gap-3 mb-4 px-4 bg-white/50 backdrop-blur-sm rounded-lg p-2">
+      <div className="flex items-center gap-3 mb-2 px-4 bg-white/50 backdrop-blur-sm rounded-lg p-2">
         {icon && (
           <div className="relative w-10 h-10 flex-shrink-0 rounded-full overflow-hidden">
             <Image

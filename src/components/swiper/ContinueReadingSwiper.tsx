@@ -50,8 +50,8 @@ export default function ContinueReadingSwiper({ books }: ContinueReadingSwiperPr
 
   return (
     <div className="w-full relative group/swiper py-4">
-      <div className="flex items-center gap-3 mb-1 px-4 bg-white/50 backdrop-blur-sm rounded-lg p-2">
-         <div className="h-10 flex items-center">
+      <div className="flex items-center gap-3 mb-1 bg-white/50 backdrop-blur-sm rounded-lg pb-1">
+         <div className="h-5">
             <h2 className="text-2xl font-bold [&_*]:m-0 leading-none">อ่านต่อ</h2>
          </div>
          <Link href="/shelve?tab=2" className="ml-auto text-red-500 hover:text-red-600 text-sm font-medium flex items-center gap-1">

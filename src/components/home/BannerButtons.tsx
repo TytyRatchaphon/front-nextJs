@@ -3,9 +3,8 @@ import React from 'react';
 
 const BannerButtons = () => {
   return (
-    <div className="w-full -mt-2 mb-4">
+    <div className="w-full -mt-1 mb-1">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-4">
-        
         {/* Discount */}
         <Link href="/cat/all?type=all&categoryId=all&tab=bestseller&limit=10&page=1" className="group flex items-center justify-center gap-3 bg-white border border-gray-100 shadow-sm hover:shadow-sm rounded-xl py-2 px-4 transition-all duration-300 hover:-translate-y-1">
           <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-500 group-hover:bg-red-500 group-hover:text-white transition-colors duration-300">

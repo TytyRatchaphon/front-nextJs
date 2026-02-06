@@ -68,7 +68,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
       <DailyCheckinModal />
       <Banner slides={slides} />
       {/* Main Content Section */}
-      <div className="w-full flex justify-center mt-4 lg:mt-16">
+      <div className="w-full flex justify-center mt-4 lg:mt-8">
         <div className="max-w-[1440px] w-full px-4 lg:px-[156px]">  {/* Edit Widht of Home Content Here */}
           
           <div className="w-full max-w mx-auto mb-2">
@@ -82,7 +82,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
           )}
 
           {/* Spotlight & New Novels Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 mb-4 mt-2">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 mb-4 ">
             {/* Spotlight Column */}
             <div className="w-full h-auto">
               <h2 className="font-bold text-2xl mb-2 text-black">เรื่องเด่น !!</h2>
@@ -144,10 +144,11 @@ export default function HomeContent({ initialData }: HomeContentProps) {
           </div>
 
           {/* Other Groups Section */}
+
           <BookGroups groupBookHome={groupBookHome} />
 
           {/* Top 10 Ranking Section */}
-          <div className="w-full -mt-2">
+          <div className="w-full -mt-4">
             <TopRanking rankingGroup={rankingGroup} />
           </div>
 

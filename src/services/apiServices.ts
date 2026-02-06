@@ -2093,7 +2093,7 @@ export interface LogActivityPayload {
 export const logActivity = async (payload: LogActivityPayload) => {
   try {
     if (process.env.NODE_ENV === 'development') {
-        console.log("Creating Activity Log:", payload);
+        // console.log("Creating Activity Log:", payload);
     }
     // Fire and forget strategy often used for logging, but here we await to ensure it's sent
     const response = await apiClient.post('/log/activity', payload);

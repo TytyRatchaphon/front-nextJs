@@ -4,7 +4,7 @@ import React from 'react';
 import Link from "next/link";
 import Image from "next/image";
 import { useWebsiteStore } from '@/stores/websiteStore';
-import { Eye, Crown } from 'lucide-react';
+import { Eye, Crown, Heart, List } from 'lucide-react';
 import BookSwiper from './BookSwiper';
 
 interface TopRankingProps {
@@ -39,9 +39,9 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
   const rankingList = rankingGroup?.list || [];
 
   return (
-    <div className="w-full mt-12 mb-24 max-w-[1240px] mx-auto px-4">
+    <div className="w-full max-w-[1240px] mx-auto px-4 mt-4 mb-4">
       {/* Title */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-22 lg:mb-0">
         <div className="flex items-center gap-2">
           <h2 className="text-xl lg:text-2xl font-bold text-black">
             {rankingGroup?.name_web ? (
@@ -57,7 +57,7 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
       </div>
 
       {/* Mobile Layout - Podium */}
-      <div className="block lg:hidden relative w-full mb-16 px-2">
+      <div className="block lg:hidden relative w-full mb-10 px-2">
         <div className="relative h-[400px] flex justify-center items-end">
           {/* Podium Image Base */}
           <div className="absolute bottom-[-50px] z-10 w-[360px]">
@@ -72,7 +72,7 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
           </div>
 
           {/* Rank 2 (Left) */}
-          <div className="absolute bottom-[130px] left-[calc(50%-170px)] z-20 flex flex-col items-center w-[100px]">
+          <div className="absolute bottom-[140px] left-[calc(50%-170px)] z-20 flex flex-col items-center w-[100px]">
             <Link href={rankingList[1] ? `/book/${rankingList[1].book_id}` : '#'} className="relative flex flex-col items-center transform transition-all duration-300 ease-in-out hover:scale-105">
               <div className="relative w-[100px] h-[150px] rounded-lg overflow-hidden border-2 border-[#C0C0C0] shadow-lg">
                 {rankingList[1] ? (
@@ -104,7 +104,7 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
           </div>
 
           {/* Rank 1 (Center) */}
-          <div className="absolute bottom-[170px] left-1/2 -translate-x-1/2 z-30 flex flex-col items-center w-[120px]">
+          <div className="absolute bottom-[180px] left-1/2 -translate-x-1/2 z-30 flex flex-col items-center w-[120px]">
             <Link href={rankingList[0] ? `/book/${rankingList[0].book_id}` : '#'} className="relative flex flex-col items-center transform transition-all duration-300 ease-in-out hover:scale-110">
               {/* Crown Icon */}
               <div className="mb-1 animate-bounce-slow">
@@ -176,8 +176,8 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
       {/* Desktop Layout - Podium */}
       <div className="hidden lg:block relative w-full mb-50">
         {/* Podium Container */}
-        <div className="relative h-[650px] flex justify-center items-end">
-
+        <div className="relative h-[640px] flex justify-center items-end">
+      
           {/* Podium Image Base */}
           <div className="absolute bottom-[-140px] z-10 w-[574px]">
             <Image
@@ -192,7 +192,7 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
 
 
           {/* Rank 2 (Left) */}
-          <div className="absolute bottom-[200px] left-[calc(50%-265px)] z-20 flex flex-col items-center w-[150px]">
+          <div className="absolute bottom-[140px] left-[calc(50%-265px)] z-20 flex flex-col items-center w-[150px]">
             <Link href={rankingList[1] ? `/book/${rankingList[1].book_id}` : '#'} className="relative flex flex-col items-center transform transition-all duration-300 ease-in-out hover:scale-105">
               <div className="relative w-[150px] h-[220px] rounded-lg overflow-hidden border-4 border-[#C0C0C0] shadow-lg">
                 {rankingList[1] ? (
@@ -224,7 +224,7 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
           </div>
 
           {/* Rank 1 (Center) */}
-          <div className="absolute bottom-[260px] left-1/2 -translate-x-1/2 z-30 flex flex-col items-center w-[150px]">
+          <div className="absolute bottom-[220px] left-1/2 -translate-x-1/2 z-30 flex flex-col items-center w-[150px]">
             <Link href={rankingList[0] ? `/book/${rankingList[0].book_id}` : '#'} className="relative flex flex-col items-center transform transition-all duration-300 ease-in-out hover:scale-110">
               {/* Crown Icon */}
               <div className="mb-2 animate-bounce-slow">
@@ -260,7 +260,7 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
           </div>
 
           {/* Rank 3 (Right) */}
-          <div className="absolute bottom-[180px] right-[calc(50%-265px)] z-20 flex flex-col items-center w-[150px]">
+          <div className="absolute bottom-[100px] right-[calc(50%-265px)] z-20 flex flex-col items-center w-[150px]">
             <Link href={rankingList[2] ? `/book/${rankingList[2].book_id}` : '#'} className="relative flex flex-col items-center transform transition-all duration-300 ease-in-out hover:scale-105">
               <div className="relative w-[150px] h-[220px] rounded-lg overflow-hidden border-4 border-[#CD7F32] shadow-lg">
                 {rankingList[2] ? (
@@ -294,7 +294,7 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
       </div>
 
       {/* Ranks 4-10 List (Desktop Grid / Mobile Swiper) */}
-      <div className="hidden lg:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 lg:gap-6">
+      <div className="hidden lg:grid grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 lg:gap-6">
         {rankingList.map((item: any, index: number) => {
           if (index >= 10) return null; // Limit to Top 10
 
@@ -321,9 +321,19 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
               <div className="text-left">
                 <h4 className="font-bold text-black text-sm line-clamp-1" title={item.name}>{item.name}</h4>
                 <p className="text-gray-500 text-xs line-clamp-1">{item.writer_name || "Unknown"}</p>
-                <div className="flex items-center gap-1 text-gray-400 text-xs mt-1">
-                  <Eye size={12} />
-                  <span>{formatViewCount(item.view || 0)}</span>
+                <div className="flex items-center gap-3 text-gray-400 text-xs mt-1">
+                  <div className="flex items-center gap-1">
+                    <Eye size={12} />
+                    <span>{formatViewCount(item.view || 0)}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Heart size={12} />
+                    <span>{formatViewCount(item.shelve_count || 0)}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <List size={12} />
+                    <span>{formatViewCount(item.chapter || 0)}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -332,7 +342,7 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
       </div>
 
       {/* Mobile Swiper for 4-10 */}
-      <div className="block lg:hidden mt-8">
+      <div className="block lg:hidden mt-6">
         <BookSwiper books={rankingList.slice(3, 10).map((book: any, index: number) => ({ ...book, rank: index + 4 }))} />
       </div>
 

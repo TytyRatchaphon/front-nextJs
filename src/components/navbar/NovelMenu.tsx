@@ -13,13 +13,15 @@ const NovelMenu = () => {
     const { data: activeTypes = [], isLoading: isLoadingTypes } = useQuery({
         queryKey: ['activeTypes'],
         queryFn: fetchActiveTypes,
-        staleTime: 5 * 60 * 1000,
+        staleTime: 60 * 60 * 1000, // 1 hour
+        gcTime: 2 * 60 * 60 * 1000, // 2 hours
     });
 
     const { data: activeCategories = [], isLoading: isLoadingCategories } = useQuery({
         queryKey: ['activeCategories', selectedType],
         queryFn: () => fetchActiveCategories(selectedType),
-        staleTime: 5 * 60 * 1000,
+        staleTime: 60 * 60 * 1000, // 1 hour
+        gcTime: 2 * 60 * 60 * 1000, // 2 hours
         enabled: !!selectedType,
     });
 
@@ -86,6 +88,7 @@ const NovelMenu = () => {
                                     href={`/cat/list?type=${selectedType}&categoryId=${cat.id}&tab=bestseller&limit=10&page=1`}
                                     className="text-gray-600 hover:text-red-600 transition-colors text-sm py-1 truncate block"
                                     title={cat.name}
+                                    prefetch={false}
                                 >
                                     {cat.name}
                                 </Link>

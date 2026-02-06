@@ -61,15 +61,15 @@ export default function SocketProvider({
     // 1. If we have a token (Logged in) but User ID is missing, wait (Race condition protection).
     // Note: If !token (Guest), we proceed to connect as guest.
     if (token && !currentUserId) {
-        console.log("⏳ Socket waiting for user_id resolution...");
+    // console.log("⏳ Socket waiting for user_id resolution...");
         setSocket(null); // Ensure we don't hold onto a stale socket
         return;
     }
 
-    console.log('Socket Initial Query:', {
+    /* console.log('Socket Initial Query:', {
       user_id: currentUserId || 'undefined',
       'fullname': currentUser?.fullname || 'undefined'
-    });
+    }); */
 
     // 2. Initialize Socket
     const socketInstance = io(socketUrl, {
@@ -107,12 +107,12 @@ export default function SocketProvider({
     });
 
     socketInstance.on('connect_error', (err) => {
-        console.log('Socket connect error:', err.message);
+        // console.log('Socket connect error:', err.message);
     });
 
     // Handle force_refresh event
     socketInstance.on('force_refresh', async (data: any) => {
-        console.log("📢 Received force_refresh:", data);
+        // console.log("📢 Received force_refresh:", data);
         try {
             let currentToken = useAuthStore.getState().token;
             if (!currentToken) {
@@ -127,7 +127,7 @@ export default function SocketProvider({
 
                  if (typeof newToken === 'string') {
                      useAuthStore.getState().updateToken(newToken);
-                     console.log("✅ Token refreshed successfully via socket event");
+                     // console.log("✅ Token refreshed successfully via socket event");
                  }
             }
         } catch (error) {
@@ -168,7 +168,7 @@ export default function SocketProvider({
     if (authToken && user) {
         // If user logged in but missing ID, force re-parse of token
         if (!user.user_id && !(user as any).id && !(user as any).userId) {
-             console.log("🔧 Auto-healing: Triggering token update to recover missing user_id");
+             // console.log("🔧 Auto-healing: Triggering token update to recover missing user_id");
              useAuthStore.getState().updateToken(authToken);
         }
     }
