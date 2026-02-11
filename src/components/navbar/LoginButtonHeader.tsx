@@ -414,7 +414,7 @@ const LoginButtonHeader: React.FC = () => {
           body: { padding: 0 },
           content: { padding: 0 }
         }}
-        zIndex={10000}
+
       >
 
         <div className={loginAnimationClass}>

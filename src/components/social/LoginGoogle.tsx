@@ -202,6 +202,11 @@ const LoginGoogle = () => {
       className={`border border-gray-200 rounded-md py-2 flex justify-center items-center cursor-pointer hover:bg-blue-50 transition-colors ${loading ? 'opacity-50 cursor-wait' : ''
         }`}
     >
+      <style>{`
+        #credential_picker_container {
+          z-index: 10001 !important;
+        }
+      `}</style>
       <Image
         className="inline-block h-[23px] w-[23px] rounded-full"
         src="/images/Google.png"

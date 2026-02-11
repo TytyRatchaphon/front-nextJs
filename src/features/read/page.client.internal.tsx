@@ -623,7 +623,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
 
             {/* Sticky Navigation Footer */}
             {(showNav) && (
-              <div className={`w-full cursor-pointer border-t grid grid-cols-2 items-center sticky bottom-0 z-[1001] transition-all duration-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] ${currentBg?.paper || currentBg?.bg}`}
+              <div className={`w-full cursor-pointer border-t grid grid-cols-2 items-center sticky bottom-0 z-[999] transition-all duration-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] ${currentBg?.paper || currentBg?.bg}`}
                 style={{ borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)" }}>
                 <div className={`group w-full p-4 flex flex-row gap-2 items-center justify-center border-r hover:bg-black/5 transition-all ${!prevEpId ? "opacity-30 cursor-not-allowed" : "cursor-pointer active:scale-[0.98]"}`}
                   style={{ borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)" }}
