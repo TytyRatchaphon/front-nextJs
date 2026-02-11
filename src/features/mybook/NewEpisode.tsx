@@ -58,6 +58,7 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
 
     // ✨ State สำหรับควบคุม Modal Success
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+    const [successMessage, setSuccessMessage] = useState<string>('เพิ่มตอนใหม่เรียบร้อยแล้ว');
 
     // Style Variables
     const bodyTextStyle = 'mb-1 text-md';
@@ -124,6 +125,7 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
                         publishDate: dayjs(),
                         publishTime: '00:00',
                         detail: '',
+                        publish: 'publish',
                         order_by: maxOrder + 1
                     });
                 } catch (error) {
@@ -136,6 +138,7 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
                         publishDate: dayjs(),
                         publishTime: '00:00',
                         detail: '',
+                        publish: 'publish', // Default to publish as requested
                         order_by: 1
                     });
                 }
@@ -162,7 +165,7 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
                 coin: Number(values.coin || 0),
                 order_by: Number(values.order_by || 1),
                 publish_datetime: publishDateTime,
-                publish: values.publish || 'publish',
+                publish: values.publish || 'publish', // Default to publish as requested
             };
 
             const response = await apiClient.post(`/user/mybook/ep`, payload, {
@@ -173,6 +176,9 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
 
             if (resData.status === 'success' || resData.code === 200) {
                 // ✨ เปลี่ยนจาก Notification เป็นเปิด Modal
+                if (resData.message) {
+                    setSuccessMessage(resData.message);
+                }
                 setIsSuccessModalOpen(true);
             } else {
                 api.error({
@@ -225,7 +231,7 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
                 }}
             >
                 <div className="text-center py-4 text-base">
-                    <p>เพิ่มตอนใหม่เรียบร้อยแล้ว</p>
+                    <p>{successMessage}</p>
                 </div>
             </Modal>
 

@@ -978,11 +978,8 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 								else if (rawPayload && Array.isArray((rawPayload as any).data)) episodesRaw = (rawPayload as any).data
 								else episodesRaw = []
 
-								// Only show published episodes on this page; filter out private/draft/unlisted
-								const visibleEpisodes = episodesRaw.filter((e: any) => {
-									const s = (e.publish ?? e.status ?? e.visibility ?? '').toString().toLowerCase()
-									return s === 'publish' || s === 'published'
-								})
+								// Show all episodes for the author to manage (published, private, draft, etc.)
+								const visibleEpisodes = episodesRaw
 
 								if (!visibleEpisodes || visibleEpisodes.length === 0) {
 									return (
@@ -1020,7 +1017,11 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 									} else if (rawStatus === 'private' || rawStatus === 'draft' || rawStatus === 'unlisted') {
 										statusLabel = 'ส่วนตัว'
 										statusClass = 'text-xs text-amber-600'
+									} else if (rawStatus === 'wait') {
+										statusLabel = 'รออนุมัติ'
+										statusClass = 'text-xs text-amber-600'
 									}
+									
 									return (
 										<div key={id} className="ejb-episode-row flex items-center justify-between py-4 px-4 bg-white rounded-md border border-gray-100 hover:bg-gray-50 transition-colors">
 											<div className="flex items-center gap-4 min-w-0">
@@ -1253,7 +1254,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 						<div className="text-sm text-gray-600 px-4 py-6">ยังไม่มีสารบัญ</div>
 					) : (
 						<ul className="divide-y divide-gray-100">
-							{groupsQuery.data.filter((g: any) => g.publish === 'publish').map((g: any) => (
+							{groupsQuery.data.filter((g: any) => (g.publish ?? g.status ?? 'private').toLowerCase() === 'publish').map((g: any) => (
 								<li key={g.group_id} className="flex items-center justify-between px-4 py-4 bg-white">
 									<div className="flex-1 min-w-0">
 										<div className="text-gray-900 font-medium truncate">{g.name}</div>

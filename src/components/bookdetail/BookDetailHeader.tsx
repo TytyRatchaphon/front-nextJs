@@ -21,6 +21,8 @@ interface BookDetailHeaderProps {
     cover: string;
     title: string;
     tag: string;
+    cat1?: number;
+    cat2?: number;
     category2?: string;
     writer: {
       user_id: number;
@@ -466,8 +468,25 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">หมวดหมู่</span>
                 <span className="text-gray-900 font-medium text-right">
-                  {book.tag}
-                  {book.category2 ? ` / ${book.category2}` : ""}
+                  {book.cat1 ? (
+                    <Link href={`/search?categories=${book.cat1}`} className="hover:text-red-600 hover:underline transition-colors">
+                      {book.tag}
+                    </Link>
+                  ) : (
+                    book.tag
+                  )}
+                  {book.category2 && (
+                    <>
+                      {" / "}
+                      {book.cat2 ? (
+                        <Link href={`/search?categories=${book.cat2}`} className="hover:text-red-600 hover:underline transition-colors">
+                          {book.category2}
+                        </Link>
+                      ) : (
+                        book.category2
+                      )}
+                    </>
+                  )}
                 </span>
               </div>
 

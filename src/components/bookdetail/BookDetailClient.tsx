@@ -10,6 +10,9 @@ import CommentSection from "@/components/bookdetail/CommentSection";
 import { BackToTopButton } from "@/components/utility/BackToTopButton";
 import GifLoader from '@/components/utility/GifLoader';
 import { useAuthStore } from "@/stores/authStore";
+import { useUIStore } from "@/stores/uiStore";
+import { useRouter } from "next/navigation";
+import AgeVerificationModal from "@/components/modal/AgeVerificationModal";
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { useBookDetailData } from "@/hooks/book/useBookDetailData";
 import { BookAboutTab } from "@/components/bookdetail/BookAboutTab";
@@ -22,10 +25,17 @@ const segmentedTabs = ["รีวิวทั้งหมด", "ความค�
 type TabKey = (typeof collapseTabs)[number] | (typeof segmentedTabs)[number];
 
 export default function BookDetailClient({ bookId }: { bookId: string }) {
+  const router = useRouter();
   const [activeSegmentedTab, setActiveSegmentedTab] = useState<(typeof segmentedTabs)[number]>(segmentedTabs[0]);
   const { log, trackTimeSpent } = useLogger();
-  const { token, hasMounted } = useAuthStore() as any;
+  const { token, hasMounted, user } = useAuthStore() as any;
+  const { openLoginModal } = useUIStore();
   const { settings } = useWebsiteStore();
+
+  const [ageModal, setAgeModal] = useState<{ open: boolean; type: "login_required" | "underage" | "birthday_missing" }>({
+    open: false,
+    type: "login_required",
+  });
 
   const isReady = hasMounted;
 
@@ -48,6 +58,62 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
       document.title = "EnjoyBook - อ่านนิยายออนไลน์";
     }
   }, [book?.title]);
+
+  useEffect(() => {
+    if (!hasMounted || !book) return;
+
+    console.log("Age Check Debug:", {
+        bookRate: book.rate,
+        user: user,
+        birthday: user?.birthday,
+        hasMounted
+    });
+
+    // Check strict 18+ (rate === 1)
+    if (Number(book.rate) === 1) {
+      if (!user) {
+        console.log("User not logged in -> Login Required");
+        setAgeModal({ open: true, type: "login_required" });
+      } else if (!user.birthday) {
+        console.log("User has no birthday -> Birthday Missing");
+        setAgeModal({ open: true, type: "birthday_missing" });
+      } else {
+        const birthDate = new Date(user.birthday);
+        if (isNaN(birthDate.getTime())) {
+            console.log("Invalid birthday format -> Birthday Missing");
+            setAgeModal({ open: true, type: "birthday_missing" });
+            return;
+        }
+
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+
+        console.log("Calculated Age:", age);
+
+        if (isNaN(age) || age < 18) {
+             console.log("Underage or NaN -> Open Modal");
+          setAgeModal({ open: true, type: "underage" });
+        } else {
+             console.log("Age OK -> Close Modal");
+          setAgeModal({ open: false, type: "login_required" });
+        }
+      }
+    } else {
+      setAgeModal((prev) => (prev.open ? { ...prev, open: false } : prev));
+    }
+  }, [book, user, hasMounted]);
+
+  const handleAgeModalAction = () => {
+    if (ageModal.type === "login_required") {
+      openLoginModal();
+    } else {
+      router.push("/sprofile");
+    }
+  };
 
   useEffect(() => {
     if (book?.id && book?.title) {
@@ -215,6 +281,11 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
 
       </main>
       <BackToTopButton />
+      <AgeVerificationModal
+        open={ageModal.open}
+        type={ageModal.type}
+        onAction={handleAgeModalAction}
+      />
     </div>
   );
 }

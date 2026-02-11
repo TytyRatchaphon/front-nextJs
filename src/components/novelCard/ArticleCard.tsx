@@ -3,17 +3,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import parse from 'html-react-parser';
 import { Clock, Eye } from 'lucide-react';
-
-export interface Article {
-  id: number;
-  name: string;
-  img: string;
-  date_post: string;
-  view: number;
-}
+import { ArticleItem } from '@/types/api';
 
 interface ArticleCardProps {
-  article: Article;
+  article: ArticleItem;
 }
 
 const imageLoader = ({ src }: { src: string }) => src;

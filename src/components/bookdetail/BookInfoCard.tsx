@@ -510,42 +510,41 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
 
   return (
     <aside className="w-full">
-      {/* Outer card */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm sticky top-4">
-        {/* Title row and coins pill */}
-        <div className="px-5 pt-5 pb-2 flex items-center justify-between gap-3">
-          <h3 className="text-xl font-extrabold text-gray-900">ซื้อหลายตอน</h3>
-          <div className="relative flex-shrink-0">
+      <div className="sticky top-4 space-y-4">
+        {/* Pills Card */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden p-5">
+          <div className="w-full">
             <div
               role="button"
               tabIndex={0}
               onClick={() => { if (!isLoggedIn) openLoginModal(); }}
               onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') && !isLoggedIn) openLoginModal(); }}
-              className={`inline-block`}
+              className="w-full"
             >
               {isLoggedIn ? (
-                <>
-                  <div className="flex flex-col items-end gap-2">
-                    <AmountPill
-                      amount={user && user.coin !== undefined ? Number(user.coin) : (book.remaining_paid_total ?? book.price ?? 0)}
-                    />
-                    {book.use_freecoin === 1 && (
-                      <FreeCoinPill
-                        amount={user && user.freecoin !== undefined ? Number(user.freecoin) : 0}
-                      />
-                    )}
-                  </div>
-                </>
+                <div className="flex items-center justify-between w-full">
+                   <AmountPill amount={Number(user?.coin || 0)} />
+                   {book.use_freecoin === 1 && (
+                      <FreeCoinPill amount={Number(user?.freecoin || 0)} className="bg-gray-50 !border-gray-200" />
+                   )}
+                </div>
               ) : (
-                <Pill className="px-6 bg-gray-50 border-dashed border-gray-200 text-gray-600 cursor-pointer justify-center">
-                  <span className="text-sm font-medium">เข้าสู่ระบบ</span>
-                </Pill>
-              )}
+                <div className="flex justify-center">
+                  <Pill className="px-6 bg-gray-50 border-dashed border-gray-200 text-gray-600 cursor-pointer justify-center">
+                    <span className="text-sm font-medium">เข้าสู่ระบบ</span>
+                  </Pill>
+                </div>
+              )}  
             </div>
           </div>
         </div>
 
-        <div className="px-5 pb-5">
+        {/* Content Card */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
+          <div className="px-5 py-2 border-b border-gray-100">
+
+          </div>
+          <div className="px-5 pb-5 pt-3">
           {isLoggedIn && Number(book.remaining_paid_count ?? 0) === 0 ? (
             <div className="mt-2 px-5 pb-5">
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm text-center">
@@ -670,11 +669,6 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                 width={760}
                 centered
               >
-                {/* ... existing modal content ... */}
-                {/* Re-rendering existing content for context match if needed, but since we replace Modal block... */}
-                {/* Actually I am replacing the whole Modal block? No, StartLine 626. */}
-                {/* The Tool input says "Replace Modal footer logic... and append BuyAllModal". */}
-                {/* I must include the children of Modal because I am replacing from line 626 (Modal start) to 813 (Modal end). */}
                 {isFetching ? (
                   <GifLoader className="py-12" />
                 ) : (
@@ -965,6 +959,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
 
         </div >
       </div >
+    </div >
       {showSuccess && <SuccessAnimation onComplete={async () => {
         setShowSuccess(false);
         await queryClient.invalidateQueries({ queryKey: ["bookEpisodes", String(bookId ?? "")] });

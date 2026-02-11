@@ -1,38 +1,12 @@
 
 import Image from 'next/image';
 import React from 'react'
+import { UniversalBook } from '../../types/api';
 
-interface Book {
-    book_id?: number;
-    bookID?: string;
-    img?: string;
-    // Support both PackCampaignBook fields and BookTrans fields
-    img_full?: string;
-    name?: string;
-    title?: string;
-    writer_name?: string;
-    writer?: string;
-    author?: string;
-    view?: number;
-    end?: string;
-    chapter?: number;
-    shelveCount?: number;
-    shelve_count?: number;
-    shelf_count?: number;
-    shelfCount?: number;
-    discount_ep_count?: number | null;
-    // PackCampaignBook specific
-    tag?: string | string[];
-    status?: string;
-    isBestSeller?: boolean;
-    isNew?: boolean;
-    isNewEp?: boolean;
-    discount?: number;
-    [key: string]: any;
-}
+
 
 interface PackCardBookHorizontalProps {
-    book: Partial<Book>;
+    book: UniversalBook;
     onClick?: () => void;
     action?: React.ReactNode;
     className?: string;
@@ -116,7 +90,7 @@ function PackCardBookHorizontal({ book, onClick, action, className = "" }: PackC
                             className="w-full h-[30px] object-contain align-bottom"
                             loader={imageLoader}
                         />
-                        <div className="absolute bottom-1 left-0 right-0 text-center text-white text-[9px] font-bold drop-shadow-md">
+                        <div className="absolute bottom-[1px] left-0 right-0 text-center text-white text-[9px] font-bold drop-shadow-md">
                             ลดราคา <span className="text-[#FFD700] text-xs mx-0.5">{book.discount_ep_count}</span> ตอน
                         </div>
                     </div>

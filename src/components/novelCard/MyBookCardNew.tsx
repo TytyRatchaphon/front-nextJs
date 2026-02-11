@@ -124,12 +124,19 @@ const MyBookCardNew: React.FC<MyBookCardNewProps> = ({ book }) => {
         <div className="flex items-center justify-between mt-1 relative z-10">
           <button
             onClick={handleCloseStory}
-            className={`px-3 py-0.5 !text-white text-base rounded ${(book.status === 'publish')
+            className={`px-3 py-0.5 !text-white text-base rounded ${
+              book.status === 'publish'
                 ? 'bg-green-500 hover:bg-green-600'
-                : 'bg-gray-500 hover:bg-gray-600'
-              }`}
+                : book.status === 'wait'
+                  ? 'bg-orange-500 hover:bg-orange-600'
+                  : 'bg-gray-500 hover:bg-gray-600'
+            }`}
           >
-            {(book.status === 'publish') ? 'เปิดเรื่อง' : 'ปิดเรื่อง'}
+            {book.status === 'publish'
+              ? 'เปิดเรื่อง'
+              : book.status === 'wait'
+                ? 'รออนุมัติ'
+                : 'ปิดเรื่อง'}
           </button>
 
           <div

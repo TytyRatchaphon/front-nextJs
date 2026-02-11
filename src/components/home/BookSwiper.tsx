@@ -66,10 +66,10 @@ export default function BookSwiper({ books, title, icon, link }: BookSwiperProps
           </div>
         )}
         {title && (
-          <div className="h-10 flex items-center translate-y-4">
-           <h2 className="text-lg sm:text-xl lg:text-2xl font-bold [&_*]:m-0 leading-none">
-            {parse(title)}
-          </h2>
+          <div className={`flex items-center ${title.trim().startsWith('<p') ? 'translate-y-4' : 'translate-y-1'}`}>
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold [&_*]:m-0 flex items-baseline gap-1 leading-none">
+              {parse(title)}
+            </h2>
           </div>
         )}
 

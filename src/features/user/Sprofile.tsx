@@ -57,6 +57,24 @@ const UserInfoForm = () => {
   const inputClassName = "my-0 bg-white border border-gray-300 rounded-md p-1 px-2 text-xs focus:outline-none focus:border-primary hover:border-primary w-full font-primary";
   const labelSpan = "text-sm text-black font-primary";
 
+  // --- Birthday Lock Logic ---
+  const [isBirthdayLocked, setIsBirthdayLocked] = useState(false);
+  const [lockMessage, setLockMessage] = useState("");
+
+  useEffect(() => {
+    if (user?.user_id) {
+       const nextChange = localStorage.getItem(`next_birthday_change_${user.user_id}`);
+       if (nextChange) {
+          const nextTime = Number(nextChange);
+          if (Date.now() < nextTime) {
+             setIsBirthdayLocked(true);
+             const dateStr = dayjs(nextTime).format('DD/MM/YYYY');
+             setLockMessage(`เปลี่ยนได้อีกครั้ง: ${dateStr}`);
+          }
+       }
+    }
+  }, [user]);
+
   const handleValuesChange = (changedValues: any, allValues: any) => {
     if (changedValues.birthday) {
       updateUserProfile('birthday', changedValues.birthday.format('YYYY-MM-DD'));
@@ -130,9 +148,12 @@ const UserInfoForm = () => {
 
             <div className="flex flex-col gap-1">
               <Form.Item name="birthday" label={<span className={labelSpan}>วันเดือนปี เกิด </span>} rules={[{ required: true, message: 'กรุณาเลือกวันเกิด' }]}>
-                <DatePicker className={inputClassName} placeholder="เลือกวันที่" allowClear={false} />
+                <DatePicker className={`${inputClassName} ${isBirthdayLocked ? 'bg-gray-100 cursor-not-allowed' : ''}`} placeholder="เลือกวันที่" allowClear={false} disabled={isBirthdayLocked} />
               </Form.Item>
-              <span className="text-[10px] mt-[-18px]">(อายุต่ำกว่า18ปี ไม่สามารถอ่านนิยาย NC ได้)</span>
+              <div className="mt-[-18px] flex flex-col">
+                  <span className="text-[10px] text-gray-500">(อายุต่ำกว่า18ปี ไม่สามารถอ่านนิยาย NC ได้)</span>
+                  {isBirthdayLocked && <span className="text-[10px] text-red-500">{lockMessage}</span>}
+              </div>
             </div>
 
             <Form.Item name="gender" label={<span className={labelSpan}>เพศ</span>} rules={[{ required: true, message: 'กรุณาเลือกเพศ' }]}>
@@ -610,6 +631,21 @@ const UserInfoTab = () => {
         setTimeout(() => {
           window.location.reload();
         }, 1500);
+
+        // --- Save Birthday Cooldown if changed ---
+        // Check if birthday was changed
+        const oldBirthday = (user as any)?.birthday;
+        const newBirthday = userProfileForm.birthday 
+             ? (typeof userProfileForm.birthday === 'string' ? userProfileForm.birthday : dayjs(userProfileForm.birthday).format('YYYY-MM-DD'))
+             : "";
+
+        // Compare logic: If previously empty/null and now has value OR value changed
+        if (newBirthday && newBirthday !== oldBirthday) {
+             if (user?.user_id) {
+                const nextTime = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 Days
+                localStorage.setItem(`next_birthday_change_${user.user_id}`, String(nextTime));
+             }
+        }
 
       } else {
         throw new Error(resData.message || 'บันทึกข้อมูลไม่สำเร็จ');

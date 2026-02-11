@@ -60,40 +60,6 @@ export default function CampaignDiscount() {
                         </div>
                     ))}
             </main>
-            <main className="mx-auto max-w-[800px] px-4 py-4 space-y-6">
-                {
-                    <div className="relative">
-                        {/* Banner (คลิกได้ทั้งรูป) */}
-                        <Link
-                            href={`/pack-campaign/${1}`}
-                            className="block relative w-full overflow-hidden rounded-xl aspect-[1000/300]"
-                        >
-                            <Image
-                                src={"https://image.enjoybook.co/enjoybook.image/banner/banner_1000x300_02.png"}
-                                alt={`Campaign`}
-                                fill
-                                priority
-                                className="object-cover"
-                                unoptimized
-                            />
-                        </Link>
-
-                        <Link
-                            href={`/pack-campaign/${1}`}
-                            className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 md:bottom-4 md:right-4 z-10
-                !bg-white !bg-opacity-90
-                text-xs sm:text-sm md:text-lg !font-medium
-                px-2 py-1 sm:px-3 sm:py-1.5 md:px-4 md:py-2
-                !rounded-full
-                !transition-all !duration-200
-                hover:!bg-opacity-100 hover:!shadow-lg hover:!scale-105
-                active:!scale-95"
-                        >
-                            ดูรายละเอียดโปรโมชั่น
-                        </Link>
-                    </div>
-                }
-            </main>
         </>
     );
 }

@@ -143,7 +143,7 @@ export default function CampaignDetail({ id }: { id: string }) {
             >
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 justify-items-center">
                 {data.books.map((book) => (
-                  <CardBook key={book.book_id} book={book} />
+                  <CardBook key={book.book_id} book={book as any} />
                 ))}
               </div>
             </div>

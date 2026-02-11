@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import { Drawer, Button } from "antd";
-import { FilterOutlined } from "@ant-design/icons";
+import { FilterOutlined, HistoryOutlined, CloseOutlined } from "@ant-design/icons";
 import GifLoader from '@/components/utility/GifLoader';
 
 interface Category {
@@ -46,6 +46,45 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
     status: [],
     end: "all",
   });
+
+  // --- Search History Logic ---
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => {
+    const history = localStorage.getItem("search_history");
+    if (history) {
+      try {
+        setSearchHistory(JSON.parse(history));
+      } catch (e) {
+        setSearchHistory([]);
+      }
+    }
+  }, []);
+
+  const saveHistory = (newHistory: string[]) => {
+    setSearchHistory(newHistory);
+    localStorage.setItem("search_history", JSON.stringify(newHistory));
+  };
+
+  const addToHistory = (query: string) => {
+    if (!query || !query.trim()) return;
+    const cleanQuery = query.trim();
+    // Remove duplicate if exists, limit to 10
+    const newHistory = [cleanQuery, ...searchHistory.filter((h) => h !== cleanQuery)].slice(0, 10);
+    saveHistory(newHistory);
+  };
+
+  const removeFromHistory = (e: React.MouseEvent, query: string) => {
+    e.stopPropagation(); // Prevent triggering parent click
+    const newHistory = searchHistory.filter((h) => h !== query);
+    saveHistory(newHistory);
+  };
+
+  const clearHistory = () => {
+    saveHistory([]);
+    setShowHistory(false);
+  };
 
   // Sync with props when they change (e.g. navigation)
   useEffect(() => {
@@ -264,22 +303,12 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
 
   const allFilters = getAllSelectedFilters();
 
-  const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
-
-  // Debounce search query
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(searchQuery);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  // Auto-trigger search when filters or debounced query change
+  // No longer auto-triggering on searchQuery/debouncedQuery change
+  // We only trigger when filters change OR when manual submit happens
   useEffect(() => {
     if (onSearch) {
       onSearch({
-        query: debouncedQuery,
+        query: searchQuery,
         categories: selectedFilters.categories,
         types: selectedFilters.types,
         status: selectedFilters.status,
@@ -288,9 +317,29 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
         order,
       });
     }
-  }, [debouncedQuery, selectedFilters, sortBy, order, onSearch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedFilters, sortBy, order, onSearch]);
 
   const handleSearchClick = () => {
+    // Save history explicitly on submit
+    if (searchQuery.trim()) {
+        addToHistory(searchQuery);
+        setShowHistory(false);
+    }
+    
+    // Trigger manual search
+    if (onSearch) {
+         onSearch({
+            query: searchQuery,
+            categories: selectedFilters.categories,
+            types: selectedFilters.types,
+            status: selectedFilters.status,
+            end: selectedFilters.end,
+            sortBy,
+            order,
+         });
+    }
+
     // Search is triggered automatically by useEffect
     // This function now primarily serves to close the drawer on mobile
     if (open) {
@@ -503,7 +552,55 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
               }
             }}
             className="block w-full rounded-md border border-gray-300 h-[40px] pl-10 pr-3 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+            onFocus={() => setShowHistory(true)}
+            onBlur={() => setTimeout(() => setShowHistory(false), 200)}
           />
+          
+          {/* History Dropdown */}
+          {showHistory && searchHistory.length > 0 && (
+             <div className="absolute top-full left-0 right-0 bg-white shadow-lg rounded-b-lg border border-t-0 border-gray-200 z-50 max-h-60 overflow-y-auto mt-1">
+                {searchHistory.map((item, index) => (
+                    <div 
+                        key={index}
+                        className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 cursor-pointer text-sm text-gray-700 border-b border-gray-100 last:border-0"
+                        onClick={() => {
+                            setSearchQuery(item);
+                            addToHistory(item);
+                            setShowHistory(false);
+                            // Trigger immediate search
+                            if (onSearch) {
+                                onSearch({
+                                    query: item,
+                                    categories: selectedFilters.categories,
+                                    types: selectedFilters.types,
+                                    status: selectedFilters.status,
+                                    end: selectedFilters.end,
+                                    sortBy,
+                                    order,
+                                });
+                            }
+                        }}
+                    >
+                        <div className="flex items-center gap-3 overflow-hidden flex-1">
+                             <HistoryOutlined className="text-gray-400 flex-shrink-0" />
+                             <span className="truncate">{item}</span>
+                        </div>
+                        <div 
+                            className="p-1 hover:bg-gray-200 rounded-full cursor-pointer text-gray-400 hover:text-red-500 transition-colors"
+                            onClick={(e) => removeFromHistory(e, item)}
+                        >
+                            <CloseOutlined style={{ fontSize: '10px' }} />
+                        </div>
+                    </div>
+                ))}
+                <div 
+                    className="flex justify-center p-2 bg-gray-50 text-xs text-gray-500 hover:text-red-500 cursor-pointer transition-colors"
+                    onClick={clearHistory}
+                >
+                    ล้างประวัติการค้นหา
+                </div>
+             </div>
+          )}
         </div>
       </div>
 

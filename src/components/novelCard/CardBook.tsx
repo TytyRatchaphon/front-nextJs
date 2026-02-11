@@ -4,28 +4,13 @@ import Link from 'next/link'
 import React from 'react'
 import { postBookClick } from '@/services/apiServices';
 import FlashSaleSVG from './FlashSaleSvg';
+import { UniversalBook } from '../../types/api';
 
-interface Book {
-  book_id?: number;
-  // bookID: string;
-  // type: string;
-  img?: string;
-  name?: string;
-  // title: string;
-  // tag: string;
-  view?: number;
-  // heart: number;
-  // flower: number;
-  end?: string; // make optional because some payloads omit it
-  chapter?: number;
-  shelveCount?: number;
-  discount_ep_count?: number;
-  [key: string]: any;
-}
+
 
 interface CardBookProps {
   // allow partial shapes (API sometimes omits fields)
-  book: Partial<Book>;
+  book: UniversalBook;
 }
 
 const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
@@ -134,7 +119,7 @@ function CardBook({ book }: CardBookProps) {
                   className="w-full h-[40px] object-contain align-bottom"
                   loader={imageLoader}
                 />
-                <div className="absolute bottom-1.5 left-0 right-0 text-center text-white text-[11px] font-bold drop-shadow-md">
+                <div className="absolute bottom-[1px] left-0 right-0 text-center text-white text-[11px] font-bold drop-shadow-md">
                   ลดราคา <span className="text-[#FFD700] text-xs mx-0.5">{book.discount_ep_count}</span> ตอน
                 </div>
               </div>

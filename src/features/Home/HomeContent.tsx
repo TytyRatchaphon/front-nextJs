@@ -144,7 +144,6 @@ export default function HomeContent({ initialData }: HomeContentProps) {
           </div>
 
           {/* Other Groups Section */}
-
           <BookGroups groupBookHome={groupBookHome} />
 
           {/* Top 10 Ranking Section */}

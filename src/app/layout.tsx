@@ -177,8 +177,12 @@ export default function RootLayout({
                 <Suspense fallback={null}>
                   <TokenUpdater />
                 </Suspense>
-                <Navbar />
-                <GlobalLogger />
+                <Suspense fallback={null}>
+                  <Navbar />
+                </Suspense>
+                <Suspense fallback={null}>
+                  <GlobalLogger />
+                </Suspense>
                 {children}
                 <FooterWrapper />
               </App>

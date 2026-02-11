@@ -3,7 +3,8 @@
 import React, { useId } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Scrollbar, A11y, EffectFade, FreeMode } from 'swiper/modules';
-import ArticleCard, { Article } from '../novelCard/ArticleCard';
+import ArticleCard from '../novelCard/ArticleCard';
+import { ArticleItem } from '@/types/api';
 import Image from 'next/image';
 import parse from 'html-react-parser';
 
@@ -18,7 +19,7 @@ import 'swiper/css/effect-fade';
 import 'swiper/css/free-mode';
 
 interface ArticleSwiperProps {
-  items: Article[];
+  items: ArticleItem[];
   title?: string;
   icon?: string;
   link?: string;

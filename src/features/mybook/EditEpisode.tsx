@@ -58,6 +58,7 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
 
     // Modal Success
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+    const [successMessage, setSuccessMessage] = useState<string>('แก้ไขตอนเรียบร้อยแล้ว');
 
     // Style Variables
     const bodyTextStyle = 'mb-1 text-md';
@@ -94,7 +95,6 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
                         const data = resData.data;
                         setGroupName(data.groupName || '');
 
-                        // Set ข้อมูลเดิมลง Form
                         formEditChapter.setFieldsValue({
                             name: data.name,
                             groupID: data.group_id,
@@ -194,6 +194,9 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
             const resData = response.data;
 
             if (resData.status === 'success' || resData.code === 200) {
+                if (resData.message) {
+                    setSuccessMessage(resData.message);
+                }
                 setIsSuccessModalOpen(true);
             } else {
                 api.error({
@@ -238,7 +241,7 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
                 }}
             >
                 <div className="text-center py-4 text-base">
-                    <p>แก้ไขตอนเรียบร้อยแล้ว</p>
+                    <p>{successMessage}</p>
                 </div>
             </Modal>
 

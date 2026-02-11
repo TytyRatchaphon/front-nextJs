@@ -131,6 +131,8 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
                 update_at: latestEpisodeDate,
                 des: bookDetail.des,
                 category1: (bookDetail as any).category1,
+                cat1: bookDetail.cat1,
+                cat2: bookDetail.cat2,
                 // Manual overrides for specific access patterns
                 "category1.name": bookDetail["category1.name"],
                 "category2.name": bookDetail["category2.name"],

@@ -76,6 +76,7 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
     const [category1, setCategory1] = useState<Category[]>([]);
     const [category2, setCategory2] = useState<Category[]>([]);
     const [acceptBookCon, setAcceptBookCon] = useState<boolean>(true); // Default true สำหรับหน้า Edit
+    const [initialStatus, setInitialStatus] = useState<string>('');
 
     // Configs
     const ACCESS_TOKEN = process.env.NEXT_PUBLIC_ACCESS_TOKEN || '';
@@ -132,6 +133,8 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                     if (typeof tagValue === 'string') {
                         tagValue = tagValue.replace(/"/g, '').split(',');
                     }
+
+                    setInitialStatus(bookData.status);
 
                     // Set Form Values
                     formNewBook.setFieldsValue({
@@ -405,7 +408,8 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                                                 <Form.Item name='status'>
                                                     <Select placeholder="Select an option">
                                                         <Select.Option value='private'>ปิดเรื่อง</Select.Option>
-                                                        <Select.Option value='publish'>เผยแพร่</Select.Option>
+                                                        <Select.Option value='publish' disabled={initialStatus === 'wait'}>เผยแพร่</Select.Option>
+                                                        <Select.Option value='wait' disabled>รออนุมัติ</Select.Option>
                                                     </Select>
                                                 </Form.Item>
                                             </div>

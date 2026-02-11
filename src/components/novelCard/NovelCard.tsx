@@ -3,18 +3,12 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { NovelCardItem } from "@/types/api";
 
 type TagType = "new" | "bestseller" | "completed" | null;
 
 interface NovelCardProps {
-  novel: {
-    bookID: string;
-    img: string;
-    name: string;
-    user_id: string;
-    view: number;
-    type: string;
-  };
+  novel: NovelCardItem;
   tag?: TagType; // เพิ่ม prop สำหรับกำหนดประเภท tag
 }
 

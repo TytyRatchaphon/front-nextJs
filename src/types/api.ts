@@ -715,3 +715,47 @@ export interface BookPromotionOption {
     user_freecoin: number;
   };
 }
+
+export interface UniversalBook extends Partial<BookTrans>, Partial<PackCampaignBook> {
+  book_id?: number;
+  bookID?: string;
+  img?: string;
+  name?: string;
+  title?: string;
+  writer_name?: string;
+  writer?: string;
+  author?: string;
+  view?: number;
+  end?: string;
+  chapter?: number;
+  shelveCount?: number;
+  shelve_count?: number;
+  shelf_count?: number;
+  shelfCount?: number;
+  discount_ep_count?: number | null;
+  tag?: any; // Use any to bypass conflict between string and string[]
+  status?: string;
+  isBestSeller?: boolean;
+  isNew?: boolean;
+  isNewEp?: boolean;
+  discount?: number;
+  bgimg?: any;
+  [key: string]: any;
+}
+
+export interface NovelCardItem {
+  bookID: string;
+  img: string;
+  name: string;
+  user_id: string;
+  view: number;
+  type: string;
+}
+
+export interface ArticleItem {
+  id: number;
+  name: string;
+  img: string;
+  date_post: string;
+  view: number;
+}

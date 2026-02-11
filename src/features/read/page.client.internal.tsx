@@ -671,7 +671,11 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
         <div className="space-y-2 text-center">
           <div className="text-base font-semibold text-gray-700">{displayTitle || 'ตอนนี้'}</div>
           <div className="text-sm text-red-600 font-medium flex items-center justify-center gap-2">
-            <Image src={settings?.coin || '/images/e-coin.png'} alt="เหรียญ" width={18} height={18} loader={imageLoader} />
+            {confirmMethod === 'freecoin' ? (
+              <Image src={settings?.freecoin || '/images/money-bag.png'} alt="ถุงเงิน" width={18} height={18} loader={imageLoader} />
+            ) : (
+              <Image src={settings?.coin || '/images/e-coin.png'} alt="เหรียญ" width={18} height={18} loader={imageLoader} />
+            )}
             <span>{confirmAmount != null ? confirmAmount : '---'}</span>
           </div>
         </div>

@@ -3,13 +3,14 @@
 import React from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { fetchCategoryBooks } from "@/services/apiServices";
+import { fetchCategoryBooks, fetchActiveCategories } from "@/services/apiServices";
 import CategoryHorizontalCard from "@/components/novelCard/CategoryHorizontalCard";
 import { Pagination } from "antd";
 import GifLoader from '@/components/utility/GifLoader';
 import { CategoryBookListResponse, CategoryBook, CategoryDetail } from "@/types/api";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
+import { useWebsiteStore } from '@/stores/websiteStore';
 import CategoryTypeSwiper from "./CategoryTypeSwiper";
 import CategoryGenreSwiper from "./CategoryGenreSwiper";
 
@@ -21,9 +22,7 @@ const TABS = [
   { key: "recommend", label: "นิยายแนะนำ" },
 ];
 
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-  return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
-}
+
 
 const TYPE_LABELS: Record<string, string> = {
   tran: "นิยายแปล",
@@ -36,6 +35,7 @@ export default function Category() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { settings } = useWebsiteStore();
 
   const idParam = params.id as string;
   const categoryId = idParam === 'list' ? searchParams.get('categoryId') || '' : idParam;
@@ -50,8 +50,33 @@ export default function Category() {
     queryFn: () => fetchCategoryBooks(type, categoryId, tab, page, 20, period),
   });
 
-  // Use banner from API response
-  const categoryDetail = data?.data?.banner;
+  // Use Active Categories to get immediate banner if available
+  const { data: activeCategories = [] } = useQuery({
+    queryKey: ['activeCategories', type],
+    queryFn: () => fetchActiveCategories(type),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const activeCategory = activeCategories.find((c: any) => String(c.id) === String(categoryId));
+  
+
+
+
+  // Use banner from API response or Fallback to activeCategory
+  const bannerFromApi = data?.data?.banner;
+  
+  // Prioritize activeCategory as it is the source user explicitly mentioned
+  const activeCategoryDetail = activeCategory ? {
+    name: activeCategory.name,
+    img_bg: activeCategory.img_bg || (activeCategory as any).img || (activeCategory as any).banner || (activeCategory as any).image || "",
+    color: activeCategory.color ? (Array.isArray(activeCategory.color) ? activeCategory.color : [activeCategory.color, activeCategory.color]) : [],
+    id: Number(activeCategory.id),
+    description: "",
+    order_by: activeCategory.order_by || 0
+  } as unknown as CategoryDetail : undefined;
+
+  const categoryDetail = activeCategoryDetail?.img_bg ? activeCategoryDetail : (bannerFromApi || activeCategoryDetail);
+
   
   const categoryNameParam = searchParams.get("name") || "";
   const categoryName = categoryNameParam || categoryDetail?.name || "";
@@ -76,6 +101,8 @@ export default function Category() {
      router.push(`/cat/${categoryId}?${newParams.toString()}`);
   };
 
+  
+
   const handlePageChange = (newPage: number) => {
     const newParams = new URLSearchParams(searchParams.toString());
     newParams.set("page", newPage.toString());
@@ -99,24 +126,18 @@ export default function Category() {
         <div
           className="text-center mb-8 py-20 md:py-28 rounded-xl relative overflow-hidden"
           style={{
-            backgroundImage: categoryDetail?.img_bg ? `url(${categoryDetail.img_bg})` : undefined,
+            backgroundImage: settings?.cat_pic_default === "active" 
+                ? `url('https://image.enjoybook.co/enjoybook.image/banner/Web_bg_cat.jpg')` 
+                : (categoryDetail?.img_bg ? `url(${categoryDetail.img_bg})` : undefined),
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
         >
-          {/* Overlay to ensure text readability if needed, though user didn't ask, but safe */}
-          {/* <div className="absolute inset-0 bg-white/50"></div> */}
+          {/* Dark Overlay for contrast */}
+          <div className="absolute inset-0  transition-opacity duration-300"></div>
 
           <h1
-            className="text-xl md:text-4xl font-bold relative z-10 py-2 leading-relaxed"
-            style={categoryDetail?.color && categoryDetail.color.length >= 2 ? {
-              backgroundImage: `linear-gradient(to right, ${categoryDetail.color[0]}, ${categoryDetail.color[1]})`,
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-              color: 'transparent', // Fallback
-              display: 'inline-block'
-            } : { color: '#1f2937' }}
+            className="text-xl md:text-4xl font-bold relative z-10 py-2 leading-relaxed text-white drop-shadow-lg"
           >
             {typeLabel} {categoryName}
           </h1>
