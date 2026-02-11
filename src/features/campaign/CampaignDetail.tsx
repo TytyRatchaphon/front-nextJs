@@ -76,7 +76,7 @@ export default function CampaignDetail({ id }: { id: string }) {
       <div className="max-w-5xl mx-auto shadow-2xl min-h-screen relative flex flex-col bg-white">
 
         {/* Banners Section */}
-        <div className="flex flex-col w-full">
+        <div className="flex flex-col w-full mb-10">
           {/* Banner 2 / Section Header */}
           {data.img_banner2 && (
             <div className="w-full relative px-0">

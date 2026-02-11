@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
-import { Image as AntdImage, Spin, Modal, Popconfirm, message, Empty, Dropdown, Select, DatePicker, InputNumber, Popover } from 'antd'
+import { Image as AntdImage, Spin, Modal, Popconfirm, message, Empty, Dropdown, Select, DatePicker, InputNumber, Popover, Segmented } from 'antd'
 import dayjs from 'dayjs'
 import type { BookDetail } from '@/types/api'
 import { TagSwiper } from '@/components/swiper/ImageSlider'
@@ -166,6 +166,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 	const closeGroupModal = () => {
 		setIsGroupModalOpen(false);
 		setSelectedGroupId(null);
+		setEpisodeFilter('all'); // Reset filter
 	}
 
 	const handleOpenEditGroup = (group: any) => {
@@ -198,6 +199,9 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 	// Selection state for bulk operations (normalize to string keys)
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 	const [selectAllChecked, setSelectAllChecked] = useState(false)
+
+	// Episode status filter
+	const [episodeFilter, setEpisodeFilter] = useState<'all' | 'published' | 'wait'>('all')
 	const [, setDeletingBulk] = useState(false)
 
 	// Bulk price edit modal state
@@ -744,6 +748,14 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 							style={{ width: '100%' }}
 							placeholder="เลือก..."
 						/>
+						<div className="my-2 text-center text-gray-400 text-sm">หรือกำหนดเอง</div>
+						<InputNumber
+							min={0}
+							value={priceSelected}
+							onChange={(val) => setPriceSelected(val)}
+							placeholder="ระบุราคาเอง"
+							style={{ width: '100%' }}
+						/>
 					</div>
 					<div className="flex justify-center mt-6">
 						<button
@@ -956,7 +968,91 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 				open={isGroupModalOpen}
 				title={`ตอนในกลุ่ม ${selectedGroupId ?? ''}`}
 				onCancel={closeGroupModal}
-				footer={null}
+				footer={(() => {
+					// Logic for footer content
+					const allIds = (groupEpisodesQuery.data?.episodes ?? []).filter((e: any) => {
+						const s = (e.publish ?? e.status ?? e.visibility ?? '').toString().toLowerCase()
+						return s === 'publish' || s === 'published'
+					}).map((ep: any, idx: number) => {
+						const rid = ep.ep_id ?? ep.epID ?? ep.episode_id ?? ep.id ?? ep.eid
+						return rid ?? `ep_${String(selectedGroupId ?? 'g')}_${idx}`
+					})
+
+					const handleMenuClick = ({ key }: any) => {
+						const selectedIdArray = Array.from(selectedIds);
+
+						if (key === 'deleteAll') {
+							if (selectedIdArray.length === 0) {
+								messageApi.info('กรุณาเลือกตอนที่ต้องการลบก่อน')
+								return
+							}
+							modalApi.confirm({
+								title: `ยืนยันการลบ ${selectedIdArray.length} ตอนที่เลือก?`,
+								onOk: async () => {
+									await handleBulkDelete(selectedIdArray)
+								},
+								okText: 'ลบเลย',
+								cancelText: 'ยกเลิก',
+								okButtonProps: { danger: true },
+								cancelButtonProps: {
+									style: { color: '#dc2626' },
+									className: '!text-rose-600 hover:!bg-rose-50'
+								}
+							})
+						} else if (key === 'editPrice') {
+							if (selectedIdArray.length === 0) {
+								messageApi.info('กรุณาเลือกตอนที่ต้องการแก้ไขราคาก่อน')
+								return
+							}
+							setModalSelectedEpIds(selectedIdArray.map((x: any) => String(x)))
+							setPriceSelected(null)
+							setPriceModalOpen(true)
+						} else if (key === 'set_promotion') {
+							if (selectedIdArray.length === 0) return messageApi.info('กรุณาเลือกตอนที่ต้องการตั้งค่าส่วนลด')
+							setPromoEpModalOpen(true)
+						} else if (key === 'cancel_promotion') {
+							if (selectedIdArray.length === 0) return messageApi.info('กรุณาเลือกตอนที่ต้องการยกเลิกส่วนลด')
+							setCancelPromoEpModalOpen(true)
+						}
+					}
+
+					const items = [
+						{ key: 'editPrice', label: 'แก้ไขราคาเลือกทั้งหมด' },
+						{ key: 'set_promotion', label: 'ตั้งค่าส่วนลด' },
+						{ key: 'cancel_promotion', label: 'ยกเลิกส่วนลดที่เลือกทั้งหมด', danger: true },
+						{ key: 'deleteAll', label: 'ลบเลือกทั้งหมด', danger: true },
+					]
+
+					return (
+						<div className="flex items-center justify-between w-full px-4 py-2 bg-gray-50 border-t border-gray-100 rounded-b-lg">
+							<label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+								<input 
+									type="checkbox" 
+									className="w-4 h-4 accent-rose-600 rounded border-gray-300 cursor-pointer" 
+									checked={selectAllChecked} 
+									onChange={(e) => handleSelectAll(e.target.checked, allIds)} 
+								/>
+								<span>เลือกทั้งหมด ({selectedIds.size})</span>
+							</label>
+							<div className="flex gap-2">
+								<Dropdown menu={{ items, onClick: handleMenuClick }} placement="topRight">
+									<button className="inline-flex items-center gap-2 px-4 py-1.5 rounded text-sm bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm transition-colors">
+										<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+											<path d="M12.146 3.146a.5.5 0 0 1 .708 0l.999.999a.5.5 0 0 1 0 .708l-7.439 7.439a.5.5 0 0 1-.233.13l-3 1a.5.5 0 0 1-.63-.63l1-3a.5.5 0 0 1 .13-.233l7.439-7.439z" />
+										</svg>
+										<span>จัดการ ({selectedIds.size})</span>
+									</button>
+								</Dropdown>
+								<button 
+									onClick={closeGroupModal}
+									className="px-4 py-1.5 rounded text-sm text-gray-600 hover:bg-gray-200 transition-colors"
+								>
+									ปิด
+								</button>
+							</div>
+						</div>
+					)
+				})()}
 				width={1000}
 				styles={{ body: { maxHeight: '64vh', overflowY: 'auto', padding: '0.5rem 1rem' } }}
 			>
@@ -967,7 +1063,25 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 					<div className="text-sm text-red-500">ไม่สามารถโหลดตอนของกลุ่มนี้ได้</div>
 				) : (
 					<div className="w-full">
-						{/* Episodes list */}
+						{/* Filter Control */}
+						<div className="flex justify-start mb-4">
+							<Segmented
+								options={[
+									{ label: 'ทั้งหมด', value: 'all' },
+									{ label: 'เผยแพร่แล้ว', value: 'published' },
+									{ label: 'รออนุมัติ', value: 'wait' },
+								]}
+								value={episodeFilter}
+								onChange={(val) => {
+									setEpisodeFilter(val as any)
+									// Clear selection when changing filter to avoid confusion
+									setSelectedIds(new Set())
+									setSelectAllChecked(false)
+								}}
+							/>
+						</div>
+						
+						{/* footer controls: select all + manage (MOVED TO TOP) */}
 						<div className="space-y-2">
 							{(() => {
 								const rawPayload = groupEpisodesQuery.data ?? []
@@ -979,7 +1093,18 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 								else episodesRaw = []
 
 								// Show all episodes for the author to manage (published, private, draft, etc.)
-								const visibleEpisodes = episodesRaw
+								// ✨ Update: User requested to hide private episodes AND filter by status
+								const visibleEpisodes = episodesRaw.filter((e: any) => {
+									const s = (e.publish ?? e.status ?? e.visibility ?? '').toString().toLowerCase()
+									if (s === 'private') return false
+									
+									if (episodeFilter === 'published') {
+										return s === 'publish' || s === 'published'
+									} else if (episodeFilter === 'wait') {
+										return s === 'wait'
+									}
+									return true
+								})
 
 								if (!visibleEpisodes || visibleEpisodes.length === 0) {
 									return (
@@ -1014,9 +1139,6 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 									} else if (rawStatus === 'publish' || rawStatus === 'published') {
 										statusLabel = 'เผยแพร่แล้ว'
 										statusClass = 'text-xs text-gray-600'
-									} else if (rawStatus === 'private' || rawStatus === 'draft' || rawStatus === 'unlisted') {
-										statusLabel = 'ส่วนตัว'
-										statusClass = 'text-xs text-amber-600'
 									} else if (rawStatus === 'wait') {
 										statusLabel = 'รออนุมัติ'
 										statusClass = 'text-xs text-amber-600'
@@ -1132,89 +1254,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 								})
 							})()}
 						</div>
-						{/* footer controls: select all + manage */}
-						<div className="mt-3 flex items-center gap-4">
-							{(() => {
-								const allIds = (groupEpisodesQuery.data?.episodes ?? []).filter((e: any) => {
-									const s = (e.publish ?? e.status ?? e.visibility ?? '').toString().toLowerCase()
-									return s === 'publish' || s === 'published'
-								}).map((ep: any, idx: number) => {
-									const rid = ep.ep_id ?? ep.epID ?? ep.episode_id ?? ep.id ?? ep.eid
-									return rid ?? `ep_${String(selectedGroupId ?? 'g')}_${idx}`
-								})
 
-								const getVisibleIds = () => allIds
-
-								const handleMenuClick = ({ key }: any) => {
-									// ✨ แก้ไข: ดึง ID จาก selectedIds (แปลง Set เป็น Array) แทนการดึงทั้งหมด
-									const selectedIdArray = Array.from(selectedIds);
-
-									if (key === 'deleteAll') {
-										// เช็คว่ามีการเลือกรายการหรือไม่
-										if (selectedIdArray.length === 0) {
-											messageApi.info('กรุณาเลือกตอนที่ต้องการลบก่อน')
-											return
-										}
-
-										// confirm then run bulk delete with SELECTED ids
-										modalApi.confirm({
-											title: `ยืนยันการลบ ${selectedIdArray.length} ตอนที่เลือก?`, // ปรับข้อความให้ชัดเจน
-											onOk: async () => {
-												await handleBulkDelete(selectedIdArray) // ส่งเฉพาะ ID ที่เลือกไปลบ
-											},
-											okText: 'ลบเลย',
-											cancelText: 'ยกเลิก',
-											okButtonProps: { danger: true },
-											cancelButtonProps: {
-												style: { color: '#dc2626' },
-												className: '!text-rose-600 hover:!bg-rose-50'
-											}
-										})
-									} else if (key === 'editPrice') {
-										// แก้ไขส่วนนี้ด้วย เพื่อให้แก้ไขราคาเฉพาะอันที่เลือก
-										if (selectedIdArray.length === 0) {
-											messageApi.info('กรุณาเลือกตอนที่ต้องการแก้ไขราคาก่อน')
-											return
-										}
-
-										// open bulk price modal and pass SELECTED ids
-										setModalSelectedEpIds(selectedIdArray.map((x: any) => String(x)))
-										setPriceSelected(null)
-										setPriceModalOpen(true)
-									} else if (key === 'set_promotion') {
-										if (selectedIdArray.length === 0) return messageApi.info('กรุณาเลือกตอนที่ต้องการตั้งค่าส่วนลด')
-										setPromoEpModalOpen(true)
-									} else if (key === 'cancel_promotion') {
-										if (selectedIdArray.length === 0) return messageApi.info('กรุณาเลือกตอนที่ต้องการยกเลิกส่วนลด')
-										setCancelPromoEpModalOpen(true)
-									}
-								}
-
-								const items = [
-									{ key: 'editPrice', label: 'แก้ไขราคาเลือกทั้งหมด' },
-									{ key: 'set_promotion', label: 'ตั้งค่าส่วนลด' },
-									{ key: 'cancel_promotion', label: 'ยกเลิกส่วนลดที่เลือกทั้งหมด', danger: true },
-									{ key: 'deleteAll', label: 'ลบเลือกทั้งหมด', danger: true },
-								]
-
-								return (
-									<>
-										<label className="flex items-center gap-2 text-sm text-gray-700">
-											<input type="checkbox" className="w-4 h-4 accent-rose-600 rounded border-gray-300" checked={selectAllChecked} onChange={(e) => handleSelectAll(e.target.checked, allIds)} />
-											<span>เลือกทั้งหมด</span>
-										</label>
-										<Dropdown menu={{ items, onClick: handleMenuClick }} placement="bottomRight">
-											<button className="ml-auto inline-flex items-center gap-2 px-3 py-1 rounded text-sm bg-white border text-gray-700 hover:bg-gray-50">
-												<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-													<path d="M12.146 3.146a.5.5 0 0 1 .708 0l.999.999a.5.5 0 0 1 0 .708l-7.439 7.439a.5.5 0 0 1-.233.13l-3 1a.5.5 0 0 1-.63-.63l1-3a.5.5 0 0 1 .13-.233l7.439-7.439z" />
-												</svg>
-												<span>จัดการ</span>
-											</button>
-										</Dropdown>
-									</>
-								)
-							})()}
-						</div>
 					</div>
 				)}
 			</Modal>

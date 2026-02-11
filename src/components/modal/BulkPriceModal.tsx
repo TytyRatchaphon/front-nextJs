@@ -1,6 +1,6 @@
 "use client"
 import React, { useState } from 'react'
-import { Modal, Select, message } from 'antd'
+import { Modal, Select, message, InputNumber } from 'antd'
 import { updateEpisodesPrice } from '../../services/apiServices'
 
 export default function BulkPriceModal({
@@ -30,6 +30,14 @@ export default function BulkPriceModal({
             options={[{ value: 0, label: 'อ่านฟรี (0 เหรียญ)' }, ...Array.from({ length: 10 }, (_, i) => ({ value: i + 1, label: `${i + 1} เหรียญ` }))]}
             style={{ width: '100%' }}
             placeholder="เลือก..."
+          />
+          <div className="my-2 text-center text-gray-400 text-sm">หรือกำหนดเอง</div>
+          <InputNumber
+            min={0}
+            value={price}
+            onChange={(val) => setPrice(val)}
+            placeholder="ระบุราคาเอง"
+            style={{ width: '100%' }}
           />
         </div>
         <div className="flex justify-center mt-6">
