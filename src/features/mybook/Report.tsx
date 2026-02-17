@@ -11,6 +11,7 @@ import dayjs from 'dayjs';
 import { fetchBookStats, BookStats, fetchBookAnalytics, AnalyticsDataPoint, fetchBookEpisodesStats, EpisodeStats, PurchaseItem } from '@/services/apiServices';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { useShallow } from 'zustand/react/shallow';
+import { imageLoader } from '@/utils/imageUtils';
 
 const { RangePicker } = DatePicker;
 
@@ -49,11 +50,6 @@ interface TransactionItem {
     price: number;
     income: number;
 }
-
-// Helper for image loading
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-    return `${src}?w=${width ?? ''}&q=${quality ?? 75}`;
-};
 
 // Mock Data
 const initialStats: StatsData = {
@@ -166,7 +162,7 @@ export default function Report({ bookId }: { bookId: string }) {
         {
             title: (
                 <div className="flex items-center gap-1">
-                    {settings?.coin ? <Image src={settings.coin} alt="coin" width={20} height={20} loader={imageLoader} /> : 'Coins'}
+                    {settings?.coin ? <Image src={settings.coin} alt="coin" width={20} height={20} unoptimized /> : 'Coins'}
                 </div>
             ),
             dataIndex: 'sales_coin',
@@ -177,7 +173,7 @@ export default function Report({ bookId }: { bookId: string }) {
         {
             title: (
                 <div className="flex items-center gap-1">
-                    {settings?.freecoin ? <Image src={settings.freecoin} alt="free_coin" width={20} height={20} loader={imageLoader} /> : 'Free Coins'}
+                    {settings?.freecoin ? <Image src={settings.freecoin} alt="free_coin" width={20} height={20} unoptimized /> : 'Free Coins'}
                 </div>
             ),
             dataIndex: 'sales_freecoin',
@@ -221,10 +217,10 @@ export default function Report({ bookId }: { bookId: string }) {
                 <div className="flex items-center gap-1">
                     <span>{(val || 0).toLocaleString()}</span>
                     {record.type === 'coin' && settings?.coin && (
-                        <Image src={settings.coin} alt="coin" width={16} height={16} loader={imageLoader} />
+                        <Image src={settings.coin} alt="coin" width={16} height={16} unoptimized />
                     )}
                     {record.type === 'freecoin' && settings?.freecoin && (
-                        <Image src={settings.freecoin} alt="freecoin" width={16} height={16} loader={imageLoader} />
+                        <Image src={settings.freecoin} alt="freecoin" width={16} height={16} unoptimized />
                     )}
                 </div>
             ),
@@ -354,11 +350,11 @@ export default function Report({ bookId }: { bookId: string }) {
                                 <span className="flex items-center gap-1">ยอดรวม</span>
                                 <span className="flex items-center gap-1 text-yellow-500">
                                     {totalCoin.toLocaleString()}
-                                    {settings?.coin && <Image src={settings.coin} alt="C" width={20} height={20} loader={imageLoader} />}
+                                    {settings?.coin && <Image src={settings.coin} alt="C" width={20} height={20} unoptimized />}
                                 </span>
                                 <span className="flex items-center gap-1 text-red-500">
                                     {totalFreeCoin.toLocaleString()}
-                                    {settings?.freecoin && <Image src={settings.freecoin} alt="F" width={20} height={20} loader={imageLoader} />}
+                                    {settings?.freecoin && <Image src={settings.freecoin} alt="F" width={20} height={20} unoptimized />}
                                 </span>
                             </div>
                             <div className="text-xl font-bold">ยอดรวมรายได้ {totalIncome.toLocaleString()} บาท</div>

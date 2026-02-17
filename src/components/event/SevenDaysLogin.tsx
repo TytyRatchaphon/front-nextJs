@@ -10,6 +10,7 @@ import { InfoCircleOutlined } from '@ant-design/icons'
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useWebsiteStore } from '@/stores/websiteStore'
+import { imageLoader } from '@/utils/imageUtils';
 
 type LoginStatus = {
   latest_logged_in_day?: number
@@ -29,9 +30,7 @@ const fetchWeeklyLogin = async (token?: string | null): Promise<LoginStatus> => 
   // axios throws for non-2xx, so if we get here assume data present
   return res.data?.data ?? {}
 }
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-  return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
-}
+
 
 export interface SevenDaysLoginProps {
   onClose?: () => void;
@@ -294,7 +293,7 @@ function SevenDaysLogin({ onClose }: SevenDaysLoginProps) {
         <Modal open={modalVisible} onOk={handleModalOk} onCancel={() => setModalVisible(false)} centered footer={null} width={320} className="checkin-modal">
           <div className="flex flex-col items-center justify-center p-6 gap-4 text-center">
             <div className="w-24 h-24 relative">
-              <Image src={settings?.stamp || '/images/stamp.png'} loader={imageLoader} alt="stamp" fill className="object-contain" unoptimized/>
+              <Image src={settings?.stamp || '/images/stamp.png'} unoptimized alt="stamp" fill className="object-contain" />
             </div>
             <div>
               <h3 className="text-2xl font-bold text-gray-800 m-0">ยินดีด้วย!</h3>

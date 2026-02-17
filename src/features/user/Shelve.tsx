@@ -9,6 +9,8 @@ import CardBook from '@/components/novelCard/CardBook';
 import ContinueCardBook from '@/components/novelCard/ContinueCardbook';
 import { useQuery } from '@tanstack/react-query';
 import { fetchUserShelve, fetchUserShelveContinue, fetchUserShelveBuy } from '@/services/apiServices';
+import { normalizeBookData, normalizeContinueBook, normalizePurchasedBook } from '@/utils/bookMappers';
+import type { BookData } from '@/types/api';
 
 function Shelve() {
   const searchParams = useSearchParams();
@@ -26,7 +28,7 @@ function Shelve() {
   const [pageContinue, setPageContinue] = useState(1);
   const [pageBuy, setPageBuy] = useState(1);
 
-  const { data: shelveData, isLoading, isError } = useQuery({
+  const { data: shelveData, isLoading, isError, refetch: refetchShelve } = useQuery({
     queryKey: ['userShelve', pageShelve],
     queryFn: async () => {
       // Limit 20 by default
@@ -40,7 +42,7 @@ function Shelve() {
   // determine user id to call continue API; try localStorage, fall back to '10'
   const userId = (typeof window !== 'undefined') ? (localStorage.getItem('userId') ?? localStorage.getItem('user_id') ?? '10') : '10'
 
-  const { data: continueData, isLoading: contLoading, isError: contError } = useQuery({
+  const { data: continueData, isLoading: contLoading, isError: contError, refetch: refetchContinue } = useQuery({
     queryKey: ['userShelveContinue', userId, pageContinue],
     queryFn: async () => {
       return await fetchUserShelveContinue(20, pageContinue)
@@ -51,7 +53,7 @@ function Shelve() {
   const continueBooks: any[] = continueData?.books ?? [];
   const totalContinue = continueData?.paginate?.total ?? 0;
 
-  const { data: buyData, isLoading: buyLoading, isError: buyError } = useQuery({
+  const { data: buyData, isLoading: buyLoading, isError: buyError, refetch: refetchBuy } = useQuery({
     queryKey: ['userShelveBuy', userId, pageBuy],
     queryFn: async () => {
       return await fetchUserShelveBuy(20, pageBuy)
@@ -98,19 +100,8 @@ function Shelve() {
           ) : (
             <>
               <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6'>
-                {books.map((b: any) => {
-                  const mapped = {
-                    book_id: b.book_id ?? b.bookID ?? b.id,
-                    bookID: b.bookID ?? b.book_id,
-                    img: b.img ?? b.imgtn ?? b.imgtn_url,
-                    name: b.name ?? b.title,
-                    title: b.title ?? b.name,
-                    author: b.writer_name ?? b.user_name ?? b.author,
-                    view: Number(b.view ?? 0),
-                    chapter: Number(b.chapter ?? 0),
-                    shelve_count: Number(b.shelve_count ?? b.shelveCount ?? 0),
-                    end: b.end,
-                  };
+                {books.map((b: BookData) => {
+                  const mapped = normalizeBookData(b);
                   return <CardBook key={mapped.book_id ?? mapped.bookID} book={mapped} />;
                 })}
               </div>
@@ -136,29 +127,8 @@ function Shelve() {
           ) : (
             <>
               <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6'>
-                {continueBooks.map((b: any) => {
-                  const mapped = {
-                    book_id: b.book_id ?? b.bookID ?? b.id ?? 0,
-                    bookID: b.bookID ?? b.book_id ?? '',
-                    img: b.img ?? b.imgtn ?? b.imgtn_url ?? '',
-                    name: b.name ?? b.title ?? '',
-                    title: b.title ?? b.name ?? '',
-                    author: b.writer_name ?? b.user_name ?? b.author ?? '',
-                    view: Number(b.view ?? 0),
-                    chapter: Number(b.chapter ?? 0),
-                    shelveCount: Number(b.shelveCount ?? b.shelf_count ?? 0),
-                    end: b.end ?? b.status ?? '',
-                    // episode fields for ContinueCardBook
-                    ep_id: b.last_read_ep_id ?? b.ep_id ?? b.epID ?? b.epId ?? b.epid ?? b.epIDStr ?? b.epIDStr ?? b.ep_id,
-                    epName: b.epName ?? b.ep_name ?? b.epname ?? b.last_read_ep_name ?? '',
-                    last_read_at: b.last_read_at,
-                    isBestSeller: b.isBestSeller,
-                    isNew: b.isNew,
-                    isNewEp: b.isNewEp,
-                    discount: b.discount,
-                    img_full: b.img_full,
-                    status: b.status,
-                  }
+                {continueBooks.map((b: BookData) => {
+                  const mapped = normalizeContinueBook(b);
                   return <ContinueCardBook key={`${mapped.book_id ?? mapped.bookID}-${mapped.ep_id ?? '0'}`} book={mapped} />;
                 })}
               </div>
@@ -184,19 +154,8 @@ function Shelve() {
           ) : (
             <>
               <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6'>
-                {buyBooks.map((b: any) => {
-                  const mapped = {
-                    book_id: b.book_id ?? b.bookID ?? b.id ?? 0,
-                    bookID: b.bookID ?? b.book_id ?? '',
-                    img: b.img ?? b.imgtn ?? b.imgtn_url ?? '',
-                    name: b.name ?? b.title ?? '',
-                    title: b.title ?? b.name ?? '',
-                    author: b.writer_name ?? b.user_name ?? b.author ?? '',
-                    view: Number(b.view ?? 0),
-                    chapter: Number(b.chapter ?? b.chapters ?? 0),
-                    shelve_count: Number(b.shelve_count ?? b.shelveCount ?? 0),
-                    end: b.end ?? b.status ?? '',
-                  }
+                {buyBooks.map((b: BookData) => {
+                  const mapped = normalizeBookData(b);
                   return <CardBook key={mapped.book_id ?? mapped.bookID} book={mapped} />;
                 })}
               </div>
@@ -208,6 +167,13 @@ function Shelve() {
     },
   ];
 
+  const handleTabChange = (key: string) => {
+    setActiveTab(key);
+    if (key === '1') refetchShelve();
+    if (key === '2') refetchContinue();
+    if (key === '3') refetchBuy();
+  };
+
   return (
     <div className="min-h-screen bg-white py-6">
       <div className="container mx-auto px-4" style={{ maxWidth: '1200px' }}>
@@ -215,7 +181,7 @@ function Shelve() {
 
         <Tabs
           activeKey={activeTab}
-          onChange={setActiveTab}
+          onChange={handleTabChange}
           items={tabItems}
           className='custom-tabs-red'
         />

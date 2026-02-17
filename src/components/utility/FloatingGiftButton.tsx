@@ -7,10 +7,8 @@ import { useWebsiteStore } from '@/stores/websiteStore';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
 import Image from 'next/image';
+import { imageLoader } from '@/utils/imageUtils';
 
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-  return `${src}?w=${width ?? ''}&q=${quality ?? 100}`
-}
 
 const fetchWeeklyLogin = async (token?: string | null) => {
     if (!token) return {};
@@ -73,7 +71,7 @@ const FloatingGiftButton = () => {
                     fill
                     className="object-contain"
                     unoptimized
-                    loader={imageLoader}
+                    
                 />
             </div>
              

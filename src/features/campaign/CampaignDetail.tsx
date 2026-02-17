@@ -9,6 +9,7 @@ import { fetchCampaignDetail } from '@/services/apiServices';
 import type { CampaignDetailData } from '@/types/api';
 import parse from 'html-react-parser';
 import CardBook from '@/components/novelCard/CardBook';
+import { imageLoader } from '@/utils/imageUtils';
 
 // Helper to format date if needed, though mostly using banners
 const formatDate = (dateString: string) => {
@@ -19,10 +20,6 @@ const formatDate = (dateString: string) => {
     year: 'numeric',
   });
 };
-
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-  return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
-}
 
 export default function CampaignDetail({ id }: { id: string }) {
   const [data, setData] = useState<CampaignDetailData | null>(null);
@@ -81,7 +78,7 @@ export default function CampaignDetail({ id }: { id: string }) {
           {data.img_banner2 && (
             <div className="w-full relative px-0">
               <Image
-                loader={imageLoader}
+                unoptimized
                 src={data.img_banner2}
                 alt="Secondary Banner"
                 width={0}
@@ -110,7 +107,7 @@ export default function CampaignDetail({ id }: { id: string }) {
                 imgUrl && imgUrl !== "null" && (
                   <div key={index} className="relative w-full rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 group">
                     <Image
-                      loader={imageLoader}
+                      unoptimized
                       src={imgUrl}
                       alt={`Promotion Card ${index + 1}`}
                       width={0}

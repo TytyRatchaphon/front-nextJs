@@ -17,6 +17,7 @@ import { fetchBookDetail } from "@/services/apiServices";
 import apiClient from '@/services/apiClient';
 import { useAuthStore, AuthState } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
+import { imageLoader } from '@/utils/imageUtils';
 
 // Hooks
 import { useContentProtection } from "@/hooks/reader/useContentProtection";
@@ -58,10 +59,6 @@ const fetchEpisodeContent = async (ep_id: string) => {
     throw new Error(err.message || "เกิดข้อผิดพลาดในการเชื่อมต่อ");
   }
 };
-
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-  return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
-}
 
 export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   const { settings } = useWebsiteStore();
@@ -304,17 +301,17 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
 
     return (
       <div className="text-center py-12">
-        <Image src={settings?.img_buyep || '/images/unlock.png'} alt="No Content" width={100} height={100} loader={imageLoader} className="justify-center mx-auto" />
+        <Image src={settings?.img_buyep || '/images/unlock.png'} alt="No Content" width={100} height={100} unoptimized className="justify-center mx-auto" />
         <p className="text-sm text-gray-500 mb-4">ตอนนี้ยังไม่มีเนื้อหา หากต้องการอ่าน กรุณาซื้อ</p>
         <div className="flex items-center justify-center gap-3">
           {canUseFreecoin && (
             <button onClick={() => openConfirm("freecoin", ep?.freecoin ?? null)} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg">
-              <Image src={settings?.freecoin || '/images/money-bag.png'} alt="Coin Icon" width={20} height={20} loader={imageLoader} />
+              <Image src={settings?.freecoin || '/images/money-bag.png'} alt="Coin Icon" width={20} height={20} unoptimized />
               ซื้อด้วยถุงเงิน {ep?.freecoin ? `(${ep.freecoin})` : ""}
             </button>
           )}
           <button onClick={() => openConfirm("coin", coinPrice)} className={`flex items-center gap-2 px-4 py-2 ${canUseFreecoin ? 'bg-yellow-400' : 'bg-red-600'} text-white rounded-lg`}>
-            <Image src={settings?.coin || '/images/e-coin.png'} alt="Coin Icon" width={20} height={20} loader={imageLoader} />
+            <Image src={settings?.coin || '/images/e-coin.png'} alt="Coin Icon" width={20} height={20} unoptimized />
             <div className="flex items-center gap-1 text-white">
               <span>ซื้อด้วยเหรียญ</span>
               {hasDiscount ? (
@@ -672,9 +669,9 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
           <div className="text-base font-semibold text-gray-700">{displayTitle || 'ตอนนี้'}</div>
           <div className="text-sm text-red-600 font-medium flex items-center justify-center gap-2">
             {confirmMethod === 'freecoin' ? (
-              <Image src={settings?.freecoin || '/images/money-bag.png'} alt="ถุงเงิน" width={18} height={18} loader={imageLoader} />
+              <Image src={settings?.freecoin || '/images/money-bag.png'} alt="ถุงเงิน" width={18} height={18} unoptimized />
             ) : (
-              <Image src={settings?.coin || '/images/e-coin.png'} alt="เหรียญ" width={18} height={18} loader={imageLoader} />
+              <Image src={settings?.coin || '/images/e-coin.png'} alt="เหรียญ" width={18} height={18} unoptimized />
             )}
             <span>{confirmAmount != null ? confirmAmount : '---'}</span>
           </div>

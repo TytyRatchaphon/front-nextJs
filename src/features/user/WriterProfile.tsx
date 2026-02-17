@@ -10,6 +10,7 @@ import { useSearchParams } from "next/navigation";
 import { FacebookShareButton, TwitterShareButton, LineShareButton } from "react-share";
 import { useUIStore } from "@/stores/uiStore";
 import GifLoader from '@/components/utility/GifLoader';
+import { imageLoader } from '@/utils/imageUtils';
 
 
 const TABS = [
@@ -18,10 +19,6 @@ const TABS = [
     { key: "end", label: "จบแล้ว" },
 ];
 
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-    if (src.startsWith('http') || src.startsWith('data:') || src.startsWith('/')) return src;
-    return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
-}
 
 function WriterProfileContent() {
     const searchParams = useSearchParams();

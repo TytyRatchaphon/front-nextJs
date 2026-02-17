@@ -1,6 +1,12 @@
 import React, { Suspense } from 'react'
 import Shelve from '@/features/user/Shelve'
 import AuthGuard from '@/components/auth/AuthGuard'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'ชั้นหนังสือ | EnjoyBook',
+  description: 'ชั้นหนังสือ - จัดการหนังสือที่คุณชื่นชอบ',
+}
 
 function page() {
   return (

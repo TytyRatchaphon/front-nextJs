@@ -3,7 +3,9 @@ import Image from 'next/image';
 import Link from 'next/link'
 import React from 'react'
 import { postBookClick } from '@/services/apiServices';
+import SaleGroupSVG from './SaleGroupSvg';
 import { UniversalBook } from '../../types/api';
+import { imageLoader } from '@/utils/imageUtils';
 
 
 
@@ -12,9 +14,6 @@ interface PackCardBookProps {
     onClick?: () => void;
 }
 
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-    return `${src}?w=${width ?? ''}&q=${quality ?? 100}`
-}
 
 function PackCardBook({ book, onClick }: PackCardBookProps) {
     const [imgError, setImgError] = React.useState(false);
@@ -89,7 +88,6 @@ function PackCardBook({ book, onClick }: PackCardBookProps) {
                                 height={237}
                                 loading="lazy"
                                 unoptimized
-                                loader={imageLoader}
                                 onError={() => {
                                     setImgError(true);
                                 }}
@@ -101,7 +99,7 @@ function PackCardBook({ book, onClick }: PackCardBookProps) {
                                 className="w-full h-full object-cover rounded-t-lg relative z-0"
                                 width={168}
                                 height={237}
-                                loader={imageLoader}
+                                unoptimized
                             />
                         )}
 
@@ -114,7 +112,7 @@ function PackCardBook({ book, onClick }: PackCardBookProps) {
                                     width={120}
                                     height={30}
                                     className="w-full h-[30px] md:h-[40px] object-contain align-bottom"
-                                    loader={imageLoader}
+                                    unoptimized
                                 />
                                 <div className="absolute bottom-[1px] md:bottom-[1px] left-0 right-0 text-center text-white text-[9px] md:text-[11px] font-bold drop-shadow-md">
                                     ลดราคา <span className="text-[#FFD700] text-xs mx-0.5">{book.discount_ep_count}</span> ตอน
@@ -142,17 +140,10 @@ function PackCardBook({ book, onClick }: PackCardBookProps) {
                             new: { src: "/images/new.png", width: 50, height: 50, className: "absolute top-2 right-1" },
                             discount: (percent: number | string) => ({
                                 component: (
-                                    <div className="absolute -top-3 -right-3 z-20 w-[60px] h-[60px] md:w-[75px] md:h-[75px]">
-                                        <Image
-                                            src="/images/sale-group.png"
-                                            alt="sale"
-                                            width={75}
-                                            height={75}
-                                            className="absolute inset-0 object-contain drop-shadow-md"
-                                            loader={imageLoader}
-                                        />
-                                        <span className="absolute top-[50px] md:top-[64px] right-[14px] md:right-[18px] text-white text-[12px] md:text-[15px] leading-none transform -rotate-[17deg]">{percent}%</span>
-                                    </div>
+                                    <SaleGroupSVG 
+                                        className="absolute top-0 right-1 md:top-0 md:right-2 z-20 w-[2.4rem] h-[3.4rem] md:w-[2.8rem] md:h-[3.9rem] drop-shadow-md" 
+                                        percent={percent} 
+                                    />
                                 )
                             }),
                             newEp: { src: "/images/new.png", width: 36, height: 36, className: "absolute top-0 right-0" },
@@ -192,7 +183,7 @@ function PackCardBook({ book, onClick }: PackCardBookProps) {
                                             width={leftBadge.width}
                                             height={leftBadge.height}
                                             className="object-contain drop-shadow-md"
-                                            loader={imageLoader}
+                                            unoptimized
                                         />
                                     </div>
                                 ))}
@@ -204,7 +195,7 @@ function PackCardBook({ book, onClick }: PackCardBookProps) {
                                             width={rightBadge.width}
                                             height={rightBadge.height}
                                             className="object-contain drop-shadow-md"
-                                            loader={imageLoader}
+                                            unoptimized
                                         />
                                     </div>
                                 ))}

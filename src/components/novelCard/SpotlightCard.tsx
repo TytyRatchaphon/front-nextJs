@@ -3,14 +3,12 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookTrans } from '@/types/api';
+import { imageLoader } from '@/utils/imageUtils';
 
 interface SpotlightCardProps {
   book: BookTrans;
 }
 
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-  return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
-}
 
 export default function SpotlightCard({ book }: SpotlightCardProps) {
   // Safe helper to format numbers
@@ -25,7 +23,6 @@ export default function SpotlightCard({ book }: SpotlightCardProps) {
       <div className="flex flex-col w-full h-auto group bg-transparent">
         <div className="relative shadow-md rounded-lg overflow-hidden bg-white aspect-[168/237]">
           <Image 
-            loader={imageLoader}
             src={book.img.startsWith('http') ? book.img : `https://img.enjoybook.co/img/book/${book.img}`}
             alt={book.name}
             fill

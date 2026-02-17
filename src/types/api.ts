@@ -1,3 +1,136 @@
+import type { Nullable } from './utils';
+
+/**
+ * Generic API Response wrapper
+ */
+export interface ApiResponse<T> {
+  code: number;
+  status?: string;
+  message?: string;
+  data: T;
+}
+
+/**
+ * Comprehensive Book Data interface
+ * Handles all possible field variations from different API endpoints
+ */
+export interface BookData {
+  // ID fields (various formats)
+  book_id?: number | string;
+  bookID?: number | string;
+  id?: number | string;
+  
+  // Image fields
+  img?: string;
+  imgtn?: string;
+  imgtn_url?: string;
+  img_full?: string;
+  cover?: string;
+  
+  // Title/Name fields
+  name?: string;
+  title?: string;
+  
+  // Author/Writer fields
+  author?: string;
+  writer_name?: string;
+  user_name?: string;
+  writer?: {
+    user_id: number;
+    writer_name: string;
+    img?: string;
+    isFollowing?: boolean;
+  } | null;
+  
+  // Stats fields
+  view?: number | string;
+  chapter?: number | string;
+  shelve_count?: number | string;
+  star?: number | string;
+  heart?: number;
+  flower?: number;
+  comment?: number;
+  
+  // Category/Tag fields
+  category?: string;
+  category2?: string;
+  cat1?: number;
+  cat2?: number;
+  tag?: string | string[];
+  
+  // Description
+  description?: string;
+  des?: string;
+  
+  // Status fields
+  status?: string;
+  end?: string;
+  
+  // Pricing fields
+  use_coin?: number;
+  use_freecoin?: number;
+  
+  // Type
+  type?: string;
+  
+  // Dates
+  update_at?: string;
+  date_at?: string;
+  created_at?: string;
+  
+  // Other common fields
+  rate?: number;
+  bgimg?: string;
+  discount?: number;
+  
+  // Promotion/Campaign fields
+  discount_full_book?: unknown;
+  remaining_paid_count?: number;
+  remaining_paid_total?: number;
+  remaining_promo_count?: number;
+  remaining_promo_total?: number;
+  
+  // User-specific fields
+  isFollowing?: boolean;
+  isAddedToShelf?: boolean;
+  last_read_ep?: number;
+  
+  // Allow additional fields
+  [key: string]: unknown;
+}
+
+/**
+ * Normalized Book interface
+ * Standardized format after data mapping
+ */
+export interface NormalizedBook {
+  book_id: number | string;
+  bookID: number | string;
+  img: string;
+  name: string;
+  title: string;
+  author: string;
+  view: number;
+  chapter: number;
+  tag: string;
+  category?: string;
+  category2?: string;
+  description?: string;
+  status?: string;
+  end?: string;
+  use_coin?: number;
+  use_freecoin?: number;
+  writer?: {
+    user_id: number;
+    writer_name: string;
+    img: string;
+    isFollowing?: boolean;
+  } | null;
+  shelve_count?: number;
+  star?: number;
+  discount?: number;
+}
+
 export enum BookCompletion {
   NOT_END = 'not_end',
   END = 'end',
@@ -500,6 +633,9 @@ export interface StorePack {
   limit_count?: number;
   can_purchase?: boolean;
   remaining_count?: number;
+  limit_unit?: number;
+  limit_unit_month?: number;
+  limit_unit_day?: number;
 }
 
 export interface StoreCategory {

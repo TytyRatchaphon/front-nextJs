@@ -5,21 +5,81 @@ import { useWebsiteStore } from '@/stores/websiteStore';
 import { App } from 'antd';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
+import AddToCartSvg from '@/components/utility/AddToCartSvg';
+import { addToCart, fetchCartItems } from '@/services/cartService';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { imageLoader } from '@/utils/imageUtils';
+
 
 interface StoreCardProps {
   pack: StorePack;
   onBuy: (pack: StorePack) => void;
 }
 
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-  return `${src}?w=${width ?? ''}&q=${quality ?? 100}`
-}
 
 const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
   const { settings } = useWebsiteStore()
-  const { user } = useAuthStore();
-  const { modal } = App.useApp();
+  const { user, token } = useAuthStore() as any;
+  const { modal, message } = App.useApp();
   const router = useRouter();
+  const queryClient = useQueryClient();
+
+  const { data: cartStores } = useQuery({
+    queryKey: ['cartItems'],
+    queryFn: fetchCartItems,
+    enabled: !!token, // Only fetch if logged in
+    staleTime: 1000 * 60, // 1 min cache
+  });
+
+  const qtyInCart = React.useMemo(() => {
+    if (!cartStores) return 0;
+    const item = cartStores.flatMap(s => s.items).find(i => i.store_pack?.store_pack_id === pack.store_pack_id);
+    return item ? item.quantity : 0;
+  }, [cartStores, pack.store_pack_id]);
+
+  const isLimitReached = React.useMemo(() => {
+    // 1. Check Remaining Count (from BE) which handles day/month limits
+    if (typeof pack.remaining_count === 'number') {
+        // If remaining_count is negative (e.g. -1), it means unlimited
+        if (pack.remaining_count < 0) return false;
+        
+        return qtyInCart >= pack.remaining_count;
+    }
+    
+    // 2. Fallback: Check individual limits manually if remaining_count is missing
+    const limits = [
+        pack.limit_unit, 
+        pack.limit_unit_month, 
+        pack.limit_unit_day
+    ].filter(l => typeof l === 'number' && l > 0) as number[];
+
+    if (limits.length > 0) {
+        const minLimit = Math.min(...limits);
+        return qtyInCart >= minLimit;
+    }
+
+    return false;
+  }, [pack, qtyInCart]);
+
+  const addToCartMutation = useMutation({
+    mutationFn: addToCart,
+    onSuccess: () => {
+      message.success('เพิ่มลงตะกร้าเรียบร้อย');
+      queryClient.invalidateQueries({ queryKey: ['cartItems'] });
+    },
+    onError: (error: any) => {
+      const msg = error?.response?.data?.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่';
+      message.error(msg);
+    }
+  });
+
+  const handleAddToCart = (pack: StorePack) => {
+    if (!token) {
+        message.warning('กรุณาเข้าสู่ระบบก่อน');
+        return;
+    }
+    addToCartMutation.mutate({ store_pack_id: pack.store_pack_id, quantity: 1 });
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col items-center text-center h-full hover:shadow-md transition-shadow">
@@ -29,7 +89,7 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
           alt={pack.name}
           fill
           className="object-contain"
-          loader={imageLoader}
+          unoptimized
         />
       </div>
       <h3 className="font-medium text-base sm:text-lg mb-1 line-clamp-1" title={pack.name}>
@@ -56,7 +116,7 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
                   width={20}
                   height={20}
                   alt={pack.type_use}
-                  loader={imageLoader}
+                  unoptimized
                 />
                 <span>{pack.price.toLocaleString()}</span>
               </>
@@ -66,20 +126,36 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
               </>
             )}
           </div>
-          <button
-            onClick={() => {
-              if (pack.can_purchase !== false) {
-                  onBuy(pack)
-              }
-            }}
-            disabled={pack.can_purchase === false}
-            className={`w-full !text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded transition-colors text-xs sm:text-sm ${pack.can_purchase === false
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-red-600 hover:bg-red-700'
-              }`}
-          >
-            {pack.can_purchase === false ? 'เป็นเจ้าของแล้ว' : 'ซื้อ'}
-          </button>
+          <div className="flex gap-2 w-full">
+            <button
+              onClick={() => {
+                if (pack.can_purchase !== false) {
+                    onBuy(pack)
+                }
+              }}
+              disabled={pack.can_purchase === false}
+              className={`flex-1 !text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm font-bold ${pack.can_purchase === false
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-red-600 hover:bg-red-700'
+                }`}
+            >
+              {pack.can_purchase === false ? 'เป็นเจ้าของแล้ว' : 'ซื้อ'}
+            </button>
+            {pack.can_purchase !== false && (
+                <button
+                    onClick={() => handleAddToCart(pack)}
+                    disabled={isLimitReached}
+                    className={`p-2 rounded-lg flex items-center justify-center transition-colors shadow-sm ${
+                        isLimitReached 
+                        ? 'bg-gray-300 cursor-not-allowed' 
+                        : 'bg-red-500 hover:bg-red-600'
+                    }`}
+                    title={isLimitReached ? "ครบจำกัดการซื้อแล้ว" : "เพิ่มลงตะกร้า"}
+                >
+                    <AddToCartSvg width={20} height={20} color="white" />
+                </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

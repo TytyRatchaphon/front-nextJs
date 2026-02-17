@@ -146,7 +146,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
   };
 
   // Loading State
-  if (isLoading) {
+  if (!isReady || isLoading) {
     return (
       <div className="bg-gray-50 min-h-screen">
         <GifLoader className="h-screen" />

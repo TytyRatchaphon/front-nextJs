@@ -132,7 +132,7 @@ export default function RecommendSwiper({ items, title, icon, link }: RecommendS
         freeMode={true}
       >
         {items && items.length > 0 ? (
-          items.map((item, index) => (
+          items.filter(item => item.book).map((item, index) => (
             <SwiperSlide key={item.rec_id || index} className="!w-auto">
               <RecommendCard data={item} />
             </SwiperSlide>

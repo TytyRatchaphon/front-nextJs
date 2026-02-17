@@ -14,10 +14,7 @@ import { fetchCategoryRankingBooks, CategoryRankingBookItem, fetchBookCategoryAl
 import { CategoryDetail } from "@/types/api";
 import { Select } from 'antd';
 import GifLoader from '@/components/utility/GifLoader';
-
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-    return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
-}
+import { imageLoader } from '@/utils/imageUtils';
 
 interface CategoryRankProps {
     categoryId?: string | number;
@@ -25,7 +22,7 @@ interface CategoryRankProps {
 
 export default function CategoryRank({ categoryId }: CategoryRankProps) {
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<'7' | '15' | '30'>('7');
+    const [activeTab, setActiveTab] = useState<'weekly' | 'monthly' | 'yearly'>('weekly');
 
     const { data: categories = [] } = useQuery({
         queryKey: ['bookCategories'],
@@ -35,10 +32,9 @@ export default function CategoryRank({ categoryId }: CategoryRankProps) {
     const { data: books = [], isLoading } = useQuery({
         queryKey: ['categoryRankingPage', categoryId, activeTab],
         queryFn: () => {
-            // Convert tab '7' -> range 7, '15' -> 15, '30' -> 30
-            const rangeMap = { '7': 7, '15': 15, '30': 30 };
+            // Changed from number days to string keywords
             if (!categoryId) return [];
-            return fetchCategoryRankingBooks(Number(categoryId), rangeMap[activeTab], 50);
+            return fetchCategoryRankingBooks(Number(categoryId), activeTab, 50);
         },
         enabled: !!categoryId,
     });
@@ -87,32 +83,32 @@ export default function CategoryRank({ categoryId }: CategoryRankProps) {
                     `}</style>
                     <div className="flex text-lg font-bold">
                         <button
-                            onClick={() => setActiveTab('7')}
-                            className={`flex-1 py-4 text-center transition-colors relative ${activeTab === '7' ? 'text-red-600 bg-red-50' : 'text-gray-600 hover:text-red-500 hover:bg-gray-50'
+                            onClick={() => setActiveTab('weekly')}
+                            className={`flex-1 py-4 text-center transition-colors relative ${activeTab === 'weekly' ? 'text-red-600 bg-red-50' : 'text-gray-600 hover:text-red-500 hover:bg-gray-50'
                                 }`}
                         >
-                            7 วัน
-                            {activeTab === '7' && (
+                            สัปดาห์
+                            {activeTab === 'weekly' && (
                                 <div className="absolute bottom-0 left-0 w-full h-[3px] bg-red-600" />
                             )}
                         </button>
                         <button
-                            onClick={() => setActiveTab('15')}
-                            className={`flex-1 py-4 text-center transition-colors relative ${activeTab === '15' ? 'text-red-600 bg-red-50' : 'text-gray-600 hover:text-red-500 hover:bg-gray-50'
+                            onClick={() => setActiveTab('monthly')}
+                            className={`flex-1 py-4 text-center transition-colors relative ${activeTab === 'monthly' ? 'text-red-600 bg-red-50' : 'text-gray-600 hover:text-red-500 hover:bg-gray-50'
                                 }`}
                         >
-                            15 วัน
-                            {activeTab === '15' && (
+                            เดือน
+                            {activeTab === 'monthly' && (
                                 <div className="absolute bottom-0 left-0 w-full h-[3px] bg-red-600" />
                             )}
                         </button>
                         <button
-                            onClick={() => setActiveTab('30')}
-                            className={`flex-1 py-4 text-center transition-colors relative ${activeTab === '30' ? 'text-red-600 bg-red-50' : 'text-gray-600 hover:text-red-500 hover:bg-gray-50'
+                            onClick={() => setActiveTab('yearly')}
+                            className={`flex-1 py-4 text-center transition-colors relative ${activeTab === 'yearly' ? 'text-red-600 bg-red-50' : 'text-gray-600 hover:text-red-500 hover:bg-gray-50'
                                 }`}
                         >
-                            30 วัน
-                            {activeTab === '30' && (
+                            ปี
+                            {activeTab === 'yearly' && (
                                 <div className="absolute bottom-0 left-0 w-full h-[3px] bg-red-600" />
                             )}
                         </button>
@@ -130,7 +126,7 @@ export default function CategoryRank({ categoryId }: CategoryRankProps) {
                             <p>ไม่พบข้อมูลการจัดอันดับ</p>
                         </div>
                     ) : (
-                        <div className="flex flex-col gap-3 md:gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                             {books.map((book: CategoryRankingBookItem) => (
                                 <div key={book.book_id} className="flex items-start md:items-center gap-3 md:gap-4 py-3 px-3 md:py-4 md:px-4 border border-gray-100 hover:border-red-100 hover:bg-red-50/30 rounded-xl transition-all group cursor-pointer bg-white shadow-sm hover:shadow-md">
                                     {/* Rank Number */}
@@ -147,7 +143,6 @@ export default function CategoryRank({ categoryId }: CategoryRankProps) {
                                             alt={book.name}
                                             fill
                                             className="object-cover transition-transform group-hover:scale-105"
-                                            loader={imageLoader}
                                             unoptimized
                                         />
                                     </div>

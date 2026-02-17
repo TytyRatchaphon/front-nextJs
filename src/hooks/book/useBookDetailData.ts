@@ -138,6 +138,7 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
                 "category2.name": bookDetail["category2.name"],
                 "writer.writer_name": (bookDetail as any)["writer.writer_name"],
                 writer_name: (bookDetail as any).writer_name,
+                status: bookDetail.status,
             }
             : null;
     }, [bookDetail, isInShelf, purchaseDetails, firstEpisodeId, latestEpisodeDate]);

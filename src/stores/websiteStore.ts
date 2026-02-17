@@ -2,11 +2,12 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { WebsiteSettingsData } from '@/types/api';
 import { fetchWebsiteSettings } from '@/services/apiServices';
+import { getErrorMessage } from '@/types/errors';
 
 interface WebsiteStore {
   settings: WebsiteSettingsData | null;
   isLoading: boolean;
-  error: any;
+  error: string | null;
   lastFetched: number;
   fetchSettings: (force?: boolean) => Promise<void>;
   setSettings: (settings: WebsiteSettingsData) => void;
@@ -52,9 +53,9 @@ export const useWebsiteStore = create<WebsiteStore>()(
                  console.error('[WebsiteStore] Fetch failed or invalid status', res);
                  set({ isLoading: false, error: 'Failed to fetch settings' });
                }
-             } catch (err) {
+             } catch (err: unknown) {
                console.error('[WebsiteStore] Fetch error', err);
-               set({ isLoading: false, error: err });
+               set({ isLoading: false, error: getErrorMessage(err) });
              } finally {
                set({ fetchPromise: null });
              }

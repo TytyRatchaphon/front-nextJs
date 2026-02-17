@@ -6,14 +6,12 @@ import Link from "next/link";
 import { Eye, List } from "lucide-react";
 import { CategoryBook } from "@/types/api";
 import { TagSwiper } from "@/components/swiper/ImageSlider";
+import { imageLoader } from "@/utils/imageUtils";
 
 interface CategoryHorizontalCardProps {
   book: CategoryBook;
 }
 
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-  return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
-}
 
 
 const formatViews = (num: number | undefined | null): string => {
@@ -38,7 +36,6 @@ const CategoryHorizontalCard: React.FC<CategoryHorizontalCardProps> = ({ book })
           alt={book.name}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"
-          loader={imageLoader}
           unoptimized
         />
         {book.isNew && (

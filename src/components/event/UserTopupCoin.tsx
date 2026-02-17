@@ -7,6 +7,7 @@ import { GiftOutlined } from '@ant-design/icons'
 import apiClient from '@/services/apiClient'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
+import { QUERY_KEYS, QUERY_CONFIG } from '@/constants/query'
 
 type Props = {
     width?: number | string
@@ -19,6 +20,7 @@ export default function UserTopupCoin({
 }: Props) {
     const { message } = App.useApp()
     const queryClient = useQueryClient()
+    const token = useAuthStore((state) => state.token) // ✅ Use selector instead of .getState()
 
     // 1. Fetch Functions
     const fetchEventSummary = async (overrideToken?: string) => {
@@ -43,10 +45,10 @@ export default function UserTopupCoin({
 
     // 2. Query Data
     const { data } = useQuery({
-        queryKey: ['user-event-summary', useAuthStore.getState().token],
+        queryKey: [QUERY_KEYS.USER_EVENT_SUMMARY, token],
         queryFn: () => fetchEventSummary(),
-        staleTime: 30_000,
-        retry: 1
+        staleTime: QUERY_CONFIG.STALE_TIME_MEDIUM,
+        retry: QUERY_CONFIG.RETRY_COUNT
     })
 
     // Using weekly_topup_data

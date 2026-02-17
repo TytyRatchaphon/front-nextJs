@@ -4,12 +4,13 @@ import Link from 'next/link';
 import parse from 'html-react-parser';
 import { Clock, Eye } from 'lucide-react';
 import { ArticleItem } from '@/types/api';
+import { imageLoader } from '@/utils/imageUtils';
 
 interface ArticleCardProps {
   article: ArticleItem;
 }
 
-const imageLoader = ({ src }: { src: string }) => src;
+
 
 function ArticleCard({ article }: ArticleCardProps) {
   const formatDate = (dateString: string) => {
@@ -27,12 +28,11 @@ function ArticleCard({ article }: ArticleCardProps) {
         {/* Image Container */}
         <div className="w-full h-[140px] relative rounded-lg overflow-hidden flex-shrink-0">
           <Image
-            loader={imageLoader}
+            unoptimized
             src={article.img}
             alt={typeof article.name === 'string' ? article.name.replace(/<[^>]*>?/gm, '') : 'Article'}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
-            unoptimized
           />
         </div>
 

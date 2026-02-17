@@ -4,7 +4,9 @@ import Link from 'next/link'
 import React from 'react'
 import { postBookClick } from '@/services/apiServices';
 import FlashSaleSVG from './FlashSaleSvg';
+import SaleGroupSVG from './SaleGroupSvg';
 import { UniversalBook } from '../../types/api';
+import { imageLoader } from '@/utils/imageUtils';
 
 
 
@@ -13,9 +15,7 @@ interface CardBookProps {
   book: UniversalBook;
 }
 
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-  return `${src}?w=${width ?? ''}&q=${quality ?? 100}`
-}
+
 
 function CardBook({ book }: CardBookProps) {
 
@@ -88,7 +88,6 @@ function CardBook({ book }: CardBookProps) {
                 height={237}
                 loading="lazy"
                 unoptimized
-                loader={imageLoader}
                 onError={() => {
                   setImgError(true);
                 }}
@@ -100,7 +99,7 @@ function CardBook({ book }: CardBookProps) {
                 className="w-full h-[237px] object-cover rounded-t-lg relative z-0"
                 width={168}
                 height={237}
-                loader={imageLoader}
+                unoptimized
               />
             )}
 
@@ -117,7 +116,7 @@ function CardBook({ book }: CardBookProps) {
                   width={120}
                   height={30}
                   className="w-full h-[40px] object-contain align-bottom"
-                  loader={imageLoader}
+                  unoptimized
                 />
                 <div className="absolute bottom-[1px] left-0 right-0 text-center text-white text-[11px] font-bold drop-shadow-md">
                   ลดราคา <span className="text-[#FFD700] text-xs mx-0.5">{book.discount_ep_count}</span> ตอน
@@ -145,17 +144,10 @@ function CardBook({ book }: CardBookProps) {
               new: { src: "/images/new.png", width: 50, height: 50, className: "absolute top-2 right-1" },
               discount: (percent: number | string) => ({
                 component: (
-                  <div className="absolute -top-3 -right-3 z-20 w-[75px] h-[75px]">
-                    <Image
-                      src="/images/sale-group.png"
-                      alt="sale"
-                      width={75}
-                      height={75}
-                      className="absolute inset-0 object-contain drop-shadow-md"
-                      loader={imageLoader}
-                    />
-                    <span className="absolute top-[64px] right-[18px] text-white  text-[15px] leading-none transform -rotate-[17deg]">{percent}%</span>
-                  </div>
+                  <SaleGroupSVG 
+                    className="absolute top-0 right-2 z-20 w-[2.8rem] h-[3.9rem] drop-shadow-md" 
+                    percent={percent} 
+                  />
                 )
               }),
               newEp: { src: "/images/new.png", width: 36, height: 36, className: "absolute top-0 right-0" },
@@ -196,7 +188,7 @@ function CardBook({ book }: CardBookProps) {
                       width={leftBadge.width}
                       height={leftBadge.height}
                       className="object-contain drop-shadow-md"
-                      loader={imageLoader}
+                      unoptimized
                     />
                   </div>
                 ))}
@@ -208,7 +200,7 @@ function CardBook({ book }: CardBookProps) {
                       width={rightBadge.width}
                       height={rightBadge.height}
                       className="object-contain drop-shadow-md"
-                      loader={imageLoader}
+                      unoptimized
                     />
                   </div>
                 ))}

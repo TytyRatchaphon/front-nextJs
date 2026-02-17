@@ -11,7 +11,7 @@ import Navbar from "@/components/navbar/navbar";
 import FooterWrapper from "@/components/home/FooterWrapper";
 // import StyledComponentsRegistry from './AntdRegistry';
 import SocketProvider from "@/providers/SocketProvider";
-import { App } from 'antd';
+import { App, ConfigProvider } from 'antd';
 
 const baiJamjuree = Bai_Jamjuree({
   weight: ["500"],
@@ -173,19 +173,21 @@ export default function RootLayout({
         
           <TanstackProvider>
             <SocketProvider>
-              <App>
-                <Suspense fallback={null}>
-                  <TokenUpdater />
-                </Suspense>
-                <Suspense fallback={null}>
-                  <Navbar />
-                </Suspense>
-                <Suspense fallback={null}>
-                  <GlobalLogger />
-                </Suspense>
-                {children}
-                <FooterWrapper />
-              </App>
+              <ConfigProvider theme={{ token: { colorPrimary: '#f5222d' } }}>
+                <App>
+                  <Suspense fallback={null}>
+                    <TokenUpdater />
+                  </Suspense>
+                  <Suspense fallback={null}>
+                    <Navbar />
+                  </Suspense>
+                  <Suspense fallback={null}>
+                    <GlobalLogger />
+                  </Suspense>
+                  {children}
+                  <FooterWrapper />
+                </App>
+              </ConfigProvider>
             </SocketProvider>
           </TanstackProvider>
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID || "G-RTWVKZ2MVF"} />

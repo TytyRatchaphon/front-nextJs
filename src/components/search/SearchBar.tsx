@@ -15,6 +15,7 @@ interface Category {
 interface SelectedFilters {
   categories: number[];
   types: string[];
+  content_type: string[];
   status: string[];
   end: string; // "all", "end", หรือ "notend"
 }
@@ -26,6 +27,7 @@ interface SearchBarProps {
     query: string;
     categories: number[];
     types: string[];
+    content_type: string[];
     status: string[];
     end: string;
     sortBy: string;
@@ -43,6 +45,7 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
   const [selectedFilters, setSelectedFilters] = useState<SelectedFilters>(initialFilters || {
     categories: [],
     types: [],
+    content_type: [],
     status: [],
     end: "all",
   });
@@ -217,6 +220,23 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
     });
   }, []);
 
+  const handleContentTypeChange = useCallback((value: string) => {
+    setSelectedFilters((prev) => {
+      const currentList = prev.content_type || [];
+      if (currentList.includes(value)) {
+        return {
+          ...prev,
+          content_type: currentList.filter((item) => item !== value),
+        };
+      } else {
+        return {
+          ...prev,
+          content_type: [...currentList, value],
+        };
+      }
+    });
+  }, []);
+
 
   const handleEndChange = useCallback((value: string) => {
     setSelectedFilters((prev) => ({
@@ -226,7 +246,7 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
   }, []);
 
   const removeFilter = (
-    type: "categories" | "types" | "status" | "end",
+    type: "categories" | "types" | "content_type" | "status" | "end",
     value: number | string
   ) => {
     if (type === "end") {
@@ -247,6 +267,7 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
     setSelectedFilters({
       categories: [],
       types: [],
+      content_type: [],
       status: [],
       end: "all",
     });
@@ -254,7 +275,7 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
 
   const getAllSelectedFilters = () => {
     const filters: Array<{
-      type: "categories" | "types" | "status" | "end";
+      type: "categories" | "types" | "content_type" | "status" | "end";
       value: number | string;
       label: string;
     }> = [
@@ -271,6 +292,11 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
           value: item,
           label:
             item === "tran" ? "นิยายแปล" : item === "chat" ? "นิยายแต่ง" : item,
+        })),
+        ...(selectedFilters.content_type || []).map((item) => ({
+          type: "content_type" as const,
+          value: item,
+          label: item === "novel" ? "นิยายรายตอน" : item === "novel_pack" ? "นิยายมัดแพ็ค" : item,
         })),
         ...selectedFilters.status.map((item) => ({
           type: "status" as const,
@@ -311,6 +337,7 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
         query: searchQuery,
         categories: selectedFilters.categories,
         types: selectedFilters.types,
+        content_type: selectedFilters.content_type || [],
         status: selectedFilters.status,
         end: selectedFilters.end,
         sortBy,
@@ -333,6 +360,7 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
             query: searchQuery,
             categories: selectedFilters.categories,
             types: selectedFilters.types,
+            content_type: selectedFilters.content_type || [],
             status: selectedFilters.status,
             end: selectedFilters.end,
             sortBy,
@@ -425,6 +453,30 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
             ) : (
               <p className="text-gray-400 text-center py-2">ไม่มีหมวดหมู่</p>
             )}
+          </div>
+        </div>
+
+        {/* ประเภทเนื้อหา */}
+        <div className="mb-5">
+          <p className="font-medium mb-2">ประเภทเนื้อหา</p>
+          <div className="flex flex-col gap-2 text-sm">
+            {[
+              { value: "novel", label: "นิยายรายตอน" },
+              { value: "novel_pack", label: "นิยายมัดแพ็ค" },
+            ].map((item) => (
+              <label
+                key={item.value}
+                className="flex items-center gap-2 cursor-pointer hover:text-red-500"
+              >
+                <input
+                  type="checkbox"
+                  className="accent-red-500 cursor-pointer w-4 h-4"
+                  checked={selectedFilters.content_type?.includes(item.value)}
+                  onChange={() => handleContentTypeChange(item.value)}
+                />
+                <span className="select-none">{item.label}</span>
+              </label>
+            ))}
           </div>
         </div>
 
@@ -573,6 +625,7 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
                                     query: item,
                                     categories: selectedFilters.categories,
                                     types: selectedFilters.types,
+                                    content_type: selectedFilters.content_type || [],
                                     status: selectedFilters.status,
                                     end: selectedFilters.end,
                                     sortBy,
@@ -608,19 +661,28 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
       <div className="lg:hidden mb-4">
         <div className="flex items-center gap-2">
           <select
-            className="flex-2 border border-gray-200 rounded-md text-xs px-2 py-1 h-[36px] text-gray-500 bg-gray-50 focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
+            className="flex-1 w-full border border-gray-200 rounded-md text-xs px-2 py-1 h-[36px] text-gray-700 bg-gray-50 focus:ring-2 focus:ring-red-500 focus:border-red-500 focus:bg-white"
+            value={selectedFilters.content_type?.[0] || ""}
+            onChange={(e) => {
+               const val = e.target.value;
+               setSelectedFilters(prev => ({
+                   ...prev,
+                   content_type: val ? [val] : []
+               }));
+            }}
           >
-            <option value="date_at">ล่าสุด</option>
-            <option value="view">ยอดนิยม</option>
+            <option value="">ทั้งหมด</option>
+            <option value="novel">นิยายรายตอน</option>
+            <option value="novel_pack">นิยายมัดแพ็ค</option>
           </select>
 
           <Button
             icon={<FilterOutlined style={{ color: "white" }} />}
             onClick={showDrawer}
+            htmlType="button"
             className="flex items-center justify-center"
             style={{
+              minWidth: "36px",
               width: "36px",
               height: "36px",
               padding: 0,

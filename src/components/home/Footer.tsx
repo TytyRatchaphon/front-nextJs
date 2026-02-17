@@ -68,12 +68,12 @@ export default function Footer() {
             </div>
             {settings?.img_play_store && (
               <Link href={settings?.play_store || '#'} className="relative w-[140px] h-[45px] block">
-                <Image src={settings.img_play_store} alt="Google Play" fill className="object-contain " loader={imageLoader} />
+                <Image src={settings.img_play_store} alt="Google Play" fill className="object-contain " unoptimized />
               </Link>
             )}
             {settings?.img_app_store && (
               <Link href={settings?.app_store || '#'} className="relative w-[140px] h-[45px] block">
-                <Image src={settings.img_app_store} alt="App Store" fill className="object-contain" loader={imageLoader} />
+                <Image src={settings.img_app_store} alt="App Store" fill className="object-contain" unoptimized />
               </Link>
             )}
           </div>
@@ -81,16 +81,16 @@ export default function Footer() {
           <div className="flex flex-col items-center md:items-end gap-2 text-gray-400">
             <div className="flex items-center gap-4">
               <a href={settings?.fb_link || '#'} aria-label="Facebook" className="hover:opacity-80 transition-opacity">
-                <Image src={settings?.social1 || '/images/social-1.png'} alt="Facebook" width={32} height={32} className="w-8 h-8 object-contain" loader={imageLoader} />
+                <Image src={settings?.social1 || '/images/social-1.png'} alt="Facebook" width={32} height={32} className="w-8 h-8 object-contain" unoptimized />
               </a>
               <a href={settings?.ig_link || '#'} aria-label="Instagram" className="hover:opacity-80 transition-opacity">
-                <Image src={settings?.social4 || '/images/social-2.png'} alt="Instagram" width={32} height={32} className="w-8 h-8 object-contain" loader={imageLoader} />
+                <Image src={settings?.social4 || '/images/social-2.png'} alt="Instagram" width={32} height={32} className="w-8 h-8 object-contain" unoptimized />
               </a>
               <a href={settings?.line_link || '#'} aria-label="Line" className="hover:opacity-80 transition-opacity">
-                <Image src={settings?.social2 || '/images/social-3.png'} alt="Line" width={32} height={32} className="w-8 h-8 object-contain" loader={imageLoader} />
+                <Image src={settings?.social2 || '/images/social-3.png'} alt="Line" width={32} height={32} className="w-8 h-8 object-contain" unoptimized />
               </a>
               <a href={settings?.tiktok_link || '#'} aria-label="Tiktok" className="hover:opacity-80 transition-opacity">
-                <Image src={settings?.social6 || '/images/social-1.png'} alt="Tiktok" width={32} height={32} className="w-8 h-8 object-contain" loader={imageLoader} />
+                <Image src={settings?.social6 || '/images/social-1.png'} alt="Tiktok" width={32} height={32} className="w-8 h-8 object-contain" unoptimized />
               </a>
             </div>
             <p className="text-xs mt-2 ">Copyright © EnjoyBook CO., LTD.</p>

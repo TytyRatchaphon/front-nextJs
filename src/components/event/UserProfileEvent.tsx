@@ -5,10 +5,8 @@ import Image from 'next/image'
 import { Image as AntdImage } from 'antd'
 import { useAuthStore } from '@/stores/authStore'
 import { useWebsiteStore } from '@/stores/websiteStore'
+import { imageLoader } from '@/utils/imageUtils';
 
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-  return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
-}
 
 type Props = {
   avatar?: string | null
@@ -97,7 +95,6 @@ export default function UserProfileEvent({
             alt="avatar"
             width={120}
             height={120}
-            loader={imageLoader}
             unoptimized
             className="w-[120px] h-[120px] rounded-full object-cover"
             onError={(e) => { (e.target as HTMLImageElement).src = '/images/default-avatar.png'; }}
@@ -115,41 +112,41 @@ export default function UserProfileEvent({
           <div className="grid grid-cols-3 gap-y-6 gap-x-4 md:flex md:items-center md:gap-8 lg:gap-16 place-items-center w-full md:w-auto">
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-center justify-center">
-                <Image src={settings?.coin || '/images/coin.png'} alt="coin" width={40} height={40} sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} loader={imageLoader} unoptimized />
+                <Image src={settings?.coin || '/images/coin.png'} alt="coin" width={40} height={40} sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} unoptimized  />
               </div>
               <div className="text-black  text-sm md:text-base mt-1">{finalCoins.toLocaleString()}</div>
             </div>
 
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-center justify-center">
-                <Image src={settings?.freecoin || '/images/freecoin.png'} alt="freecoin" width={40} height={40} sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} loader={imageLoader} unoptimized />
+                <Image src={settings?.freecoin || '/images/freecoin.png'} alt="freecoin" width={40} height={40} sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'}  unoptimized />
               </div>
               <div className="text-black  text-sm md:text-base mt-1">{finalFreecoins.toLocaleString()}</div>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-center justify-center">
-                <Image src={settings?.stamp || '/images/userstamp.png'} alt="stamp" width={40} height={40} sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} loader={imageLoader} unoptimized />
+                <Image src={settings?.stamp || '/images/userstamp.png'} alt="stamp" width={40} height={40} sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'}  unoptimized />
               </div>
               <div className="text-black  text-sm md:text-base mt-1">{finalStamps.toLocaleString()}</div>
             </div>
 
             {/* <div className="flex flex-col items-center gap-1">
               <div className="flex items-center justify-center">
-                <Image src={settings?.flower || '/images/flower.png'} alt="flower" width={40} height={40} sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} loader={imageLoader} unoptimized />
+                <Image src={settings?.flower || '/images/flower.png'} alt="flower" width={40} height={40} sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} unoptimized unoptimized />
               </div>
               <div className="text-black  text-sm md:text-base mt-1">{finalFlowers}</div>
             </div>
 
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-center justify-center">
-                <Image src={settings?.heart || '/images/heart40.png'} alt="heart" width={40} height={40} sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} loader={imageLoader} unoptimized />
+                <Image src={settings?.heart || '/images/heart40.png'} alt="heart" width={40} height={40} sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} unoptimized unoptimized />
               </div>
               <div className="text-black  text-sm md:text-base mt-1">{finalHearts}</div>
             </div>
 
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-center justify-center">
-                <Image src={settings?.coupon || '/images/coupon.png'} alt="coupon" width={40} height={40} sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} loader={imageLoader} unoptimized />
+                <Image src={settings?.coupon || '/images/coupon.png'} alt="coupon" width={40} height={40} sizes="(min-width: 768px) 40px, 32px" className={iconStyle + ' object-contain'} unoptimized unoptimized />
               </div>
               <div className="text-black  text-sm md:text-base mt-1">{finalCoupons}</div>
             </div> */}

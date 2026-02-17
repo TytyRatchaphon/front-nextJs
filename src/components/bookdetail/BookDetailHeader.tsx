@@ -13,6 +13,7 @@ import { useUIStore } from "@/stores/uiStore";
 import { FacebookShareButton, TwitterShareButton, LineShareButton } from "react-share";
 import { TagSwiper } from "@/components/swiper/ImageSlider";
 import { useWebsiteStore } from '@/stores/websiteStore';
+import { imageLoader } from '@/utils/imageUtils';
 
 interface BookDetailHeaderProps {
   book: {
@@ -48,12 +49,8 @@ interface BookDetailHeaderProps {
   };
 }
 
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-  if (src.startsWith('http') || src.startsWith('data:') || src.startsWith('/')) return src;
-  return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
-}
-
 const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
+  const isDeleted = book.status?.toLowerCase().trim() === 'delete';
   const { message: messageApi } = App.useApp();
   const { token, hasMounted, user } = useAuthStore() as any;
   const { openLoginModal } = useUIStore();
@@ -240,7 +237,7 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
               objectPosition: "center",
             }}
             priority
-            loader={imageLoader}
+            unoptimized
           />
         </div>
         {/* Overlay gradient for better readability */}
@@ -294,7 +291,7 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
                       width={16}
                       height={16}
                       className="w-3 h-3 sm:w-4 sm:h-4 object-contain"
-                      loader={imageLoader}
+                      unoptimized
                     />
                     <span className="font-medium">
                       {book.views?.toLocaleString() || 0}
@@ -307,7 +304,7 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
                       width={16}
                       height={16}
                       className="w-3 h-3 sm:w-4 sm:h-4 object-contain"
-                      loader={imageLoader}
+                      unoptimized
                     />
                     <span className="font-medium">
                       {book.reviews?.toLocaleString() || 0}
@@ -391,6 +388,7 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
                   </svg>
                   <span>{readEpInfo?.label || "อ่านเลย"}</span>
                 </Link>
+                {!isDeleted && (
                 <button
                   onClick={handleToggleBookshelf}
                   disabled={loading}
@@ -411,6 +409,8 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
                     {isAdded ? "นำออกจากชั้น" : "เพิ่มเข้าชั้น"}
                   </span>
                 </button>
+                )}
+                {!isDeleted && (
                 <button
                   onClick={() => setShareModalOpen(true)}
                   className="bg-white border border-red-800 text-gray-700 px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm hover:bg-gray-50 transition flex items-center gap-1.5 sm:gap-2"
@@ -426,6 +426,7 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
                   </svg>
                   <span className="text-red-800">แชร์</span>
                 </button>
+                )}
               </div>
             </div>
           </div>

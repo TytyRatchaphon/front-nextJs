@@ -16,6 +16,9 @@ import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { jwtDecode } from "jwt-decode";
+import { imageLoader } from '@/utils/imageUtils';
+import type { Episode, EpisodeGroup, BookEpisodesResponse } from '@/types/api';
+import { getErrorMessage } from '@/types/errors';
 
 
 type Book = {
@@ -56,10 +59,6 @@ type Book = {
   end?: string;
   status?: string;
 };
-
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-  return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
-}
 
 function decodeToken(token: string) {
   try {
@@ -152,6 +151,7 @@ const Pill = ({
 );
 
 const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
+  const isDeleted = book.status?.toLowerCase().trim() === 'delete';
   const [heartQty, setHeartQty] = useState<number>(0);
   const [roseQty, setRoseQty] = useState<number>(0);
   const { token, isLoggedIn, updateToken, user } = useAuthStore();
@@ -170,14 +170,14 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   const [payWith, setPayWith] = useState<'coin' | 'freecoin'>('coin');
 
   // Fetch episodes when modal opens
-  const queryResult: any = useQuery({
+  const queryResult = useQuery<BookEpisodesResponse>({
     queryKey: ["bookEpisodes", String(bookId ?? ""), token],
     queryFn: () => fetchBookEpisodes(String(bookId ?? "")),
     enabled: isModalOpen && !!bookId,
     staleTime: 5 * 60 * 1000,
   });
-  const episodesData = queryResult.data as any;
-  const isFetching = queryResult.isFetching as boolean;
+  const episodesData = queryResult.data;
+  const isFetching = queryResult.isFetching;
 
   const openModal = () => {
     if (!isLoggedIn) {
@@ -186,10 +186,10 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     }
     setSelectedEpisodeIds([]);
     // expand first group by default when opening
-    if (episodesData?.groups && episodesData.groups.length > 0) {
-      const firstId = String(episodesData.groups[0].group_id);
+    if (episodesData?.data?.groups && episodesData.data.groups.length > 0) {
+      const firstId = String(episodesData.data.groups[0].group_id);
       const map: Record<string, boolean> = {};
-      for (const g of episodesData.groups) map[String(g.group_id)] = false;
+      for (const g of episodesData.data.groups) map[String(g.group_id)] = false;
       map[firstId] = true;
       setExpandedGroups(map);
     }
@@ -383,9 +383,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   };
 
   const selectedSummary = useMemo(() => {
-    if (!episodesData?.groups) return { count: 0, total: 0 };
+    if (!episodesData?.data?.groups) return { count: 0, total: 0 };
     let total = 0;
-    for (const g of episodesData.groups) {
+    for (const g of episodesData.data.groups) {
       for (const ep of g.list) {
         if (selectedEpisodeIds.includes(ep.ep_id) && ep.coin > 0) {
           const { finalPrice } = resolveEpisodePrice(ep);
@@ -397,9 +397,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   }, [selectedEpisodeIds, episodesData]);
 
   const allSelectableIds = useMemo(() => {
-    if (!episodesData?.groups) return [] as number[];
+    if (!episodesData?.data?.groups) return [] as number[];
     const ids: number[] = [];
-    for (const g of episodesData.groups) {
+    for (const g of episodesData.data.groups) {
       for (const ep of g.list) {
         if (ep.coin > 0 && !ep.isBuy) ids.push(ep.ep_id);
       }
@@ -540,6 +540,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
         </div>
 
         {/* Content Card */}
+        {!isDeleted && (
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
           <div className="px-5 py-2 border-b border-gray-100">
 
@@ -595,7 +596,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                           <span className="text-lg !text-red-600 ">ซื้อราคาโปรโมชั่น</span>
                           <div className="flex items-center gap- bg-red-50 px-3 py-1 rounded-full border border-red-100 group-hover:bg-red-100 transition-colors">
                             <span className="!text-red-600 font-extrabold text-base">{book.promotion.price.toLocaleString()}</span>
-                            <Image src="/images/e-coin.png" alt="Coin" width={18} height={18} className="drop-shadow-sm" loader={imageLoader} />
+                            <Image src="/images/e-coin.png" alt="Coin" width={18} height={18} className="drop-shadow-sm" unoptimized />
                           </div>
                         </>
                       )}
@@ -617,7 +618,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                     <span className="text-[14px] font-bold text-gray-800">
                       เหมาทั้งเรื่อง
                     </span>
-                    <Image src={settings?.coin || '/images/e-coin.png'} alt="Coin" width={20} height={20} loader={imageLoader} />
+                    <Image src={settings?.coin || '/images/e-coin.png'} alt="Coin" width={20} height={20} unoptimized />
                   </div>
                   <div className="flex items-baseline gap-3">
                     <span className="text-2xl leading-none font-extrabold text-red-600">
@@ -648,7 +649,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                         <div className="text-sm text-gray-700">เลือก {selectedSummary.count} ตอน</div>
                         <div className="text-sm font-semibold text-red-600 flex items-center gap-2">
                           รวม {selectedSummary.total} ฿
-                          <Image src={"/images/e-coin.png"} alt="currency" width={16} height={16} loader={imageLoader} />
+                          <Image src={"/images/e-coin.png"} alt="currency" width={16} height={16} unoptimized />
                         </div>
                         <Button type="primary" danger disabled={selectedSummary.count === 0} onClick={() => {
                           if (!isLoggedIn) {
@@ -684,11 +685,11 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                         <div className="font-semibold text-red-600 flex items-center gap-1">
                           รวม {selectedSummary.total}
                           <div className="relative w-4 h-4 shrink-0">
-                            <Image src={settings?.coin || "/images/e-coin.png"} alt="Coin" fill className="object-contain" loader={imageLoader} />
+                            <Image src={settings?.coin || "/images/e-coin.png"} alt="Coin" fill className="object-contain" unoptimized />
                           </div>
                           {book.use_freecoin === 1 && (
                             <div className="relative w-4 h-4 shrink-0">
-                              <Image src={settings?.freecoin || "/images/money-bag.png"} alt="FreeCoin" fill className="object-contain" loader={imageLoader} />
+                              <Image src={settings?.freecoin || "/images/money-bag.png"} alt="FreeCoin" fill className="object-contain" unoptimized />
                             </div>
                           )}
                         </div>
@@ -696,7 +697,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                     </div>
 
                     <div className="space-y-4 max-h-[60vh] overflow-auto">
-                      {episodesData?.groups?.map((group: any) => {
+                      {episodesData?.data?.groups?.map((group: EpisodeGroup) => {
                         const gid = String(group.group_id);
                         const isExpanded = expandedGroups[gid] ?? false;
                         const selectableIds = group.list.filter((ep: any) => ep.coin > 0 && !ep.isBuy).map((ep: any) => ep.ep_id);
@@ -750,9 +751,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                                       <div className="flex items-center gap-3">
                                         {(regularPrice > 0 || hasPromo) ? (
                                           <div className="flex items-center gap-1.5 justify-end">
-                                            <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={16} height={16} loader={imageLoader} />
+                                            <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={16} height={16} unoptimized />
                                             {book.use_freecoin === 1 && (
-                                              <Image src={settings?.freecoin || "/images/money-bag.png"} alt="freecoin" width={16} height={16} loader={imageLoader} />
+                                              <Image src={settings?.freecoin || "/images/money-bag.png"} alt="freecoin" width={16} height={16} unoptimized />
                                             )}
                                             {hasPromo ? (
                                               <>
@@ -959,6 +960,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
 
         </div >
       </div >
+      )}
     </div >
       {showSuccess && <SuccessAnimation onComplete={async () => {
         setShowSuccess(false);

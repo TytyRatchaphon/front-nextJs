@@ -4,19 +4,14 @@ import Link from 'next/link';
 import { Book as BookIcon } from 'lucide-react';
 
 interface ContinueHomeCardBookProps {
-  book: any; // Using any for now to match flexible API response, refactor to proper type later
+  book: any;
 }
 
 const ContinueHomeCardBook = ({ book }: ContinueHomeCardBookProps) => {
-  // Safe access to properties
   const title = book.name || book.title || 'Unknown Title';
   const author = book.writer_name || book.author || 'Unknown Author';
   const cover = book.img_full || book.img || book.cover || '/images/default-book.png';
   const lastEp = book.last_read_ep_name || book.last_read_ep || 'Chapter ?';
-  // Assuming API gives total unread or similar, otherwise mock logic or hide
-  // The UI shows "อ่านต่อมากกว่า 10+ ตอน", implying we might need a calculation 
-  // or it's a static text for 'continue reading'. 
-  // If we have total_chapter and last_read_ep_order, we can calc.
   
   return (
     <Link href={`/read/${book.book_id}/${book.last_read_ep_id}`} className="block w-[85vw] sm:w-auto">

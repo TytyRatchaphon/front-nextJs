@@ -4,6 +4,7 @@ import axios from 'axios';
 import type { WebsiteSettingsResponse } from "@/types/api";
 import Cookies from 'js-cookie';
 import type { BookTrans, BookDetail, BookDetailResponse, CommentResponse, CommentData, CommentEpData, StickerSet, StickerResponse, ThreadResponse, ArticleResponse, CampaignDetailResponse, CampaignDetailData, StoreCategory, StoreResponse, BookPurchaseDetailsResponse, CategoryBookListResponse, CategoryDetail, CategoryAllResponse, LatestReadEpisodeResponse, CampaignDiscount, PackCampaignDetail, BookPromotionOption } from "@/types/api";
+import { getErrorMessage } from "@/types/errors";
 
 export const fetchPackCampaignDetail = async (id: string): Promise<PackCampaignDetail | null> => {
   try {
@@ -1315,9 +1316,9 @@ export interface RankingResponse {
 
 export type RankingTimeRange = 'week' | 'month' | 'year' | 'all';
 
-export const fetchRankingBooks = async (range: RankingTimeRange = 'week', page: number = 1, limit: number = 10): Promise<{ books: RankingBook[]; pagination: ArticlePagination }> => {
+export const fetchRankingBooks = async (range: RankingTimeRange = 'week', page: number = 1, limit: number = 10, category_id?: number | string): Promise<{ books: RankingBook[]; pagination: ArticlePagination }> => {
   try {
-    const response = await apiClient.get<RankingResponse>(`/books/ranks/${range}?limit=${limit}&page=${page}`);
+    const response = await apiClient.get<RankingResponse>(`/books/ranks/${range}?limit=${limit}&page=${page}${category_id ? `&category_id=${category_id}` : ''}`);
     return response.data?.data || { books: [], pagination: { page: 1, limit, total: 0, totalPages: 0, nextPage: null, prevPage: null } };
   } catch (error) {
     return { books: [], pagination: { page: 1, limit, total: 0, totalPages: 0, nextPage: null, prevPage: null } };
@@ -1524,7 +1525,7 @@ export interface CategoryRankingBooksResponse {
   };
 }
 
-export const fetchCategoryRankingBooks = async (categoryId: number, range: number, limit: number = 5): Promise<CategoryRankingBookItem[]> => {
+export const fetchCategoryRankingBooks = async (categoryId: number, range: number | string, limit: number = 5): Promise<CategoryRankingBookItem[]> => {
   try {
     const url = `/books/ranking/${categoryId}/${range}?limit=${limit}`;
     const response = await apiClient.get<CategoryRankingBooksResponse>(url);
@@ -2153,3 +2154,92 @@ export const fetchActiveCategories = async (type: string = 'all'): Promise<Activ
     return [];
   }
 };
+
+export interface Coupon {
+  id: number;
+  name: string;
+  description: string;
+  totalQuantity: number;
+  remainingQuantity: number;
+  holdingLimit: number;
+  startAt: string;
+  endAt: string;
+  dailyStartTime: string;
+  dailyEndTime: string;
+  usableStartAt: string | null;
+  usableEndAt: string | null;
+  usableDailyStartTime: string;
+  usableDailyEndTime: string;
+  validityDurationMinutes: number | null;
+  userSegmentRules: string;
+  isStackable: boolean;
+  redemptionType: string;
+  globalCode: string | null;
+  selectionQuota: number;
+  isActive: boolean;
+  createdBy: number;
+  createdAt: string;
+  updatedAt: string;
+  rewards: {
+      id: number;
+      couponId: number;
+      rewardType: string;
+      rewardConfig: string; // JSON string e.g. "{\"amount\":50}"
+      book?: {
+          title: string;
+          img: string;
+          img_full: string;
+      };
+  }[];
+  isClaimable: boolean;
+  claimStatus: string;
+}
+
+export const fetchAvailableCoupons = async (): Promise<Coupon[]> => {
+  try {
+    const response = await apiClient.get<{ code: number; status: string; message: string; data: Coupon[] }>("/user/coupon/available");
+    return response.data?.data || [];
+  } catch (error) {
+    return [];
+  }
+};
+
+export const fetchUserCoupons = async (): Promise<Coupon[]> => {
+  try {
+    const response = await apiClient.get<{ code: number; status: string; message: string; data: Coupon[] }>("/user/coupon/mine");
+    return response.data?.data || [];
+  } catch (error) {
+    return [];
+  }
+};
+
+export const claimCoupon = async (id: number): Promise<any> => {
+    try {
+        const response = await apiClient.post(`/user/coupon/claim`, { id });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+export const claimCouponByCode = async (code: string): Promise<any> => {
+    try {
+        const response = await apiClient.post(`/user/coupon/claim`, { code });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+export const useCoupon = async (userCouponId: number, selectedRewardIds: number[], rewardEpSelections?: Record<number, number[]>): Promise<any> => {
+    try {
+        const payload: any = { userCouponId, selectedRewardIds };
+        if (rewardEpSelections) {
+            payload.rewardEpSelections = rewardEpSelections;
+        }
+        const response = await apiClient.post(`/user/coupon/use`, payload);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}

@@ -325,7 +325,7 @@ function AllEvent() {
           aria-label="จิ๊กซอว์"
           className="flex-1 w-full min-w-0 h-auto aspect-[376/116] p-0 border-none bg-transparent rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
         >
-          <Image src="/images/jigsaw.png" alt="จิ๊กซอว์" width={376} height={116} loader={imageLoader} unoptimized style={{ objectFit: 'cover', display: 'block', width: '100%', height: '100%' }} />
+          <Image src="/images/jigsaw.png" alt="จิ๊กซอว์" width={376} height={116} unoptimized unoptimized style={{ objectFit: 'cover', display: 'block', width: '100%', height: '100%' }} />
         </button>
 
         <button
@@ -334,7 +334,7 @@ function AllEvent() {
           onClick={() => setStampModalOpen(true)}
           className="flex-1 w-full min-w-0 h-auto aspect-[376/116] p-0 border-none bg-transparent rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
         >
-          <Image src="/images/stamp-ex.png" alt="แลกสแตมป์" width={376} height={116} loader={imageLoader} unoptimized style={{ objectFit: 'cover', display: 'block', width: '100%', height: '100%' }} />
+          <Image src="/images/stamp-ex.png" alt="แลกสแตมป์" width={376} height={116} unoptimized unoptimized style={{ objectFit: 'cover', display: 'block', width: '100%', height: '100%' }} />
         </button>
 
         {/* <button
@@ -343,7 +343,7 @@ function AllEvent() {
           onClick={openGachaModal}
           className="flex-1 w-full min-w-0 h-auto aspect-[376/116] p-0 border-none bg-transparent rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
         >
-          <Image src="/images/gachapon.png" alt="สุ่มกาชาปอง" width={376} loader={imageLoader} unoptimized height={116} style={{ objectFit: 'cover', display: 'block', width: '100%', height: '100%' }} />
+          <Image src="/images/gachapon.png" alt="สุ่มกาชาปอง" width={376} unoptimized unoptimized height={116} style={{ objectFit: 'cover', display: 'block', width: '100%', height: '100%' }} />
         </button> */}
       </div>
 
@@ -358,7 +358,7 @@ function AllEvent() {
         {stage === 1 && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, width: '100%' }}>
             <div style={{ flex: '0 0 auto' }}>
-              <Image src="/images/gachaStatic.gif" alt="gacha" width={220} height={220} style={{ objectFit: 'contain' }} loader={imageLoader} unoptimized />
+              <Image src="/images/gachaStatic.gif" alt="gacha" width={220} height={220} style={{ objectFit: 'contain' }} unoptimized unoptimized />
             </div>
             <div style={{ width: '100%', display: 'flex', justifyContent: 'center', flex: '0 0 auto' }}>
               <Button
@@ -381,7 +381,7 @@ function AllEvent() {
         {stage === 2 && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, width: '100%' }}>
             <div style={{ flex: '0 0 auto' }}>
-              <Image src={gachaImage} alt="gacha-play" width={220} height={220} style={{ objectFit: 'contain' }} loader={imageLoader} unoptimized />
+              <Image src={gachaImage} alt="gacha-play" width={220} height={220} style={{ objectFit: 'contain' }} unoptimized unoptimized />
             </div>
             <div style={{ display: 'flex', gap: 12, flex: '0 0 auto' }}>
               <Button onClick={handleSkip} className="!bg-red-600 hover:!bg-red-700 !border-red-600 hover:!border-red-700" style={{ color: '#fff', height: 44, borderRadius: 8, padding: '0 20px' }}>ข้าม</Button>
@@ -407,7 +407,7 @@ function AllEvent() {
 
                     return (
                       <>
-                        <Image src={img} alt={label} width={96} height={96} style={{ objectFit: 'contain' }} loader={imageLoader} unoptimized />
+                        <Image src={img} alt={label} width={96} height={96} style={{ objectFit: 'contain' }} unoptimized unoptimized />
                         <div>{`คุณได้รับ ${unit} ${label}`}</div>
                       </>
                     )
@@ -449,7 +449,7 @@ function AllEvent() {
               width={100}
               height={100}
               style={{ objectFit: 'contain' }}
-              loader={imageLoader}
+              unoptimized
               unoptimized
             />
           </div>
@@ -487,7 +487,7 @@ function AllEvent() {
                 height: 44
               }}
             >
-              <Image src={settings?.flower || '/images/flower.png'} alt="flower" width={24} height={24} style={{ objectFit: 'contain' }} loader={imageLoader} unoptimized />
+              <Image src={settings?.flower || '/images/flower.png'} alt="flower" width={24} height={24} style={{ objectFit: 'contain' }} unoptimized unoptimized />
               <div style={{ fontWeight: 500 }}>{stampAmount * STAMP_COST}</div>
             </div>
 
@@ -508,7 +508,7 @@ function AllEvent() {
                 height: 44
               }}
             >
-              <Image src={settings?.heart || '/images/heartbig.png'} alt="heart" width={24} height={24} style={{ objectFit: 'contain' }} loader={imageLoader} unoptimized />
+              <Image src={settings?.heart || '/images/heartbig.png'} alt="heart" width={24} height={24} style={{ objectFit: 'contain' }} unoptimized unoptimized />
               <div style={{ fontWeight: 500 }}>{stampAmount * STAMP_COST}</div>
             </div>
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import NovelMenu from './NovelMenu';
+import CartPopover from './CartPopover';
 import { Popover, App, Empty } from 'antd';
 import LoginButtonHeader from './LoginButtonHeader';
 import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -10,6 +11,7 @@ import NotificationList from './NotificationList';
 import { useSocket } from '@/providers/SocketProvider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchRecentNotifications, fetchPromotingGroups, fetchActiveTypes, fetchActiveCategories } from '@/services/apiServices';
+import { fetchCartItems } from '@/services/cartService';
 import { useAuthStore } from '@/stores/authStore';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { useLineLogin } from '@/hooks/useLineLogin';
@@ -19,6 +21,7 @@ import NavIcon from '@/assets/images/icon.png';
 import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill';
 import SmartAppBanner from '@/components/utility/SmartAppBanner';
+import CartSvg from '@/components/utility/CartSvg';
 
 
 
@@ -56,6 +59,18 @@ function Navbar() {
     staleTime: 60 * 60 * 1000, // 1 hour
     gcTime: 2 * 60 * 60 * 1000, // 2 hours
   });
+
+  const { data: cartStores } = useQuery({
+    queryKey: ['cartItems'],
+    queryFn: fetchCartItems,
+    enabled: !!isLoggedIn,
+    staleTime: 1000 * 60, // 1 minute
+  });
+
+  const cartItemCount = React.useMemo(() => {
+    if (!cartStores) return 0;
+    return cartStores.reduce((acc, store) => acc + (store.items?.length || 0), 0);
+  }, [cartStores]);
 
   const { data: mobileCategories = [] } = useQuery({
     queryKey: ['mobileCategories', openMobileCategoryId],
@@ -294,6 +309,13 @@ function Navbar() {
           </svg>
           <span className="font-primary text-black group-hover:text-red-600 transition-colors">กรอกโค๊ด</span>
         </Link>
+        <Link href="/coupon" onClick={() => setIsUserMenuOpen(false)} className="group flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M19.5 12.5C19.5 11.12 20.62 10 22 10V9C22 5 21 4 17 4H7C3 4 2 5 2 9V9.5C3.38 9.5 4.5 10.62 4.5 12C4.5 13.38 3.38 14.5 2 14.5V15C2 19 3 20 7 20H17C21 20 22 19 22 15C20.62 15 19.5 13.88 19.5 12.5Z" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M10 4L10 20" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="5 5"/>
+          </svg>
+          <span className="font-primary text-black group-hover:text-red-600 transition-colors">คูปอง</span>
+        </Link>
         {/* <Link href="/" onClick={() => setIsUserMenuOpen(false)} className="group flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="18" viewBox="0 0 20 18" fill="none">
           </svg>
@@ -391,6 +413,25 @@ function Navbar() {
                 </svg>}
               </span>
             </Link>
+            {isLoggedIn && (
+              <Popover
+                content={<CartPopover />}
+                trigger="click"
+                placement="bottom"
+                arrow={false}
+                zIndex={2000}
+                styles={{ body: { padding: 0 } }}
+              >
+                <div className="mr-2 lg:mr-0 cursor-pointer text-black hover:text-red-600 transition-colors duration-300 flex items-center relative">
+                  <CartSvg />
+                  {cartItemCount > 0 && (
+                      <span className="absolute -top-1 -right-2 flex items-center justify-center min-w-[18px] h-[18px] text-[10px] font-bold text-white bg-[#E31C3D] rounded-full px-1 border-2 border-white">
+                          {cartItemCount > 99 ? '99+' : cartItemCount}
+                      </span>
+                  )}
+                </div>
+              </Popover>
+            )}
             {isLoggedIn && user ? (
               <Popover
                 content={<NotificationList />}

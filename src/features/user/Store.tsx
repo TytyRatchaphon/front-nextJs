@@ -16,10 +16,8 @@ import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill'
 import dayjs from 'dayjs'
 import { isValidPhoneNumber } from 'libphonenumber-js'
+import { imageLoader } from '@/utils/imageUtils';
 
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-  return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
-}
 
 function Store() {
   const { user, updateToken, updateUserBalance, token } = useAuthStore() // Added token
@@ -278,7 +276,7 @@ function Store() {
               <div className="flex items-center gap-4 bg-white border border-gray-200 px-3 py-1 rounded-full whitespace-nowrap">
                 {/* Stamp */}
                 <div className="flex items-center gap-1">
-                  <Image src={settings?.bigstamp || '/images/ejb-stamp.png'} alt="Stamp" width={20} height={20} loader={imageLoader} />
+                  <Image src={settings?.bigstamp || '/images/ejb-stamp.png'} alt="Stamp" width={20} height={20} unoptimized />
                   <span className="text-xs text-gray-700 font-medium">{balance.stamp.toLocaleString()}</span>
                 </div>
               </div>
@@ -352,7 +350,7 @@ function Store() {
                   src={selectedPack?.img || '/images/ejb.png'}
                   alt={selectedPack?.name || 'Pack'}
                   fill
-                  loader={imageLoader}
+                  unoptimized
                   className="object-contain p-1"
                 />
               </div>
@@ -452,7 +450,7 @@ function Store() {
                                 width={36}
                                 height={36}
                                 alt={selectedPack?.type_use || 'currency'}
-                                loader={imageLoader}
+                                unoptimized
                                 className="object-contain drop-shadow-sm"
                             />
                         </div>

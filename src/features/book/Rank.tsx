@@ -4,22 +4,42 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { Pagination, ConfigProvider } from 'antd';
-import { fetchRankingBooks, RankingTimeRange, RankingBook } from '@/services/apiServices';
+import { Pagination, ConfigProvider, Select, Empty } from 'antd';
+import { fetchRankingBooks, fetchActiveCategories, RankingTimeRange, RankingBook } from '@/services/apiServices';
 import { TagSwiper } from "@/components/swiper/ImageSlider";
 import GifLoader from '@/components/utility/GifLoader';
 
-const RankLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-  return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
-}
+
 
 export default function Rank() {
   const [range, setRange] = useState<RankingTimeRange>('week');
   const [page, setPage] = useState(1);
+  const [categoryId, setCategoryId] = useState<number | string | undefined>(undefined);
+
+  const { data: categoryData } = useQuery({
+    queryKey: ['activeCategories'],
+    queryFn: () => fetchActiveCategories('all'), // Assuming 'all' or appropriate type
+  });
+
+  const categoryOptions = React.useMemo(() => {
+    if (!categoryData) return [];
+    // Assume categoryData is ActiveCategory[]
+    return categoryData.map((cat) => ({
+      label: cat.name,
+      value: cat.id, // Ensure id is handled as string/number correctly
+    }));
+  }, [categoryData]);
+
+  React.useEffect(() => {
+    if (categoryData && categoryData.length > 0 && categoryId === undefined) {
+      setCategoryId(categoryData[0].id);
+    }
+  }, [categoryData, categoryId]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['rankingBooks', range, page],
-    queryFn: () => fetchRankingBooks(range, page, 10),
+    queryKey: ['rankingBooks', range, page, categoryId],
+    queryFn: () => fetchRankingBooks(range, page, 10, categoryId),
+    enabled: categoryId !== undefined,
   });
 
   const books = data?.books || [];
@@ -29,6 +49,11 @@ export default function Rank() {
     setRange(newRange);
     setPage(1);
   };
+
+  const handleCategoryChange = (val: number | string) => {
+    setCategoryId(val);
+    setPage(1);
+  }
 
   const handlePageChange = (newPage: number) => {
     if (pagination && newPage >= 1 && newPage <= pagination.totalPages) {
@@ -55,38 +80,49 @@ export default function Rank() {
           <h1 className="text-3xl font-bold text-black">จัดอันดับ</h1>
         </div>
 
-        <div className="flex bg-gray-100 rounded-lg p-1 mt-4 md:mt-0">
-          <button
-            onClick={() => handleRangeChange('week')}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${range === 'week' ? 'bg-white shadow text-black' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            สัปดาห์
-          </button>
-          <button
-            onClick={() => handleRangeChange('month')}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${range === 'month' ? 'bg-white shadow text-black' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            เดือน
-          </button>
-          <button
-            onClick={() => handleRangeChange('year')}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${range === 'year' ? 'bg-white shadow text-black' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            ปี
-          </button>
-          <button
-            onClick={() => handleRangeChange('all')}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${range === 'all' ? 'bg-white shadow text-black' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            ตลอดกาล
-          </button>
+        <div className='flex items-center gap-4 mt-4 md:mt-0'>
+           {categoryOptions.length > 0 && (
+              <Select
+                value={categoryId}
+                onChange={handleCategoryChange}
+                options={categoryOptions}
+                className="w-[150px]"
+              />
+           )}
+           
+           <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => handleRangeChange('week')}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${range === 'week' ? 'bg-white shadow text-black' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                สัปดาห์
+              </button>
+              <button
+                onClick={() => handleRangeChange('month')}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${range === 'month' ? 'bg-white shadow text-black' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                เดือน
+              </button>
+              <button
+                onClick={() => handleRangeChange('year')}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${range === 'year' ? 'bg-white shadow text-black' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                ปี
+              </button>
+              <button
+                onClick={() => handleRangeChange('all')}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${range === 'all' ? 'bg-white shadow text-black' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                ตลอดกาล
+              </button>
+           </div>
         </div>
       </div>
 
       {/* Book List */}
       {isLoading ? (
         <GifLoader />
-      ) : (
+      ) : books.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {books.map((book) => (
             <div key={book.book_id} className="bg-white rounded-xl p-4 flex gap-4 md:gap-6 shadow-sm hover:shadow-md transition-shadow">
@@ -119,7 +155,7 @@ export default function Rank() {
                     alt={book.name}
                     fill
                     className="object-cover rounded-md shadow-sm transition-transform duration-300 group-hover:scale-105"
-                    loader={RankLoader}
+                    unoptimized
                   />
                 </Link>
               </div>
@@ -160,6 +196,10 @@ export default function Rank() {
             </div>
           ))}
         </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-16 bg-white rounded-xl shadow-sm">
+          <Empty description="ไม่พบข้อมูลการจัดอันดับในหมวดหมู่นี้" />
+        </div>
       )}
 
       {/* Pagination Controls */}
@@ -174,7 +214,7 @@ export default function Rank() {
           >
             <Pagination
               current={page}
-              total={pagination.total}
+              total={pagination?.total || 0}
               pageSize={10} // API default limit is 10
               onChange={handlePageChange}
               showSizeChanger={false}

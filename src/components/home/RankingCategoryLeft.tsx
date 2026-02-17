@@ -12,10 +12,7 @@ import 'swiper/css/free-mode';
 import { useQuery } from "@tanstack/react-query";
 import { fetchCategoryRankingBooks, CategoryRankingBookItem } from "@/services/apiServices";
 import GifLoader from '@/components/utility/GifLoader';
-
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-  return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
-}
+import { imageLoader } from '@/utils/imageUtils';
 
 interface RankingCategoryLeftProps {
   categoryId?: number;
@@ -23,15 +20,14 @@ interface RankingCategoryLeftProps {
 }
 
 export default function RankingCategoryLeft({ categoryId, categoryName }: RankingCategoryLeftProps) {
-  const [activeTab, setActiveTab] = useState<'7' | '15' | '30'>('7');
+  const [activeTab, setActiveTab] = useState<'weekly' | 'monthly' | 'yearly'>('weekly');
 
   const { data: books = [], isLoading } = useQuery({
     queryKey: ['categoryRanking', categoryId, activeTab],
     queryFn: () => {
-      // Convert tab '7' -> range 7, '15' -> 15, '30' -> 30
-      const rangeMap = { '7': 7, '15': 15, '30': 30 };
+      // Changed from number days to string keywords
       if (!categoryId) return [];
-      return fetchCategoryRankingBooks(categoryId, rangeMap[activeTab]);
+      return fetchCategoryRankingBooks(categoryId, activeTab);
     },
     enabled: !!categoryId,
   });
@@ -58,32 +54,32 @@ export default function RankingCategoryLeft({ categoryId, categoryName }: Rankin
       {/* Tabs */}
       <div className="flex text-sm font-bold border-b border-gray-100">
         <button
-          onClick={() => setActiveTab('7')}
-          className={`flex-1 py-3 text-center transition-colors relative ${activeTab === '7' ? 'text-red-600' : 'text-gray-800 hover:text-red-500'
+          onClick={() => setActiveTab('weekly')}
+          className={`flex-1 py-3 text-center transition-colors relative ${activeTab === 'weekly' ? 'text-red-600' : 'text-gray-800 hover:text-red-500'
             }`}
         >
-          7 วัน
-          {activeTab === '7' && (
+          สัปดาห์
+          {activeTab === 'weekly' && (
             <div className="absolute bottom-0 left-0 w-full h-[2px] bg-red-600 rounded-t-full" />
           )}
         </button>
         <button
-          onClick={() => setActiveTab('15')}
-          className={`flex-1 py-3 text-center transition-colors relative ${activeTab === '15' ? 'text-red-600' : 'text-gray-800 hover:text-red-500'
+          onClick={() => setActiveTab('monthly')}
+          className={`flex-1 py-3 text-center transition-colors relative ${activeTab === 'monthly' ? 'text-red-600' : 'text-gray-800 hover:text-red-500'
             }`}
         >
-          15 วัน
-          {activeTab === '15' && (
+          เดือน
+          {activeTab === 'monthly' && (
             <div className="absolute bottom-0 left-0 w-full h-[2px] bg-red-600 rounded-t-full" />
           )}
         </button>
         <button
-          onClick={() => setActiveTab('30')}
-          className={`flex-1 py-3 text-center transition-colors relative ${activeTab === '30' ? 'text-red-600' : 'text-gray-800 hover:text-red-500'
+          onClick={() => setActiveTab('yearly')}
+          className={`flex-1 py-3 text-center transition-colors relative ${activeTab === 'yearly' ? 'text-red-600' : 'text-gray-800 hover:text-red-500'
             }`}
         >
-          30 วัน
-          {activeTab === '30' && (
+          ปี
+          {activeTab === 'yearly' && (
             <div className="absolute bottom-0 left-0 w-full h-[2px] bg-red-600 rounded-t-full" />
           )}
         </button>
@@ -114,8 +110,8 @@ export default function RankingCategoryLeft({ categoryId, categoryName }: Rankin
                   alt={book.name}
                   fill
                   className="object-cover"
-                  loader={imageLoader}
                   unoptimized
+                  
                 />
               </div>
 

@@ -12,6 +12,7 @@ interface SearchParams {
   query: string;
   categories: number[];
   types: string[];
+  content_type: string[];
   status: string[];
   end: string;
   sortBy: string;
@@ -24,7 +25,7 @@ const searchBooks = async (
   page: number,
   limit: number
 ) => {
-  const { query, categories, types, status, end, sortBy, order } = params;
+  const { query, categories, types, content_type, status, end, sortBy, order } = params;
 
   // --- กรณีที่ 2: ถ้าไม่มีคำค้นหา (ใช้ระบบ API เดิมของคุณ) ---
   // (Original logic restored for all cases)
@@ -32,6 +33,7 @@ const searchBooks = async (
   if (query) queryParams.append("q", query);
   if (categories.length > 0) queryParams.append("categories", categories.join(","));
   if (types.length > 0) queryParams.append("types", types.join(","));
+  if (content_type && content_type.length > 0) queryParams.append("content_type", content_type.join(","));
   if (status.length > 0) queryParams.append("status", status.join(","));
   if (end && end !== "all") queryParams.append("end", end);
   if (sortBy) queryParams.append("sortBy", sortBy);
@@ -64,6 +66,7 @@ export default function SearchClient() {
     query: searchParamsUrl?.get('q') || "",
     categories: searchParamsUrl?.get('categories')?.split(',').map(Number) || [],
     types: searchParamsUrl?.get('types')?.split(',') || [],
+    content_type: searchParamsUrl?.get('content_type')?.split(',') || [],
     status: searchParamsUrl?.get('status')?.split(',') || [],
     end: searchParamsUrl?.get('end') || "all",
     sortBy: searchParamsUrl?.get('sortBy') || "date_at",
@@ -90,6 +93,7 @@ export default function SearchClient() {
       query: searchParamsUrl?.get('q') || "",
       categories: searchParamsUrl?.get('categories')?.split(',').map(Number) || [],
       types: searchParamsUrl?.get('types')?.split(',') || [],
+      content_type: searchParamsUrl?.get('content_type')?.split(',') || [],
       status: searchParamsUrl?.get('status')?.split(',') || [],
       end: searchParamsUrl?.get('end') || "all",
       sortBy: searchParamsUrl?.get('sortBy') || "date_at",
@@ -161,6 +165,8 @@ export default function SearchClient() {
         discount: b.discount,
         isNewEp: b.isNewEp,
         discount_ep_count: b.discount_ep_count,
+        discount_end_date: b.discount_end_date,
+        time_end: b.time_end || b.end_date,
       };
     });
 
@@ -193,6 +199,7 @@ export default function SearchClient() {
           initialFilters={{
             categories: searchParams.categories,
             types: searchParams.types,
+            content_type: searchParams.content_type,
             status: searchParams.status,
             end: searchParams.end
           }}
@@ -203,7 +210,7 @@ export default function SearchClient() {
       <div className="lg:col-span-9 xl:col-span-9" ref={topRef}>
         {/* Loading State */}
         {isLoading && (
-          <GifLoader className="h-64" width={150} height={150} />
+          <GifLoader className="h-[60vh]" width={150} height={150} />
         )}
 
         {/* Error State */}
@@ -228,21 +235,7 @@ export default function SearchClient() {
               <p className="text-xs sm:text-sm text-gray-700">
                 ผลการค้นหาทั้งหมด <span className="font-semibold">({total} รายการ)</span>
               </p>
-              <div className="w-full sm:w-auto sm:mr-30">
-                <select
-                  className="border rounded-md text-xs sm:text-sm px-2 py-1 w-full sm:w-auto"
-                  value={searchParams.sortBy}
-                  onChange={(e) =>
-                    setSearchParams({
-                      ...searchParams,
-                      sortBy: e.target.value,
-                    })
-                  }
-                >
-                  <option value="date_at">ล่าสุด</option>
-                  <option value="view">ยอดนิยม</option>
-                </select>
-              </div>
+              {/* Removed sort dropdown as per request */}
             </div>
 
             {/* Empty State */}
@@ -254,12 +247,7 @@ export default function SearchClient() {
               <>
                 {/* Grid แสดง Novel - Responsive */}
                 <div
-                  className="grid justify-items-center"
-                  style={{
-                    gridTemplateColumns: "repeat(auto-fill, 168px)",
-                    gap: "16px",
-                    justifyContent: "start",
-                  }}
+                  className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-y-8 gap-x-4 justify-items-center"
                 >
                   {novels.map((novel: any) => {
                     // novels are already normalized above; pass through to CardBook

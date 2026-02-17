@@ -48,7 +48,7 @@ const SafeAvatar = ({ src, alt, className, theme, isReply = false }: { src?: str
             width={isReply ? 20 : undefined}
             height={isReply ? 20 : undefined}
             className={className}
-            loader={imageLoader}
+            unoptimized
             onError={() => setHasError(true)}
             unoptimized // Add unoptimized to reduce issues with external images if needed, but loader handles it mostly.
         />

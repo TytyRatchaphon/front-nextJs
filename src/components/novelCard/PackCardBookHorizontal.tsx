@@ -2,6 +2,8 @@
 import Image from 'next/image';
 import React from 'react'
 import { UniversalBook } from '../../types/api';
+import SaleGroupSVG from './SaleGroupSvg';
+import { imageLoader } from '@/utils/imageUtils';
 
 
 
@@ -12,9 +14,6 @@ interface PackCardBookHorizontalProps {
     className?: string;
 }
 
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-    return `${src}?w=${width ?? ''}&q=${quality ?? 100}`
-}
 
 function PackCardBookHorizontal({ book, onClick, action, className = "" }: PackCardBookHorizontalProps) {
     const [imgError, setImgError] = React.useState(false);
@@ -64,7 +63,6 @@ function PackCardBookHorizontal({ book, onClick, action, className = "" }: PackC
                         fill
                         loading="lazy"
                         unoptimized
-                        loader={imageLoader}
                         onError={() => {
                             setImgError(true);
                         }}
@@ -75,7 +73,7 @@ function PackCardBookHorizontal({ book, onClick, action, className = "" }: PackC
                         alt={book.name ?? ''}
                         className="w-full h-full object-cover rounded-lg relative z-0"
                         fill
-                        loader={imageLoader}
+                        unoptimized
                     />
                 )}
 
@@ -88,7 +86,7 @@ function PackCardBookHorizontal({ book, onClick, action, className = "" }: PackC
                             width={120}
                             height={30}
                             className="w-full h-[30px] object-contain align-bottom"
-                            loader={imageLoader}
+                            unoptimized
                         />
                         <div className="absolute bottom-[1px] left-0 right-0 text-center text-white text-[9px] font-bold drop-shadow-md">
                             ลดราคา <span className="text-[#FFD700] text-xs mx-0.5">{book.discount_ep_count}</span> ตอน
@@ -113,17 +111,10 @@ function PackCardBookHorizontal({ book, onClick, action, className = "" }: PackC
                         new: { src: "/images/new.png", width: 50, height: 50, className: "absolute top-2 right-1" },
                         discount: (percent: number | string) => ({
                             component: (
-                                <div className="absolute -top-3 -right-3 z-20 w-[60px] h-[60px]">
-                                    <Image
-                                        src="/images/sale-group.png"
-                                        alt="sale"
-                                        width={60}
-                                        height={60}
-                                        className="absolute inset-0 object-contain drop-shadow-md"
-                                        loader={imageLoader}
-                                    />
-                                    <span className="absolute top-[52px] right-[15px] text-white text-[10px] leading-none transform -rotate-[17deg]">{percent}%</span>
-                                </div>
+                                <SaleGroupSVG 
+                                    className="absolute top-0 right-2 z-20 w-[2.8rem] h-[3.9rem] drop-shadow-md" 
+                                    percent={percent} 
+                                />
                             )
                         }),
                         newEp: { src: "/images/new.png", width: 36, height: 36, className: "absolute top-0 right-0" },
@@ -161,7 +152,7 @@ function PackCardBookHorizontal({ book, onClick, action, className = "" }: PackC
                                         width={leftBadge.width}
                                         height={leftBadge.height}
                                         className="object-contain drop-shadow-md"
-                                        loader={imageLoader}
+                                        unoptimized
                                     />
                                 </div>
                             ))}
@@ -173,7 +164,7 @@ function PackCardBookHorizontal({ book, onClick, action, className = "" }: PackC
                                         width={rightBadge.width}
                                         height={rightBadge.height}
                                         className="object-contain drop-shadow-md"
-                                        loader={imageLoader}
+                                        unoptimized
                                     />
                                 </div>
                             ))}

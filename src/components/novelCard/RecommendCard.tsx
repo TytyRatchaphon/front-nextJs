@@ -28,6 +28,8 @@ const formatViews = (num: number | undefined | null): string => {
 };
 
 const RecommendCard = ({ data }: RecommendCardProps) => {
+  if (!data?.book) return null;
+
   const imageUrl = data.banner.startsWith('http')
                     ? data.banner
                     : `https://img.enjoybook.co/enjoybook.image/recommend/${data.banner}`;

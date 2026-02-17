@@ -64,9 +64,6 @@ export interface AuthState {
   setMounted: () => void;
   updateToken: (newToken: string) => void;
   updateUserBalance: (updates: Partial<UserData>) => void;
-
-  // Computed
-  isAuthenticated: boolean;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -92,7 +89,6 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem('userData');
         Cookies.remove('token');
         Cookies.remove('tk');
-        try { useFormStore.getState().resetUserProfile(); } catch (e) { } // Clear form data
         set({ user: null, token: null, isLoggedIn: false });
         window.location.reload();
       },
@@ -224,10 +220,6 @@ export const useAuthStore = create<AuthState>()(
           }
         }
         set({ hasMounted: true });
-      },
-
-      get isAuthenticated() {
-        return get().isLoggedIn && get().user !== null && get().token !== null;
       }
     }),
     {

@@ -14,14 +14,12 @@ import { useWebsiteStore } from '@/stores/websiteStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import TopUpBanner from '@/components/home/TopUpBanner';
+import { imageLoader } from '@/utils/imageUtils';
 
 interface BannerProps {
   slides?: Slide[];
 }
 
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-  return `${src}?w=${width ?? ''}&q=${quality ?? 100}`
-}
 
 function Banner({ slides = [] }: BannerProps) {
   const { settings } = useWebsiteStore();
@@ -118,7 +116,7 @@ function Banner({ slides = [] }: BannerProps) {
                     : `https://img.enjoybook.co/img/banner/${slide.img}`;
                   return (
                     <SwiperSlide key={`${slide.banner_id}-${index}`} className="!w-auto overflow-hidden">
-                      <div className="relative w-full max-w-[680px] aspect-[680/310] cursor-pointer" onClick={() => {
+                      <div className="relative w-full aspect-[680/310] cursor-pointer mx-auto" style={{ maxWidth: '680px' }} onClick={() => {
                         postBannerClick(slide.banner_id);
                         if (slide.type_link === 'novel') {
                           window.location.href = `/book/${slide.ref_id}`;
@@ -139,12 +137,12 @@ function Banner({ slides = [] }: BannerProps) {
                         <Image
                           src={imageUrl}
                           alt={slide.name}
-                          width={0}
-                          height={0}
-                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                          className="w-full h-full object-fill rounded-lg"
+                          width={680}
+                          height={310}
+                          sizes="(max-width: 680px) 100vw, 680px"
+                          className="w-full h-full object-cover rounded-lg"
                           priority
-                          loader={imageLoader}
+                          unoptimized
                           quality={100}
                         />
                       </div>

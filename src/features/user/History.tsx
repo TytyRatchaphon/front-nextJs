@@ -9,10 +9,8 @@ import { StoreBanner } from '@/components/home/Banner'
 import { useWebsiteStore } from '@/stores/websiteStore';
 import GifLoader from '@/components/utility/GifLoader';
 import Image from 'next/image';
+import { imageLoader } from '@/utils/imageUtils';
 
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-  return `${src}?w=${width ?? ''}&q=${quality ?? 100}`
-}
 
 function History() {
   const [activeKey, setActiveKey] = React.useState<string>('1')
@@ -440,7 +438,7 @@ function History() {
             return (
               <div className="flex items-center justify-end gap-2">
                 <span>{text}</span>
-                <Image loader={imageLoader} src={src} alt="coin" width={18} height={18} />
+                <Image unoptimized src={src} alt="coin" width={18} height={18} />
               </div>
             )
           },
@@ -465,7 +463,7 @@ function History() {
             return (
               <div className="flex items-center justify-end gap-2">
                 <span>{unit}</span>
-                <Image loader={imageLoader} src={src} alt="icon" width={18} height={18} />
+                <Image unoptimized src={src} alt="icon" width={18} height={18} />
               </div>
             )
           },
@@ -497,11 +495,11 @@ function History() {
               <div className="flex items-center justify-end gap-2">
                 <span>{Number(val).toLocaleString()}</span>
                 {record.des === 'coin' ? (
-                  <Image loader={imageLoader} src={settings?.coin || '/images/e-coin.png'} alt="coin" width={18} height={18} />
+                  <Image unoptimized src={settings?.coin || '/images/e-coin.png'} alt="coin" width={18} height={18} />
                 ) : record.des === 'freecoin' ? (
-                  <Image loader={imageLoader} src={settings?.freecoin || '/images/money-bag.png'} alt="freecoin" width={18} height={18} />
+                  <Image unoptimized src={settings?.freecoin || '/images/money-bag.png'} alt="freecoin" width={18} height={18} />
                 ) : record.des === 'stamp' ? (
-                  <Image loader={imageLoader} src={settings?.stamp || '/images/stamp.png'} alt="stamp" width={18} height={18} />
+                  <Image unoptimized src={settings?.stamp || '/images/stamp.png'} alt="stamp" width={18} height={18} />
                 ) : (
                   <span className="text-gray-500 text-xs">THB</span>
                 )}
@@ -527,7 +525,7 @@ function History() {
             return (
               <div className="flex items-center justify-center gap-2">
                 <span className="text-center">{value}</span>
-                <Image loader={imageLoader} src={src} alt={type} width={18} height={18} />
+                <Image unoptimized src={src} alt={type} width={18} height={18} />
               </div>
             )
           },
@@ -559,7 +557,7 @@ function History() {
             const src = map[cur] ?? '/images/e-coin.png'
             return (
               <div className="flex items-center justify-center gap-2">
-                <Image loader={imageLoader} src={src} alt={cur} width={18} height={18} />
+                <Image unoptimized src={src} alt={cur} width={18} height={18} />
               </div>
             )
           },

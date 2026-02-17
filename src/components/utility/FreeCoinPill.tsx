@@ -3,15 +3,13 @@
 import React from 'react';
 import Image from 'next/image';
 import { useWebsiteStore } from '@/stores/websiteStore';
+import { imageLoader } from '@/utils/imageUtils';
 
 interface FreeCoinPillProps {
     amount: number;
     className?: string;
 }
 
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-    return `${src}?w=${width ?? ''}&q=${quality ?? 75}`;
-};
 
 function FreeCoinPill({ amount, className = "" }: FreeCoinPillProps) {
     const { settings } = useWebsiteStore();
@@ -27,7 +25,7 @@ function FreeCoinPill({ amount, className = "" }: FreeCoinPillProps) {
                     alt="FreeCoin"
                     fill
                     className="object-contain"
-                    loader={imageLoader}
+                    unoptimized
                 />
             </div>
             <span className="text-gray-800 font-medium text-sm leading-none pt-[1px]">

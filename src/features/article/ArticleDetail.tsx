@@ -9,6 +9,7 @@ import { fetchArticleDetail } from '@/services/apiServices';
 import type { ArticleResponse, ArticleDetail as ArticleDetailType, ArticleRecommend } from '@/types/api';
 import GifLoader from '@/components/utility/GifLoader';
 import { useLogger } from '@/hooks/useLogger';
+import { imageLoader } from '@/utils/imageUtils';
 
 
 // Helper for date formatting
@@ -23,10 +24,6 @@ const formatDate = (dateString: string) => {
     minute: '2-digit',
   }).format(date);
 };
-
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-  return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
-}
 
 export default function ArticleDetail({ id }: { id: string }) {
   const [data, setData] = useState<ArticleResponse['data'] | null>(null);
@@ -153,7 +150,7 @@ export default function ArticleDetail({ id }: { id: string }) {
                         alt={detail.title}
                         fill
                         className="object-contain"
-                        loader={imageLoader}
+                        unoptimized
                         priority
                     />
                 </div>
@@ -204,7 +201,7 @@ export default function ArticleDetail({ id }: { id: string }) {
                                         alt={`Action Button ${num}`}
                                         fill
                                         className="object-contain" // Changed to contain to avoid cropping if aspect ratio mismatches
-                                        loader={imageLoader}
+                                        unoptimized
                                      />
                                 </div>
                             </Link>
@@ -246,7 +243,7 @@ export default function ArticleDetail({ id }: { id: string }) {
                                             alt={item.name.replace(/<[^>]+>/g, '')} // Strip HTML from name if needed, though usually name is plain text or needs parsing
                                             fill
                                             className="object-cover group-hover:scale-105 transition-transform duration-300"
-                                            loader={imageLoader}
+                                            unoptimized
                                         />
                                     </div>
                                     <div className="flex-1 min-w-0">

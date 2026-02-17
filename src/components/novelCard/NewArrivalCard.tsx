@@ -3,14 +3,12 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookTrans } from '@/types/api';
+import { imageLoader } from '@/utils/imageUtils';
 
 interface NewArrivalCardProps {
   book: BookTrans;
 }
 
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-  return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
-}
 
 export default function NewArrivalCard({ book }: NewArrivalCardProps) {
   // Safe helper to format numbers
@@ -34,12 +32,11 @@ export default function NewArrivalCard({ book }: NewArrivalCardProps) {
             unoptimized
           />
           <Image
-            loader={imageLoader}
+            unoptimized
             src={book.img.startsWith('http') ? book.img : `https://img.enjoybook.co/img/book/${book.img}`}
             alt={book.name}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
-            unoptimized
           />
         </div>
 

@@ -13,14 +13,11 @@ import { CloseOutlined, CheckCircleFilled, CloseCircleFilled, ArrowLeftOutlined 
 import th_TH from 'antd/locale/th_TH';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { useUIStore } from '@/stores/uiStore';
+import { imageLoader } from '@/utils/imageUtils';
 
 interface PackCampaignProps {
     data: PackCampaignDetail | null;
 }
-
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-    return `${src}?w=${width ?? ''}&q=${quality ?? 75}`;
-};
 
 const decodeToken = (token: string) => {
     try {
@@ -123,7 +120,7 @@ function PackCampaign({ data }: PackCampaignProps) {
                 <div className="w-full max-w-[1240px] mx-auto relative px-0 md:pt-6">
                     {data.banner_img ? (
                         <Image
-                            loader={imageLoader}
+                            unoptimized
                             src={data.banner_img}
                             alt={data.name}
                             width={1180}
@@ -131,7 +128,7 @@ function PackCampaign({ data }: PackCampaignProps) {
                             sizes="100vw"
                             className="w-full h-auto block rounded-none md:rounded-xl shadow-sm"
                             priority
-                            unoptimized
+                            
                         />
                     ) : (
                         <div className="w-full aspect-[4/1] bg-gray-200 flex items-center justify-center text-gray-400 rounded-none md:rounded-xl">
@@ -322,7 +319,7 @@ function PackCampaign({ data }: PackCampaignProps) {
 
                             <div className="bg-gray-50 p-3 rounded-lg flex items-center gap-3 text-left mb-6">
                                 <div className="relative w-12 h-16 flex-shrink-0">
-                                    <Image loader={imageLoader} src={selectedOption.img} alt="" fill className="object-cover rounded" unoptimized />
+                                    <Image  src={selectedOption.img} alt="" fill className="object-cover rounded" unoptimized />
                                 </div>
                                 <div>
                                     <div className="text-sm font-bold line-clamp-1">{selectedOption.name}</div>
@@ -349,7 +346,7 @@ function PackCampaign({ data }: PackCampaignProps) {
 
                             <div className="bg-gray-50 p-3 rounded-lg flex items-center gap-3 text-left mb-6">
                                 <div className="relative w-12 h-16 flex-shrink-0">
-                                    <Image loader={imageLoader} src={selectedOption.img} alt="" fill className="object-cover rounded" unoptimized />
+                                    <Image unoptimized src={selectedOption.img} alt="" fill className="object-cover rounded" />
                                 </div>
                                 <div>
                                     <div className="text-sm font-bold line-clamp-1">{selectedOption.name}</div>

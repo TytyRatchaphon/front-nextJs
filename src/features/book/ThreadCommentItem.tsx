@@ -203,7 +203,7 @@ export default function ThreadCommentItem({
                         alt="User Frame"
                         fill
                         className="object-contain"
-                        loader={imageLoader}
+                        unoptimized
                     />
                 </div>
             )}

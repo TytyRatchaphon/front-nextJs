@@ -7,6 +7,7 @@ import { Tooltip } from 'antd';
 
 import { useAuthStore } from '@/stores/authStore';
 import { useWebsiteStore } from '@/stores/websiteStore';
+import { imageLoader } from '@/utils/imageUtils';
 
 interface AmountPillProps {
     amount: number;
@@ -15,9 +16,6 @@ interface AmountPillProps {
     className?: string; // Allow customizing position/margin
 }
 
-const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-    return `${src}?w=${width ?? ''}&q=${quality ?? 75}`;
-};
 
 function AmountPill({ amount, icon, onAddClick, className = "" }: AmountPillProps) {
     const { settings } = useWebsiteStore();
@@ -48,7 +46,7 @@ function AmountPill({ amount, icon, onAddClick, className = "" }: AmountPillProp
                     alt="coin"
                     fill
                     className="object-contain"
-                    loader={imageLoader}
+                    unoptimized
                 />
             </div>
 
