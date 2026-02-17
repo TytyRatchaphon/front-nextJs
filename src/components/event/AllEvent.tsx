@@ -325,7 +325,7 @@ function AllEvent() {
           aria-label="จิ๊กซอว์"
           className="flex-1 w-full min-w-0 h-auto aspect-[376/116] p-0 border-none bg-transparent rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
         >
-          <Image src="/images/jigsaw.png" alt="จิ๊กซอว์" width={376} height={116} unoptimized unoptimized style={{ objectFit: 'cover', display: 'block', width: '100%', height: '100%' }} />
+          <Image src="/images/jigsaw.png" alt="จิ๊กซอว์" width={376} height={116} unoptimized style={{ objectFit: 'cover', display: 'block', width: '100%', height: '100%' }} />
         </button>
 
         <button
@@ -334,7 +334,7 @@ function AllEvent() {
           onClick={() => setStampModalOpen(true)}
           className="flex-1 w-full min-w-0 h-auto aspect-[376/116] p-0 border-none bg-transparent rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
         >
-          <Image src="/images/stamp-ex.png" alt="แลกสแตมป์" width={376} height={116} unoptimized unoptimized style={{ objectFit: 'cover', display: 'block', width: '100%', height: '100%' }} />
+          <Image src="/images/stamp-ex.png" alt="แลกสแตมป์" width={376} height={116} unoptimized style={{ objectFit: 'cover', display: 'block', width: '100%', height: '100%' }} />
         </button>
 
         {/* <button
@@ -450,7 +450,7 @@ function AllEvent() {
               height={100}
               style={{ objectFit: 'contain' }}
               unoptimized
-              unoptimized
+              
             />
           </div>
           {/* -------------------------------------------------- */}
@@ -487,7 +487,7 @@ function AllEvent() {
                 height: 44
               }}
             >
-              <Image src={settings?.flower || '/images/flower.png'} alt="flower" width={24} height={24} style={{ objectFit: 'contain' }} unoptimized unoptimized />
+              <Image src={settings?.flower || '/images/flower.png'} alt="flower" width={24} height={24} style={{ objectFit: 'contain' }} unoptimized  />
               <div style={{ fontWeight: 500 }}>{stampAmount * STAMP_COST}</div>
             </div>
 
@@ -508,7 +508,7 @@ function AllEvent() {
                 height: 44
               }}
             >
-              <Image src={settings?.heart || '/images/heartbig.png'} alt="heart" width={24} height={24} style={{ objectFit: 'contain' }} unoptimized unoptimized />
+              <Image src={settings?.heart || '/images/heartbig.png'} alt="heart" width={24} height={24} style={{ objectFit: 'contain' }} unoptimized  />
               <div style={{ fontWeight: 500 }}>{stampAmount * STAMP_COST}</div>
             </div>
           </div>
