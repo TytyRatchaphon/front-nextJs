@@ -21,7 +21,7 @@ import { useLogger } from "@/hooks/useLogger";
 import RecommendedBooks from "@/components/bookdetail/RecommendedBooks";
 
 const collapseTabs = ["รายละเอียดเรื่อง", "สารบัญ"] as const;
-const segmentedTabs = ["รีวิวทั้งหมด", "ความคิดเห็นทั้งหมด"] as const;
+const segmentedTabs = ["ความคิดเห็นทั้งหมด", "รีวิวทั้งหมด"] as const;
 type TabKey = (typeof collapseTabs)[number] | (typeof segmentedTabs)[number];
 
 export default function BookDetailClient({ bookId }: { bookId: string }) {

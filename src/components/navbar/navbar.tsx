@@ -11,7 +11,7 @@ import NotificationList from './NotificationList';
 import { useSocket } from '@/providers/SocketProvider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchRecentNotifications, fetchPromotingGroups, fetchActiveTypes, fetchActiveCategories } from '@/services/apiServices';
-import { fetchCartItems } from '@/services/cartService';
+// import { fetchCartItems } from '@/services/cartService';
 import { useAuthStore } from '@/stores/authStore';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { useLineLogin } from '@/hooks/useLineLogin';
@@ -21,7 +21,7 @@ import NavIcon from '@/assets/images/icon.png';
 import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill';
 import SmartAppBanner from '@/components/utility/SmartAppBanner';
-import CartSvg from '@/components/utility/CartSvg';
+// import CartSvg from '@/components/utility/CartSvg';
 
 
 
@@ -60,17 +60,17 @@ function Navbar() {
     gcTime: 2 * 60 * 60 * 1000, // 2 hours
   });
 
-  const { data: cartStores } = useQuery({
-    queryKey: ['cartItems'],
-    queryFn: fetchCartItems,
-    enabled: !!isLoggedIn,
-    staleTime: 1000 * 60, // 1 minute
-  });
+  // const { data: cartStores } = useQuery({
+  //   queryKey: ['cartItems'],
+  //   queryFn: fetchCartItems,
+  //   enabled: !!isLoggedIn,
+  //   staleTime: 1000 * 60, // 1 minute
+  // });
 
-  const cartItemCount = React.useMemo(() => {
-    if (!cartStores) return 0;
-    return cartStores.reduce((acc, store) => acc + (store.items?.length || 0), 0);
-  }, [cartStores]);
+  // const cartItemCount = React.useMemo(() => {
+  //   if (!cartStores) return 0;
+  //   return cartStores.reduce((acc, store) => acc + (store.items?.length || 0), 0);
+  // }, [cartStores]);
 
   const { data: mobileCategories = [] } = useQuery({
     queryKey: ['mobileCategories', openMobileCategoryId],
@@ -413,7 +413,7 @@ function Navbar() {
                 </svg>}
               </span>
             </Link>
-            {isLoggedIn && (
+            {/* {isLoggedIn && (
               <Popover
                 content={<CartPopover />}
                 trigger="click"
@@ -431,7 +431,7 @@ function Navbar() {
                   )}
                 </div>
               </Popover>
-            )}
+            )} */}
             {isLoggedIn && user ? (
               <Popover
                 content={<NotificationList />}

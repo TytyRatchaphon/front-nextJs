@@ -5,10 +5,10 @@ import { useWebsiteStore } from '@/stores/websiteStore';
 import { App } from 'antd';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
-import AddToCartSvg from '@/components/utility/AddToCartSvg';
+// import AddToCartSvg from '@/components/utility/AddToCartSvg';
 import { addToCart, fetchCartItems } from '@/services/cartService';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { imageLoader } from '@/utils/imageUtils';
+// import { imageLoader } from '@/utils/imageUtils';
 
 
 interface StoreCardProps {
@@ -141,7 +141,7 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
             >
               {pack.can_purchase === false ? 'เป็นเจ้าของแล้ว' : 'ซื้อ'}
             </button>
-            {pack.can_purchase !== false && (
+            {/* {pack.can_purchase !== false && (
                 <button
                     onClick={() => handleAddToCart(pack)}
                     disabled={isLimitReached}
@@ -154,7 +154,7 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
                 >
                     <AddToCartSvg width={20} height={20} color="white" />
                 </button>
-            )}
+            )} */}
           </div>
         </div>
       </div>
