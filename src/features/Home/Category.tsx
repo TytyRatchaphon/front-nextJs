@@ -41,7 +41,7 @@ export default function Category() {
   const categoryId = idParam === 'list' ? searchParams.get('categoryId') || '' : idParam;
   const type = searchParams.get("type") || "tran";
   const tab = searchParams.get("tab") || "new";
-  const period = searchParams.get("period") || "1"; // Default to today (1)
+  const period = searchParams.get("period") || "30"; // Default to Month (30)
   const page = Number(searchParams.get("page")) || 1;
 
   // React Query to fetch books
