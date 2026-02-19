@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Ticket } from 'lucide-react';
-import { message, Tabs, ConfigProvider, Button, Input, Empty } from 'antd';
+import { message, Tabs, ConfigProvider, Button, Input, Empty, notification } from 'antd';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { claimCouponByCode, fetchAvailableCoupons, fetchUserCoupons } from '@/services/apiServices';
 import AvailableCoupons from './AvailableCoupons';
@@ -10,6 +10,7 @@ import MyCoupons from './MyCoupons';
 import dayjs from 'dayjs';
 import 'dayjs/locale/th';
 import buddhistEra from 'dayjs/plugin/buddhistEra';
+import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
 dayjs.extend(buddhistEra);
 dayjs.locale('th');
@@ -39,18 +40,29 @@ const CouponDetail = () => {
              return data || [];
         }
     });
+    
 
     const claimByCodeMutation = useMutation({
         mutationFn: claimCouponByCode,
         onSuccess: () => {
-            messageApi.success('เก็บคูปองสำเร็จ!');
+            notification.success({
+                message: 'เก็บคูปองสำเร็จ!',
+                description: 'เก็บคูปองสำเร็จ!',
+                icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+                placement: 'topRight',
+            });
             setCouponCode('');
             queryClient.invalidateQueries({ queryKey: ['availableCoupons'] });
             queryClient.invalidateQueries({ queryKey: ['userCoupons'] });
             queryClient.invalidateQueries({ queryKey: ['availableCouponsForCount'] });
         },
         onError: (error: any) => {
-            messageApi.error(error?.response?.data?.message || 'ไม่สามารถใช้งานคูปองนี้ได้');
+            notification.error({
+                message: 'เก็บคูปองไม่สำเร็จ!',
+                description: error?.response?.data?.message || 'ไม่สามารถใช้งานคูปองนี้ได้',
+                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+                placement: 'topRight',
+            });
         }
     });
 

@@ -2,12 +2,13 @@
 
 import React from 'react'
 import Image from 'next/image'
-import { Progress, Button, App } from 'antd'
+import { Progress, Button, App, notification } from 'antd'
 import { GiftOutlined } from '@ant-design/icons'
 import apiClient from '@/services/apiClient'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
 import { QUERY_KEYS, QUERY_CONFIG } from '@/constants/query'
+import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
 
 type Props = {
   used?: number
@@ -69,7 +70,12 @@ export default function UserUseCoin({
   const { mutate: handleClaim, isPending: isClaiming } = useMutation({
     mutationFn: claimRewardApi,
     onSuccess: (responseData) => {
-      message.success('รับรางวัลสำเร็จ!')
+      notification.success({
+        message: 'รับรางวัลสำเร็จ!',
+        description: 'รับรางวัลเรียบร้อยแล้ว',
+        icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+        placement: 'topRight',
+      });
 
       // --- STEP A: Update Token (เหมือนเดิม) ---
       const newToken = responseData?.token || responseData?.data?.token
@@ -134,7 +140,12 @@ export default function UserUseCoin({
       }, 1000)
     },
     onError: (error: any) => {
-      message.error(error?.response?.data?.message || 'เกิดข้อผิดพลาดในการรับรางวัล')
+      notification.error({
+        message: 'เกิดข้อผิดพลาดในการรับรางวัล',
+        description: error?.response?.data?.message || 'เกิดข้อผิดพลาดในการรับรางวัล',
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        placement: 'topRight',
+      });
     }
   })
 

@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Form, Input, Button, App } from 'antd';
+import { Form, Input, Button, App, notification    } from 'antd';
 import { useRouter } from 'next/navigation';
 import apiClient from '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
+import { CloseCircleOutlined } from '@ant-design/icons';
 
 interface ResetPasswordFieldType {
   password: string;
@@ -26,7 +27,12 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
 
   const onFinish = async (values: ResetPasswordFieldType) => {
     if (values.password !== values.confirmPassword) {
-      message.error('รหัสผ่านไม่ตรงกัน');
+      notification.error({
+        message: 'เกิดข้อผิดพลาด',
+        description: 'รหัสผ่านไม่ตรงกัน',
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        placement: 'topRight',
+      });
       return;
     }
 
@@ -54,7 +60,12 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
 
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง';
-      message.error(errorMessage);
+      notification.error({
+        message: 'เกิดข้อผิดพลาด',
+        description: errorMessage,
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        placement: 'topRight',
+      });
     } finally {
       setLoading(false);
     }

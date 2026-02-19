@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { isValidPhoneNumber } from 'libphonenumber-js';
 import { Steps, Button, Typography, App, List, Avatar, Empty, Spin, Card, Form, Input } from 'antd';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchCheckoutItems, fetchCheckoutAddress, fetchCheckoutSummary, confirmCheckout } from '@/services/cartService';
 import { updateUserAddress } from '@/services/apiServices';
-import { UnorderedListOutlined, HomeOutlined, FileTextOutlined, CheckCircleOutlined, LeftOutlined } from '@ant-design/icons';
+import { UnorderedListOutlined, HomeOutlined, FileTextOutlined, CheckCircleOutlined, LeftOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -18,12 +19,27 @@ const { Title, Text } = Typography;
 
 const AddressForm = ({ user, token, onSuccess }: { user: any, token: string | null, onSuccess: () => void }) => {
     const [form] = Form.useForm();
-    const { message } = App.useApp();
+    const { message, notification } = App.useApp();
     const [loading, setLoading] = useState(false);
     const { updateUserBalance } = useAuthStore();
 
     const onFinish = async (values: any) => {
         if (!token) return;
+        
+        // Strict check for Thai mobile prefixes: 06, 08, 09
+        const phoneInput = values.phone;
+        const validPrefixes = ['06', '08', '09'];
+        const hasValidPrefix = validPrefixes.some(prefix => phoneInput.startsWith(prefix));
+
+        if (!hasValidPrefix || !isValidPhoneNumber(phoneInput, 'TH')) {
+            notification.warning({
+                message: 'เบอร์โทรศัพท์ไม่ถูกต้อง',
+                description: 'กรุณากรอกเบอร์โทรศัพท์มือถือที่ขึ้นต้นด้วย 06, 08 หรือ 09 เท่านั้น หรือ เบอร์โทรคัพท์ไม่ครบ 10 หลัก',
+                placement: 'topRight',
+            });
+            return;
+        }
+
         setLoading(true);
         try {
             const formData = new FormData();
@@ -40,7 +56,10 @@ const AddressForm = ({ user, token, onSuccess }: { user: any, token: string | nu
             if (user?.user_id) formData.append('user_id', String(user.user_id));
 
             await updateUserAddress(formData, token);
-            message.success('บันทึกข้อมูลเรียบร้อย');
+             notification.success({
+                message: 'บันทึกข้อมูลเรียบร้อย',
+                placement: 'topRight',
+            });
             
             updateUserBalance({
                 address_main: values.address,
@@ -48,7 +67,12 @@ const AddressForm = ({ user, token, onSuccess }: { user: any, token: string | nu
             });
             onSuccess();
         } catch (error: any) {
-            message.error(error?.response?.data?.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+            notification.error({
+                message: 'บันทึกไม่สำเร็จ',
+                description: error?.response?.data?.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล',
+                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+                placement: 'topRight',
+            });
         } finally {
             setLoading(false);
         }
@@ -95,7 +119,7 @@ export default function CheckoutContent() {
     const { settings } = useWebsiteStore();
     const router = useRouter();
     const queryClient = useQueryClient();
-    const { message, modal } = App.useApp();
+    const { message, modal, notification } = App.useApp();
     const { user, token, updateToken } = useAuthStore();
     const [isProcessing, setIsProcessing] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
@@ -109,6 +133,8 @@ export default function CheckoutContent() {
         queryKey: ['checkoutItems'],
         queryFn: fetchCheckoutItems,
         enabled: currentStep === 0,
+        refetchOnMount: 'always',
+        staleTime: 0,
     });
 
     // Step 2: Address
@@ -333,23 +359,26 @@ export default function CheckoutContent() {
         try {
             const data = await confirmCheckout();
             if (data?.success) {
-                // Update token if provided in response
                 if (data.token) {
                     updateToken(data.token);
                 }
-                
-                message.success(data.message || 'ชำระเงินสำเร็จ');
-
-                // Refetch cart items in navbar
                 queryClient.invalidateQueries({ queryKey: ['cartItems'] });
-                
-                // Show success animation
                 setShowSuccess(true);
             } else {
-                message.error(data?.message || 'การชำระเงินล้มเหลว');
+                notification.error({
+                    message: 'การชำระเงินล้มเหลว',
+                    description: data?.message || 'ไม่สามารถชำระเงินได้',
+                    icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+                    placement: 'topRight',
+                });
             }
         } catch (error: any) {
-             message.error(error?.response?.data?.message || 'เกิดข้อผิดพลาดในการชำระเงิน');
+             notification.error({
+                message: 'เกิดข้อผิดพลาด',
+                description: error?.response?.data?.message || 'เกิดข้อผิดพลาดในการชำระเงิน',
+                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+                placement: 'topRight',
+             });
         } finally {
             setIsProcessing(false);
         }

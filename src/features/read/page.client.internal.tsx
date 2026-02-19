@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Button, Popover, Modal, Slider, Switch, Select, ConfigProvider, message } from "antd";
+import { Alert, Button, Popover, Modal, Slider, Switch, Select, ConfigProvider, message, notification } from "antd";
 import parse from "html-react-parser";
 import { BackToTopButton } from "@/components/utility/BackToTopButton";
 import Link from "next/link";
@@ -24,6 +24,7 @@ import { useContentProtection } from "@/hooks/reader/useContentProtection";
 import { useReadingProgress } from "@/hooks/reader/useReadingProgress";
 import { useReadingTheme } from "@/hooks/reader/useReadingTheme";
 import { useEpisodeNavigation } from "@/hooks/reader/useEpisodeNavigation";
+import { CheckCircleOutlined } from "@ant-design/icons";
 
 type Props = {
   bookId: string;
@@ -251,7 +252,13 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
 
       if (res?.data?.code === 200) {
         const respMsg = res.data?.message || "ซื้อสำเร็จ! กำลังอัปเดตเนื้อหา...";
-        messageApi.success(respMsg);
+        notification.success({
+                message: respMsg,
+                description: respMsg,
+                icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+                placement: 'topRight',
+            });
+        
 
         // Optimistic Update
         const currentUser = useAuthStore.getState().user;
@@ -278,10 +285,20 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
         await queryClient.invalidateQueries({ queryKey: ["episodeContent", episodeId] });
         await queryClient.invalidateQueries({ queryKey: ["bookEpisodes", bookId] });
       } else {
-        messageApi.error(res?.data?.message || "ซื้อไม่สำเร็จ");
+        notification.error({
+                message: 'ซื้อไม่สำเร็จ',
+                description: res?.data?.message || "ซื้อไม่สำเร็จ",
+                icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+                placement: 'topRight',
+            });
       }
     } catch (err) {
-      messageApi.error("ยอดเหรียญไม่เพียงพอ");
+      notification.error({
+                message: 'ซื้อไม่สำเร็จ',
+                description: "ยอดเหรียญไม่เพียงพอ",
+                icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+                placement: 'topRight',
+            });
     } finally {
       setBuyLoading(false);
     }

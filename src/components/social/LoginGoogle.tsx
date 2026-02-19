@@ -8,6 +8,8 @@ import { useUIStore } from '@/stores/uiStore';
 import Image from 'next/image';
 import apiClient from '@/services/apiClient';
 
+import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+
 declare global {
   interface Window {
     google: any;
@@ -15,7 +17,7 @@ declare global {
 }
 
 const LoginGoogle = () => {
-  const { message } = App.useApp();
+  const { message, notification } = App.useApp();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { login, updateToken } = useAuthStore();
@@ -58,7 +60,12 @@ const LoginGoogle = () => {
     setLoading(true);
 
     if (typeof window === 'undefined' || !window.google) {
-      message.error('Google Sign-In SDK ยังไม่โหลด กรุณาลองใหม่อีกครั้ง');
+      notification.error({
+        message: 'เกิดข้อผิดพลาด',
+        description: 'Google Sign-In SDK ยังไม่โหลด กรุณาลองใหม่อีกครั้ง',
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        placement: 'topRight',
+      });
       setLoading(false);
       return;
     }
@@ -85,16 +92,20 @@ const LoginGoogle = () => {
     });
 
     // Trigger the Google Sign-In prompt
-    window.google.accounts.id.prompt((notification: any) => {
-      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+    window.google.accounts.id.prompt((notificationObj: any) => {
+      if (notificationObj.isNotDisplayed() || notificationObj.isSkippedMoment()) {
         console.log('Google Prompt Error:', {
-          notDisplayedReason: notification.getNotDisplayedReason(),
-          skippedReason: notification.getSkippedReason()
+          notDisplayedReason: notificationObj.getNotDisplayedReason(),
+          skippedReason: notificationObj.getSkippedReason()
         });
 
         // Fallback: Show error if One Tap doesn't work
         setLoading(false);
-        message.info(`กรุณาอนุญาตการเข้าสู่ระบบผ่าน Google (${notification.getNotDisplayedReason()})`);
+        notification.info({
+            message: 'แจ้งเตือน',
+            description: `กรุณาอนุญาตการเข้าสู่ระบบผ่าน Google (${notificationObj.getNotDisplayedReason()})`,
+            placement: 'topRight'
+        });
       }
     });
 
@@ -115,11 +126,21 @@ const LoginGoogle = () => {
         await sendToBackend(idToken);
       } else {
         setLoading(false);
-        message.error('ไม่พบข้อมูลจาก Google');
+        notification.error({
+            message: 'เกิดข้อผิดพลาด',
+            description: 'ไม่พบข้อมูลจาก Google',
+            icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+            placement: 'topRight',
+        });
       }
     } catch (error) {
       setLoading(false);
-      message.error('เกิดข้อผิดพลาดในการเข้าสู่ระบบผ่าน Google');
+      notification.error({
+        message: 'เกิดข้อผิดพลาด',
+        description: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบผ่าน Google',
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        placement: 'topRight',
+    });
     }
   };
 
@@ -171,7 +192,12 @@ const LoginGoogle = () => {
           // Update user data from token payload immediately
           updateToken(token);
 
-          message.success('เข้าสู่ระบบผ่าน Google สำเร็จ!');
+          notification.success({
+            message: 'เข้าสู่ระบบสำเร็จ',
+            description: 'เข้าสู่ระบบผ่าน Google เรียบร้อยแล้ว',
+            icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+            placement: 'topRight',
+          });
 
           // ปิด Modal
           closeLoginModal();
@@ -184,13 +210,21 @@ const LoginGoogle = () => {
             window.location.reload();
           }
         } else {
-          message.error('ไม่พบ token จาก Backend - กรุณาติดต่อผู้ดูแลระบบ');
+          notification.error({
+            message: 'เข้าสู่ระบบไม่สำเร็จ',
+            description: 'ไม่พบ token จาก Backend - กรุณาติดต่อผู้ดูแลระบบ',
+            icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+            placement: 'topRight',
+          });
         }
       }
     } catch (error: any) {
-      message.error(
-        error.response?.data?.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ'
-      );
+        notification.error({
+            message: 'เข้าสู่ระบบไม่สำเร็จ',
+            description: error.response?.data?.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ',
+            icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+            placement: 'topRight',
+        });
     } finally {
       setLoading(false);
     }

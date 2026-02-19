@@ -10,12 +10,14 @@ import {
   Button,
   App,
   Upload,
-  Modal
+  Modal,
+  notification
 } from 'antd';
 import type { TabsProps, UploadProps } from 'antd';
-import { UploadOutlined, CheckCircleOutlined, LockOutlined } from '@ant-design/icons';
+import { UploadOutlined, CheckCircleOutlined, LockOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import axios from 'axios';
+import { isValidPhoneNumber } from 'libphonenumber-js';
 import { useFormStore } from '@/stores/formStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
@@ -219,7 +221,12 @@ const ChangePasswordForm = () => {
 
   const onFinish = async (values: any) => {
     if (!user?.email || !token) {
-      message.error('กรุณาเข้าสู่ระบบใหม่');
+      notification.error({
+        message: 'เกิดข้อผิดพลาด',
+        description: 'กรุณาเข้าสู่ระบบใหม่',
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        placement: 'topRight',
+      });
       return;
     }
 
@@ -235,13 +242,28 @@ const ChangePasswordForm = () => {
       const response = await apiClient.post('/user/changepass', requestData);
 
       if (response.status === 200 && (response.data.status === 'success' || response.data.code === 200)) {
-        message.success(response.data.message || 'เปลี่ยนรหัสผ่านสำเร็จ!');
+        notification.success({
+          message: 'เปลี่ยนรหัสผ่านสำเร็จ!',
+          description: 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว',
+          icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+          placement: 'topRight',
+        });
         form.resetFields();
       } else {
-        message.error(response.data.message || 'เกิดข้อผิดพลาด');
+        notification.error({
+          message: 'เปลี่ยนรหัสผ่านไม่สำเร็จ',
+          description: response.data.message || 'เกิดข้อผิดพลาด',
+          icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+          placement: 'topRight',
+        });
       }
     } catch (error: any) {
-      message.error(error.response?.data?.message || 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน');
+      notification.error({
+        message: 'เกิดข้อผิดพลาด',
+        description: error.response?.data?.message || 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน',
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        placement: 'topRight',
+      });
     } finally {
       setLoading(false);
     }
@@ -306,7 +328,12 @@ const ProfilePictureTab = ({ onProfileFileChange }: ProfilePictureTabProps) => {
 
   const fetchFrames = async () => {
     if (!token) {
-      message.error('ไม่พบ token กรุณาเข้าสู่ระบบใหม่');
+      notification.error({
+        message: 'เกิดข้อผิดพลาด',
+        description: 'ไม่พบ token กรุณาเข้าสู่ระบบใหม่',
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        placement: 'topRight',
+      });
       return;
     }
     setLoadingFrames(true);
@@ -332,7 +359,12 @@ const ProfilePictureTab = ({ onProfileFileChange }: ProfilePictureTabProps) => {
         }
       }
     } catch (error: any) {
-      message.error('ไม่สามารถโหลดข้อมูลกรอบได้');
+      notification.error({
+        message: 'เกิดข้อผิดพลาด',
+        description: 'ไม่สามารถโหลดข้อมูลกรอบได้',
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        placement: 'topRight',
+      });
     } finally {
       setLoadingFrames(false);
     }
@@ -358,15 +390,30 @@ const ProfilePictureTab = ({ onProfileFileChange }: ProfilePictureTabProps) => {
     if (selectedFrameInModal) {
       setCurrentFrameImg(selectedFrameInModal.img);
       updateUserProfile('frame_id', selectedFrameInModal.frame_id as any);
-      message.success(`เลือกกรอบ: ${selectedFrameInModal.name}`);
+      notification.success({
+        message: 'เลือกกรอบสำเร็จ',
+        description: `เลือกกรอบ: ${selectedFrameInModal.name}`,
+        icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+        placement: 'topRight',
+      });
       setIsFrameModalOpen(false);
     } else if (selectedFrameInModal === null) {
       setCurrentFrameImg(null);
       updateUserProfile('frame_id', 0 as any);
-      message.success('นำกรอบออกเรียบร้อย');
+      notification.success({
+        message: 'นำกรอบออกเรียบร้อย',
+        description: 'นำกรอบออกเรียบร้อยแล้ว',
+        icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+        placement: 'topRight',
+      });
       setIsFrameModalOpen(false);
     } else {
-      message.warning('กรุณาเลือกกรอบก่อน');
+      notification.warning({
+        message: 'กรุณาเลือกกรอบก่อน',
+        description: 'กรุณาเลือกกรอบก่อน',
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        placement: 'topRight',
+      });
     }
   };
 
@@ -392,7 +439,12 @@ const ProfilePictureTab = ({ onProfileFileChange }: ProfilePictureTabProps) => {
             <Button size="small" icon={<UploadOutlined />} onClick={handleOpenFrameModal} style={{ borderColor: '#FF0037', color: '#FF0037' }} className='font-primary text-xs hover:bg-red-50'>
               เลือกกรอบ
             </Button>
-            <Button size="small" icon={<span className='text-xs'>👑</span>} onClick={() => message.info('เลือกฉาก - ฟีเจอร์กำลังพัฒนา')} style={{ borderColor: '#FF0037', color: '#FF0037' }} className='font-primary text-xs hover:bg-red-50'>
+            <Button size="small" icon={<span className='text-xs'>👑</span>} onClick={() => notification.info({
+              message: 'เกิดข้อผิดพลาด',
+              description: 'เลือกฉายา - ฟีเจอร์กำลังพัฒนา',
+              icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+              placement: 'topRight',
+            })} style={{ borderColor: '#FF0037', color: '#FF0037' }} className='font-primary text-xs hover:bg-red-50'>
               เลือกฉายา
             </Button>
           </div>
@@ -540,7 +592,12 @@ const UserInfoTab = () => {
 
   const handleSaveAll = async () => {
     if (!token) {
-      message.error('กรุณาเข้าสู่ระบบใหม่');
+      notification.error({
+        message: 'เกิดข้อผิดพลาด',
+        description: 'กรุณาเข้าสู่ระบบใหม่',
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        placement: 'topRight',
+      });
       return;
     }
 
@@ -571,7 +628,24 @@ const UserInfoTab = () => {
       };
 
       append('fullname', getVal(userProfileForm.fullname, user?.fullname));
-      append('phone', getVal(userProfileForm.phone, (user as any)?.phone));
+      const phoneToSave = getVal(userProfileForm.phone, (user as any)?.phone);
+      if (phoneToSave) {
+          // Strict check for Thai mobile prefixes: 06, 08, 09
+          const validPrefixes = ['06', '08', '09'];
+          const hasValidPrefix = validPrefixes.some(prefix => phoneToSave.startsWith(prefix));
+
+          if (!hasValidPrefix || !isValidPhoneNumber(phoneToSave, 'TH')) {
+              notification.warning({
+                  message: 'เบอร์โทรศัพท์ไม่ถูกต้อง',
+                  description: 'กรุณากรอกเบอร์โทรศัพท์มือถือที่ขึ้นต้นด้วย 06, 08 หรือ 09 เท่านั้น',
+                  placement: 'topRight',
+              });
+              setSaving(false);
+              return;
+          }
+      }
+
+      append('phone', phoneToSave);
       append('address_main', getVal(userProfileForm.address_main, (user as any)?.address_main));
       append('des', getVal(userProfileForm.des, (user as any)?.des));
       append('facebook', getVal(userProfileForm.facebook, (user as any)?.facebook));
@@ -670,7 +744,12 @@ const UserInfoTab = () => {
         return;
       }
 
-      message.error(errMsg);
+      notification.error({
+        message: 'เกิดข้อผิดพลาด',
+        description: errMsg,
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        placement: 'topRight',
+      });
     } finally {
       setSaving(false);
     }
@@ -755,7 +834,12 @@ function Page() {
 
   useEffect(() => {
     if (hasMounted && (!isLoggedIn || !user)) {
-      message.warning('กรุณาเข้าสู่ระบบก่อนเข้าถึงหน้านี้');
+      notification.warning({
+        message: 'เกิดข้อผิดพลาด',
+        description: 'กรุณาเข้าสู่ระบบก่อนเข้าถึงหน้านี้',
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        placement: 'topRight',
+      });
       router.push('/');
     }
   }, [hasMounted, isLoggedIn, user, router, message]);

@@ -3,11 +3,12 @@
 import { useEffect } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { useAuthStore } from '@/stores/authStore'
-import { App } from 'antd'
+import { App, notification} from 'antd'
 import DuplicateLoginModal from './DuplicateLoginModal'
 import { refreshToken } from '@/services/apiServices'
 
 import Cookies from 'js-cookie'
+import { CheckCircleOutlined } from '@ant-design/icons'
 
 export default function TokenUpdater() {
     const searchParams = useSearchParams()
@@ -27,7 +28,12 @@ export default function TokenUpdater() {
             // Update store with new token
             if (newToken !== oldToken) {
                 updateToken(newToken)
-                message.success('อัปเดตยอดเงินสำเร็จ');
+                notification.success({
+                    message: 'อัปเดตยอดเงินสำเร็จ',
+                    description: 'อัปเดตยอดเงินเรียบร้อยแล้ว',
+                    icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+                    placement: 'topRight',
+                });
             }
 
             // Clean up the URL by removing the token param

@@ -9,8 +9,8 @@ declare global {
   }
 }
 
-const LIFF_ID = process.env.NEXT_PUBLIC_LINE_LIFF_ID || '2008384593-5BLnp8gx';
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.220.214:4005';
+const LIFF_ID = process.env.NEXT_PUBLIC_LINE_LIFF_ID;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 // Helper to set cookies
 const setCookie = (name: string, value: string, days: number = 365) => {

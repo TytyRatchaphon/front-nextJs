@@ -1,7 +1,7 @@
 "use client"
 
 import React from 'react'
-import { Card, Tabs, Table, Empty, message, Collapse } from 'antd'
+import { Card, Tabs, Table, Empty, notification, Collapse } from 'antd'
 import apiClient from '@/services/apiClient'
 import { useQuery } from '@tanstack/react-query'
 import { get_date as use_date } from '@/utils/dateUtils'
@@ -10,6 +10,7 @@ import { useWebsiteStore } from '@/stores/websiteStore';
 import GifLoader from '@/components/utility/GifLoader';
 import Image from 'next/image';
 import { imageLoader } from '@/utils/imageUtils';
+import { CloseCircleOutlined } from '@ant-design/icons';
 
 
 function History() {
@@ -86,10 +87,20 @@ function History() {
 
   React.useEffect(() => {
     if (paymentsQuery.error) {
-      message.error('ไม่สามารถโหลดประวัติการเติมเหรียญได้')
+      notification.error({
+        message: 'เกิดข้อผิดพลาด',
+        description: 'ไม่สามารถโหลดประวัติการเติมเหรียญได้',
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        placement: 'topRight',
+      });
     }
     if (useCoinQuery.error) {
-      message.error('ไม่สามารถโหลดประวัติการใช้เหรียญได้')
+      notification.error({
+        message: 'เกิดข้อผิดพลาด',
+        description: 'ไม่สามารถโหลดประวัติการใช้เหรียญได้',
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        placement: 'topRight',
+      });
     }
   }, [paymentsQuery.error, useCoinQuery.error])
 

@@ -8,12 +8,13 @@ import { useAuthStore } from '@/stores/authStore';
 import apiClient from '@/services/apiClient';
 import PackCardBookHorizontal from '@/components/novelCard/PackCardBookHorizontal';
 import PackCardBook from '@/components/novelCard/PackCardBook';
-import { Modal, Button, Spin, message, ConfigProvider } from 'antd';
+import { Modal, Button, Spin, message, ConfigProvider, notification } from 'antd';
 import { CloseOutlined, CheckCircleFilled, CloseCircleFilled, ArrowLeftOutlined } from '@ant-design/icons';
 import th_TH from 'antd/locale/th_TH';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { useUIStore } from '@/stores/uiStore';
 import { imageLoader } from '@/utils/imageUtils';
+import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
 interface PackCampaignProps {
     data: PackCampaignDetail | null;
@@ -63,7 +64,12 @@ function PackCampaign({ data }: PackCampaignProps) {
             const options = await fetchBookPromotionOptions(bookId);
             setPromotionOptions(options);
         } catch (error) {
-            message.error('ไม่สามารถโหลดข้อมูลโปรโมชั่นได้');
+            notification.error({
+                message: 'เกิดข้อผิดพลาด',
+                description: 'ไม่สามารถโหลดข้อมูลโปรโมชั่นได้',
+                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+                placement: 'topRight',
+            });
         } finally {
             setLoadingOptions(false);
         }
@@ -100,15 +106,30 @@ function PackCampaign({ data }: PackCampaignProps) {
                     updateToken(res.data.token);
                 }
 
-                message.success(res?.message || 'ซื้อสำเร็จ!');
+                notification.success({
+                    message: 'ซื้อสำเร็จ!',
+                    description: 'ซื้อสำเร็จแล้ว',
+                    icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+                    placement: 'topRight',
+                });
             } else {
                 const errMsg = res?.message || 'ไม่สามารถทำการซื้อได้';
-                message.error(errMsg);
+                notification.error({
+                    message: 'ซื้อไม่สำเร็จ',
+                    description: errMsg,
+                    icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+                    placement: 'topRight',
+                });
                 setPurchaseStatus('failed');
             }
         } catch (err: any) {
             const msg = err?.response?.data?.message || err?.message || 'เกิดข้อผิดพลาดขณะซื้อ';
-            message.error(msg);
+            notification.error({
+                message: 'เกิดข้อผิดพลาด',
+                description: msg,
+                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+                placement: 'topRight',
+            });
             setPurchaseStatus('failed');
         }
     };

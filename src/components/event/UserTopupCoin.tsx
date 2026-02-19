@@ -2,12 +2,13 @@
 
 import React from 'react'
 import Image from 'next/image'
-import { Progress, Button, App } from 'antd'
+import { Progress, Button, App, notification } from 'antd'
 import { GiftOutlined } from '@ant-design/icons'
 import apiClient from '@/services/apiClient'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
 import { QUERY_KEYS, QUERY_CONFIG } from '@/constants/query'
+import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
 
 type Props = {
     width?: number | string
@@ -18,7 +19,6 @@ export default function UserTopupCoin({
     width = 1040,
     progressHeight = 22,
 }: Props) {
-    const { message } = App.useApp()
     const queryClient = useQueryClient()
     const token = useAuthStore((state) => state.token) // ✅ Use selector instead of .getState()
 
@@ -59,11 +59,21 @@ export default function UserTopupCoin({
     const { mutate: handleClaim, isPending: isClaiming } = useMutation({
         mutationFn: claimRewardApi,
         onSuccess: (responseData) => {
-            message.success('รับรางวัลสำเร็จ!')
+            notification.success({
+                message: 'รับรางวัลสำเร็จ!',
+                description: 'รับรางวัลเรียบร้อยแล้ว',
+                icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+                placement: 'topRight',
+            });
             queryClient.invalidateQueries({ queryKey: ['user-event-summary'] })
         },
         onError: (error: any) => {
-            message.error(error?.response?.data?.message || 'ฟีเจอร์นี้ยังไม่เปิดใช้งาน')
+            notification.error({
+                message: 'รับรางวัลไม่สำเร็จ',
+                description: error?.response?.data?.message || 'รับรางวัลไม่สำเร็จ',
+                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+                placement: 'topRight',
+            });
         }
     })
 

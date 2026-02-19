@@ -1,19 +1,21 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchCartItems, updateCartItem, removeCartItem } from '@/services/cartService';
-import { Button, Empty, message, Collapse } from 'antd';
+import { Button, Empty, message, Collapse, App } from 'antd';
 import { ShoppingCartOutlined, BookOutlined, DeleteOutlined, MinusOutlined, PlusOutlined, ShopOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import Link from 'next/link';
 import GifLoader from '@/components/utility/GifLoader';
 import { CartItem, CartStore } from '@/interfaces/cart.interface';
 import { useWebsiteStore } from '@/stores/websiteStore';
+import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
 
 const { Panel } = Collapse;
 
 const CartPopover: React.FC = () => {
     const { settings } = useWebsiteStore();
     const queryClient = useQueryClient();
+    const { notification } = App.useApp();
 
     const { data: cartStores, isLoading } = useQuery({
         queryKey: ['cartItems'],
@@ -35,7 +37,12 @@ const CartPopover: React.FC = () => {
         onSuccess: () => {
              queryClient.invalidateQueries({ queryKey: ['cartItems'] });
              queryClient.invalidateQueries({ queryKey: ['cartSummary'] });
-             message.success('ลบสินค้าเรียบร้อย');
+             notification.success({
+                message: 'ลบสินค้าเรียบร้อย',
+                description: 'ลบสินค้าเรียบร้อยแล้ว',
+                icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+                placement: 'topRight',
+            });
         },
     });
 

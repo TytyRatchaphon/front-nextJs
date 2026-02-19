@@ -5,6 +5,7 @@ import { useWebsiteStore } from '@/stores/websiteStore';
 import { App } from 'antd';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
+import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import AddToCartSvg from '@/components/utility/AddToCartSvg';
 import { addToCart, fetchCartItems } from '@/services/cartService';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
@@ -20,7 +21,7 @@ interface StoreCardProps {
 const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
   const { settings } = useWebsiteStore()
   const { user, token } = useAuthStore() as any;
-  const { modal, message } = App.useApp();
+  const { modal, message, notification } = App.useApp();
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -64,18 +65,33 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
   const addToCartMutation = useMutation({
     mutationFn: addToCart,
     onSuccess: () => {
-      message.success('เพิ่มลงตะกร้าเรียบร้อย');
+      notification.success({
+        message: 'เพิ่มลงตะกร้าเรียบร้อย',
+        description: 'สินค้าได้ถูกเพิ่มลงในตะกร้าของคุณแล้ว',
+        icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+        placement: 'topRight',
+      });
       queryClient.invalidateQueries({ queryKey: ['cartItems'] });
     },
     onError: (error: any) => {
       const msg = error?.response?.data?.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่';
-      message.error(msg);
+      notification.error({
+        message: 'เกิดข้อผิดพลาด',
+        description: msg,
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        placement: 'topRight',
+      });
     }
   });
 
   const handleAddToCart = (pack: StorePack) => {
     if (!token) {
-        message.warning('กรุณาเข้าสู่ระบบก่อน');
+      notification.warning({
+        message: 'กรุณาเข้าสู่ระบบก่อน',
+        description: 'กรุณาเข้าสู่ระบบก่อน',
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        placement: 'topRight',
+      });
         return;
     }
     addToCartMutation.mutate({ store_pack_id: pack.store_pack_id, quantity: 1 });

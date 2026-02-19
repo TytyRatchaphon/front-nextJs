@@ -4,8 +4,8 @@ import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchCartItems, updateCartItem, removeCartItem, clearCart, fetchCartSummary } from '@/services/cartService';
 import { CartItem, CartStore } from '@/interfaces/cart.interface';
-import { Table, Checkbox, Button, InputNumber, Image as AntImage, Typography, Card, Space, Popconfirm, message, Empty, Spin, Collapse } from 'antd';
-import { DeleteOutlined, ShoppingCartOutlined, ShopOutlined } from '@ant-design/icons';
+import { Table, Checkbox, Button, InputNumber, Image as AntImage, Typography, Card, Space, Popconfirm, App, Empty, Spin, Collapse } from 'antd';
+import { DeleteOutlined, ShoppingCartOutlined, ShopOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/authStore';
 import { useWebsiteStore } from '@/stores/websiteStore';
@@ -22,6 +22,7 @@ export default function CartDetail() {
     const queryClient = useQueryClient();
     const { token, user } = useAuthStore() as any;
     const { settings } = useWebsiteStore();
+    const { message, notification } = App.useApp();
 
 
     const { data: cartStores, isLoading } = useQuery({
@@ -80,7 +81,12 @@ export default function CartDetail() {
              queryClient.invalidateQueries({ queryKey: ['cartSummary'] });
         },
         onError: (error: any) => {
-            message.error(error?.response?.data?.message || 'ไม่สามารถอัปเดตสินค้าได้');
+            notification.error({
+                message: 'จำกัดการซื้อ',
+                description: error?.response?.data?.message || 'ไม่สามารถอัปเดตสินค้าได้',
+                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+                placement: 'topRight',
+            });
         }
     });
 
@@ -89,7 +95,12 @@ export default function CartDetail() {
         onSuccess: () => {
              queryClient.invalidateQueries({ queryKey: ['cartItems'] });
              queryClient.invalidateQueries({ queryKey: ['cartSummary'] });
-             message.success('ลบรายการสินค้าสำเร็จ');
+             notification.success({
+                message: 'สำเร็จ',
+                description: 'ลบรายการสินค้าสำเร็จ',
+                icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+                placement: 'topRight',
+             });
         },
     });
 
@@ -98,7 +109,12 @@ export default function CartDetail() {
         onSuccess: () => {
              queryClient.invalidateQueries({ queryKey: ['cartItems'] });
              queryClient.invalidateQueries({ queryKey: ['cartSummary'] });
-             message.success('Cart cleared');
+             notification.success({
+                message: 'สำเร็จ',
+                description: 'ลบรายการสินค้าทั้งหมดสำเร็จ',
+                icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+                placement: 'topRight',
+             });
         },
     });
 

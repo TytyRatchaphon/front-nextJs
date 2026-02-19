@@ -8,6 +8,8 @@ import { useUIStore } from '@/stores/uiStore';
 import apiClient from '@/services/apiClient';
 import Image from 'next/image';
 
+import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+
 interface UserData {
   fullname?: string;
   name?: string;
@@ -20,7 +22,7 @@ interface UserData {
 }
 
 const LoginFacebook = () => {
-  const { message } = App.useApp();
+  const { message, notification } = App.useApp();
   const [loading, setLoading] = useState(false);
   // เพิ่ม state เพื่อเช็คว่า SDK พร้อมใช้งานหรือยัง
   const [isSdkLoaded, setIsSdkLoaded] = useState(false);
@@ -114,7 +116,12 @@ const LoginFacebook = () => {
     try {
       await sendToBackend(accessToken);
     } catch (error) {
-      message.error('เกิดข้อผิดพลาดในการเข้าสู่ระบบผ่าน Facebook');
+      notification.error({
+        message: 'เข้าสู่ระบบไม่สำเร็จ',
+        description: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบผ่าน Facebook',
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        placement: 'topRight',
+      });
       setLoading(false);
     }
   };
@@ -155,7 +162,12 @@ const LoginFacebook = () => {
 
           login(userInfo, token);
           updateToken(token);
-          message.success('เข้าสู่ระบบผ่าน Facebook สำเร็จ!');
+          notification.success({
+            message: 'เข้าสู่ระบบสำเร็จ',
+            description: 'เข้าสู่ระบบผ่าน Facebook เรียบร้อยแล้ว',
+            icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+            placement: 'topRight',
+          });
           closeLoginModal();
 
           // Check logical flow (replaces legacy checkBeforeLogin)
@@ -166,11 +178,21 @@ const LoginFacebook = () => {
             window.location.reload();
           }
         } else {
-          message.error('ไม่พบ token จาก Backend');
+          notification.error({
+            message: 'เข้าสู่ระบบไม่สำเร็จ',
+            description: 'ไม่พบ token จาก Backend',
+            icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+            placement: 'topRight',
+          });
         }
       }
     } catch (error: any) {
-      message.error(error.response?.data?.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ');
+      notification.error({
+        message: 'เข้าสู่ระบบไม่สำเร็จ',
+        description: error.response?.data?.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ',
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        placement: 'topRight',
+      });
     } finally {
       setLoading(false);
     }

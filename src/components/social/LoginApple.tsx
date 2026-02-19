@@ -14,8 +14,10 @@ declare global {
     }
 }
 
+import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+
 const LoginApple = () => {
-    const { message } = App.useApp();
+    const { message, notification } = App.useApp();
     const [loading, setLoading] = useState(false);
     const router = useRouter();
     const { login, updateToken } = useAuthStore();
@@ -57,7 +59,12 @@ const LoginApple = () => {
         setLoading(true);
 
         if (typeof window === 'undefined' || !window.AppleID) {
-            message.error('Apple Sign-In SDK ยังไม่โหลด กรุณาลองใหม่อีกครั้ง');
+            notification.error({
+                message: 'เกิดข้อผิดพลาด',
+                description: 'Apple Sign-In SDK ยังไม่โหลด กรุณาลองใหม่อีกครั้ง',
+                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+                placement: 'topRight',
+            });
             setLoading(false);
             return;
         }
@@ -75,7 +82,12 @@ const LoginApple = () => {
             if (error && error.error === 'popup_closed_by_user') {
                 return; // User cancelled, no error message needed
             }
-            message.error('เกิดข้อผิดพลาดในการเข้าสู่ระบบผ่าน Apple');
+            notification.error({
+                message: 'เข้าสู่ระบบไม่สำเร็จ',
+                description: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบผ่าน Apple',
+                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+                placement: 'topRight',
+            });
         }
     };
 
@@ -117,17 +129,32 @@ const LoginApple = () => {
                 if (token) {
                     login(userInfo, token);
                     updateToken(token);
-                    message.success('เข้าสู่ระบบผ่าน Apple สำเร็จ!');
+                    notification.success({
+                        message: 'เข้าสู่ระบบสำเร็จ',
+                        description: 'เข้าสู่ระบบผ่าน Apple เรียบร้อยแล้ว',
+                        icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+                        placement: 'topRight',
+                    });
                     closeLoginModal();
                     setTimeout(() => {
                         router.push('/');
                     }, 500);
                 } else {
-                    message.error('ไม่พบ token จาก Backend');
+                    notification.error({
+                        message: 'เข้าสู่ระบบไม่สำเร็จ',
+                        description: 'ไม่พบ token จาก Backend',
+                        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+                        placement: 'topRight',
+                    });
                 }
             }
         } catch (error: any) {
-            message.error(error.response?.data?.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบกับ Server');
+            notification.error({
+                message: 'เข้าสู่ระบบไม่สำเร็จ',
+                description: error.response?.data?.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบกับ Server',
+                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+                placement: 'topRight',
+            });
         } finally {
             setLoading(false);
         }

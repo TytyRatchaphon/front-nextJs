@@ -3,8 +3,9 @@
 import React, { useEffect } from 'react';
 import { useLineLogin } from '@/hooks/useLineLogin';
 import { useRouter } from 'next/navigation';
-import { App, Spin } from 'antd';
+import { App, Spin, notification } from 'antd';
 import { useAuthStore } from '@/stores/authStore';
+import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
 const LineCallbackContent = () => {
     const { initLIFF } = useLineLogin();
@@ -26,7 +27,12 @@ const LineCallbackContent = () => {
                 // handleBackendLogin is awaited in initLIFF so store should be updated.
 
                 if (useAuthStore.getState().isLoggedIn) {
-                    message.success('Login Successful');
+                    notification.success({
+                        message: 'Login Successful',
+                        description: 'เข้าสู่ระบบเรียบร้อยแล้ว',
+                        icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+                        placement: 'topRight',
+                    });
                     router.replace('/');
                 } else {
                     // If not logged in, maybe it was just a normal visit or login failed.
@@ -40,7 +46,12 @@ const LineCallbackContent = () => {
                 }
             } catch (error) {
                 console.error("LIFF Init Error", error);
-                message.error("เกิดข้อผิดพลาดในการเชื่อมต่อกับ LINE");
+                notification.error({
+                    message: 'เกิดข้อผิดพลาด',
+                    description: 'เกิดข้อผิดพลาดในการเชื่อมต่อกับ LINE',
+                    icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+                    placement: 'topRight',
+                });
                 router.push('/');
             }
         };

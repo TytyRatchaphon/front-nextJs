@@ -241,7 +241,12 @@ const LoginButtonHeader: React.FC = () => {
   const registerMutation = useMutation({
     mutationFn: registerUser,
     onSuccess: (responseData) => {
-      message.success(responseData.message || 'สมัครสมาชิกสำเร็จ!');
+      notification.success({
+        message: 'สมัครสมาชิกสำเร็จ!',
+        description: 'สมัครสมาชิกเรียบร้อยแล้ว',
+        icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+        placement: 'topRight',
+      });
 
       // Auto login หลังจาก register สำเร็จ
       if (responseData.data) {
@@ -295,11 +300,21 @@ const LoginButtonHeader: React.FC = () => {
             };
 
             login(userData, token);
-            message.success('เข้าสู่ระบบอัตโนมัติแล้ว');
+            notification.success({
+              message: 'เข้าสู่ระบบอัตโนมัติแล้ว',
+              description: 'เข้าสู่ระบบเรียบร้อยแล้ว',
+              icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+              placement: 'topRight',
+            });
             handleCancel();
             setRegisterFormData(null);
           } catch (error) {
-            message.error('ไม่สามารถอ่านข้อมูลจาก Token ได้');
+            notification.error({
+              message: 'ไม่สามารถอ่านข้อมูลจาก Token ได้',
+              description: 'ไม่สามารถอ่านข้อมูลจาก Token ได้',
+              icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+              placement: 'topRight',
+            });
             handleViewChange('login');
           }
         } else {
@@ -315,10 +330,20 @@ const LoginButtonHeader: React.FC = () => {
       // Workaround for backend issue: If registration succeeds but token generation fails
       // with "Expected 'payload' to be a plain object.", treat it as success.
       if (typeof errorMessage === 'string' && (errorMessage.includes("plain object") || errorMessage.includes('payload'))) {
-        message.success('สมัครสมาชิกสำเร็จ กรุณาเข้าสู่ระบบ');
+        notification.success({
+          message: 'สมัครสมาชิกสำเร็จ',
+          description: 'สมัครสมาชิกเรียบร้อยแล้ว',
+          icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+          placement: 'topRight',
+        });
         handleViewChange('login');
       } else {
-        message.error(errorMessage);
+        notification.error({
+          message: 'สมัครสมาชิกไม่สำเร็จ',
+          description: errorMessage,
+          icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+          placement: 'topRight',
+        });
       }
     },
   });
@@ -363,7 +388,12 @@ const LoginButtonHeader: React.FC = () => {
   };
 
   const onFinishFailed = (errorInfo: any) => {
-    message.error('กรุณากรอกข้อมูลให้ครบถ้วน');
+    notification.error({
+      message: 'เกิดข้อผิดพลาด',
+      description: 'กรุณากรอกข้อมูลให้ครบถ้วน',
+      icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+      placement: 'topRight',
+    });
   };
 
   //-------------------- Login / Register ---------------------------------

@@ -6,9 +6,10 @@ import { useRouter } from 'next/navigation';
 import { useUIStore } from '@/stores/uiStore';
 import Image from 'next/image';
 import { useLineLogin } from '@/hooks/useLineLogin';
+import { CloseCircleOutlined } from '@ant-design/icons';
 
 const LoginLine = () => {
-  const { message } = App.useApp();
+  const { message, notification } = App.useApp();
   const router = useRouter();
   const { closeLoginModal } = useUIStore();
   const { loginWithLine, loading } = useLineLogin();
@@ -23,7 +24,12 @@ const LoginLine = () => {
         router.push('/');
       }, 500);
     } catch (error) {
-      message.error('เกิดข้อผิดพลาดในการเข้าสู่ระบบผ่าน LINE');
+      notification.error({
+        message: 'เข้าสู่ระบบไม่สำเร็จ',
+        description: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบผ่าน LINE',
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        placement: 'topRight',
+      });
     }
   };
 
