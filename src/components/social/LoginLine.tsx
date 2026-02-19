@@ -7,16 +7,22 @@ import { useUIStore } from '@/stores/uiStore';
 import Image from 'next/image';
 import { useLineLogin } from '@/hooks/useLineLogin';
 import { CloseCircleOutlined } from '@ant-design/icons';
+import { useLogger } from '@/hooks/useLogger';
 
 const LoginLine = () => {
   const { message, notification } = App.useApp();
   const router = useRouter();
   const { closeLoginModal } = useUIStore();
   const { loginWithLine, loading } = useLineLogin();
+  const { log: logActivity } = useLogger();
 
   const handleLineLogin = async () => {
     try {
       await loginWithLine();
+
+      // Log login event
+      console.log('[LOG] login =>', { method: 'line' });
+      logActivity('login', 'user', '', { method: 'line' });
 
       // if no error was thrown, consider login successful
       closeLoginModal();

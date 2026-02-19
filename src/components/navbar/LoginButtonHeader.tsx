@@ -9,6 +9,7 @@ import { useMutation } from '@tanstack/react-query';
 import apiClient, { ApiResponse } from '@/services/apiClient';
 import { useAuthStore, UserData } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
+import { useLogger } from '@/hooks/useLogger';
 
 // Types
 import LoginFacebook from '../social/LoginFacebook';
@@ -58,6 +59,7 @@ const LoginButtonHeader: React.FC = () => {
     setLoginViewMode,
     setLoginAnimation
   } = useUIStore();
+  const { log: logActivity } = useLogger();
 
   // Notification API
 
@@ -208,6 +210,11 @@ const LoginButtonHeader: React.FC = () => {
             };
 
             login(userData, token);
+
+            // Log login event
+            console.log('[LOG] login =>', { method: 'email', email: userData.email });
+            logActivity('login', 'user', '', { method: 'email', email: userData.email });
+
             setLoginFormData(null);
           } catch (error) {
             api.error({
@@ -300,6 +307,11 @@ const LoginButtonHeader: React.FC = () => {
             };
 
             login(userData, token);
+
+            // Log register event
+            console.log('[LOG] register =>', { method: 'email', email: userData.email });
+            logActivity('register', 'user', '', { method: 'email', email: userData.email });
+
             notification.success({
               message: 'เข้าสู่ระบบอัตโนมัติแล้ว',
               description: 'เข้าสู่ระบบเรียบร้อยแล้ว',

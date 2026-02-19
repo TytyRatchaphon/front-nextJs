@@ -29,6 +29,8 @@ const CartPopover: React.FC = () => {
         onSuccess: () => {
              queryClient.invalidateQueries({ queryKey: ['cartItems'] });
              queryClient.invalidateQueries({ queryKey: ['cartSummary'] });
+             queryClient.invalidateQueries({ queryKey: ['checkoutItems'] });
+             queryClient.invalidateQueries({ queryKey: ['checkoutAddress'] });
         },
     });
 
@@ -37,6 +39,8 @@ const CartPopover: React.FC = () => {
         onSuccess: () => {
              queryClient.invalidateQueries({ queryKey: ['cartItems'] });
              queryClient.invalidateQueries({ queryKey: ['cartSummary'] });
+             queryClient.invalidateQueries({ queryKey: ['checkoutItems'] });
+             queryClient.invalidateQueries({ queryKey: ['checkoutAddress'] });
              notification.success({
                 message: 'ลบสินค้าเรียบร้อย',
                 description: 'ลบสินค้าเรียบร้อยแล้ว',

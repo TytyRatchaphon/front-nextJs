@@ -24,6 +24,7 @@ import { useContentProtection } from "@/hooks/reader/useContentProtection";
 import { useReadingProgress } from "@/hooks/reader/useReadingProgress";
 import { useReadingTheme } from "@/hooks/reader/useReadingTheme";
 import { useEpisodeNavigation } from "@/hooks/reader/useEpisodeNavigation";
+import { useLogger } from "@/hooks/useLogger";
 import { CheckCircleOutlined } from "@ant-design/icons";
 
 type Props = {
@@ -127,6 +128,29 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     nextEpId,
     isListLoading
   } = useEpisodeNavigation(bookId, episodeId, episode);
+
+  // --- 2.5 Activity Logging ---
+  const { log } = useLogger();
+
+  useEffect(() => {
+    if (episode && bookId && episodeId) {
+      const epName = (episode as any)?.name || displayTitle || '';
+      const bookTitle = (bookDetail as any)?.title || '';
+      const startTime = Date.now();
+
+      console.log('[LOG] read_page tracking started =>', { bookId, episodeId, epName });
+
+      return () => {
+        const duration = Math.round((Date.now() - startTime) / 1000 * 10) / 10;
+        console.log('[LOG] read_page =>', { bookId, episodeId, epName, duration: `${duration}s` });
+        log('read_page', 'book', bookId, {
+          name: epName,
+          book_title: bookTitle,
+          episode_id: episodeId,
+        }, duration);
+      };
+    }
+  }, [episode, bookId, episodeId, bookDetail, displayTitle, log]);
 
   // --- 3. Local State for UI ---
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -252,6 +276,16 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
 
       if (res?.data?.code === 200) {
         const respMsg = res.data?.message || "ซื้อสำเร็จ! กำลังอัปเดตเนื้อหา...";
+
+        // Log buy_episode
+        console.log('[LOG] buy_episode =>', { bookId, episodeId: epId, method, price: priceToDeduct });
+        log('buy_episode', 'book', bookId, {
+          episode_id: epId,
+          method,
+          price: priceToDeduct,
+          name: (episode as any)?.name || displayTitle || '',
+        });
+
         notification.success({
                 message: respMsg,
                 description: respMsg,
@@ -641,7 +675,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                 style={{ borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)" }}>
                 <div className={`group w-full p-4 flex flex-row gap-2 items-center justify-center border-r hover:bg-black/5 transition-all ${!prevEpId ? "opacity-30 cursor-not-allowed" : "cursor-pointer active:scale-[0.98]"}`}
                   style={{ borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)" }}
-                  onClick={(e) => { e.stopPropagation(); if (prevEpId && bookId) router.push(`/read/${bookId}/${prevEpId}`); }}>
+                  onClick={(e) => { e.stopPropagation(); if (prevEpId && bookId) { console.log('[LOG] prev_episode =>', { bookId, from: episodeId, to: prevEpId }); log('prev_episode', 'book', bookId, { from_episode: episodeId, to_episode: prevEpId }); router.push(`/read/${bookId}/${prevEpId}`); } }}>
                   <svg className={`w-5 h-5 transition-transform group-hover:-translate-x-1`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                   <div className="flex flex-col items-start leading-none gap-0.5">
                     <span className="text-[10px] opacity-60 font-normal">ตอนก่อนหน้า</span>
@@ -649,7 +683,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                   </div>
                 </div>
                 <div className={`group w-full p-4 flex flex-row gap-2 items-center justify-center hover:bg-black/5 transition-all ${!nextEpId ? "opacity-30 cursor-not-allowed" : "cursor-pointer active:scale-[0.98]"}`}
-                  onClick={(e) => { e.stopPropagation(); window.scrollTo(0, 0); if (nextEpId && bookId) router.push(`/read/${bookId}/${nextEpId}`); }}>
+                  onClick={(e) => { e.stopPropagation(); window.scrollTo(0, 0); if (nextEpId && bookId) { console.log('[LOG] next_episode =>', { bookId, from: episodeId, to: nextEpId }); log('next_episode', 'book', bookId, { from_episode: episodeId, to_episode: nextEpId }); router.push(`/read/${bookId}/${nextEpId}`); } }}>
                   <div className="flex flex-col items-end leading-none gap-0.5">
                     <span className="text-[10px] opacity-60 font-normal">ตอนต่อไป</span>
                     <span className="font-semibold text-sm">ถัดไป</span>

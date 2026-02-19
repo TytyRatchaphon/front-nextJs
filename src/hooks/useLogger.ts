@@ -58,7 +58,8 @@ export const useLogger = () => {
         action: string,
         targetType: string = 'page',
         targetId: string = '',
-        metadata: any = {}
+        metadata: any = {},
+        duration?: number
     ) => {
         const payload: LogActivityPayload = {
             session_id: getAppSessionId(),
@@ -67,7 +68,8 @@ export const useLogger = () => {
             target_type: targetType,
             target_id: targetId,
             path: pathnameRef.current || window.location.pathname,
-            metadata
+            metadata,
+            ...(duration !== undefined && { duration }),
         };
 
         // Optional: Include duration or other metrics if passed in metadata or handled here

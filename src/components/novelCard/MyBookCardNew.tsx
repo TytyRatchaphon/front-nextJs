@@ -115,9 +115,11 @@ const MyBookCardNew: React.FC<MyBookCardNewProps> = ({ book }) => {
         </div>
 
         {/* Income Row */}
-        <div className="flex items-center justify-between text-base text-gray-700">
-          <span>รายได้ทั้งหมด</span>
-          <span>{(book.total_income || 0).toLocaleString()}</span>
+        <div className="flex items-center justify-between text-[13px] text-gray-700 mt-1 whitespace-nowrap">
+          <span className="flex-shrink-0">รายได้ทั้งหมด</span>
+          <span className="font-bold truncate ml-2" title={(book.total_income || 0).toLocaleString()}>
+            {(book.total_income || 0).toLocaleString()}
+          </span>
         </div>
 
         {/* Footer Actions */}

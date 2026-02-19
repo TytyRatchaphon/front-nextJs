@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCategoryBooks, fetchActiveCategories } from "@/services/apiServices";
@@ -13,6 +13,7 @@ import 'swiper/css';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import CategoryTypeSwiper from "./CategoryTypeSwiper";
 import CategoryGenreSwiper from "./CategoryGenreSwiper";
+import { useLogger } from "@/hooks/useLogger";
 
 const TABS = [
   { key: "bestseller", label: "นิยายขายดี" },
@@ -43,6 +44,10 @@ export default function Category() {
   const tab = searchParams.get("tab") || "new";
   const period = searchParams.get("period") || "1"; // Default to today (1)
   const page = Number(searchParams.get("page")) || 1;
+
+  // --- Activity Logging ---
+  const { log } = useLogger();
+  const hasLoggedRef = useRef<string>('');
 
   // React Query to fetch books
   const { data, isLoading, isError } = useQuery<CategoryBookListResponse | null>({
@@ -80,6 +85,16 @@ export default function Category() {
   
   const categoryNameParam = searchParams.get("name") || "";
   const categoryName = categoryNameParam || categoryDetail?.name || "";
+
+  useEffect(() => {
+    if (!categoryId) return;
+    const logKey = `${categoryId}-${type}-${tab}`;
+    if (hasLoggedRef.current === logKey) return;
+    hasLoggedRef.current = logKey;
+
+    console.log('[LOG] category_click =>', { categoryId, type, tab, name: categoryName || '' });
+    log('category_click', 'category', categoryId, { type, tab, name: categoryName || '' });
+  }, [categoryId, type, tab, categoryName, log]);
 
   const handleTabChange = (newTab: string) => {
     const newParams = new URLSearchParams(searchParams.toString());

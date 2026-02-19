@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import Image from 'next/image';
 import apiClient from '@/services/apiClient';
+import { useLogger } from '@/hooks/useLogger';
 
 declare global {
     interface Window {
@@ -22,6 +23,7 @@ const LoginApple = () => {
     const router = useRouter();
     const { login, updateToken } = useAuthStore();
     const { closeLoginModal } = useUIStore();
+    const { log: logActivity } = useLogger();
 
     const APPLE_CLIENT_ID = process.env.NEXT_PUBLIC_APPLE_CLIENT_ID ; // Replace with actual Client ID
     const APPLE_REDIRECT_URI = process.env.NEXT_PUBLIC_APPLE_REDIRECT_URI ; // Replace with actual Redirect URI
@@ -129,6 +131,10 @@ const LoginApple = () => {
                 if (token) {
                     login(userInfo, token);
                     updateToken(token);
+
+                    // Log login event
+                    console.log('[LOG] login =>', { method: 'apple' });
+                    logActivity('login', 'user', userInfo.userId || '', { method: 'apple' });
                     notification.success({
                         message: 'เข้าสู่ระบบสำเร็จ',
                         description: 'เข้าสู่ระบบผ่าน Apple เรียบร้อยแล้ว',

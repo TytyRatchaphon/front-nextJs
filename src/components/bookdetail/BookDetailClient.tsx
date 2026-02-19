@@ -27,7 +27,8 @@ type TabKey = (typeof collapseTabs)[number] | (typeof segmentedTabs)[number];
 export default function BookDetailClient({ bookId }: { bookId: string }) {
   const router = useRouter();
   const [activeSegmentedTab, setActiveSegmentedTab] = useState<(typeof segmentedTabs)[number]>(segmentedTabs[0]);
-  const { log, trackTimeSpent } = useLogger();
+  const { log } = useLogger();
+
   const { token, hasMounted, user } = useAuthStore() as any;
   const { openLoginModal } = useUIStore();
   const { settings } = useWebsiteStore();
@@ -117,17 +118,18 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
 
   useEffect(() => {
     if (book?.id && book?.title) {
-       // Log Page View
-       log('page_view', 'book', String(book.id), {
-          name: book.title,
-       });
+       const startTime = Date.now();
+       console.log('[LOG] page_view tracking started =>', { bookId: String(book.id), name: book.title });
 
-       // Start Tracking Time
-       // The function returns a cleanup function that logs 'time_spent' on unmount
-       const stopTracking = trackTimeSpent('book', String(book.id), { name: book.title });
-       return stopTracking;
+       return () => {
+         const duration = Math.round((Date.now() - startTime) / 1000 * 10) / 10;
+         console.log('[LOG] page_view =>', { bookId: String(book.id), name: book.title, duration: `${duration}s` });
+         log('page_view', 'book', String(book.id), {
+            name: book.title,
+         }, duration);
+       };
     }
-  }, [book?.id, book?.title, log, trackTimeSpent]);
+  }, [book?.id, book?.title, log]);
 
   const tabContents: Record<TabKey, React.ReactElement> = {
     รายละเอียดเรื่อง: <BookAboutTab bookDetail={bookDetail ?? null} />,

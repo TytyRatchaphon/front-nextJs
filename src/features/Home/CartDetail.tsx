@@ -79,6 +79,8 @@ export default function CartDetail() {
         onSuccess: () => {
              queryClient.invalidateQueries({ queryKey: ['cartItems'] });
              queryClient.invalidateQueries({ queryKey: ['cartSummary'] });
+             queryClient.invalidateQueries({ queryKey: ['checkoutItems'] });
+             queryClient.invalidateQueries({ queryKey: ['checkoutAddress'] });
         },
         onError: (error: any) => {
             notification.error({
@@ -95,6 +97,8 @@ export default function CartDetail() {
         onSuccess: () => {
              queryClient.invalidateQueries({ queryKey: ['cartItems'] });
              queryClient.invalidateQueries({ queryKey: ['cartSummary'] });
+             queryClient.invalidateQueries({ queryKey: ['checkoutItems'] });
+             queryClient.invalidateQueries({ queryKey: ['checkoutAddress'] });
              notification.success({
                 message: 'สำเร็จ',
                 description: 'ลบรายการสินค้าสำเร็จ',
@@ -109,6 +113,8 @@ export default function CartDetail() {
         onSuccess: () => {
              queryClient.invalidateQueries({ queryKey: ['cartItems'] });
              queryClient.invalidateQueries({ queryKey: ['cartSummary'] });
+             queryClient.invalidateQueries({ queryKey: ['checkoutItems'] });
+             queryClient.invalidateQueries({ queryKey: ['checkoutAddress'] });
              notification.success({
                 message: 'สำเร็จ',
                 description: 'ลบรายการสินค้าทั้งหมดสำเร็จ',
@@ -147,6 +153,8 @@ export default function CartDetail() {
         Promise.all(promises).then(() => {33333333333
             queryClient.invalidateQueries({ queryKey: ['cartItems'] });
             queryClient.invalidateQueries({ queryKey: ['cartSummary'] });
+            queryClient.invalidateQueries({ queryKey: ['checkoutItems'] });
+            queryClient.invalidateQueries({ queryKey: ['checkoutAddress'] });
         });
     };
 
@@ -160,6 +168,8 @@ export default function CartDetail() {
         Promise.all(promises).then(() => {
             queryClient.invalidateQueries({ queryKey: ['cartItems'] });
             queryClient.invalidateQueries({ queryKey: ['cartSummary'] });
+            queryClient.invalidateQueries({ queryKey: ['checkoutItems'] });
+            queryClient.invalidateQueries({ queryKey: ['checkoutAddress'] });
         });
     };
 

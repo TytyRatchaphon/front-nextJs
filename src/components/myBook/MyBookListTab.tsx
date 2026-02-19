@@ -47,7 +47,10 @@ const MyBookListTab: React.FC<MyBookListTabProps> = ({
             placeholder="พิมพ์ชื่อเรื่อง..."
             prefix={<SearchOutlined className='text-gray-400' />}
             value={filterQ}
-            onChange={(e) => setFilterQ(e.target.value)}
+            onChange={(e) => {
+              setFilterQ(e.target.value);
+              setPage(1);
+            }}
             className='flex-1 min-w-[200px]'
             size='large'
             allowClear
@@ -71,7 +74,10 @@ const MyBookListTab: React.FC<MyBookListTabProps> = ({
           {/* Status */}
           <Select
             value={filterStatus}
-            onChange={setFilterStatus}
+            onChange={(val) => {
+              setFilterStatus(val);
+              setPage(1);
+            }}
             style={{ width: 140 }}
             placeholder="สถานะ"
             allowClear
@@ -86,7 +92,10 @@ const MyBookListTab: React.FC<MyBookListTabProps> = ({
           {/* End Status */}
           <Select
             value={filterEnd}
-            onChange={setFilterEnd}
+            onChange={(val) => {
+              setFilterEnd(val);
+              setPage(1);
+            }}
             style={{ width: 130 }}
             placeholder="สถานะจบ"
             allowClear
@@ -99,7 +108,10 @@ const MyBookListTab: React.FC<MyBookListTabProps> = ({
           {/* Sort By */}
           <Select
             value={filterSortBy}
-            onChange={setFilterSortBy}
+            onChange={(val) => {
+              setFilterSortBy(val);
+              setPage(1);
+            }}
             style={{ width: 130 }}
             placeholder="เรียงตาม"
           >
@@ -111,7 +123,10 @@ const MyBookListTab: React.FC<MyBookListTabProps> = ({
           {/* Order */}
           <Select
             value={filterOrder}
-            onChange={setFilterOrder}
+            onChange={(val) => {
+              setFilterOrder(val);
+              setPage(1);
+            }}
             style={{ width: 110 }}
             placeholder="ลำดับ"
           >
@@ -126,6 +141,7 @@ const MyBookListTab: React.FC<MyBookListTabProps> = ({
               setFilterSortBy('date_at');
               setFilterOrder('desc');
               setFilterQ('');
+              setPage(1);
             }}
             type="text"
             className="text-gray-500 hover:text-red-500 text-xs underline"

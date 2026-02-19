@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import apiClient from '@/services/apiClient';
 import Image from 'next/image';
+import { useLogger } from '@/hooks/useLogger';
 
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
@@ -29,6 +30,7 @@ const LoginFacebook = () => {
   const router = useRouter();
   const { login, updateToken } = useAuthStore();
   const { closeLoginModal } = useUIStore();
+  const { log: logActivity } = useLogger();
 
   const FACEBOOK_APP_ID = process.env.NEXT_PUBLIC_FACEBOOK_ID;
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -162,6 +164,10 @@ const LoginFacebook = () => {
 
           login(userInfo, token);
           updateToken(token);
+
+          // Log login event
+          console.log('[LOG] login =>', { method: 'facebook' });
+          logActivity('login', 'user', userInfo.userId || '', { method: 'facebook' });
           notification.success({
             message: 'เข้าสู่ระบบสำเร็จ',
             description: 'เข้าสู่ระบบผ่าน Facebook เรียบร้อยแล้ว',

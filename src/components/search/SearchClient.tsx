@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useRef, useMemo, useCallback } from "react";
+import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Pagination, Alert } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import SearchBar from "@/components/search/SearchBar";
 import CardBook from "@/components/novelCard/CardBook";
 import GifLoader from '@/components/utility/GifLoader';
+import { useLogger } from "@/hooks/useLogger";
 
 interface SearchParams {
   query: string;
@@ -86,6 +87,33 @@ export default function SearchClient() {
       return params;
     });
   }, []);
+
+  // --- Activity Logging ---
+  const { log } = useLogger();
+  const hasLoggedRef = useRef<string>('');
+
+  useEffect(() => {
+    if (!searchParams.query && searchParams.categories.length === 0) return;
+    
+    const logKey = JSON.stringify({ q: searchParams.query, cat: searchParams.categories, page: currentPage });
+    if (hasLoggedRef.current === logKey) return;
+    hasLoggedRef.current = logKey;
+
+    console.log('[LOG] search =>', {
+      query: searchParams.query,
+      categories: searchParams.categories,
+      filters: { types: searchParams.types, status: searchParams.status, end: searchParams.end },
+    });
+    log('search', 'book', '', {
+      query: searchParams.query,
+      categories: searchParams.categories,
+      types: searchParams.types,
+      status: searchParams.status,
+      end: searchParams.end,
+      sortBy: searchParams.sortBy,
+      order: searchParams.order,
+    });
+  }, [searchParams, currentPage, log]);
 
   // Update state when URL changes (e.g. navigation from navbar)
   React.useEffect(() => {

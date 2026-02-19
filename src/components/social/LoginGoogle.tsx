@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import Image from 'next/image';
 import apiClient from '@/services/apiClient';
+import { useLogger } from '@/hooks/useLogger';
 
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
@@ -22,6 +23,7 @@ const LoginGoogle = () => {
   const router = useRouter();
   const { login, updateToken } = useAuthStore();
   const { closeLoginModal } = useUIStore();
+  const { log: logActivity } = useLogger();
 
   const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -191,6 +193,10 @@ const LoginGoogle = () => {
 
           // Update user data from token payload immediately
           updateToken(token);
+
+          // Log login event
+          console.log('[LOG] login =>', { method: 'google' });
+          logActivity('login', 'user', userInfo.userId || '', { method: 'google' });
 
           notification.success({
             message: 'เข้าสู่ระบบสำเร็จ',

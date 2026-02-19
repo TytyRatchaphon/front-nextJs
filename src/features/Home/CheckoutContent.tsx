@@ -137,19 +137,28 @@ export default function CheckoutContent() {
         staleTime: 0,
     });
 
-    // Step 2: Address
+    // Step 2: Address (Enable earlier to check has_physical_items for step skipping)
     const { data: checkoutAddressData, isLoading: isLoadingAddress, refetch: refetchAddress } = useQuery({
         queryKey: ['checkoutAddress'],
         queryFn: fetchCheckoutAddress,
-        enabled: currentStep === 1,
+        enabled: currentStep <= 1, // Enable for step 0 and 1
     });
 
     // Step 3: Summary
     const { data: checkoutSummaryData, isLoading: isLoadingSummary } = useQuery({
         queryKey: ['checkoutSummary'],
         queryFn: fetchCheckoutSummary,
-        enabled: currentStep === 2,
+        enabled: currentStep >= 1, // Enable for step 1 (if address skipped) and 2
     });
+
+    // Dynamic Steps Logic
+    const steps = [
+        { id: 'items', title: 'ตรวจสอบรายการ', icon: <UnorderedListOutlined /> },
+        ...(checkoutAddressData?.has_physical_items !== false ? [{ id: 'address', title: 'ที่อยู่จัดส่ง', icon: <HomeOutlined /> }] : []),
+        { id: 'summary', title: 'สรุปยอดและชำระ', icon: <FileTextOutlined /> },
+    ];
+
+    const currentStepId = steps[currentStep]?.id || 'items';
 
     const nextStep = () => {
         setCurrentStep(prev => prev + 1);
@@ -160,7 +169,7 @@ export default function CheckoutContent() {
     };
 
     const renderStepContent = () => {
-        if (currentStep === 0) {
+        if (currentStepId === 'items') {
             if (isLoadingItems) return <div className="py-20 flex justify-center"><Spin size="large" /></div>;
             if (isErrorItems || !checkoutItemsData?.items) return <Empty description="ไม่พบข้อมูลสินค้า" />;
 
@@ -208,7 +217,7 @@ export default function CheckoutContent() {
             );
         }
 
-        if (currentStep === 1) {
+        if (currentStepId === 'address') {
             if (isLoadingAddress) return <div className="py-20 flex justify-center"><Spin size="large" /></div>;
             if (!checkoutAddressData) return <Empty description="ไม่พบข้อมูลที่อยู่" />;
 
@@ -273,7 +282,7 @@ export default function CheckoutContent() {
             );
         }
 
-        if (currentStep === 2) {
+        if (currentStepId === 'summary') {
             if (isLoadingSummary) return <div className="py-20 flex justify-center"><Spin size="large" /></div>;
             if (!checkoutSummaryData) return <Empty description="ไม่พบข้อมูลสรุป" />;
 
@@ -348,11 +357,7 @@ export default function CheckoutContent() {
         }
     };
 
-    const items = [
-        { title: 'ตรวจสอบรายการ', icon: <UnorderedListOutlined /> },
-        { title: 'ที่อยู่จัดส่ง', icon: <HomeOutlined /> },
-        { title: 'สรุปยอดและชำระ', icon: <FileTextOutlined /> },
-    ];
+    // steps definition moved up 
 
     const handleConfirmPayment = async () => {
         setIsProcessing(true);
@@ -400,7 +405,7 @@ export default function CheckoutContent() {
             </div>
 
             <div className="mb-8">
-                <Steps current={currentStep} items={items} />
+                <Steps current={currentStep} items={steps.map(({ id, ...rest }) => rest)} />
             </div>
 
             <div className="mb-8">
@@ -411,20 +416,20 @@ export default function CheckoutContent() {
             <div className="flex justify-between items-center bg-white p-4 sticky bottom-0 border-t border-gray-200 shadow-lg md:static md:shadow-none md:border-t-0 md:bg-transparent md:p-0">
                 <Button 
                     size="large"
-                    onClick={currentStep === 0 ? () => router.push('/cart') : prevStep} 
+                    onClick={currentStepId === 'items' ? () => router.push('/cart') : prevStep} 
                     disabled={isLoadingItems || isLoadingAddress || isLoadingSummary || isProcessing}
                 >
-                    {currentStep === 0 ? 'ยกเลิก' : 'ย้อนกลับ'}
+                    {currentStepId === 'items' ? 'ยกเลิก' : 'ย้อนกลับ'}
                 </Button>
                 
-                {currentStep < 2 ? (
+                {currentStepId !== 'summary' ? (
                     <Button 
                         type="primary" 
                         size="large"
                         onClick={nextStep} 
                         className="min-w-[120px]"
                         disabled={
-                            (currentStep === 1 && checkoutAddressData?.has_physical_items && (!checkoutAddressData?.address?.trim() || !checkoutAddressData?.phone?.trim())) ||
+                            (currentStepId === 'address' && checkoutAddressData?.has_physical_items && (!checkoutAddressData?.address?.trim() || !checkoutAddressData?.phone?.trim())) ||
                             isLoadingItems || isLoadingAddress
                         }
                     >

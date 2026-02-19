@@ -29,7 +29,7 @@ export default function ArticleDetail({ id }: { id: string }) {
   const [data, setData] = useState<ArticleResponse['data'] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { log, trackTimeSpent } = useLogger();
+  const { log } = useLogger();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,22 +56,21 @@ export default function ArticleDetail({ id }: { id: string }) {
   useEffect(() => {
     if (data?.result?.[0]) {
       const detail = data.result[0];
-      
-      // Log Page View
-      log('page_view', 'article', id, {
-        title: detail.title,
-        category: detail.type,
-        writer: detail.post_by,
-      });
+      const startTime = Date.now();
 
-      // Track Time
-      const stopTracking = trackTimeSpent('article', id, {
-         title: detail.title,
-      });
+      console.log('[LOG] page_view tracking started =>', { id, title: detail.title });
 
-      return stopTracking;
+      return () => {
+        const duration = Math.round((Date.now() - startTime) / 1000 * 10) / 10;
+        console.log('[LOG] page_view =>', { id, title: detail.title, duration: `${duration}s` });
+        log('page_view', 'article', id, {
+          title: detail.title,
+          category: detail.type,
+          writer: detail.post_by,
+        }, duration);
+      };
     }
-  }, [data, id, log, trackTimeSpent]);
+  }, [data, id, log]);
 
   if (loading) {
     return (
