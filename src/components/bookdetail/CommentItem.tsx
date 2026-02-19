@@ -49,8 +49,7 @@ const SafeAvatar = ({ src, alt, className, theme, isReply = false }: { src?: str
             height={isReply ? 20 : undefined}
             className={className}
             unoptimized
-            onError={() => setHasError(true)}
-            unoptimized // Add unoptimized to reduce issues with external images if needed, but loader handles it mostly.
+            onError={() => setHasError(true)} // Add unoptimized to reduce issues with external images if needed, but loader handles it mostly.
         />
     );
 };
