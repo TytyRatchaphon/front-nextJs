@@ -801,9 +801,11 @@ export const deleteGroup = async (groupId: string | number) => {
 
 export const updateUserAddress = async (formData: FormData, token: string) => {
   try {
-     // Use axios directly to hit Next.js API route (relative path) instead of backend (apiClient base URL)
-     const response = await axios.post('/user/save_profile', formData, {
-       headers: { 'Authorization': token }
+     const response = await apiClient.post('/user/save_profile', formData, {
+       headers: {
+        'Authorization': token,
+        'Content-Type': 'multipart/form-data',
+        }
      });
      return response.data;
   } catch (error: any) {

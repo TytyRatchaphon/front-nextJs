@@ -91,3 +91,10 @@ export const fetchCheckoutSummary = async (): Promise<CheckoutSummaryResponse> =
     const response = await apiClient.get('/user/store/checkout/summary');
     return response.data?.data;
 };
+
+// 11. Confirm Checkout (Payment)
+export const confirmCheckout = async (): Promise<{ success: boolean; message: string; payment_id: number; token: string }> => {
+    // User requested to call POST /user/store based on screenshot
+    const response = await apiClient.post('/user/store');
+    return response.data?.data;
+};

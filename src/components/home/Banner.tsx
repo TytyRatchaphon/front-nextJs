@@ -73,21 +73,19 @@ function Banner({ slides = [] }: BannerProps) {
                 speed={600}
                 parallax={true}
                 slidesPerView={1}
+                autoHeight={true} 
                 breakpoints={{
                   320: {
-                    slidesPerView:'auto',
-                    spaceBetween: 1,
-                    centeredSlides: true,
+                    slidesPerView: 1,
+                    spaceBetween: 0,
                   },
                   640: {
-                    slidesPerView: 'auto',
-                    spaceBetween: 1,
-                    centeredSlides: true,
+                    slidesPerView: 1,
+                    spaceBetween: 0,
                   },
                   1024: {
                     slidesPerView: 'auto',
-                    spaceBetween: 1,
-                    centeredSlides: true,
+                    spaceBetween: 0,
                   },
                 }}
                 autoplay={{
@@ -108,15 +106,15 @@ function Banner({ slides = [] }: BannerProps) {
                    setActiveIndex(swiper.realIndex % slides.length);
                 }}
                 modules={[Autoplay, Navigation, Parallax]}
-                className="w-full h-full rounded-2xl overflow-hidden"
+                className="w-full rounded-2xl overflow-hidden"
               >
                 {displaySlides.map((slide, index) => {
                   const imageUrl = slide.img.startsWith('http')
                     ? slide.img
                     : `https://img.enjoybook.co/img/banner/${slide.img}`;
                   return (
-                    <SwiperSlide key={`${slide.banner_id}-${index}`} className="!w-auto overflow-hidden">
-                      <div className="relative w-full aspect-[680/310] cursor-pointer mx-auto" style={{ maxWidth: '680px' }} onClick={() => {
+                    <SwiperSlide key={`${slide.banner_id}-${index}`} className="w-full lg:!w-auto overflow-hidden">
+                      <div className="relative w-full max-w-[680px] cursor-pointer mx-auto" onClick={() => {
                         postBannerClick(slide.banner_id);
                         if (slide.type_link === 'novel') {
                           window.location.href = `/book/${slide.ref_id}`;
@@ -140,7 +138,8 @@ function Banner({ slides = [] }: BannerProps) {
                           width={680}
                           height={310}
                           sizes="(max-width: 680px) 100vw, 680px"
-                          className="w-full h-full object-cover rounded-lg"
+                          style={{ width: '100%', height: 'auto' }}
+                          className="object-contain rounded-lg"
                           priority
                           unoptimized
                           quality={100}

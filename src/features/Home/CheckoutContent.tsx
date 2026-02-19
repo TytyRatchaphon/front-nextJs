@@ -1,25 +1,108 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Steps, Button, Typography, App, List, Avatar, Empty, Spin, Card } from 'antd';
-import { useQuery } from '@tanstack/react-query';
-import { fetchCheckoutItems, fetchCheckoutAddress, fetchCheckoutSummary } from '@/services/cartService';
+import React, { useState, useEffect } from 'react';
+import { Steps, Button, Typography, App, List, Avatar, Empty, Spin, Card, Form, Input } from 'antd';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { fetchCheckoutItems, fetchCheckoutAddress, fetchCheckoutSummary, confirmCheckout } from '@/services/cartService';
+import { updateUserAddress } from '@/services/apiServices';
 import { UnorderedListOutlined, HomeOutlined, FileTextOutlined, CheckCircleOutlined, LeftOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useWebsiteStore } from '@/stores/websiteStore';
+import { useAuthStore } from '@/stores/authStore';
 import Image from 'next/image';
+import SuccessAnimation from '@/components/utility/SuccessAnimation';
 
 const { Title, Text } = Typography;
+
+const AddressForm = ({ user, token, onSuccess }: { user: any, token: string | null, onSuccess: () => void }) => {
+    const [form] = Form.useForm();
+    const { message } = App.useApp();
+    const [loading, setLoading] = useState(false);
+    const { updateUserBalance } = useAuthStore();
+
+    const onFinish = async (values: any) => {
+        if (!token) return;
+        setLoading(true);
+        try {
+            const formData = new FormData();
+            if (user?.fullname) formData.append('fullname', user.fullname);
+            if (user?.writer_name) formData.append('writer_name', user.writer_name);
+            if (user?.des) formData.append('des', user.des);
+            if (user?.facebook) formData.append('facebook', user.facebook);
+            if (user?.twitter) formData.append('twitter', user.twitter);
+            if (user?.gender) formData.append('gender', user.gender);
+            if (user?.birthday) formData.append('birthday', user.birthday);
+
+            formData.append('address_main', values.address);
+            formData.append('phone', values.phone);
+            if (user?.user_id) formData.append('user_id', String(user.user_id));
+
+            await updateUserAddress(formData, token);
+            message.success('บันทึกข้อมูลเรียบร้อย');
+            
+            updateUserBalance({
+                address_main: values.address,
+                phone: values.phone
+            });
+            onSuccess();
+        } catch (error: any) {
+            message.error(error?.response?.data?.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Form
+            form={form}
+            layout="vertical"
+            onFinish={onFinish}
+            initialValues={{
+                address: user?.address_main || '',
+                phone: user?.phone || ''
+            }}
+            className="bg-gray-50 p-6 md:px-12 md:py-8 rounded-lg border border-gray-200"
+        >
+            <Form.Item
+                label="ที่อยู่จัดส่ง"
+                name="address"
+                rules={[{ required: true, message: 'กรุณากรอกที่อยู่จัดส่ง' }]}
+            >
+                <Input.TextArea rows={3} placeholder="บ้านเลขที่, ซอย, ถนน, แขวง/ตำบล, เขต/อำเภอ, จังหวัด, รหัสไปรษณีย์" />
+            </Form.Item>
+
+            <Form.Item
+                label="เบอร์โทรศัพท์"
+                name="phone"
+                rules={[{ required: true, message: 'กรุณากรอกเบอร์โทรศัพท์' }]}
+            >
+                <Input placeholder="08xxxxxxxx" maxLength={10} />
+            </Form.Item>
+
+            <Form.Item className="mb-0 text-right">
+                <Button type="primary" htmlType="submit" loading={loading} size="large">
+                    บันทึกข้อมูล
+                </Button>
+            </Form.Item>
+        </Form>
+    );
+};
 
 export default function CheckoutContent() {
     const [currentStep, setCurrentStep] = useState(0);
     const { settings } = useWebsiteStore();
     const router = useRouter();
-    const { message } = App.useApp();
+    const queryClient = useQueryClient();
+    const { message, modal } = App.useApp();
+    const { user, token, updateToken } = useAuthStore();
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
 
-    // --- Queries ---
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [currentStep]);
 
     // Step 1: Items
     const { data: checkoutItemsData, isLoading: isLoadingItems, isError: isErrorItems } = useQuery({
@@ -42,8 +125,6 @@ export default function CheckoutContent() {
         enabled: currentStep === 2,
     });
 
-    // --- Handlers ---
-
     const nextStep = () => {
         setCurrentStep(prev => prev + 1);
     };
@@ -52,11 +133,8 @@ export default function CheckoutContent() {
         setCurrentStep(prev => prev - 1);
     };
 
-    // --- Render Steps ---
-
     const renderStepContent = () => {
         if (currentStep === 0) {
-            // ITEMS
             if (isLoadingItems) return <div className="py-20 flex justify-center"><Spin size="large" /></div>;
             if (isErrorItems || !checkoutItemsData?.items) return <Empty description="ไม่พบข้อมูลสินค้า" />;
 
@@ -65,7 +143,7 @@ export default function CheckoutContent() {
                     <List
                         itemLayout="horizontal"
                         dataSource={checkoutItemsData.items}
-                        renderItem={(item) => (
+                        renderItem={(item: any) => (
                             <List.Item>
                                 <List.Item.Meta
                                     avatar={<Avatar shape="square" size={80} src={item.img} className="border border-gray-200" />}
@@ -82,16 +160,11 @@ export default function CheckoutContent() {
                                                             coin: { icon: settings?.coin || "/images/e-coin.png", width: 20 },
                                                             freecoin: { icon: settings?.freecoin || "/images/money-bag.png", width: 20 },
                                                             stamp: { icon: settings?.stamp || "/images/stamp.png", width: 20 }
-                                                        }[item.currency.toLowerCase()];
+                                                        }[item.currency.toLowerCase() as 'coin' | 'freecoin' | 'stamp'];
                                                         
                                                         return currencyInfo ? (
                                                             <div className="relative w-5 h-5">
-                                                                <Image 
-                                                                    src={currencyInfo.icon} 
-                                                                    alt={item.currency}
-                                                                    fill
-                                                                    className="object-contain"
-                                                                />
+                                                                <Image src={currencyInfo.icon} alt={item.currency} fill className="object-contain" />
                                                             </div>
                                                         ) : (
                                                             <Text type="danger">{item.currency}</Text>
@@ -110,7 +183,6 @@ export default function CheckoutContent() {
         }
 
         if (currentStep === 1) {
-            // ADDRESS
             if (isLoadingAddress) return <div className="py-20 flex justify-center"><Spin size="large" /></div>;
             if (!checkoutAddressData) return <Empty description="ไม่พบข้อมูลที่อยู่" />;
 
@@ -119,7 +191,7 @@ export default function CheckoutContent() {
             if (!has_physical_items) {
                  return (
                      <div className="py-20 text-center flex flex-col items-center gap-6 bg-white rounded-lg border border-gray-100 min-h-[400px] justify-center">
-                         <CheckCircleOutlined className="text-8xl text-green-500" />
+                         <CheckCircleOutlined className="text-8xl !text-green-500" />
                          <div>
                             <Title level={3}>ไม่ต้องใช้ที่อยู่ในการจัดส่ง</Title>
                             <Text type="secondary" className="text-lg">รายการสินค้าของคุณเป็นสินค้าดิจิทัลทั้งหมด</Text>
@@ -143,18 +215,14 @@ export default function CheckoutContent() {
                                 <Text strong className="text-lg block mb-2 text-gray-600">เบอร์โทรติดต่อ: <span className='text-gray-800'>{phone}</span></Text>
                             </div>
                         ) : (
-                            <div className="text-center py-8 bg-red-50 rounded-lg border border-red-100">
-                                <Text type="danger" className="text-lg block mb-4">กรุณากรอกที่อยู่จัดส่งก่อนดำเนินการต่อ</Text>
-                                <Button type="primary" href="/profile" target="_blank" size="large" className="!text-white">
-                                    แก้ไขที่อยู่ (ไปที่หน้าโปรไฟล์)
-                                </Button>
-                                <Text type="secondary" className="text-sm mt-3 block">
-                                    เมื่อแก้ไขแล้ว กดปุ่ม "รีเฟรชข้อมูล" ด้านล่าง
-                                </Text>
-                            </div>
+                            <AddressForm 
+                                user={user} 
+                                token={token} 
+                                onSuccess={() => refetchAddress()} 
+                            />
                         )}
                         
-                        {!hasAddress && (
+                        {hasAddress && (
                              <Button onClick={() => refetchAddress()} className="mt-4" block size="large">
                                  รีเฟรชข้อมูล
                              </Button>
@@ -167,7 +235,7 @@ export default function CheckoutContent() {
                             <List
                                 size="small"
                                 dataSource={shipping_items}
-                                renderItem={item => (
+                                renderItem={(item: any) => (
                                     <List.Item>
                                        <Text>{item.name} x{item.quantity}</Text>
                                     </List.Item>
@@ -180,7 +248,6 @@ export default function CheckoutContent() {
         }
 
         if (currentStep === 2) {
-            // SUMMARY
             if (isLoadingSummary) return <div className="py-20 flex justify-center"><Spin size="large" /></div>;
             if (!checkoutSummaryData) return <Empty description="ไม่พบข้อมูลสรุป" />;
 
@@ -188,7 +255,7 @@ export default function CheckoutContent() {
 
             const renderCurrencyWithIcon = (currency: string, amount: number, isDanger = false, showSign = false) => {
                  const currencyKey = currency.toLowerCase();
-                 const currencyInfo = {
+                 const currencyInfo: any = {
                     coin: { icon: settings?.coin || "/images/e-coin.png", name: 'เหรียญ' },
                     freecoin: { icon: settings?.freecoin || "/images/money-bag.png", name: 'ถุงเงิน' },
                     stamp: { icon: settings?.stamp || "/images/stamp.png", name: 'แสตมป์' }
@@ -218,13 +285,11 @@ export default function CheckoutContent() {
 
             return (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[400px]">
-                    {/* Total Cost */}
                     <Card title="ยอดที่ต้องชำระ" className="h-fit">
-                        {Object.entries(total_cost).map(([currency, amount]) => renderCurrencyWithIcon(currency, amount, true))}
+                        {Object.entries(total_cost).map(([currency, amount]) => renderCurrencyWithIcon(currency, amount as number, true))}
                     </Card>
 
                     <div className="flex flex-col gap-6">
-                        {/* Wallets */}
                         <Card title="กระเป๋าเงินของคุณ" className="h-fit">
                             <div className="space-y-4">
                                 <div className="p-4 bg-gray-50 rounded-lg">
@@ -246,7 +311,6 @@ export default function CheckoutContent() {
                             </div>
                         </Card>
 
-                        {/* Error / Warning */}
                         {!can_purchase && (
                             <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-lg text-center font-bold">
                                 {limit_error || "ยอดเงินไม่เพียงพอ กรุณาเติมเงิน"}
@@ -264,8 +328,41 @@ export default function CheckoutContent() {
         { title: 'สรุปยอดและชำระ', icon: <FileTextOutlined /> },
     ];
 
+    const handleConfirmPayment = async () => {
+        setIsProcessing(true);
+        try {
+            const data = await confirmCheckout();
+            if (data?.success) {
+                // Update token if provided in response
+                if (data.token) {
+                    updateToken(data.token);
+                }
+                
+                message.success(data.message || 'ชำระเงินสำเร็จ');
+
+                // Refetch cart items in navbar
+                queryClient.invalidateQueries({ queryKey: ['cartItems'] });
+                
+                // Show success animation
+                setShowSuccess(true);
+            } else {
+                message.error(data?.message || 'การชำระเงินล้มเหลว');
+            }
+        } catch (error: any) {
+             message.error(error?.response?.data?.message || 'เกิดข้อผิดพลาดในการชำระเงิน');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     return (
         <div className="max-w-[1000px] mx-auto px-4 py-8">
+            {showSuccess && (
+                <SuccessAnimation 
+                    onComplete={() => router.push('/')} 
+                    duration={2000} 
+                />
+            )}
             <div className="mb-8 flex items-center gap-4">
                 <Link href="/cart">
                     <Button icon={<LeftOutlined />} size="large">กลับไปตะกร้า</Button>
@@ -286,7 +383,7 @@ export default function CheckoutContent() {
                 <Button 
                     size="large"
                     onClick={currentStep === 0 ? () => router.push('/cart') : prevStep} 
-                    disabled={isLoadingItems || isLoadingAddress || isLoadingSummary}
+                    disabled={isLoadingItems || isLoadingAddress || isLoadingSummary || isProcessing}
                 >
                     {currentStep === 0 ? 'ยกเลิก' : 'ย้อนกลับ'}
                 </Button>
@@ -309,10 +406,8 @@ export default function CheckoutContent() {
                         type="primary" 
                         danger 
                         size="large"
-                        onClick={() => {
-                            message.success('Payment feature coming soon!'); // Placeholder
-                        }}
-                        loading={false}
+                        onClick={handleConfirmPayment}
+                        loading={isProcessing}
                         disabled={!checkoutSummaryData?.can_purchase}
                         className="min-w-[150px]"
                     >
