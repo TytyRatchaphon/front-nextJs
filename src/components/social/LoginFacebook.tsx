@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import apiClient from '@/services/apiClient';
+import { logActivity } from '@/services/apiServices';
 import Image from 'next/image';
 
 interface UserData {
@@ -155,6 +156,11 @@ const LoginFacebook = () => {
 
           login(userInfo, token);
           updateToken(token);
+
+          // Log login event
+          console.log('[LOG] login =>', { method: 'facebook' });
+          logActivity({ action: 'login', target_type: 'user', target_id: userInfo.userId || '', metadata: { method: 'facebook' } });
+
           message.success('เข้าสู่ระบบผ่าน Facebook สำเร็จ!');
           closeLoginModal();
 

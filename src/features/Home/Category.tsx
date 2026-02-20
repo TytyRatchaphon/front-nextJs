@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCategoryBooks, fetchActiveCategories } from "@/services/apiServices";
@@ -11,6 +11,7 @@ import { CategoryBookListResponse, CategoryBook, CategoryDetail } from "@/types/
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import { useWebsiteStore } from '@/stores/websiteStore';
+import { useLogger } from '@/hooks/useLogger';
 import CategoryTypeSwiper from "./CategoryTypeSwiper";
 import CategoryGenreSwiper from "./CategoryGenreSwiper";
 
@@ -80,6 +81,19 @@ export default function Category() {
   
   const categoryNameParam = searchParams.get("name") || "";
   const categoryName = categoryNameParam || categoryDetail?.name || "";
+
+  // Activity Logging
+  const { log } = useLogger();
+  const hasLoggedRef = useRef<string>('');
+
+  useEffect(() => {
+    if (!categoryId) return;
+    const logKey = `${categoryId}-${type}-${tab}`;
+    if (hasLoggedRef.current === logKey) return;
+    hasLoggedRef.current = logKey;
+    console.log('[LOG] category_click =>', { categoryId, type, tab, name: categoryName || '' });
+    log('category_click', 'category', categoryId, { type, tab, name: categoryName || '' });
+  }, [categoryId, type, tab, categoryName, log]);
 
   const handleTabChange = (newTab: string) => {
     const newParams = new URLSearchParams(searchParams.toString());

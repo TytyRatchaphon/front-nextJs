@@ -56,22 +56,17 @@ export default function ArticleDetail({ id }: { id: string }) {
   useEffect(() => {
     if (data?.result?.[0]) {
       const detail = data.result[0];
-      
-      // Log Page View
-      log('page_view', 'article', id, {
+
+      // Track page view with duration — sends single 'page_view' log on unmount
+      const stopTracking = trackTimeSpent('article', id, {
         title: detail.title,
         category: detail.type,
         writer: detail.post_by,
-      });
-
-      // Track Time
-      const stopTracking = trackTimeSpent('article', id, {
-         title: detail.title,
-      });
+      }, 'page_view');
 
       return stopTracking;
     }
-  }, [data, id, log, trackTimeSpent]);
+  }, [data, id, trackTimeSpent]);
 
   if (loading) {
     return (

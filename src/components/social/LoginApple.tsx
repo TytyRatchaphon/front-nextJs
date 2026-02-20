@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import Image from 'next/image';
 import apiClient from '@/services/apiClient';
+import { logActivity } from '@/services/apiServices';
 
 declare global {
     interface Window {
@@ -117,6 +118,11 @@ const LoginApple = () => {
                 if (token) {
                     login(userInfo, token);
                     updateToken(token);
+
+                    // Log login event
+                    console.log('[LOG] login =>', { method: 'apple' });
+                    logActivity({ action: 'login', target_type: 'user', target_id: userInfo.userId || '', metadata: { method: 'apple' } });
+
                     message.success('เข้าสู่ระบบผ่าน Apple สำเร็จ!');
                     closeLoginModal();
                     setTimeout(() => {

@@ -18,6 +18,7 @@ import apiClient from '@/services/apiClient';
 import { useAuthStore, AuthState } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import { imageLoader } from '@/utils/imageUtils';
+import { useLogger } from '@/hooks/useLogger';
 
 // Hooks
 import { useContentProtection } from "@/hooks/reader/useContentProtection";
@@ -126,6 +127,25 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     nextEpId,
     isListLoading
   } = useEpisodeNavigation(bookId, episodeId, episode);
+
+  // --- 2.5 Activity Logging ---
+  const { log, trackTimeSpent } = useLogger();
+
+  useEffect(() => {
+    if (episode && bookId && episodeId) {
+      const epName = (episode as any)?.name || displayTitle || '';
+      const bookTitle = (bookDetail as any)?.title || '';
+
+      // Track read_page with duration — sends single 'read_page' log on unmount
+      const stopTracking = trackTimeSpent('book', bookId, {
+        name: epName,
+        book_title: bookTitle,
+        episode_id: episodeId,
+      }, 'read_page');
+
+      return stopTracking;
+    }
+  }, [episode, bookId, episodeId, bookDetail, displayTitle, trackTimeSpent]);
 
   // --- 3. Local State for UI ---
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -252,6 +272,10 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
       if (res?.data?.code === 200) {
         const respMsg = res.data?.message || "ซื้อสำเร็จ! กำลังอัปเดตเนื้อหา...";
         messageApi.success(respMsg);
+
+        // Log buy_episode
+        console.log('[LOG] buy_episode =>', { bookId, episodeId, method });
+        log('buy_episode', 'book', bookId, { episode_id: episodeId, method, price: priceToDeduct });
 
         // Optimistic Update
         const currentUser = useAuthStore.getState().user;
@@ -624,7 +648,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                 style={{ borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)" }}>
                 <div className={`group w-full p-4 flex flex-row gap-2 items-center justify-center border-r hover:bg-black/5 transition-all ${!prevEpId ? "opacity-30 cursor-not-allowed" : "cursor-pointer active:scale-[0.98]"}`}
                   style={{ borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)" }}
-                  onClick={(e) => { e.stopPropagation(); if (prevEpId && bookId) router.push(`/read/${bookId}/${prevEpId}`); }}>
+                  onClick={(e) => { e.stopPropagation(); console.log('[LOG] prev_episode =>', { bookId, from: episodeId, to: prevEpId }); log('prev_episode', 'book', bookId, { from_episode: episodeId, to_episode: prevEpId }); if (prevEpId && bookId) router.push(`/read/${bookId}/${prevEpId}`); }}>
                   <svg className={`w-5 h-5 transition-transform group-hover:-translate-x-1`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                   <div className="flex flex-col items-start leading-none gap-0.5">
                     <span className="text-[10px] opacity-60 font-normal">ตอนก่อนหน้า</span>
@@ -632,7 +656,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                   </div>
                 </div>
                 <div className={`group w-full p-4 flex flex-row gap-2 items-center justify-center hover:bg-black/5 transition-all ${!nextEpId ? "opacity-30 cursor-not-allowed" : "cursor-pointer active:scale-[0.98]"}`}
-                  onClick={(e) => { e.stopPropagation(); window.scrollTo(0, 0); if (nextEpId && bookId) router.push(`/read/${bookId}/${nextEpId}`); }}>
+                  onClick={(e) => { e.stopPropagation(); window.scrollTo(0, 0); console.log('[LOG] next_episode =>', { bookId, from: episodeId, to: nextEpId }); log('next_episode', 'book', bookId, { from_episode: episodeId, to_episode: nextEpId }); if (nextEpId && bookId) router.push(`/read/${bookId}/${nextEpId}`); }}>
                   <div className="flex flex-col items-end leading-none gap-0.5">
                     <span className="text-[10px] opacity-60 font-normal">ตอนต่อไป</span>
                     <span className="font-semibold text-sm">ถัดไป</span>

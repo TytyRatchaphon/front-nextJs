@@ -77,30 +77,30 @@ export const useLogger = () => {
     const trackTimeSpent = useCallback((
         targetType: string,
         targetId: string,
-        metadata: any = {}
+        metadata: any = {},
+        action: string = 'time_spent'
     ) => {
         const startTime = Date.now();
 
         // Return a cleanup function for useEffect
         return () => {
             const endTime = Date.now();
-            const durationInSeconds = (endTime - startTime) / 1000;
+            const durationInSeconds = Math.round((endTime - startTime) / 1000 * 10) / 10;
 
-            // Log time_spent
-            // Note: On tab close, this async call might not complete. 
-            // For critical analytics, navigator.sendBeacon is preferred but requires a specific endpoint setup.
-            // For SPA navigation, this works fine.
+            // Skip if duration < 1s (React StrictMode double-mount in dev)
+            if (durationInSeconds < 1) return;
+
             const payload: LogActivityPayload = {
                 session_id: getAppSessionId(),
                 page_session_id: getPageSessionId(),
-                action: 'time_spent',
+                action,
                 target_type: targetType,
                 target_id: targetId,
-                path: window.location.pathname, // use window location to get current path at unmount
+                path: window.location.pathname,
                 duration: durationInSeconds,
                 metadata
             };
-            
+
             logActivity(payload);
         };
     }, []);

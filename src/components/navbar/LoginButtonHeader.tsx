@@ -9,6 +9,7 @@ import { useMutation } from '@tanstack/react-query';
 import apiClient, { ApiResponse } from '@/services/apiClient';
 import { useAuthStore, UserData } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
+import { logActivity } from '@/services/apiServices';
 
 // Types
 import LoginFacebook from '../social/LoginFacebook';
@@ -208,6 +209,11 @@ const LoginButtonHeader: React.FC = () => {
             };
 
             login(userData, token);
+
+            // Log login event
+            console.log('[LOG] login =>', { method: 'email' });
+            logActivity({ action: 'login', target_type: 'user', target_id: '', metadata: { method: 'email' } });
+
             setLoginFormData(null);
           } catch (error) {
             api.error({
@@ -295,6 +301,11 @@ const LoginButtonHeader: React.FC = () => {
             };
 
             login(userData, token);
+
+            // Log register event
+            console.log('[LOG] register =>', { method: 'email' });
+            logActivity({ action: 'register', target_type: 'user', target_id: '', metadata: { method: 'email' } });
+
             message.success('เข้าสู่ระบบอัตโนมัติแล้ว');
             handleCancel();
             setRegisterFormData(null);

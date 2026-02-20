@@ -19,6 +19,7 @@ import { jwtDecode } from "jwt-decode";
 import { imageLoader } from '@/utils/imageUtils';
 import type { Episode, EpisodeGroup, BookEpisodesResponse } from '@/types/api';
 import { getErrorMessage } from '@/types/errors';
+import { logActivity } from '@/services/apiServices';
 
 
 type Book = {
@@ -226,6 +227,11 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
           const res = await apiClient.post(`/buy/groupPromotion`, payload);
           if (res?.data?.code === 200) {
             const respMsg = res.data?.message || 'ซื้อโปรโมชั่นสำเร็จ!';
+
+            // Log buy_promotion
+            console.log('[LOG] buy_promotion =>', { bookId, promotion_id: book.promotion?.id, price: book.promotion?.price });
+            logActivity({ action: 'buy_promotion', target_type: 'book', target_id: String(bookId), metadata: { promotion_id: book.promotion?.id, price: book.promotion?.price, promotion_title: book.promotion?.title, book_title: book?.title } });
+
             setShowSuccess(true);
 
             if (res.data?.data?.token) {
@@ -827,6 +833,11 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                         const res = await apiClient.post(`/buy/eps`, payload);
                         if (res?.data?.code === 200) {
                           const respMsg = res.data?.message || "ซื้อสำเร็จ! กำลังอัปเดตเนื้อหา...";
+
+                          // Log buy_episode
+                          console.log('[LOG] buy_episode =>', { bookId, episodes: selectedEpisodeIds, payWith });
+                          logActivity({ action: 'buy_episode', target_type: 'book', target_id: String(bookId), metadata: { episode_ids: selectedEpisodeIds, method: payWith, count: selectedEpisodeIds.length } });
+
                           setShowSuccess(true);
 
                           if (res.data?.data?.token) {

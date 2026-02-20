@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useUIStore } from '@/stores/uiStore';
 import Image from 'next/image';
 import { useLineLogin } from '@/hooks/useLineLogin';
+import { logActivity } from '@/services/apiServices';
 
 const LoginLine = () => {
   const { message } = App.useApp();
@@ -16,6 +17,10 @@ const LoginLine = () => {
   const handleLineLogin = async () => {
     try {
       await loginWithLine();
+
+      // Log login event
+      console.log('[LOG] login =>', { method: 'line' });
+      logActivity({ action: 'login', target_type: 'user', target_id: '', metadata: { method: 'line' } });
 
       // if no error was thrown, consider login successful
       closeLoginModal();

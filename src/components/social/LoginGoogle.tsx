@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import Image from 'next/image';
 import apiClient from '@/services/apiClient';
+import { logActivity } from '@/services/apiServices';
 
 declare global {
   interface Window {
@@ -172,6 +173,10 @@ const LoginGoogle = () => {
           updateToken(token);
 
           message.success('เข้าสู่ระบบผ่าน Google สำเร็จ!');
+
+          // Log login event
+          console.log('[LOG] login =>', { method: 'google' });
+          logActivity({ action: 'login', target_type: 'user', target_id: userInfo.userId || '', metadata: { method: 'google' } });
 
           // ปิด Modal
           closeLoginModal();

@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useRef, useMemo, useCallback } from "react";
+import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Pagination, Alert } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import SearchBar from "@/components/search/SearchBar";
 import CardBook from "@/components/novelCard/CardBook";
 import GifLoader from '@/components/utility/GifLoader';
+import { useLogger } from '@/hooks/useLogger';
 
 interface SearchParams {
   query: string;
@@ -75,6 +76,18 @@ export default function SearchClient() {
 
   const topRef = useRef<HTMLDivElement>(null);
   const pageSize = 20;
+  const { log } = useLogger();
+  const hasLoggedRef = useRef<string>('');
+
+  // Log search action
+  useEffect(() => {
+    const logKey = `${searchParams.query}-${searchParams.categories.join(',')}-${currentPage}`;
+    if (hasLoggedRef.current === logKey) return;
+    if (!searchParams.query && searchParams.categories.length === 0) return;
+    hasLoggedRef.current = logKey;
+    console.log('[LOG] search =>', { query: searchParams.query, categories: searchParams.categories, page: currentPage });
+    log('search', 'book', '', { query: searchParams.query, categories: searchParams.categories, page: currentPage });
+  }, [searchParams.query, searchParams.categories, currentPage, log]);
 
   const handleSearch = useCallback((params: SearchParams) => {
     setSearchParams((prev) => {

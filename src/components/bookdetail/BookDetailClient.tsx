@@ -61,14 +61,6 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
 
   useEffect(() => {
     if (!hasMounted || !book) return;
-
-    console.log("Age Check Debug:", {
-        bookRate: book.rate,
-        user: user,
-        birthday: user?.birthday,
-        hasMounted
-    });
-
     // Check strict 18+ (rate === 1)
     if (Number(book.rate) === 1) {
       if (!user) {
@@ -117,17 +109,11 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
 
   useEffect(() => {
     if (book?.id && book?.title) {
-       // Log Page View
-       log('page_view', 'book', String(book.id), {
-          name: book.title,
-       });
-
-       // Start Tracking Time
-       // The function returns a cleanup function that logs 'time_spent' on unmount
-       const stopTracking = trackTimeSpent('book', String(book.id), { name: book.title });
+       // Track page view with duration — sends single 'page_view' log on unmount
+       const stopTracking = trackTimeSpent('book', String(book.id), { name: book.title }, 'page_view');
        return stopTracking;
     }
-  }, [book?.id, book?.title, log, trackTimeSpent]);
+  }, [book?.id, book?.title, trackTimeSpent]);
 
   const tabContents: Record<TabKey, React.ReactElement> = {
     รายละเอียดเรื่อง: <BookAboutTab bookDetail={bookDetail ?? null} />,
