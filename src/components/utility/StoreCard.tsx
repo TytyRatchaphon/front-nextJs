@@ -14,7 +14,7 @@ import { imageLoader } from '@/utils/imageUtils';
 
 interface StoreCardProps {
   pack: StorePack;
-  onBuy: (pack: StorePack) => void;
+  onBuy: (pack: StorePack, quantity: number) => void;
 }
 
 
@@ -146,7 +146,7 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
             <button
               onClick={() => {
                 if (pack.can_purchase !== false) {
-                    onBuy(pack)
+                    onBuy(pack, 1) // Default to 1, modal will handle qty
                 }
               }}
               disabled={pack.can_purchase === false}
@@ -160,13 +160,8 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
             {pack.can_purchase !== false && (
                 <button
                     onClick={() => handleAddToCart(pack)}
-                    disabled={isLimitReached}
-                    className={`p-2 rounded-lg flex items-center justify-center transition-colors shadow-sm ${
-                        isLimitReached 
-                        ? 'bg-gray-300 cursor-not-allowed' 
-                        : 'bg-red-500 hover:bg-red-600'
-                    }`}
-                    title={isLimitReached ? "ครบจำกัดการซื้อแล้ว" : "เพิ่มลงตะกร้า"}
+                    className="p-2 rounded-lg flex items-center justify-center transition-colors shadow-sm bg-red-500 hover:bg-red-600"
+                    title="เพิ่มลงตะกร้า"
                 >
                     <AddToCartSvg width={20} height={20} color="white" />
                 </button>
@@ -174,7 +169,8 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+
   );
 };
 

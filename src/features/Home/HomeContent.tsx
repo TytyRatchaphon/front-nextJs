@@ -20,6 +20,8 @@ import { useQuery } from "@tanstack/react-query";
 import RankingCategoryLeft from "@/components/home/RankingCategoryLeft";
 import RankingCategoryRight from "@/components/home/RankingCategoryRight";
 import GifLoader from "@/components/utility/GifLoader";
+import { notification } from "antd";
+import { CloseCircleOutlined } from "@ant-design/icons";
 
 
 interface HomeContentProps {
@@ -27,7 +29,7 @@ interface HomeContentProps {
 }
 
 export default function HomeContent({ initialData }: HomeContentProps) {
-  const { data: homeData, isLoading } = useQuery({
+  const { data: homeData, isLoading, error: homeDataError } = useQuery({
     queryKey: ['homeData'],
     queryFn: fetchHomeData,
     initialData: initialData,
@@ -41,21 +43,42 @@ export default function HomeContent({ initialData }: HomeContentProps) {
     );
   }
 
-  const { data: bookUpdates } = useQuery({
+  const { data: bookUpdates, isLoading: isBookUpdatesLoading, error: bookUpdatesError } = useQuery({
     queryKey: ['bookUpdates'],
     queryFn: fetchBookUpdates,
+    staleTime: 10 * 60 * 1000, // 10 minutes cache
   });
 
-  const { data: rankingCategories } = useQuery({
+  const { data: rankingCategories, isLoading: isRankingCategoriesLoading, error: rankingCategoriesError } = useQuery({
     queryKey: ['rankingCategories'],
     queryFn: fetchRankingCategories,
   });
 
-  const { data: continueBooks } = useQuery({
+  const { data: continueBooks, isLoading: isContinueBooksLoading, error: continueBooksError } = useQuery({
     queryKey: ['continueBooks'],
     queryFn: () => fetchUserShelveContinue(10), // Limit to 10 as per request
     select: (data: any) => data?.books ?? [],
   });
+
+  React.useEffect(() => {
+    const errorConfigs = [
+      { isError: homeDataError, title: 'หน้าหลัก' },
+      { isError: bookUpdatesError, title: 'นิยายอัพเดตล่าสุด' },
+      { isError: rankingCategoriesError, title: 'หมวดหมู่นิยายฮิต' },
+      { isError: continueBooksError, title: 'อ่านต่อ' }
+    ];
+
+    errorConfigs.forEach(({ isError, title }) => {
+      if (isError) {
+        notification.error({
+          message: 'เกิดข้อผิดพลาด',
+          description: `ไม่สามารถโหลดข้อมูล${title}ได้`,
+          icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+          placement: 'topRight',
+        });
+      }
+    });
+  }, [homeDataError, bookUpdatesError, rankingCategoriesError, continueBooksError]);
 
   const slides = homeData?.data?.slides || [];
   const groupBookHome = (homeData?.data as any)?.groupBookHome || [];
@@ -75,7 +98,11 @@ export default function HomeContent({ initialData }: HomeContentProps) {
             <BannerButtons />
           </div>
 
-          {continueBooks && continueBooks.length > 0 && (
+          {isContinueBooksLoading ? (
+            <div className="w-full animate-pulse">
+              <div className="w-full h-[220px] bg-gray-200 rounded-xl mb-4"></div>
+            </div>
+          ) : continueBooks && continueBooks.length > 0 && (
             <div className="w-full">
               <ContinueReadingSwiper books={continueBooks} />
             </div>
@@ -153,17 +180,26 @@ export default function HomeContent({ initialData }: HomeContentProps) {
 
           {/* Ranking Category Section */}
           <div className="w-full flex flex-col md:flex-row justify-center items-center gap-4 md:gap-6 lg:gap-10 mt-4 mb-4 px-4">
-            {rankingCategories?.left && (
-              <RankingCategoryLeft
-                categoryId={rankingCategories.left.id}
-                categoryName={rankingCategories.left.name}
-              />
-            )}
-            {rankingCategories?.right && (
-              <RankingCategoryRight
-                categoryId={rankingCategories.right.id}
-                categoryName={rankingCategories.right.name}
-              />
+            {isRankingCategoriesLoading ? (
+               <div className="w-full flex flex-col md:flex-row justify-center items-center gap-4 md:gap-6 lg:gap-10">
+                 <div className="w-full md:w-1/2 h-[150px] bg-gray-200 rounded-lg animate-pulse"></div>
+                 <div className="w-full md:w-1/2 h-[150px] bg-gray-200 rounded-lg animate-pulse"></div>
+               </div>
+            ) : (
+                <>
+                  {rankingCategories?.left && (
+                    <RankingCategoryLeft
+                      categoryId={rankingCategories.left.id}
+                      categoryName={rankingCategories.left.name}
+                    />
+                  )}
+                  {rankingCategories?.right && (
+                    <RankingCategoryRight
+                      categoryId={rankingCategories.right.id}
+                      categoryName={rankingCategories.right.name}
+                    />
+                  )}
+                </>
             )}
           </div>
 
@@ -172,29 +208,43 @@ export default function HomeContent({ initialData }: HomeContentProps) {
             <h2 className="font-bold text-2xl mb-4 text-black">นิยายอัพเดตล่าสุด</h2>
             <div className="w-full h-[1px] bg-gray-200 mb-6"></div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {bookUpdates?.map((book) => (
-                <UpdateBookCard
-                  key={book.book_id}
-                  book={{
-                    book_id: book.book_id,
-                    title: book.name,
-                    author: book.writer_name,
-                    cover: book.img_full || book.img,
-                    chapters: book.BookTranEps?.map((ep, index) => ({
-                      id: ep.ep_id,
-                      bookId: book.book_id,
-                      title: ep.name,
-                      // Use the isNew flag from the API
-                      isNew: ep.isNew
-                    })) || [],
-                    stats: {
-                      hearts: book.shelve_count,
-                      views: book.view,
-                      chapterCount: book.chapter
-                    }
-                  }}
-                />
-              ))}
+              {isBookUpdatesLoading ? (
+                 [...Array(6)].map((_, i) => (
+                    <div key={i} className="flex gap-4 animate-pulse bg-white p-4 shadow-sm border border-gray-100 rounded-lg h-[160px]">
+                      <div className="w-[100px] h-[140px] bg-gray-200 rounded shrink-0"></div>
+                      <div className="flex-1 space-y-3 py-2 w-full">
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                        <div className="h-5 bg-gray-200 rounded w-full mt-4"></div>
+                        <div className="h-5 bg-gray-200 rounded w-full"></div>
+                      </div>
+                    </div>
+                  ))
+              ) : (
+                  bookUpdates?.map((book) => (
+                    <UpdateBookCard
+                      key={book.book_id}
+                      book={{
+                        book_id: book.book_id,
+                        title: book.name,
+                        author: book.writer_name,
+                        cover: book.img_full || book.img,
+                        chapters: book.BookTranEps?.map((ep, index) => ({
+                          id: ep.ep_id,
+                          bookId: book.book_id,
+                          title: ep.name,
+                          // Use the isNew flag from the API
+                          isNew: ep.isNew
+                        })) || [],
+                        stats: {
+                          hearts: book.shelve_count,
+                          views: book.view,
+                          chapterCount: book.chapter
+                        }
+                      }}
+                    />
+                  ))
+              )}
             </div>
           </div>
 

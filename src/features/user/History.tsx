@@ -72,7 +72,7 @@ function History() {
       return resp.data
     },
     enabled: activeKey === '1',
-    keepPreviousData: true,
+    placeholderData: (previousData: any) => previousData,
   } as any))
 
   const useCoinQuery = useQuery<any>(({
@@ -82,27 +82,10 @@ function History() {
       return resp.data
     },
     enabled: activeKey === '2',
-    keepPreviousData: true,
+    placeholderData: (previousData: any) => previousData,
   } as any))
 
-  React.useEffect(() => {
-    if (paymentsQuery.error) {
-      notification.error({
-        message: 'เกิดข้อผิดพลาด',
-        description: 'ไม่สามารถโหลดประวัติการเติมเหรียญได้',
-        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
-        placement: 'topRight',
-      });
-    }
-    if (useCoinQuery.error) {
-      notification.error({
-        message: 'เกิดข้อผิดพลาด',
-        description: 'ไม่สามารถโหลดประวัติการใช้เหรียญได้',
-        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
-        placement: 'topRight',
-      });
-    }
-  }, [paymentsQuery.error, useCoinQuery.error])
+
 
   // normalize raw payloads for tables (handle multiple backend shapes)
   const payments = React.useMemo(() => {
@@ -149,7 +132,7 @@ function History() {
       return resp.data
     },
     enabled: activeKey === '3',
-    keepPreviousData: true,
+    placeholderData: (previousData: any) => previousData,
   } as any))
 
   // gacha (กิจกรรมกล่องสุ่มปริศนา) history
@@ -160,7 +143,7 @@ function History() {
       return resp.data
     },
     enabled: activeKey === '4',
-    keepPreviousData: true,
+    placeholderData: (previousData: any) => previousData,
   } as any))
 
   // history of received extras (ประวัติการได้รับเหรียญเพิ่มเติม)
@@ -171,7 +154,7 @@ function History() {
       return resp.data
     },
     enabled: activeKey === '5',
-    keepPreviousData: true,
+    placeholderData: (previousData: any) => previousData,
   } as any))
 
   // update last-known totals when new data arrives
@@ -302,7 +285,7 @@ function History() {
       return resp.data
     },
     enabled: activeKey === '6',
-    keepPreviousData: true,
+    placeholderData: (previousData: any) => previousData,
   } as any))
 
   // store purchase history (ประวัติการซื้อสินค้า)
@@ -313,8 +296,34 @@ function History() {
       return resp.data
     },
     enabled: activeKey === '7',
-    keepPreviousData: true,
+    placeholderData: (previousData: any) => previousData,
   } as any))
+
+  React.useEffect(() => {
+    const errorConfigs = [
+      { isError: paymentsQuery.error, title: 'ประวัติการเติมเหรียญ' },
+      { isError: useCoinQuery.error, title: 'ประวัติการใช้เหรียญ' },
+      { isError: redeemQuery.error, title: 'ประวัติ REDEEM' },
+      { isError: gachaQuery.error, title: 'กิจกรรมกล่องสุ่มปริศนา' },
+      { isError: getMoreQuery.error, title: 'ประวัติการได้รับเหรียญเพิ่มเติม' },
+      { isError: giftQuery.error, title: 'ประวัติการแลกของขวัญ' },
+      { isError: storeHistoryQuery.error, title: 'ประวัติการซื้อสินค้า' }
+    ];
+
+    errorConfigs.forEach(({ isError, title }) => {
+      if (isError) {
+        notification.error({
+          message: 'เกิดข้อผิดพลาด',
+          description: `ไม่สามารถโหลด${title}ได้`,
+          icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+          placement: 'topRight',
+        });
+      }
+    });
+  }, [
+    paymentsQuery.error, useCoinQuery.error, redeemQuery.error,
+    gachaQuery.error, getMoreQuery.error, giftQuery.error, storeHistoryQuery.error
+  ])
 
   const giftPrev = (giftQuery as any).previousData
   const giftRaw = giftQuery.data?.data ?? giftQuery.data ?? giftPrev?.data ?? giftPrev ?? {}
@@ -351,10 +360,11 @@ function History() {
 
     return list.map((it: any, idx: number) => ({
       date: it.date ? new Date(it.date).toLocaleString() : '',
-      name: it.StorePack?.name ?? it.name ?? '-',
-      price: it.price ?? 0,
+      name: it.name_display ?? it.StorePack?.name ?? it.name ?? '-',
+      price: it.price_display ?? it.price ?? 0,
       des: it.des ?? it.type ?? '',
       currency: (it.des === 'coin' || it.type === 'coin') ? 'coin' : (it.des === 'stamp' || it.type === 'stamp') ? 'stamp' : 'baht',
+      items: it.items || [],
       raw: it,
       key: `${it.id ?? idx}-store-${idx}`,
     }))
@@ -493,15 +503,57 @@ function History() {
 
     if (activeKey === '7') {
       return [
-        { title: 'วัน-เวลา', dataIndex: 'date', key: 'date', width: 220 },
-        { title: 'สินค้า', dataIndex: 'name', key: 'name' },
+        { title: 'วัน-เวลา', dataIndex: 'date', key: 'date', width: 140 }, // Reduced from 220
+        { title: 'สินค้า', dataIndex: 'name', key: 'name', width: 180 }, // Added width to prevent squishing
         {
           title: 'ราคา',
           dataIndex: 'price',
           key: 'price',
-          width: 150,
+          width: 120, // Reduced from 250
           align: 'right' as const,
           render: (val: any, record: any) => {
+            // If price is string (new format), display as is
+            if (typeof val === 'string') {
+                const parts = val.split(',').map(p => p.trim());
+                return (
+                    <div className="flex flex-col items-end gap-1">
+                        {parts.map((part, idx) => {
+                            const [amount, currency] = part.split(' ');
+                            const curLower = (currency || '').toLowerCase();
+                            
+                            const map: Record<string, string> = {
+                              coin: settings?.coin || '/images/e-coin.png',
+                              coupon: settings?.coupon || '/images/gacha.png',
+                              freecoin: settings?.freecoin || '/images/money-bag.png',
+                              flower: settings?.flower || '/images/flower.png',
+                              heart: settings?.heart || '/images/heart.png',
+                              exp: settings?.exp || '/images/exp.png',
+                              fast_ticket: settings?.fast_ticket || '/images/fast_ticket.png',
+                              stamp: settings?.stamp || '/images/stamp.png',
+                            }
+                            const src = map[curLower];
+
+                            const unitMap: Record<string, string> = {
+                                coin: 'เหรียญ',
+                                freecoin: 'ถุงเงิน',
+                                stamp: 'แสตมป์',
+                            };
+                            const unitName = unitMap[curLower] || currency;
+
+                            if (src) {
+                                return (
+                                    <div key={idx} className="flex items-center justify-end gap-1">
+                                        <span className="text-gray-700 font-medium">{Number(amount).toLocaleString()} {unitName}</span>
+                                    </div>
+                                )
+                            }
+                            
+                            return <span key={idx} className="text-gray-700 font-medium">{part}</span>;
+                        })}
+                    </div>
+                );
+            }
+
             return (
               <div className="flex items-center justify-end gap-2">
                 <span>{Number(val).toLocaleString()}</span>
@@ -585,8 +637,8 @@ function History() {
 
   return (
     <div className="mt-10 mb-10">
-      <div className="max-w-6xl mx-auto mt-6 px-4">
-        <div className="bg-rose-50 rounded-xl p-6">
+      <div className="max-w-6xl mx-auto mt-6 px-2 sm:px-4">
+        <div className="bg-rose-50 rounded-xl p-2 sm:p-6">
           <Card styles={{ body: { padding: 12 } }} style={{ borderRadius: 12, border: '1px solid #e5e7eb' }}>
             <div className="mb-4">
               <div className="overflow-x-auto">
@@ -663,6 +715,7 @@ function History() {
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <Table
+                    size="small"
                     scroll={{ x: 'max-content' }}
                     columns={tableColumns}
                     dataSource={
@@ -682,6 +735,47 @@ function History() {
                                     ? storeHistories
                                     : data
                     }
+                    expandable={activeKey === '7' ? {
+                        expandRowByClick: true,
+                        expandedRowRender: (record: any) => {
+                            if (!record.items || record.items.length === 0) return null;
+                            return (
+                                <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                                    <h4 className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">รายละเอียดสินค้าในรายการนี้</h4>
+                                    <div className="flex flex-col gap-2">
+                                        {record.items.map((item: any, i: number) => {
+                                             const currency = item.currency_cached || '';
+                                             const src = currency === 'coin' ? (settings?.coin || '/images/e-coin.png') :
+                                                         currency === 'freecoin' ? (settings?.freecoin || '/images/money-bag.png') :
+                                                         currency === 'stamp' ? (settings?.stamp || '/images/stamp.png') : null;
+                                             
+                                             const unitMap: Record<string, string> = {
+                                                coin: 'เหรียญ',
+                                                freecoin: 'ถุงเงิน',
+                                                stamp: 'แสตมป์',
+                                             };
+                                             const unitName = unitMap[currency] || '';
+
+                                             return (
+                                                <div key={i} className="flex items-center justify-between text-sm py-2 border-b border-gray-100 last:border-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                                                        <span className="text-gray-700 font-medium">{item.pack_name_cached}</span>
+                                                        <span className="text-gray-400 text-xs">x {item.quantity}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="font-bold text-gray-800">{Number(item.final_price || item.total_price).toLocaleString()}</span>
+                                                        {src && <Image unoptimized src={src} alt={currency} width={16} height={16} />}
+                                                    </div>
+                                                </div>
+                                             );
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        },
+                        rowExpandable: (record: any) => record.items && record.items.length > 0,
+                    } : undefined}
                     pagination={
                       activeKey === '1'
                         ? {

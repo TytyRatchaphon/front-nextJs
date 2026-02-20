@@ -16,7 +16,10 @@ import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill'
 import dayjs from 'dayjs'
 import { isValidPhoneNumber } from 'libphonenumber-js'
+
 import { imageLoader } from '@/utils/imageUtils';
+import { fetchCartItems } from '@/services/cartService';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 
 function Store() {
@@ -35,13 +38,24 @@ function Store() {
 
   const [selectedPack, setSelectedPack] = useState<StorePack | null>(null)
   const [confirmLoading, setConfirmLoading] = useState(false)
+  const [selectedQty, setSelectedQty] = useState(1);
   const [addressInput, setAddressInput] = useState('');
   const [phoneInput, setPhoneInput] = useState('');
 
   const [api, contextHolder] = notification.useNotification();
+  const queryClient = useQueryClient();
 
-  const handleBuyClick = (pack: StorePack) => {
+  // Fetch cart items for limit checking
+  const { data: cartStores } = useQuery({
+    queryKey: ['cartItems'],
+    queryFn: fetchCartItems,
+    enabled: !!token, 
+    staleTime: 1000 * 60,
+  });
+
+  const handleBuyClick = (pack: StorePack, quantity: number = 1) => {
     setSelectedPack(pack)
+    setSelectedQty(quantity)
     // Initialize address input if missing
     if (pack.type === 'gift' && !user?.address_main) {
       setAddressInput('');
@@ -50,6 +64,41 @@ function Store() {
       setPhoneInput('');
     }
   }
+
+  const handleIncrement = () => {
+    if (!selectedPack) return;
+
+    // Calculate current qty in cart for this pack
+    let qtyInCart = 0;
+    if (cartStores) {
+        const item = cartStores.flatMap(s => s.items).find(i => i.store_pack?.store_pack_id === selectedPack.store_pack_id);
+        if (item) qtyInCart = item.quantity;
+    }
+
+    if (selectedPack.remaining_count && selectedPack.remaining_count > 0) {
+        if (qtyInCart + selectedQty >= selectedPack.remaining_count) return;
+    }
+    
+    // Check individual limits
+    const limits = [
+        selectedPack.limit_unit, 
+        selectedPack.limit_unit_month, 
+        selectedPack.limit_unit_day
+    ].filter(l => typeof l === 'number' && l > 0) as number[];
+
+    if (limits.length > 0) {
+        const minLimit = Math.min(...limits);
+        if (qtyInCart + selectedQty >= minLimit) return;
+    }
+    
+    setSelectedQty(prev => prev + 1);
+  };
+
+  const handleDecrement = () => {
+    if (selectedQty > 1) {
+        setSelectedQty(prev => prev - 1);
+    }
+  };
 
   const handleConfirmBuy = async () => {
     if (!selectedPack) return;
@@ -158,12 +207,26 @@ function Store() {
       }
 
       // 2. Buy Pack
-      const res = await buyStorePack(selectedPack.store_pack_id);
+      let res;
+      if (selectedQty > 1) {
+         // Using new buy-now api for quantity > 1 (or always if appropriate, but buyStorePack is for qty=1 usually?)
+         // Actually buyStorePack calls /user/store/buy/:id which implies qty=1 or default. 
+         // Since we implemented buyStorePackNow, let's use it.
+         // Wait, I need to import buyStorePackNow.
+         // Assuming I will add it to imports later or auto-import.
+          const { buyStorePackNow } = await import('@/services/apiServices');
+          res = await buyStorePackNow(selectedPack.store_pack_id, selectedQty);
+      } else {
+          // Keep using existing logic for qty=1 if preferred, or switch consistency?
+          // Let's use buyStorePackNow for consistency if it supports qty=1
+          const { buyStorePackNow } = await import('@/services/apiServices');
+          res = await buyStorePackNow(selectedPack.store_pack_id, selectedQty);
+      }
 
       if (res.status === 'success' || res.code === 200) {
         api.success({
-          message: 'ซื้อสินค้าสำเร็จ',
-          description: 'ขอบคุณที่อุดหนุนสินค้าของเรา',
+          message: `ซื้อ ${selectedPack.name} สำเร็จ`,
+          description: `ได้รับสินค้าจำนวน ${selectedQty} ชิ้น เรียบร้อยแล้ว`,
           icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
           placement: 'topRight',
         });
@@ -369,7 +432,7 @@ function Store() {
                 ) : (
                   <p className="text-sm text-gray-500 flex items-center gap-1">
                      <span className="w-1 h-1 bg-red-400 rounded-full"></span>
-                     จำนวน x 1
+                     จำนวน x {selectedQty}
                   </p>
                 )}
               </div>
@@ -431,8 +494,26 @@ function Store() {
               </div>
             )}
 
-            {/* Price Calculation */}
-            <div className="text-center mb-8 relative">
+            {/* Price Calculation & Quantity */}
+            <div className="text-center mb-6 relative">
+                 {/* Quantity Controls */}
+                 <div className="flex items-center justify-center gap-4 mb-4">
+                        <button 
+                            onClick={handleDecrement}
+                            className={`w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors ${selectedQty <= 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            disabled={selectedQty <= 1}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        </button>
+                        <span className="text-2xl font-bold w-12 text-center text-gray-800">{selectedQty}</span>
+                        <button 
+                            onClick={handleIncrement}
+                            className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        </button>
+                    </div>
+
                 <div className="inline-block relative">
                     <span className="text-gray-400 text-sm font-medium block mb-1">ยอดรวมทั้งหมด</span>
                     <div className="flex items-center justify-center gap-2.5">
@@ -456,7 +537,7 @@ function Store() {
                         </div>
                         )}
                         <span className="text-3xl font-bold font-primary text-gray-800 tracking-tight">
-                            {selectedPack?.price.toLocaleString()}
+                            {((selectedPack?.price || 0) * selectedQty).toLocaleString()}
                         </span>
                         {!['coin', 'heart', 'flower', 'stamp', 'exp', 'freecoin'].includes(selectedPack?.type_use || '') &&
                            <span className="text-lg text-gray-500 font-medium self-end mb-1">{selectedPack?.type_use}</span>

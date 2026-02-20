@@ -2245,3 +2245,15 @@ export const useCoupon = async (userCouponId: number, selectedRewardIds: number[
         throw error;
     }
 }
+
+export const buyStorePackNow = async (packId: number | string, quantity: number) => {
+    try {
+        const response = await apiClient.post('/user/store/buy-now', {
+            store_pack_id: packId,
+            quantity: quantity
+        });
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
