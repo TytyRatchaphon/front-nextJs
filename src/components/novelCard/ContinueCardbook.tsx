@@ -74,8 +74,8 @@ function CardBook({ book }: CardBookProps) {
   const epParam = (book.last_read_ep_id ?? book.ep_id ?? book.epID ?? book.epId ?? book.epid ?? book.epIdStr ?? '')
   const epParamStr = epParam !== undefined && epParam !== null ? String(epParam) : ''
 
-  // Episode display name from API (many responses use `epName` or `ep_name`)
-  const epName = book.epName ?? book.ep_name ?? book.epname ?? ''
+  // Episode display name from API (many responses use `epName`, `ep_name`, or `last_read_ep_name`)
+  const epName = book.epName ?? book.ep_name ?? book.epname ?? book.last_read_ep_name ?? ''
 
   return (
   <Link href={`/read/${encodeURIComponent(bookParam)}/${encodeURIComponent(epParamStr)}`} className="block w-[168px] h-[355px] flex-shrink-0">
