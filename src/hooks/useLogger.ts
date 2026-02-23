@@ -81,6 +81,7 @@ export const useLogger = () => {
         action: string = 'time_spent'
     ) => {
         const startTime = Date.now();
+        const initialPath = pathnameRef.current || window.location.pathname;
 
         // Return a cleanup function for useEffect
         return () => {
@@ -96,11 +97,13 @@ export const useLogger = () => {
                 action,
                 target_type: targetType,
                 target_id: targetId,
-                path: window.location.pathname,
+                path: initialPath,
                 duration: durationInSeconds,
                 metadata
             };
 
+            console.log(`[ACTIVITY LOG] Logging "${action}" for path: ${initialPath} | Duration: ${durationInSeconds}s`, payload);
+            
             logActivity(payload);
         };
     }, []);

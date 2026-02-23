@@ -5,15 +5,20 @@ import { useLogger } from "@/hooks/useLogger";
 import { usePathname, useSearchParams } from "next/navigation";
 
 export default function GlobalLogger() {
-  const { log } = useLogger();
+  const { trackTimeSpent } = useLogger();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Log page view whenever pathname or searchParams change
-    // You might want to debounce this or filter out specific params if needed
-    log('page_view');
-  }, [pathname, searchParams, log]);
+    // Skip logging page_view here for routes that handle their own time tracking
+    if (pathname && (pathname.startsWith('/book/') || pathname.startsWith('/read/'))) {
+      return;
+    }
+
+    // Track time spent for the global page view
+    const stopTracking = trackTimeSpent('page', 'global', {}, 'page_view');
+    return stopTracking;
+  }, [pathname, searchParams, trackTimeSpent]);
 
   return null; // This component renders nothing
 }

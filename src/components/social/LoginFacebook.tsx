@@ -23,13 +23,15 @@ interface UserData {
 const LoginFacebook = () => {
   const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
+  
+  const FACEBOOK_APP_ID = process.env.NEXT_PUBLIC_FACEBOOK_ID;
+  // console.log('[FB-DEBUG] Render LoginFacebook, ID from env:', FACEBOOK_APP_ID);
   // เพิ่ม state เพื่อเช็คว่า SDK พร้อมใช้งานหรือยัง
   const [isSdkLoaded, setIsSdkLoaded] = useState(false);
   const router = useRouter();
   const { login, updateToken } = useAuthStore();
   const { closeLoginModal } = useUIStore();
 
-  const FACEBOOK_APP_ID = process.env.NEXT_PUBLIC_FACEBOOK_ID;
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   // Helper to set cookies
@@ -41,7 +43,6 @@ const LoginFacebook = () => {
     document.cookie = name + "=" + (value || "") + ";" + expires + ";path=/";
   };
 
-  // Helper to check token status before login
   const checkBeforeLogin = (token: string): boolean => {
     try {
       if (!token) return false;
@@ -57,58 +58,69 @@ const LoginFacebook = () => {
   }, []);
 
   const initFacebookSDK = () => {
+    // console.log('[FB-DEBUG] initFacebookSDK called, APP_ID:', FACEBOOK_APP_ID);
     if (typeof window === 'undefined') return;
 
-    if ((window as any).FB) {
-      setIsSdkLoaded(true);
-      return;
-    }
-
-    // Setup function ที่ FB จะเรียกเมื่อโหลด script เสร็จ
-    (window as any).fbAsyncInit = function () {
-      (window as any).FB.init({
-        appId: FACEBOOK_APP_ID,
-        cookie: true,
-        xfbml: true,
-        version: 'v18.0'
-      });
+    // ฟังก์ชันช่วยสำหรับการทำ init FB 
+    const initFB = () => {
+      if ((window as any).FB && !(window as any).isFbInitialized) {
+        try {
+          (window as any).FB.init({
+            appId: FACEBOOK_APP_ID,
+            cookie: true,
+            xfbml: true,
+            version: 'v18.0'
+          });
+          (window as any).isFbInitialized = true;
+        } catch (e) {
+          console.error("Facebook SDK init error", e);
+        }
+      }
       setIsSdkLoaded(true);
     };
 
-    // Load Script
-    if (!document.getElementById('facebook-jssdk')) {
-      const script = document.createElement('script');
-      script.id = 'facebook-jssdk';
-      script.src = 'https://connect.facebook.net/th_TH/sdk.js';
-      script.async = true;
-      script.defer = true;
-      script.crossOrigin = 'anonymous';
-      document.body.appendChild(script);
-    }
-  };
-
-  const handleFacebookLogin = () => {
-    // ถ้า SDK ยังไม่มา ให้ return หรือแจ้งเตือน (แต่ปกติปุ่มจะ disable หรือรอโหลดอยู่แล้ว)
-    if (!isSdkLoaded || !(window as any).FB) {
-      console.warn('Facebook SDK not ready yet');
+    // 1. ถ้า FB โหลดเสร็จและพร้อมใช้งานแล้ว เช็คว่าถูก init ไปหรือยัง
+    if ((window as any).FB) {
+      initFB();
       return;
     }
 
-    setLoading(true);
+    // 2. ตั้งค่า Callback ให้ FB เรียกเมื่อ Script โหลดเสร็จ (Official way)
+    (window as any).fbAsyncInit = initFB;
 
-    // 2. เรียก FB.login โดยตรงทันที ไม่มีการ await หรือ promise คั่นก่อนหน้า
-    (window as any).FB.login(
-      (response: any) => {
-        if (response.authResponse) {
-          const { accessToken } = response.authResponse;
-          fetchFacebookProfile(accessToken);
-        } else {
-          setLoading(false);
-          // message.warning('ยกเลิกการเชื่อมต่อ Facebook');
-        }
-      },
-      { scope: 'public_profile,email' }
-    );
+    // 3. ป้องกันการแทรก Script ซ้ำซ้อน
+    if (document.getElementById('facebook-jssdk')) {
+      return;
+    }
+
+    // 4. แทรก Script FB SDK
+    const script = document.createElement('script');
+    script.id = 'facebook-jssdk';
+    script.src = 'https://connect.facebook.net/th_TH/sdk.js';
+    script.async = true;
+    script.defer = true;
+    script.crossOrigin = 'anonymous';
+    // สั่งให้ Cloudflare Rocket Loader ปล่อยผ่าน (ไม่ต้องมายุ่งกับไฟล์นี้)
+    script.setAttribute('data-cfasync', 'false');
+    
+    // Fallback: ถ้า script โหลดเสร็จแต่ fbAsyncInit ไม่ถูกเรียก (เช่น Cached)
+    script.onload = () => {
+       initFB();
+    };
+
+    document.body.appendChild(script);
+  };
+
+  const handleFacebookLogin = () => {
+    console.log('[FB-DEBUG] handleFacebookLogin clicked (Redirect Mode)');
+    
+    // แทนที่จะใช้ FB.login (Popup) เราจะใช้ Manual OAuth Redirect
+    // เพื่อหลีกเลี่ยงปัญหา Popup Blocked และ SDK โหลดไม่ขึ้นในบางเบราว์เซอร์
+    const redirectUri = `${window.location.origin}/facebook-callback`;
+    const oauthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=public_profile,email`;
+    
+    setLoading(true);
+    window.location.href = oauthUrl;
   };
 
   const fetchFacebookProfile = async (accessToken: string) => {

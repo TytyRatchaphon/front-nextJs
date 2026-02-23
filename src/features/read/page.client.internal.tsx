@@ -648,7 +648,14 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                 style={{ borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)" }}>
                 <div className={`group w-full p-4 flex flex-row gap-2 items-center justify-center border-r hover:bg-black/5 transition-all ${!prevEpId ? "opacity-30 cursor-not-allowed" : "cursor-pointer active:scale-[0.98]"}`}
                   style={{ borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)" }}
-                  onClick={(e) => { e.stopPropagation(); console.log('[LOG] prev_episode =>', { bookId, from: episodeId, to: prevEpId }); log('prev_episode', 'book', bookId, { from_episode: episodeId, to_episode: prevEpId }); if (prevEpId && bookId) router.push(`/read/${bookId}/${prevEpId}`); }}>
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    const prevEp = allEpisodes?.find((ep: any) => String(ep.ep_id ?? ep.epID) === String(prevEpId));
+                    const fromName = (episode as any)?.name?.trim() || displayTitle?.trim() || '';
+                    console.log('[LOG] prev_episode =>', { bookId, from: episodeId, from_name: fromName, to: prevEpId, to_name: prevEp?.name }); 
+                    log('prev_episode', 'book', bookId, { from_episode: episodeId, from_name: fromName, to_episode: prevEpId, to_name: prevEp?.name?.trim() || '' }); 
+                    if (prevEpId && bookId) router.push(`/read/${bookId}/${prevEpId}`); 
+                  }}>
                   <svg className={`w-5 h-5 transition-transform group-hover:-translate-x-1`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                   <div className="flex flex-col items-start leading-none gap-0.5">
                     <span className="text-[10px] opacity-60 font-normal">ตอนก่อนหน้า</span>
@@ -656,7 +663,15 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                   </div>
                 </div>
                 <div className={`group w-full p-4 flex flex-row gap-2 items-center justify-center hover:bg-black/5 transition-all ${!nextEpId ? "opacity-30 cursor-not-allowed" : "cursor-pointer active:scale-[0.98]"}`}
-                  onClick={(e) => { e.stopPropagation(); window.scrollTo(0, 0); console.log('[LOG] next_episode =>', { bookId, from: episodeId, to: nextEpId }); log('next_episode', 'book', bookId, { from_episode: episodeId, to_episode: nextEpId }); if (nextEpId && bookId) router.push(`/read/${bookId}/${nextEpId}`); }}>
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    window.scrollTo(0, 0); 
+                    const nextEp = allEpisodes?.find((ep: any) => String(ep.ep_id ?? ep.epID) === String(nextEpId));
+                    const fromName = (episode as any)?.name?.trim() || displayTitle?.trim() || '';
+                    console.log('[LOG] next_episode =>', { bookId, from: episodeId, from_name: fromName, to: nextEpId, to_name: nextEp?.name }); 
+                    log('next_episode', 'book', bookId, { from_episode: episodeId, from_name: fromName, to_episode: nextEpId, to_name: nextEp?.name?.trim() || '' }); 
+                    if (nextEpId && bookId) router.push(`/read/${bookId}/${nextEpId}`); 
+                  }}>
                   <div className="flex flex-col items-end leading-none gap-0.5">
                     <span className="text-[10px] opacity-60 font-normal">ตอนต่อไป</span>
                     <span className="font-semibold text-sm">ถัดไป</span>
