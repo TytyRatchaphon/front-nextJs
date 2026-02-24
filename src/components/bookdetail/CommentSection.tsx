@@ -213,12 +213,12 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
               <div className="h-full overflow-y-auto px-2">
                 <div className="grid grid-cols-4 gap-2 pb-2">
                   {set.sticker_list.map((sticker) => (
-                    <button
+                      <button
                       key={sticker.stck_id}
                       onClick={() => handleAddSticker(sticker.img)}
                       className="hover:bg-gray-100 p-1 rounded transition-colors"
                     >
-                      <img src={sticker.img} alt="sticker" className="w-full h-auto object-contain" />
+                      <Image src={sticker.img} alt="sticker" width={90} height={90} className="w-full h-auto object-contain" unoptimized />
                     </button>
                   ))}
                 </div>

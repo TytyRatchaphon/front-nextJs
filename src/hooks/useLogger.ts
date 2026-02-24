@@ -102,7 +102,7 @@ export const useLogger = () => {
                 metadata
             };
 
-            console.log(`[ACTIVITY LOG] Logging "${action}" for path: ${initialPath} | Duration: ${durationInSeconds}s`, payload);
+            // console.log(`[ACTIVITY LOG] Logging "${action}" for path: ${initialPath} | Duration: ${durationInSeconds}s`, payload);
             
             logActivity(payload);
         };

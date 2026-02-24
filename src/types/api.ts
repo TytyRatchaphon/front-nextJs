@@ -886,6 +886,7 @@ export interface NovelCardItem {
   user_id: string;
   view: number;
   type: string;
+  rate?: number;
 }
 
 export interface ArticleItem {

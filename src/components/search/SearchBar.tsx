@@ -3,6 +3,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Drawer, Button } from "antd";
 import { FilterOutlined, HistoryOutlined, CloseOutlined } from "@ant-design/icons";
 import GifLoader from '@/components/utility/GifLoader';
+import { useAuthStore } from '@/stores/authStore';
+import { getSearchHistory, deleteSearchHistory, clearSearchHistory, SearchHistoryItem, fetchPopularSearches, fetchSearchSuggestions, PopularSearchItem } from '@/services/apiServices';
 
 interface Category {
   id: number;
@@ -52,41 +54,103 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
 
   // --- Search History Logic ---
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  // const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
+  // const [popularSearches, setPopularSearches] = useState<PopularSearchItem[]>([]);
+  // const [searchSuggestions, setSearchSuggestions] = useState<PopularSearchItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const { isLoggedIn } = useAuthStore();
+
+  /*
+  const fetchApiHistory = useCallback(async () => {
+    if (isLoggedIn) {
+      const history = await getSearchHistory();
+      setSearchHistory(history);
+    } else {
+      setSearchHistory([]);
+    }
+  }, [isLoggedIn]);
 
   useEffect(() => {
-    const history = localStorage.getItem("search_history");
+    fetchApiHistory();
+    // Fetch popular searches on mount
+    fetchPopularSearches(5).then(data => {
+      setPopularSearches(data);
+    });
+  }, [fetchApiHistory]);
+
+  // --- Suggestion Fetching ---
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (searchQuery.trim()) {
+        fetchSearchSuggestions(searchQuery).then((data: PopularSearchItem[]) => {
+          setSearchSuggestions(data);
+        });
+      } else {
+        setSearchSuggestions([]);
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+  */
+
+  useEffect(() => {
+    const history = localStorage.getItem("searchHistory");
     if (history) {
       try {
         setSearchHistory(JSON.parse(history));
       } catch (e) {
-        setSearchHistory([]);
+        // ignore
       }
     }
   }, []);
 
-  const saveHistory = (newHistory: string[]) => {
-    setSearchHistory(newHistory);
-    localStorage.setItem("search_history", JSON.stringify(newHistory));
-  };
-
   const addToHistory = (query: string) => {
     if (!query || !query.trim()) return;
-    const cleanQuery = query.trim();
-    // Remove duplicate if exists, limit to 10
-    const newHistory = [cleanQuery, ...searchHistory.filter((h) => h !== cleanQuery)].slice(0, 10);
-    saveHistory(newHistory);
+    setSearchHistory((prev) => {
+      const newHistory = [query, ...prev.filter((q) => q !== query)].slice(0, 5);
+      localStorage.setItem("searchHistory", JSON.stringify(newHistory));
+      return newHistory;
+    });
+    /*
+    if (isLoggedIn) {
+      // The actual search API calls will add the history on the server side
+      // A slight delay lets the server update before we refetch the list
+      setTimeout(fetchApiHistory, 500); 
+    }
+    */
   };
 
   const removeFromHistory = (e: React.MouseEvent, query: string) => {
-    e.stopPropagation(); // Prevent triggering parent click
-    const newHistory = searchHistory.filter((h) => h !== query);
-    saveHistory(newHistory);
+    e.stopPropagation(); 
+    setSearchHistory((prev) => {
+      const newHistory = prev.filter((q) => q !== query);
+      localStorage.setItem("searchHistory", JSON.stringify(newHistory));
+      return newHistory;
+    });
+    /*
+    if (isLoggedIn) {
+      const success = await deleteSearchHistory(id);
+      if (success) {
+        setSearchHistory(prev => prev.filter(h => h.id !== id));
+      }
+    }
+    */
   };
 
-  const clearHistory = () => {
-    saveHistory([]);
+  const handleClearHistory = () => {
+    setSearchHistory([]);
+    localStorage.removeItem("searchHistory");
     setShowHistory(false);
+    /*
+    if (isLoggedIn) {
+      const success = await clearSearchHistory();
+      if (success) {
+        setSearchHistory([]);
+        setShowHistory(false);
+      }
+    }
+    */
   };
 
   // Sync with props when they change (e.g. navigation)
@@ -537,7 +601,7 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
             {[
               { value: "all", label: "ทั้งหมด" },
               { value: "end", label: "จบแล้ว" },
-              { value: "notend", label: "ยังไม่จบ" },
+              { value: "not_end", label: "ยังไม่จบ" },
             ].map((item) => (
               <label
                 key={item.value}
@@ -608,21 +672,25 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
             onBlur={() => setTimeout(() => setShowHistory(false), 200)}
           />
           
-          {/* History Dropdown */}
-          {showHistory && searchHistory.length > 0 && (
-             <div className="absolute top-full left-0 right-0 bg-white shadow-lg rounded-b-lg border border-t-0 border-gray-200 z-50 max-h-60 overflow-y-auto mt-1">
-                {searchHistory.map((item, index) => (
+          {/* History & Suggestions Dropdown */}
+          {showHistory && (
+            <div className="absolute top-full left-0 right-0 bg-white shadow-lg rounded-b-lg border border-t-0 border-gray-200 z-50 max-h-60 overflow-y-auto mt-1">
+              
+              {/* Show Suggestions if user is typing */}
+              {/* searchQuery.trim() && searchSuggestions.length > 0 && (
+                <>
+                  {searchSuggestions.map((item, index) => (
                     <div 
                         key={index}
                         className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 cursor-pointer text-sm text-gray-700 border-b border-gray-100 last:border-0"
-                        onClick={() => {
-                            setSearchQuery(item);
-                            addToHistory(item);
+                        onMouseDown={() => {
+                            setSearchQuery(item.normalized_keyword);
+                            addToHistory(item.normalized_keyword);
                             setShowHistory(false);
                             // Trigger immediate search
                             if (onSearch) {
                                 onSearch({
-                                    query: item,
+                                    query: item.normalized_keyword,
                                     categories: selectedFilters.categories,
                                     types: selectedFilters.types,
                                     content_type: selectedFilters.content_type || [],
@@ -635,26 +703,99 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
                         }}
                     >
                         <div className="flex items-center gap-3 overflow-hidden flex-1">
-                             <HistoryOutlined className="text-gray-400 flex-shrink-0" />
-                             <span className="truncate">{item}</span>
-                        </div>
-                        <div 
-                            className="p-1 hover:bg-gray-200 rounded-full cursor-pointer text-gray-400 hover:text-red-500 transition-colors"
-                            onClick={(e) => removeFromHistory(e, item)}
-                        >
-                            <CloseOutlined style={{ fontSize: '10px' }} />
+                             <svg stroke="currentColor" fill="currentColor" viewBox="0 0 16 16" className="text-gray-400 flex-shrink-0" height="1em" width="1em">
+                               <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"></path>
+                             </svg>
+                             <span className="truncate">{item.normalized_keyword}</span>
                         </div>
                     </div>
-                ))}
-                <div 
-                    className="flex justify-center p-2 bg-gray-50 text-xs text-gray-500 hover:text-red-500 cursor-pointer transition-colors"
-                    onClick={clearHistory}
-                >
-                    ล้างประวัติการค้นหา
-                </div>
-             </div>
+                  ))}
+                </>
+              )*/}
+
+              {/* Show History if user is not typing and history exists */}
+              {!searchQuery.trim() && searchHistory.length > 0 && (
+                <>
+                  {searchHistory.map((item, index) => (
+                      <div 
+                          key={index}
+                          className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 cursor-pointer text-sm text-gray-700 border-b border-gray-100 last:border-0"
+                          onMouseDown={() => {
+                              setSearchQuery(item);
+                              addToHistory(item);
+                              setShowHistory(false);
+                              // Trigger immediate search
+                              if (onSearch) {
+                                  onSearch({
+                                      query: item,
+                                      categories: selectedFilters.categories,
+                                      types: selectedFilters.types,
+                                      content_type: selectedFilters.content_type || [],
+                                      status: selectedFilters.status,
+                                      end: selectedFilters.end,
+                                      sortBy,
+                                      order,
+                                  });
+                              }
+                          }}
+                      >
+                          <div className="flex items-center gap-3 overflow-hidden flex-1">
+                               <HistoryOutlined className="text-gray-400 flex-shrink-0" />
+                               <span className="truncate">{item}</span>
+                          </div>
+                          <div 
+                              className="p-1 hover:bg-gray-200 rounded-full cursor-pointer text-gray-400 hover:text-red-500 transition-colors"
+                              onMouseDown={(e) => removeFromHistory(e, item)}
+                          >
+                              <CloseOutlined style={{ fontSize: '10px' }} />
+                          </div>
+                      </div>
+                  ))}
+                  <div 
+                      className="flex justify-center p-2 bg-gray-50 text-xs text-gray-500 hover:text-red-500 cursor-pointer transition-colors"
+                      onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleClearHistory();
+                      }}
+                  >
+                      ล้างประวัติการค้นหา
+                  </div>
+                </>
+              )}
+            </div>
           )}
         </div>
+
+        {/* Popular Searches Pills */}
+        {/* popularSearches.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-4 items-center">
+            <span className="text-sm text-gray-500 whitespace-nowrap hidden sm:inline-block">คำค้นหายอดนิยม:</span>
+            {popularSearches.map((item, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  setSearchQuery(item.normalized_keyword);
+                  addToHistory(item.normalized_keyword);
+                  if (onSearch) {
+                    onSearch({
+                      query: item.normalized_keyword,
+                      categories: selectedFilters.categories,
+                      types: selectedFilters.types,
+                      content_type: selectedFilters.content_type || [],
+                      status: selectedFilters.status,
+                      end: selectedFilters.end,
+                      sortBy,
+                      order,
+                    });
+                  }
+                }}
+                className="px-3 py-1.5 bg-white border border-gray-900 hover:bg-gray-100 text-gray-900 text-xs sm:text-sm rounded-full transition-colors whitespace-nowrap"
+              >
+                {item.normalized_keyword}
+              </button>
+            ))}
+          </div>
+        )*/}
       </div>
 
       {/* แถบตัวกรองและ Sort สำหรับมือถือ */}

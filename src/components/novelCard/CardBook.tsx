@@ -103,6 +103,13 @@ function CardBook({ book }: CardBookProps) {
               />
             )}
 
+            {/* 18+ Tag */}
+            {Number(book.rate) === 1 && (
+              <div className="absolute top-2 left-2 bg-red-600 text-white text-[12px] font-bold px-2 py-0.5 rounded shadow-sm z-20">
+                18+
+              </div>
+            )}
+
             {/* Flash Sale / Discount Overlay */}
             {(book.discount && book.discount > 0) ? (
                  <div className="absolute bottom-0 left-0 right-0 z-10 w-full">

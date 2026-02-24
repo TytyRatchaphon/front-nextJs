@@ -2243,3 +2243,86 @@ export const useCoupon = async (userCouponId: number, selectedRewardIds: number[
         throw error;
     }
 }
+
+// --- Search History API ---
+export interface SearchHistoryItem {
+  id: number;
+  user_id: number;
+  keyword: string;
+  normalized_keyword: string;
+  search_count: number;
+  last_searched_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export const getSearchHistory = async (): Promise<SearchHistoryItem[]> => {
+  try {
+    const response = await apiClient.get<{ code: number; data: SearchHistoryItem[] }>("/book/search/history");
+    if (response.data?.code === 200) {
+      return response.data.data || [];
+    }
+    return [];
+  } catch (error) {
+    console.error("Error fetching search history:", error);
+    return [];
+  }
+};
+
+export const deleteSearchHistory = async (id: number): Promise<boolean> => {
+  try {
+    const response = await apiClient.delete<{ code: number; status: string }>(`/book/search/history/${id}`);
+    return response.data?.code === 200 || response.data?.status === 'success';
+  } catch (error) {
+    console.error("Error deleting search history:", error);
+    return false;
+  }
+};
+
+export const clearSearchHistory = async (): Promise<boolean> => {
+  try {
+    const response = await apiClient.delete<{ code: number; status: string }>("/book/search/history");
+    return response.data?.code === 200 || response.data?.status === 'success';
+  } catch (error) {
+    console.error("Error clearing search history:", error);
+    return false;
+  }
+};
+
+// --- Popular Searches API ---
+export interface PopularSearchItem {
+  normalized_keyword: string;
+  total_search: number;
+}
+
+export const fetchPopularSearches = async (limit: number = 5): Promise<PopularSearchItem[]> => {
+  try {
+    const response = await apiClient.get<{ code: number; data: PopularSearchItem[] }>(`/book/search/popular`, {
+      params: { limit }
+    });
+    if (response.data?.code === 200) {
+      return response.data.data || [];
+    }
+    return [];
+  } catch (error) {
+    console.error("Error fetching popular searches:", error);
+    return [];
+  }
+};
+
+// --- Search Suggestions API ---
+export const fetchSearchSuggestions = async (q: string): Promise<PopularSearchItem[]> => {
+  if (!q || !q.trim()) return [];
+  try {
+    const response = await apiClient.get<{ code: number; data: PopularSearchItem[] }>(`/book/search/suggest`, {
+      params: { q: q.trim() }
+    });
+    if (response.data?.code === 200) {
+      return response.data.data || [];
+    }
+    return [];
+  } catch (error) {
+    console.error("Error fetching search suggestions:", error);
+    return [];
+  }
+};

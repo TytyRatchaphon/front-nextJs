@@ -24,6 +24,7 @@ interface UpdateBookCardProps {
     cover: string;
     chapters: Chapter[];
     stats: BookStats;
+    rate?: number;
   };
 }
 

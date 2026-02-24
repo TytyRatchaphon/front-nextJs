@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Input, Button, notification, Upload, Select, Steps, ConfigProvider } from 'antd';
 import { UploadOutlined, UserOutlined, BankOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { registerWriter, updateWriter, fetchWriterProfile, checkWriterStatus, getBankList, getBankIdCardAccount, updateBankIdCardAccount } from '@/services/apiServices';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -498,7 +499,7 @@ const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, 
                     <div>
                         <label className='block mb-3 text-sm font-medium text-gray-700'>รูปถ่ายหน้าบัตรประชาชน <span className="text-red-500">*</span></label>
                         <div className='border-2 border-dashed border-gray-300 rounded-xl p-6 bg-gray-50 text-center hover:bg-gray-100 transition-colors'>
-                            {(!idCardFileName && !existingIdCard) && (
+                             {(!idCardFileName && !existingIdCard) && (
                               <div className="mb-4 text-gray-400">
                                 <div className="text-4xl mb-2">📷</div>
                                 <div className="text-xs">อัปโหลดรูปภาพ (jpg, png)</div>
@@ -506,7 +507,7 @@ const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, 
                             )}
                             
                             {(existingIdCard && !idCardFile) && (
-                                <img src={existingIdCard} alt="ID Card" className="h-40 object-contain mx-auto border rounded mb-4" />
+                                <Image src={existingIdCard} alt="ID Card" width={200} height={160} className="h-40 object-contain mx-auto border rounded mb-4" unoptimized />
                             )}
 
                             <Upload
@@ -553,7 +554,7 @@ const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, 
                     <div>
                         <label className='block mb-3 text-sm font-medium text-gray-700'>รูปถ่ายหน้าสมุดบัญชี <span className="text-red-500">*</span></label>
                         <div className='border-2 border-dashed border-gray-300 rounded-xl p-6 bg-gray-50 text-center hover:bg-gray-100 transition-colors'>
-                            {(!bankCertFileName && !existingBankCert) && (
+                             {(!bankCertFileName && !existingBankCert) && (
                               <div className="mb-4 text-gray-400">
                                 <div className="text-4xl mb-2">📒</div>
                                 <div className="text-xs">อัปโหลดรูปภาพ (jpg, png)</div>
@@ -561,7 +562,7 @@ const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, 
                             )}
 
                             {(existingBankCert && !bankCertFile) && (
-                                <img src={existingBankCert} alt="Bank Book" className="h-40 object-contain mx-auto border rounded mb-4" />
+                                <Image src={existingBankCert} alt="Bank Book" width={200} height={160} className="h-40 object-contain mx-auto border rounded mb-4" unoptimized />
                             )}
 
                             <Upload

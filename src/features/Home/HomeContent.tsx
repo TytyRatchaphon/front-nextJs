@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuthStore } from "@/stores/authStore";
 import React from 'react';
 import DailyPopup from "@/components/utility/DailyPopup";
 import { BackToTopButton } from "@/components/utility/BackToTopButton";
@@ -24,9 +25,11 @@ import GifLoader from "@/components/utility/GifLoader";
 
 interface HomeContentProps {
   initialData: HomeDataResponse | null;
+  initialBookUpdates?: any[];
+  initialRankingCategories?: any;
 }
 
-export default function HomeContent({ initialData }: HomeContentProps) {
+export default function HomeContent({ initialData, initialBookUpdates, initialRankingCategories }: HomeContentProps) {
   const { data: homeData, isLoading } = useQuery({
     queryKey: ['homeData'],
     queryFn: fetchHomeData,
@@ -44,17 +47,22 @@ export default function HomeContent({ initialData }: HomeContentProps) {
   const { data: bookUpdates } = useQuery({
     queryKey: ['bookUpdates'],
     queryFn: fetchBookUpdates,
+    initialData: initialBookUpdates,
   });
 
   const { data: rankingCategories } = useQuery({
     queryKey: ['rankingCategories'],
     queryFn: fetchRankingCategories,
+    initialData: initialRankingCategories,
   });
+
+  const { token } = useAuthStore();
 
   const { data: continueBooks } = useQuery({
     queryKey: ['continueBooks'],
     queryFn: () => fetchUserShelveContinue(10), // Limit to 10 as per request
     select: (data: any) => data?.books ?? [],
+    enabled: !!token, // Only fetch if user is logged in
   });
 
   const slides = homeData?.data?.slides || [];
@@ -180,7 +188,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
                     title: book.name,
                     author: book.writer_name,
                     cover: book.img_full || book.img,
-                    chapters: book.BookTranEps?.map((ep, index) => ({
+                    chapters: book.BookTranEps?.map((ep: any, index: number) => ({
                       id: ep.ep_id,
                       bookId: book.book_id,
                       title: ep.name,

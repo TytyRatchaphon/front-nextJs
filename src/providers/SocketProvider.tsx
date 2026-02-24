@@ -72,8 +72,12 @@ export default function SocketProvider({
     }); */
 
     // 2. Initialize Socket
+    const queryParams: any = {};
+    if (currentUserId) queryParams.user_id = currentUserId;
+    if (currentUser?.fullname) queryParams.fullname = currentUser.fullname;
+
     const socketInstance = io(socketUrl, {
-      transports: ['polling', 'websocket'], 
+      transports: ['websocket'], // Enforce websocket to prevent polling 400 errors
       reconnection: true,
       reconnectionAttempts: Infinity, 
       reconnectionDelay: 1000,
@@ -89,10 +93,7 @@ export default function SocketProvider({
         }
         cb({ token: latestToken });
       },
-      query: {
-        user_id: currentUserId || 'undefined',
-        fullname: currentUser?.fullname || 'undefined',
-      }
+      query: queryParams
     });
 
     socketInstance.on('connect', () => {

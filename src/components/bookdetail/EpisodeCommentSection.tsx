@@ -4,6 +4,7 @@ import { Alert, Input, Button, Pagination, App, Empty, Popover, Tabs } from "ant
 import { fetchEpisodeComments, postEpisodeComment, fetchStickers, postCommentNotification } from "@/services/apiServices";
 import { CommentEpData, StickerSet } from "@/types/api";
 import CommentItem from "./CommentItem";
+import Image from "next/image";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
 import GifLoader from '@/components/utility/GifLoader';
@@ -228,7 +229,7 @@ export default function EpisodeCommentSection({ episodeId, theme }: EpisodeComme
                                         onClick={() => handleAddSticker(sticker.img)}
                                         className="hover:bg-gray-100 p-1 rounded transition-colors"
                                     >
-                                        <img src={sticker.img} alt="sticker" className="w-full h-auto object-contain" />
+                                        <Image src={sticker.img} alt="sticker" width={90} height={90} className="w-full h-auto object-contain" unoptimized />
                                     </button>
                                 ))}
                             </div>

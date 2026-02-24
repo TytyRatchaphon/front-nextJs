@@ -8,6 +8,7 @@ import SearchBar from "@/components/search/SearchBar";
 import CardBook from "@/components/novelCard/CardBook";
 import GifLoader from '@/components/utility/GifLoader';
 import { useLogger } from '@/hooks/useLogger';
+import apiClient from "@/services/apiClient";
 
 interface SearchParams {
   query: string;
@@ -42,21 +43,16 @@ const searchBooks = async (
   queryParams.append("page", page.toString());
   queryParams.append("limit", limit.toString());
 
-  const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/book/search?${queryParams.toString()}`;
-
-  const response = await fetch(url);
-
-  if (!response.ok) {
+  try {
+    const response = await apiClient.get(`/book/search?${queryParams.toString()}`);
+    if (response.data && response.data.code === 200) {
+      return response.data.data;
+    }
+    throw new Error("Invalid response format");
+  } catch (error) {
+    console.error("Failed to search books:", error);
     throw new Error("Failed to search books");
   }
-
-  const data = await response.json();
-
-  if (data.code === 200 && data.data) {
-    return data.data;
-  }
-
-  throw new Error("Invalid response format");
 };
 
 export default function SearchClient() {
@@ -180,6 +176,7 @@ export default function SearchClient() {
         discount_ep_count: b.discount_ep_count,
         discount_end_date: b.discount_end_date,
         time_end: b.time_end || b.end_date,
+        rate: b.rate,
       };
     });
 

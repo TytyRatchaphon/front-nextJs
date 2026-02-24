@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button, Tabs, Upload, Input, Select, Table, Tag, Modal, InputNumber, notification } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
@@ -378,7 +379,7 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
                         </div>
                         {existingIdCard && !idCardFile && (
                            <div className="mt-4 flex justify-center">
-                             <img src={existingIdCard} alt="ID Card" className="h-32 object-contain border rounded" />
+                             <Image src={existingIdCard} alt="ID Card" width={200} height={128} className="h-32 object-contain border rounded" unoptimized />
                            </div>
                         )}
                         {!existingIdCard && !idCardFile && (
@@ -462,7 +463,7 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
                         </div>
                         {existingBankCert && !bankCertFile && (
                            <div className="mt-4 flex justify-center">
-                             <img src={existingBankCert} alt="Bank Cert" className="h-32 object-contain border rounded" />
+                             <Image src={existingBankCert} alt="Bank Cert" width={200} height={128} className="h-32 object-contain border rounded" unoptimized />
                            </div>
                         )}
                         {!existingBankCert && !bankCertFile && (

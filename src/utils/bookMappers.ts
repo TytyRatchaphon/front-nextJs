@@ -39,6 +39,7 @@ export const normalizeBookData = (book: BookData): UniversalBook => {
     shelveCount: Number(book.shelve_count ?? 0),
     end: book.end ?? book.status ?? '',
     status: book.status ?? book.end ?? '',
+    rate: book.rate,
   };
 };
 

@@ -171,7 +171,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   const [payWith, setPayWith] = useState<'coin' | 'freecoin'>('coin');
 
   // Fetch episodes when modal opens
-  const queryResult = useQuery<BookEpisodesResponse>({
+  const queryResult = useQuery<BookEpisodesResponse['data']>({
     queryKey: ["bookEpisodes", String(bookId ?? ""), token],
     queryFn: () => fetchBookEpisodes(String(bookId ?? "")),
     enabled: isModalOpen && !!bookId,
@@ -187,10 +187,10 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     }
     setSelectedEpisodeIds([]);
     // expand first group by default when opening
-    if (episodesData?.data?.groups && episodesData.data.groups.length > 0) {
-      const firstId = String(episodesData.data.groups[0].group_id);
+    if (episodesData?.groups && episodesData.groups.length > 0) {
+      const firstId = String(episodesData.groups[0].group_id);
       const map: Record<string, boolean> = {};
-      for (const g of episodesData.data.groups) map[String(g.group_id)] = false;
+      for (const g of episodesData.groups) map[String(g.group_id)] = false;
       map[firstId] = true;
       setExpandedGroups(map);
     }
@@ -389,9 +389,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   };
 
   const selectedSummary = useMemo(() => {
-    if (!episodesData?.data?.groups) return { count: 0, total: 0 };
+    if (!episodesData?.groups) return { count: 0, total: 0 };
     let total = 0;
-    for (const g of episodesData.data.groups) {
+    for (const g of episodesData.groups) {
       for (const ep of g.list) {
         if (selectedEpisodeIds.includes(ep.ep_id) && ep.coin > 0) {
           const { finalPrice } = resolveEpisodePrice(ep);
@@ -403,9 +403,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   }, [selectedEpisodeIds, episodesData]);
 
   const allSelectableIds = useMemo(() => {
-    if (!episodesData?.data?.groups) return [] as number[];
+    if (!episodesData?.groups) return [] as number[];
     const ids: number[] = [];
-    for (const g of episodesData.data.groups) {
+    for (const g of episodesData.groups) {
       for (const ep of g.list) {
         if (ep.coin > 0 && !ep.isBuy) ids.push(ep.ep_id);
       }
@@ -703,7 +703,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                     </div>
 
                     <div className="space-y-4 max-h-[60vh] overflow-auto">
-                      {episodesData?.data?.groups?.map((group: EpisodeGroup) => {
+                      {episodesData?.groups?.map((group: EpisodeGroup) => {
                         const gid = String(group.group_id);
                         const isExpanded = expandedGroups[gid] ?? false;
                         const selectableIds = group.list.filter((ep: any) => ep.coin > 0 && !ep.isBuy).map((ep: any) => ep.ep_id);
