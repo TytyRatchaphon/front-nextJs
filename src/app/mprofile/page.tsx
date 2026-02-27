@@ -1,8 +1,9 @@
 import React from 'react'
+import MyProfile from '@/features/user/MyProfile'
 
 function page() {
   return (
-    <div>page</div>
+    <MyProfile />
   )
 }
 

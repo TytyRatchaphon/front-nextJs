@@ -45,7 +45,7 @@ const DailyPromoPopup: React.FC = () => {
               link = item.ref_id ? `/book/${item.ref_id}` : `/book/${item.popup_id}`;
             } else if (item.txt && (item.txt.startsWith('http') || item.txt.startsWith('/'))) {
               link = item.txt;
-            }
+            } 
             return {
               id: item.popup_id,
               imageUrl: item.img,

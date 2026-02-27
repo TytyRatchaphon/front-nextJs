@@ -11,7 +11,6 @@ import {
   App,
   Upload,
   Modal,
-  notification
 } from 'antd';
 import type { TabsProps, UploadProps } from 'antd';
 import { UploadOutlined, CheckCircleOutlined, LockOutlined, CloseCircleOutlined } from '@ant-design/icons';
@@ -214,7 +213,7 @@ const UserInfoForm = () => {
 
 // --- Component 2: Change Password Form ---
 const ChangePasswordForm = () => {
-  const { message } = App.useApp();
+  const { message, notification } = App.useApp();
   const { user, token } = useAuthStore();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -305,7 +304,7 @@ interface ProfilePictureTabProps {
 }
 
 const ProfilePictureTab = ({ onProfileFileChange }: ProfilePictureTabProps) => {
-  const { message } = App.useApp();
+  const { message, notification } = App.useApp();
   const { token, user } = useAuthStore();
   const { updateUserProfile } = useFormStore();
 
@@ -824,7 +823,7 @@ const items: TabsProps['items'] = [
 ];
 
 function Page() {
-  const { message } = App.useApp();
+  const { message, notification } = App.useApp();
   const { user, isLoggedIn, hasMounted, setMounted } = useAuthStore();
   const router = useRouter();
 

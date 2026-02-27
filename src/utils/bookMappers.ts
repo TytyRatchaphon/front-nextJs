@@ -54,8 +54,8 @@ export const normalizeContinueBook = (book: BookData): NormalizedContinueBook =>
   
   return {
     ...baseBook,
-    ep_id: (book.last_read_ep ?? book.ep_id) as string | number | undefined,
-    epName: String(book.epName ?? ''),
+    ep_id: (book.last_read_ep_id ?? book.last_read_ep ?? book.ep_id) as string | number | undefined,
+    epName: String(book.last_read_ep_name ?? book.epName ?? book.ep_name ?? ''),
     last_read_at: book.last_read_at as string | undefined,
     isBestSeller: book.isBestSeller as boolean | undefined,
     isNew: book.isNew as boolean | undefined,

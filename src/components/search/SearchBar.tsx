@@ -3,6 +3,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Drawer, Button } from "antd";
 import { FilterOutlined, HistoryOutlined, CloseOutlined } from "@ant-design/icons";
 import GifLoader from '@/components/utility/GifLoader';
+import { useAuthStore } from '@/stores/authStore';
+import { getSearchHistory, deleteSearchHistory, clearSearchHistory, saveSearchHistory, SearchHistoryItem, fetchPopularSearches, fetchSearchSuggestions, PopularSearchItem } from '@/services/apiServices';
 
 interface Category {
   id: number;
@@ -51,42 +53,72 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
   });
 
   // --- Search History Logic ---
-  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
+  const [popularSearches, setPopularSearches] = useState<PopularSearchItem[]>([]);
+  const [searchSuggestions, setSearchSuggestions] = useState<PopularSearchItem[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const { isLoggedIn } = useAuthStore();
+
+  const fetchApiHistory = useCallback(async () => {
+    if (isLoggedIn) {
+      const history = await getSearchHistory();
+      setSearchHistory(history);
+    } else {
+      setSearchHistory([]);
+    }
+  }, [isLoggedIn]);
 
   useEffect(() => {
-    const history = localStorage.getItem("search_history");
-    if (history) {
-      try {
-        setSearchHistory(JSON.parse(history));
-      } catch (e) {
-        setSearchHistory([]);
+    fetchApiHistory();
+    // Fetch popular searches on mount
+    fetchPopularSearches(5).then((data: PopularSearchItem[]) => {
+      setPopularSearches(data);
+    });
+  }, [fetchApiHistory]);
+
+  // --- Suggestion Fetching ---
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (searchQuery.trim()) {
+        fetchSearchSuggestions(searchQuery).then((data: PopularSearchItem[]) => {
+          setSearchSuggestions(data);
+        });
+      } else {
+        setSearchSuggestions([]);
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+
+  const addToHistory = async (query: string) => {
+    if (!query || !query.trim()) return;
+    if (isLoggedIn) {
+      // Save search history to server
+      await saveSearchHistory(query.trim());
+      // Refetch to update the list
+      fetchApiHistory();
+    }
+  };
+
+  const removeFromHistory = async (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    if (isLoggedIn) {
+      const success = await deleteSearchHistory(id);
+      if (success) {
+        setSearchHistory(prev => prev.filter(h => h.id !== id));
       }
     }
-  }, []);
-
-  const saveHistory = (newHistory: string[]) => {
-    setSearchHistory(newHistory);
-    localStorage.setItem("search_history", JSON.stringify(newHistory));
   };
 
-  const addToHistory = (query: string) => {
-    if (!query || !query.trim()) return;
-    const cleanQuery = query.trim();
-    // Remove duplicate if exists, limit to 10
-    const newHistory = [cleanQuery, ...searchHistory.filter((h) => h !== cleanQuery)].slice(0, 10);
-    saveHistory(newHistory);
-  };
-
-  const removeFromHistory = (e: React.MouseEvent, query: string) => {
-    e.stopPropagation(); // Prevent triggering parent click
-    const newHistory = searchHistory.filter((h) => h !== query);
-    saveHistory(newHistory);
-  };
-
-  const clearHistory = () => {
-    saveHistory([]);
-    setShowHistory(false);
+  const handleClearHistory = async () => {
+    if (isLoggedIn) {
+      const success = await clearSearchHistory();
+      if (success) {
+        setSearchHistory([]);
+        setShowHistory(false);
+      }
+    }
   };
 
   // Sync with props when they change (e.g. navigation)
@@ -353,7 +385,7 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
         addToHistory(searchQuery);
         setShowHistory(false);
     }
-    
+
     // Trigger manual search
     if (onSearch) {
          onSearch({
@@ -604,25 +636,68 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
               }
             }}
             className="block w-full rounded-md border border-gray-300 h-[40px] pl-10 pr-3 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-primary focus:border-primary text-sm"
-            onFocus={() => setShowHistory(true)}
+            onFocus={() => {
+              setShowHistory(true);
+              fetchApiHistory(); // Always refetch latest history on focus
+            }}
             onBlur={() => setTimeout(() => setShowHistory(false), 200)}
           />
-          
+
           {/* History Dropdown */}
-          {showHistory && searchHistory.length > 0 && (
+          {showHistory && (searchHistory.length > 0 || popularSearches.length > 0 || searchSuggestions.length > 0) && (
              <div className="absolute top-full left-0 right-0 bg-white shadow-lg rounded-b-lg border border-t-0 border-gray-200 z-50 max-h-60 overflow-y-auto mt-1">
-                {searchHistory.map((item, index) => (
-                    <div 
-                        key={index}
+              {/* Show Suggestions if user is typing */}
+              {searchQuery.trim() && searchSuggestions.length > 0 && (
+                <>
+                  {searchSuggestions.map((item, index) => (
+                    <div
+                        key={`suggestion-${index}`}
                         className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 cursor-pointer text-sm text-gray-700 border-b border-gray-100 last:border-0"
-                        onClick={() => {
-                            setSearchQuery(item);
-                            addToHistory(item);
+                        onMouseDown={() => { // Use onMouseDown to trigger before onBlur
+                            setSearchQuery(item.normalized_keyword);
+                            addToHistory(item.normalized_keyword);
                             setShowHistory(false);
                             // Trigger immediate search
                             if (onSearch) {
                                 onSearch({
-                                    query: item,
+                                    query: item.normalized_keyword,
+                                    categories: selectedFilters.categories,
+                                    types: selectedFilters.types,
+                                    content_type: selectedFilters.content_type || [],
+                                    status: selectedFilters.status,
+                                    end: selectedFilters.end,
+                                    sortBy,
+                                    order,
+                                });
+                            }
+                        }}
+                    >
+                        <div className="flex items-center gap-3 overflow-hidden flex-1">
+                             <svg stroke="currentColor" fill="currentColor" viewBox="0 0 16 16" className="text-gray-400 flex-shrink-0" height="1em" width="1em">
+                               <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"></path>
+                             </svg>
+                             <span className="truncate">{item.normalized_keyword}</span>
+                        </div>
+                    </div>
+                  ))}
+                </>
+              )}
+              {/* Show Search History if no query and history exists */}
+              {!searchQuery.trim() && searchHistory.length > 0 && (
+                <>
+                  <p className="px-4 py-2 text-xs text-gray-500 font-semibold border-b border-gray-100">ประวัติการค้นหา</p>
+                  {searchHistory.map((item, index) => (
+                    <div
+                        key={item.id || index}
+                        className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 cursor-pointer text-sm text-gray-700 border-b border-gray-100 last:border-0"
+                        onMouseDown={() => {
+                            setSearchQuery(item.keyword);
+                            addToHistory(item.keyword);
+                            setShowHistory(false);
+                            // Trigger immediate search
+                            if (onSearch) {
+                                onSearch({
+                                    query: item.keyword,
                                     categories: selectedFilters.categories,
                                     types: selectedFilters.types,
                                     content_type: selectedFilters.content_type || [],
@@ -636,11 +711,11 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
                     >
                         <div className="flex items-center gap-3 overflow-hidden flex-1">
                              <HistoryOutlined className="text-gray-400 flex-shrink-0" />
-                             <span className="truncate">{item}</span>
+                             <span className="truncate">{item.keyword}</span>
                         </div>
                         <div 
                             className="p-1 hover:bg-gray-200 rounded-full cursor-pointer text-gray-400 hover:text-red-500 transition-colors"
-                            onClick={(e) => removeFromHistory(e, item)}
+                            onMouseDown={(e) => removeFromHistory(e, item.id)}
                         >
                             <CloseOutlined style={{ fontSize: '10px' }} />
                         </div>
@@ -648,10 +723,12 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
                 ))}
                 <div 
                     className="flex justify-center p-2 bg-gray-50 text-xs text-gray-500 hover:text-red-500 cursor-pointer transition-colors"
-                    onClick={clearHistory}
+                    onClick={handleClearHistory}
                 >
                     ล้างประวัติการค้นหา
                 </div>
+                </>
+              )}
              </div>
           )}
         </div>

@@ -1,0 +1,147 @@
+
+import apiClient from "../apiClient";
+import type { CampaignDetailResponse, CampaignDetailData, CampaignDiscount, PackCampaignDetail } from "@/types/api";
+
+export const fetchPackCampaignDetail = async (id: string): Promise<PackCampaignDetail | null> => {
+  try {
+    const response = await apiClient.get<{ code: number; data: PackCampaignDetail }>(`/pack-campaign/${id}`);
+    if (response.data?.code !== 200) {
+      return null;
+    }
+    return response.data.data;
+  } catch (error) {
+    return null;
+  }
+}
+
+export const fetchCampaignsDiscount = async (): Promise<CampaignDiscount[]> => {
+  try {
+    const response = await apiClient.get<{ code: number; data: CampaignDiscount[] }>("/campaigns-discount");
+    if (response.data?.code !== 200) {
+      return [];
+    }
+    return response.data.data || [];
+  } catch (error) {
+    return [];
+  }
+}
+
+export const fetchCampaignDetail = async (id: string | number): Promise<CampaignDetailData | null> => {
+  try {
+    const response = await apiClient.get<CampaignDetailResponse>(`/campaigns/${id}`);
+    return response.data.data;
+  } catch (error) {
+    return null;
+  }
+};
+
+export const postCampaignClick = async (campaignId: number) => {
+  try {
+    if (!campaignId) return;
+    await apiClient.post(`/campaigns/${campaignId}/click`, { id: campaignId });
+  } catch (error) {
+  }
+};
+
+export const postBannerClick = async (bannerId: number) => {
+  try {
+    await apiClient.post('/banner-click', { banner_id: bannerId });
+  } catch (error) {
+  }
+};
+
+// --- Promoting Groups ---
+
+export interface PromotingGroup {
+  id: number;
+  name: string;
+  banner: string;
+  status: number;
+  publish_date: string;
+  update_at: string;
+}
+
+export const fetchPromotingGroups = async (): Promise<PromotingGroup[]> => {
+  try {
+    const response = await apiClient.get<{ code: number; data: PromotingGroup[] }>("/promoting-groups");
+    return response.data?.data || [];
+  } catch (error) {
+    return [];
+  }
+};
+
+export interface PromotingBook {
+  book_id: number;
+  name: string;
+  title: string;
+  img: string;
+  user_id: number;
+  view: number;
+  end: string;
+  status: string;
+  tag: string[];
+  date_at: string;
+  img_full: string;
+  bgimg: string | null;
+  writer_name: string;
+  chapter: number;
+  shelve_count: number;
+  isBestSeller: boolean;
+  isNew: boolean;
+  isNewEp: boolean;
+  discount: any;
+  discount_ep_count: any;
+}
+
+export interface PromotingBlock {
+  id: number;
+  block_name?: string;
+  group_id: number;
+  type: string;
+  banner: string;
+  book: string;
+  order_by: number;
+  update_at: string;
+  books: PromotingBook[];
+  total_books: number;
+  has_more: boolean;
+}
+
+export interface PromotingGroupDetail extends PromotingGroup {
+  blocks: PromotingBlock[];
+}
+
+export const fetchPromotingGroupDetail = async (id: string | number): Promise<PromotingGroupDetail | null> => {
+  try {
+    const response = await apiClient.get<{ code: number; data: PromotingGroupDetail }>(`/promoting-group/${id}`);
+    return response.data?.data || null;
+  } catch (error) {
+    return null;
+  }
+};
+
+export interface PromotingBlockBooksResponse {
+  page: number;
+  limit: number;
+  offset: number;
+  total: number;
+  totalPages: number;
+  nextPage: number | null;
+  prevPage: number | null;
+  block_id: number;
+  block_type: string;
+  banner: string | null;
+  block_name: string;
+  books: PromotingBook[];
+}
+
+export const fetchPromotingBlockBooks = async (blockId: string | number, page: number = 1, limit?: number): Promise<PromotingBlockBooksResponse | null> => {
+  try {
+    const response = await apiClient.get<{ code: number; data: PromotingBlockBooksResponse }>(`/promoting/${blockId}/books`, {
+      params: { page, limit }
+    });
+    return response.data?.data || null;
+  } catch (error) {
+    return null;
+  }
+};

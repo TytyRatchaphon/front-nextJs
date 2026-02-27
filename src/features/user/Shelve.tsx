@@ -6,6 +6,7 @@ import { Tabs, Empty, Pagination } from 'antd';
 import type { TabsProps } from 'antd';
 import GifLoader from '@/components/utility/GifLoader';
 import CardBook from '@/components/novelCard/CardBook';
+import CollectionTab from '@/components/collection/CollectionTab';
 import ContinueCardBook from '@/components/novelCard/ContinueCardbook';
 import { useQuery } from '@tanstack/react-query';
 import { fetchUserShelve, fetchUserShelveContinue, fetchUserShelveBuy } from '@/services/apiServices';
@@ -18,7 +19,7 @@ function Shelve() {
   const [activeTab, setActiveTab] = useState('1');
 
   useEffect(() => {
-    if (tabParam && ['1', '2', '3'].includes(tabParam)) {
+    if (tabParam && ['1', '2', '3', '4'].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
@@ -164,6 +165,11 @@ function Shelve() {
           )}
         </div>
       ),
+    },
+    {
+      key: '4',
+      label: 'คอลเลคชั่น',
+      children: <CollectionTab />,
     },
   ];
 

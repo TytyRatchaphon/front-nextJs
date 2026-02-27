@@ -4,9 +4,12 @@ import NextImage from "next/image";
 import axios from "axios";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { Image as AntImage, App, Modal } from "antd";
+import { Image as AntImage, App, Modal, Dropdown } from "antd";
+import type { MenuProps } from "antd";
 import apiClient from "@/services/apiClient";
 import { fetchLatestReadEpisode } from "@/services/apiServices";
+import { fetchUserCollections, addBooksToCollection } from "@/services/api/collectionApi";
+import type { CollectionItem } from "@/services/api/collectionApi";
 
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
@@ -51,7 +54,7 @@ interface BookDetailHeaderProps {
 
 const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
   const isDeleted = book.status?.toLowerCase().trim() === 'delete';
-  const { message: messageApi } = App.useApp();
+  const { notification } = App.useApp();
   const { token, hasMounted, user } = useAuthStore() as any;
   const { openLoginModal } = useUIStore();
   const [isAdded, setIsAdded] = useState(book.isAddedToShelf || false);
@@ -61,6 +64,11 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
   const [currentUserId, setCurrentUserId] = useState<string | number | null>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [readEpInfo, setReadEpInfo] = useState<{ id: number | string; label: string } | null>(null);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [collectionModalOpen, setCollectionModalOpen] = useState(false);
+  const [collections, setCollections] = useState<CollectionItem[]>([]);
+  const [collectionsLoading, setCollectionsLoading] = useState(false);
+  const [addingToCollection, setAddingToCollection] = useState<number | null>(null);
 
   useEffect(() => {
     // Wait for hydration to complete to avoid double fetching (guest -> user)
@@ -139,7 +147,7 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
     }
 
     if (!book.id) {
-      messageApi.error("ไม่พบข้อมูลหนังสือ");
+      notification.error({ message: "ไม่พบข้อมูลหนังสือ" });
       return;
     }
 
@@ -149,15 +157,15 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
         // Remove
         await apiClient.post(`/user/savebookshelve/remove/${book.id}`);
         setIsAdded(false);
-        messageApi.success("นำออกจากชั้นหนังสือแล้ว");
+        notification.success({ message: "นำออกจากชั้นหนังสือแล้ว" });
       } else {
         // Add
         await apiClient.post(`/user/savebookshelve/add/${book.id}`);
         setIsAdded(true);
-        messageApi.success("เพิ่มเข้าชั้นหนังสือแล้ว");
+        notification.success({ message: "เพิ่มเข้าชั้นหนังสือแล้ว" });
       }
     } catch (error) {
-      messageApi.error("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
+      notification.error({ message: "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง" });
     } finally {
       setLoading(false);
     }
@@ -170,7 +178,7 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
     }
 
     if (!book.writer?.user_id) {
-      messageApi.error("ไม่พบข้อมูลนักเขียน");
+      notification.error({ message: "ไม่พบข้อมูลนักเขียน" });
       return;
     }
 
@@ -184,18 +192,18 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
         headers: { 'Authorization': token }
       });
       setIsFollowed(!isFollowed);
-      messageApi.success(isFollowed ? "เลิกติดตามแล้ว" : "ติดตามแล้ว");
+      notification.success({ message: isFollowed ? "เลิกติดตามแล้ว" : "ติดตามแล้ว" });
     } catch (error: any) {
 
       const resData = error.response?.data;
       if (resData?.message?.includes('ติดตามผู้ใช้นี้แล้ว')) {
         setIsFollowed(true);
-        messageApi.info("คุณได้ติดตามผู้ใช้นี้แล้ว");
+        notification.info({ message: "คุณได้ติดตามผู้ใช้นี้แล้ว" });
       } else if (resData?.message?.includes('ไม่ได้ติดตาม')) {
         setIsFollowed(false);
-        messageApi.info("คุณไม่ได้ติดตามผู้ใช้นี้");
+        notification.info({ message: "คุณไม่ได้ติดตามผู้ใช้นี้" });
       } else {
-        messageApi.error(resData?.message || "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
+        notification.error({ message: resData?.message || "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง" });
       }
     } finally {
       setFollowLoading(false);
@@ -219,8 +227,36 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
     }
   };
 
-  const { settings } = useWebsiteStore();
+  const handleOpenCollectionModal = async () => {
+    setMoreMenuOpen(false);
+    setCollectionModalOpen(true);
+    setCollectionsLoading(true);
+    try {
+      const data = await fetchUserCollections();
+      setCollections(data ?? []);
+    } catch {
+      notification.error({ message: 'โหลดคอลเลคชั่นไม่สำเร็จ' });
+    } finally {
+      setCollectionsLoading(false);
+    }
+  };
 
+  const handleAddToCollection = async (colId: number) => {
+    if (!book.id) return;
+    setAddingToCollection(colId);
+    try {
+      await addBooksToCollection(colId, [String(book.id)]);
+      notification.success({ message: 'เพิ่มเข้าคอลเลคชั่นแล้ว' });
+      setCollectionModalOpen(false);
+    } catch {
+      notification.error({ message: 'ไม่สามารถเพิ่มได้' });
+    } finally {
+      setAddingToCollection(null);
+    }
+  };
+
+  const { settings } = useWebsiteStore();
+  
   return (
     <div className="relative w-full">
       {/* Full-width Background with Book Cover */}
@@ -244,7 +280,7 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
         <div className="absolute inset-0 bg-white/60 via-white/50 to-white/60"></div>
       </div>
 
-      <div className="relative bg-white/50 backdrop-blur-sm rounded-lg shadow-sm overflow-hidden p-2 sm:p-6">
+      <div className="relative bg-white/50 backdrop-blur-sm rounded-lg shadow-sm p-2 sm:p-6">
         {/* Mobile & Tablet: Vertical Layout | Desktop: Horizontal Layout */}
         <div className="relative flex flex-col xl:flex-row gap-4 sm:gap-6 items-start">
 
@@ -427,6 +463,41 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
                   <span className="text-red-800">แชร์</span>
                 </button>
                 )}
+
+                {/* More Options using Antd Dropdown to bypass overflow clipping */}
+                {!isDeleted && (
+                  <Dropdown
+                    trigger={['click']}
+                    placement="bottomRight"
+                    menu={{
+                      style: { marginTop: '8px' },
+                      items: [
+                        {
+                          key: '1',
+                          label: 'เพิ่มเข้าคอลเลคชั่น',
+                          icon: (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 5v14" />
+                              <path d="M5 12h14" />
+                            </svg>
+                          ),
+                          onClick: handleOpenCollectionModal,
+                        },
+                      ],
+                    }}
+                  >
+                    <button
+                      className="bg-white border border-red-800 text-gray-700 w-[38px] sm:w-[42px] h-[38px] sm:h-[42px] rounded-lg text-sm hover:bg-gray-50 transition flex items-center justify-center "
+                      title="เพิ่มเติม"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#B01F1F">
+                        <circle cx="12" cy="5" r="2" />
+                        <circle cx="12" cy="12" r="2" />
+                        <circle cx="12" cy="19" r="2" />
+                      </svg>
+                    </button>
+                  </Dropdown>
+                )}
               </div>
             </div>
           </div>
@@ -577,7 +648,7 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
               onClick={() => {
                 if (typeof window !== 'undefined') {
                   navigator.clipboard.writeText(window.location.href);
-                  messageApi.success("คัดลอกลิงก์แล้ว");
+                  notification.success({ message: "คัดลอกลิงก์แล้ว" });
                 }
               }}
               className="bg-[#f7f8fa] hover:bg-[#9a9a9e] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
@@ -585,6 +656,78 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
               copy link
             </button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Collection Picker Modal */}
+      <Modal
+        open={collectionModalOpen}
+        onCancel={() => setCollectionModalOpen(false)}
+        footer={null}
+        centered
+        width={480}
+        title={
+          <div className="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 5v14" />
+              <path d="M5 12h14" />
+            </svg>
+            <span className="!text-red-500">เพิ่มเข้าคอลเลคชั่น</span>
+          </div>
+        }
+      >
+        <div className="py-2">
+          {collectionsLoading ? (
+            <div className="py-8 flex justify-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-600" />
+            </div>
+          ) : collections.length === 0 ? (
+            <div className="py-8 text-center text-gray-400">
+              <p className="text-sm">ยังไม่มีคอลเลคชั่น</p>
+              <p className="text-xs mt-1">สร้างคอลเลคชั่นได้ที่หน้าชั้นหนังสือ</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 max-h-[350px] overflow-y-auto pr-1">
+              {collections.map((col) => (
+                <button
+                  key={col.id}
+                  onClick={() => handleAddToCollection(col.id)}
+                  disabled={addingToCollection === col.id}
+                  className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-red-200 hover:bg-red-50 transition-all text-left group"
+                >
+                  {/* Collection Cover */}
+                  <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0 relative">
+                    {col.cover_image ? (
+                      <NextImage src={col.cover_image} alt={col.name} fill className="object-cover" unoptimized />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  {/* Collection Info */}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-semibold text-gray-900 truncate group-hover:text-red-600 transition-colors">{col.name}</h4>
+                    <p className="text-xs text-gray-400">{col.book_count} เล่ม</p>
+                  </div>
+                  {/* Add Icon */}
+                  <div className="shrink-0">
+                    {addingToCollection === col.id ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600" />
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300 group-hover:text-red-500 transition-colors">
+                        <path d="M12 5v14" />
+                        <path d="M5 12h14" />
+                      </svg>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </Modal>
     </div>

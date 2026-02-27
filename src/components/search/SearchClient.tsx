@@ -8,6 +8,7 @@ import SearchBar from "@/components/search/SearchBar";
 import CardBook from "@/components/novelCard/CardBook";
 import GifLoader from '@/components/utility/GifLoader';
 import { useLogger } from "@/hooks/useLogger";
+import apiClient from '@/services/apiClient';
 
 interface SearchParams {
   query: string;
@@ -44,13 +45,9 @@ const searchBooks = async (
 
   const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/book/search?${queryParams.toString()}`;
 
-  const response = await fetch(url);
+  const response = await apiClient.get(`/book/search?${queryParams.toString()}`);
 
-  if (!response.ok) {
-    throw new Error("Failed to search books");
-  }
-
-  const data = await response.json();
+  const data = response.data;
 
   if (data.code === 200 && data.data) {
     return data.data;

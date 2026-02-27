@@ -1,0 +1,240 @@
+
+import apiClient from "../apiClient";
+import type { CommentResponse, CommentData, CommentEpData } from "@/types/api";
+
+// --- Book Reviews (BookDetail page) ---
+
+export const fetchBookReviews = async (bookId: string | number, page: number = 1, limit: number = 10, sort: string = 'newest'): Promise<{ comments: CommentData[], pagination?: any }> => {
+  try {
+    const response = await apiClient.get<CommentResponse>(`/bookdetail/${bookId}/reviews`, {
+      params: { page, limit, sort }
+    });
+
+    if (response.data && response.data.data) {
+      const payload = response.data.data;
+      if (Array.isArray(payload.comment_data)) {
+        return {
+          comments: payload.comment_data as CommentData[],
+          pagination: payload.pagination
+        };
+      }
+      if (Array.isArray(payload)) {
+        return { comments: payload as CommentData[] };
+      }
+    }
+
+    return { comments: [] };
+  } catch (error: any) {
+    return { comments: [] };
+  }
+};
+
+export const postBookReview = async (bookId: string | number, comment: string, star: number) => {
+  try {
+    const payload = { comment, star };
+    const response = await apiClient.post(`/bookdetail/${bookId}/reviews`, payload);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const postReply = async (commentBookId: string | number, comment: string) => {
+  try {
+    const payload = { comment };
+    const response = await apiClient.post(`/bookdetail/reviews/${commentBookId}/replies`, payload);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const deleteBookReview = async (commentBookId: string | number) => {
+  try {
+    const response = await apiClient.delete(`/bookdetail/reviews/${commentBookId}`);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const reportBookReview = async (commentBookId: string | number) => {
+  try {
+    const response = await apiClient.post(`/bookdetail/reviews/${commentBookId}/report`);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const deleteBookReviewReply = async (replyId: string | number) => {
+  try {
+    const response = await apiClient.delete(`/bookdetail/reviews/replies/${replyId}`);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const reportBookReviewReply = async (replyId: string | number) => {
+  try {
+    const response = await apiClient.post(`/bookdetail/reviews/replies/${replyId}/report`);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+// --- Book Comments (BookDetail page - Episode-level comments) ---
+
+export const fetchBookComments = async (bookId: string | number, page: number = 1, limit: number = 10, sort: string = 'newest'): Promise<{ comments: CommentEpData[], pagination?: any }> => {
+  try {
+    const response = await apiClient.get<CommentResponse>(`/bookdetail/${bookId}/comments`, {
+      params: { page, limit, sort }
+    });
+
+    if (response.data && response.data.data) {
+      const payload = response.data.data;
+      if (Array.isArray(payload.comment_data)) {
+        return {
+          comments: payload.comment_data as CommentEpData[],
+          pagination: payload.pagination
+        };
+      }
+      if (Array.isArray(payload)) {
+        return { comments: payload as CommentEpData[] };
+      }
+    }
+    return { comments: [] };
+  } catch (error: any) {
+    return { comments: [] };
+  }
+};
+
+export const postCommentReply = async (commentEpId: string | number, comment: string) => {
+  try {
+    const payload = { comment };
+    const response = await apiClient.post(`/bookdetail/comments/${commentEpId}/replies`, payload);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const deleteBookComment = async (commentEpId: string | number) => {
+  try {
+    const response = await apiClient.delete(`/bookdetail/comments/${commentEpId}`);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const reportBookComment = async (commentEpId: string | number) => {
+  try {
+    const response = await apiClient.post(`/bookdetail/comments/${commentEpId}/report`);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const deleteBookCommentReply = async (replyId: string | number) => {
+  try {
+    const response = await apiClient.delete(`/bookdetail/comments/replies/${replyId}`);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const reportBookCommentReply = async (replyId: string | number) => {
+  try {
+    const response = await apiClient.post(`/bookdetail/comments/replies/${replyId}/report`);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+// --- Episode Comments (Read Page) ---
+
+export const fetchEpisodeComments = async (epId: string | number, page: number = 1, limit: number = 10, sort: string = 'newest'): Promise<{ comments: CommentEpData[], pagination?: any }> => {
+  try {
+    const response = await apiClient.get<CommentResponse>(`/readep/${epId}/comments`, {
+      params: { page, limit, sort }
+    });
+
+    if (response.data && response.data.data) {
+      const payload = response.data.data;
+      if (Array.isArray(payload.comment_data)) {
+        return {
+          comments: payload.comment_data as CommentEpData[],
+          pagination: payload.pagination
+        };
+      }
+      if (Array.isArray(payload)) {
+        return { comments: payload as CommentEpData[] };
+      }
+    }
+    return { comments: [] };
+  } catch (error: any) {
+    return { comments: [] };
+  }
+};
+
+export const postEpisodeComment = async (epId: string | number, comment: string) => {
+  try {
+    const payload = { comment };
+    const response = await apiClient.post(`/readep/${epId}/comments`, payload);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const postEpisodeReply = async (commentEpId: string | number, comment: string) => {
+  try {
+    const payload = { comment };
+    const response = await apiClient.post(`/readep/comments/${commentEpId}/replies`, payload);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const reportEpisodeComment = async (commentEpId: string | number) => {
+  try {
+    const response = await apiClient.post(`/readep/comments/${commentEpId}/report`);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const reportEpisodeReply = async (commentSubEpId: string | number) => {
+  try {
+    const response = await apiClient.post(`/readep/comments/replies/${commentSubEpId}/report`);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const deleteEpisodeComment = async (commentEpId: string | number) => {
+  try {
+    const response = await apiClient.delete(`/readep/comments/${commentEpId}`);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const deleteEpisodeReply = async (commentSubEpId: string | number) => {
+  try {
+    const response = await apiClient.delete(`/readep/comments/replies/${commentSubEpId}`);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
