@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { App } from 'antd';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
@@ -23,11 +23,11 @@ interface UserData {
 }
 
 const LoginFacebook = () => {
-  const { message, notification } = App.useApp();
+  const { notification } = App.useApp();
   const [loading, setLoading] = useState(false);
   // เพิ่ม state เพื่อเช็คว่า SDK พร้อมใช้งานหรือยัง
   const [isSdkLoaded, setIsSdkLoaded] = useState(false);
-  const router = useRouter();
+  useRouter();
   const { login, updateToken } = useAuthStore();
   const { closeLoginModal } = useUIStore();
   const { log: logActivity } = useLogger();
@@ -49,17 +49,13 @@ const LoginFacebook = () => {
     try {
       if (!token) return false;
       return false;
-    } catch (e) {
+    } catch {
       return false;
     }
   };
 
   // 1. ย้ายการ Initialize SDK มาไว้ใน useEffect ทำงานทันทีที่ Mount
-  useEffect(() => {
-    initFacebookSDK();
-  }, []);
-
-  const initFacebookSDK = () => {
+  const initFacebookSDK = useCallback(() => {
     if (typeof window === 'undefined') return;
 
     if ((window as any).FB) {
@@ -88,7 +84,11 @@ const LoginFacebook = () => {
       script.crossOrigin = 'anonymous';
       document.body.appendChild(script);
     }
-  };
+  }, [FACEBOOK_APP_ID]);
+
+  useEffect(() => {
+    initFacebookSDK();
+  }, [initFacebookSDK]);
 
   const handleFacebookLogin = () => {
     // ถ้า SDK ยังไม่มา ให้ return หรือแจ้งเตือน (แต่ปกติปุ่มจะ disable หรือรอโหลดอยู่แล้ว)
@@ -117,7 +117,7 @@ const LoginFacebook = () => {
   const fetchFacebookProfile = async (accessToken: string) => {
     try {
       await sendToBackend(accessToken);
-    } catch (error) {
+    } catch {
       notification.error({
         message: 'เข้าสู่ระบบไม่สำเร็จ',
         description: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบผ่าน Facebook',

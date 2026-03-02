@@ -25,21 +25,16 @@ type Props = {
 export default function UserUseCoin({
   used = 0,
   remaining = 45,
-  leftLabel = 'ใช้ไปแล้ว',
-  rightLabel = 'ใช้ อีก {remaining} คอยน์เพื่อรับสแตมป์',
-  leftAmount = '0 coin',
-  rightAmount = '45 coin',
-  avatar = '/images/warning_cat.png',
+  leftLabel = 'ใช้ไปแล้ว',  avatar = '/images/warning_cat.png',
   width = 1040,
   progressHeight = 22,
 }: Props) {
-  const { message } = App.useApp()
+  App.useApp();
   const queryClient = useQueryClient()
   const token = useAuthStore((state) => state.token) // ✅ Use selector instead of .getState()
 
   // 1. Fetch Functions (ใช้ getState เพื่อดึง Token สดๆ)
-  const fetchEventSummary = async (overrideToken?: string) => {
-    const currentToken = overrideToken || useAuthStore.getState().token
+  const fetchEventSummary = async () => {
     const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? ''
     const url = `${base}/user/event`
     const res = await apiClient.get(url)
@@ -47,7 +42,6 @@ export default function UserUseCoin({
   }
 
   const claimRewardApi = async () => {
-    const currentToken = useAuthStore.getState().token
     const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? ''
     const url = `${base}/user/event/get-stamp`
     const res = await apiClient.post(url, {})
@@ -121,7 +115,6 @@ export default function UserUseCoin({
 
       // --- STEP D: Sync ข้อมูลจริง (กันพลาด) ---
       setTimeout(async () => {
-        const currentToken = newToken || useAuthStore.getState().token;
         const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? ''
 
         // 1. Refetch หน้า Event (เผื่อมีเงื่อนไขอื่นเปลี่ยน)
@@ -135,7 +128,7 @@ export default function UserUseCoin({
             useAuthStore.setState({ user: realProfile });
             localStorage.setItem('userData', JSON.stringify(realProfile));
           }
-        } catch (e) {
+        } catch {
         }
       }, 1000)
     },

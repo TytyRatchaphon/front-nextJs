@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react';
 import Image from 'next/image'
 import { useAuthStore } from '@/stores/authStore'
-import { notification, Modal, Button } from 'antd'
+import { notification, Modal } from 'antd';
 import { redeemCode, refreshToken } from '@/services/apiServices'
 import { useWebsiteStore } from '@/stores/websiteStore';
 
@@ -26,7 +26,7 @@ function Redeem() {
                 return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
             }).join(''))
             return JSON.parse(jsonPayload)
-        } catch (e) {
+        } catch {
             return null
         }
     }
@@ -46,7 +46,7 @@ function Redeem() {
 
             // Try to find the data object. APIs are inconsistent.
             // Priority: response.data.data -> response.data -> response
-            let data = response?.data?.data || response?.data || response;
+            const data = response?.data?.data || response?.data || response;
 
             // If data is just a success message, data might be the object itself
 

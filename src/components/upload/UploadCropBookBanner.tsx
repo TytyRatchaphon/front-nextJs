@@ -120,7 +120,7 @@ const UploadCropBookBanner: React.FC<UploadCropBookBannerProps> = ({ src, onChan
         if (onChange) {
             onChange(file);
         }
-    } catch (error) {
+    } catch {
     }
   };
 

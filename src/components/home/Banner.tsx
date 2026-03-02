@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 import Image from 'next/image'
-import Link from 'next/link'
+import 'next/link';
 import React from 'react'
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay, Pagination, Navigation, Parallax } from 'swiper/modules';
+import { Autoplay, Navigation, Parallax } from 'swiper/modules';
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
@@ -14,7 +14,7 @@ import { useWebsiteStore } from '@/stores/websiteStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import TopUpBanner from '@/components/home/TopUpBanner';
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 
 interface BannerProps {
   slides?: Slide[];
@@ -22,9 +22,9 @@ interface BannerProps {
 
 
 function Banner({ slides = [] }: BannerProps) {
-  const { settings } = useWebsiteStore();
-  const { isLoggedIn, token } = useAuthStore();
-  const { openLoginModal, setLoginAnimation } = useUIStore();
+  useWebsiteStore();
+  const { isLoggedIn } = useAuthStore();
+  useUIStore();
   const prevRef = React.useRef<HTMLButtonElement>(null);
   const nextRef = React.useRef<HTMLButtonElement>(null);
 
@@ -37,7 +37,6 @@ function Banner({ slides = [] }: BannerProps) {
   }, [slides]);
 
   const [activeIndex, setActiveIndex] = React.useState(0);
-  // @ts-ignore
   const [swiperInstance, setSwiperInstance] = React.useState<any>(null);
 
   return (
@@ -97,9 +96,9 @@ function Banner({ slides = [] }: BannerProps) {
                   nextEl: nextRef.current,
                 }}
                 onBeforeInit={(swiper) => {
-                  // @ts-ignore
+                  // @ts-expect-error - Swiper navigation refs are assigned during init
                   swiper.params.navigation.prevEl = prevRef.current;
-                  // @ts-ignore
+                  // @ts-expect-error - Swiper navigation refs are assigned during init
                   swiper.params.navigation.nextEl = nextRef.current;
                 }}
                 onSlideChange={(swiper) => {
@@ -156,7 +155,6 @@ function Banner({ slides = [] }: BannerProps) {
                   <button
                     key={index}
                     onClick={() => {
-                        // @ts-ignore
                         swiperInstance?.slideToLoop(index);
                     }}
                     className={`block h-2 rounded-full transition-all duration-300 ${

@@ -12,7 +12,7 @@ import 'swiper/css/free-mode';
 import { useQuery } from "@tanstack/react-query";
 import { fetchCategoryRankingBooks, CategoryRankingBookItem } from "@/services/apiServices";
 import GifLoader from '@/components/utility/GifLoader';
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 
 interface RankingCategoryLeftProps {
   categoryId?: number;

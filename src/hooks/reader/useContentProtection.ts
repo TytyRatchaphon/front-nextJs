@@ -83,7 +83,7 @@ export function useContentProtection(episodeData: any, onBlur?: () => void) {
                             configurable: true,
                         });
                     }
-                } catch (error) {
+                } catch {
                 }
             });
 
@@ -128,13 +128,12 @@ export function useContentProtection(episodeData: any, onBlur?: () => void) {
 
         document.addEventListener("contextmenu", disableRightClick);
 
-        let cleanupProtection: (() => void) | undefined;
         const timer = setTimeout(() => {
-            cleanupProtection = protectContent();
+            protectContent();
         }, 1000);
 
         // Assuming detectExtension is a utility that returns an observer or similar cleanup
-        const extensionObserver = detectExtension();
+        detectExtension();
 
         return () => {
             window.removeEventListener('blur', handleWindowBlur);
@@ -145,7 +144,7 @@ export function useContentProtection(episodeData: any, onBlur?: () => void) {
             document.removeEventListener("contextmenu", disableRightClick);
             clearTimeout(timer);
         };
-    }, [episodeData]);
+    }, [episodeData, onBlur]);
 
     return { isFocused, setIsFocused };
 }

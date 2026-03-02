@@ -10,7 +10,7 @@ import { CloseCircleOutlined } from '@ant-design/icons';
 import { useLogger } from '@/hooks/useLogger';
 
 const LoginLine = () => {
-  const { message, notification } = App.useApp();
+  const { notification } = App.useApp();
   const router = useRouter();
   const { closeLoginModal } = useUIStore();
   const { loginWithLine, loading } = useLineLogin();
@@ -29,7 +29,7 @@ const LoginLine = () => {
       setTimeout(() => {
         router.push('/');
       }, 500);
-    } catch (error) {
+    } catch {
       notification.error({
         message: 'เข้าสู่ระบบไม่สำเร็จ',
         description: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบผ่าน LINE',

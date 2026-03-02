@@ -14,7 +14,7 @@ export function useEpisodeNavigation(bookId: string, episodeId: string, episode:
             try {
                 const res = await apiClient.get(`/bookgroup/${bookId}`);
                 return res.data?.code === 200 ? res.data.data : null;
-            } catch (err) {
+            } catch {
                 return null; // Return null on error
             }
         },

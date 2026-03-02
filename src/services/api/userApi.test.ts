@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fetchRankProfile, fetchQuests, claimQuest } from './userApi';
 import apiClient from '../apiClient';
-import Cookies from 'js-cookie';
 
 vi.mock('../apiClient');
 vi.mock('js-cookie');

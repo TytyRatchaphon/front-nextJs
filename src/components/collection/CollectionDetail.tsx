@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Button, Empty, App, Modal } from 'antd';
+import { Button, Empty, App } from 'antd';
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable';
@@ -61,7 +61,7 @@ export default function CollectionDetail({ collectionId }: Props) {
   const isLoading = isLoadingMeta || isLoadingBooks || isLoadingHidden;
 
   // Use local state for drag reorder, fall back to API data
-  const books: CollectionBook[] = localBooks ?? (apiBooks ?? []);
+  const books: CollectionBook[] = useMemo(() => localBooks ?? (apiBooks ?? []), [localBooks, apiBooks]);
 
   // Sort books by order_index from API, use drag order when localBooks is set
   const sortedBooks = useMemo(() => {

@@ -9,7 +9,7 @@ export const fetchBookTrans = async (): Promise<BookTrans[]> => {
       return [];
     }
     return response.data;
-  } catch (error) {
+  } catch {
     return [];
   }
 }
@@ -54,7 +54,7 @@ export const fetchBookDetail = async (bookId: string): Promise<BookDetail> => {
           return payload as BookDetail;
         }
       }
-    } catch (err: any) {
+    } catch {
     }
 
     const response = await apiClient.get<BookDetailResponse>(`/bookdetail/${bookId}`);
@@ -78,7 +78,7 @@ export const fetchMyBookDetail = async (bookId: string): Promise<BookDetail> => 
           return payload as BookDetail;
         }
       }
-    } catch (err: any) {
+    } catch {
     }
 
     const response = await apiClient.get<BookDetailResponse>(`/bookdetail/${bookId}`);
@@ -108,7 +108,6 @@ export const fetchBookEpisodes = async (bookId: string | number) => {
       const groups = response.data.data.groups || [];
 
       if (groups.length > 0 && groups[0].list && groups[0].list.length > 0) {
-        const firstEpisode = groups[0].list[0];
       }
 
       return response.data.data;
@@ -128,7 +127,7 @@ export const fetchBookPurchaseDetails = async (bookId: string | number) => {
   try {
     const response = await apiClient.get<BookPurchaseDetailsResponse>(`/bookdetail/purchase/${bookId}`);
     return response.data?.data;
-  } catch (error: any) {
+  } catch {
     return null;
   }
 };
@@ -150,7 +149,7 @@ export const fetchBookRecommendation = async (bookId: string | number): Promise<
         return response.data.data;
     }
     return [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };
@@ -166,7 +165,7 @@ export const fetchBookPromotionOptions = async (bookId: number): Promise<BookPro
       return [];
     }
     return [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };
@@ -175,7 +174,7 @@ export const fetchLatestReadEpisode = async (bookId: string | number): Promise<L
   try {
     const response = await apiClient.get<LatestReadEpisodeResponse>(`/bookdetail/latest-read-ep/${bookId}`);
     return response.data;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -194,7 +193,7 @@ export const resolveEpisodeId = async (epId: string): Promise<ResolveEpisodeResp
   try {
     const response = await apiClient.get<ResolveEpisodeResponse>(`/ep/resolve/${epId}`);
     return response.data;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -212,7 +211,7 @@ export const resolveBookId = async (bookId: string): Promise<ResolveBookResponse
   try {
     const response = await apiClient.get<ResolveBookResponse>(`/book/resolve/${bookId}`);
     return response.data;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -231,7 +230,7 @@ export const postBookClick = async (bookId: string | number) => {
     const id = Number(bookId);
     if (!id || isNaN(id)) return;
     await apiClient.post('/bookdetail/click', { book_id: id });
-  } catch (error) {
+  } catch {
   }
 };
 

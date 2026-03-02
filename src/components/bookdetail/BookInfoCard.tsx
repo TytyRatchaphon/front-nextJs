@@ -15,10 +15,10 @@ import SuccessAnimation from '@/components/utility/SuccessAnimation';
 import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill';
 import { useWebsiteStore } from '@/stores/websiteStore';
-import { jwtDecode } from "jwt-decode";
-import { imageLoader } from '@/utils/imageUtils';
-import type { Episode, EpisodeGroup, BookEpisodesResponse } from '@/types/api';
-import { getErrorMessage } from '@/types/errors';
+import "jwt-decode";
+import '@/utils/imageUtils';
+import type { EpisodeGroup, BookEpisodesResponse } from '@/types/api';
+import '@/types/errors';
 import { useLogger } from '@/hooks/useLogger';
 
 
@@ -72,7 +72,7 @@ function decodeToken(token: string) {
         .join("")
     );
     return JSON.parse(jsonPayload);
-  } catch (error) {
+  } catch {
     return {};
   }
 }
@@ -153,12 +153,10 @@ const Pill = ({
 
 const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   const isDeleted = book.status?.toLowerCase().trim() === 'delete';
-  const [heartQty, setHeartQty] = useState<number>(0);
-  const [roseQty, setRoseQty] = useState<number>(0);
   const { token, isLoggedIn, updateToken, user } = useAuthStore();
   const openLoginModal = useUIStore((s) => s.openLoginModal);
   const queryClient = useQueryClient();
-  const { message: messageApi, modal: modalApi, notification: notificationApi } = App.useApp();
+  const { message: messageApi, modal: modalApi } = App.useApp();
   const { log } = useLogger();
   const [buyLoading, setBuyLoading] = useState(false);
   // Removed redundant local state for coins/flowers/hearts - using auth store directly
@@ -214,7 +212,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       title: 'ยืนยันการซื้อโปรโมชั่น',
       content: (
         <div>
-          <div>คุณต้องการซื้อโปรโมชั่น "{book.promotion.title}" หรือไม่?</div>
+          <div>คุณต้องการซื้อโปรโมชั่น &quot;{book.promotion.title}&quot; หรือไม่?</div>
           <div className="flex mt-2">ราคาโปรโมชั่น: <b className="text-red-600 flex mr-2">{book.promotion.price.toLocaleString()}</b><Image src="/images/e-coin.png" alt="Coin" width={24} height={24} /></div>
         </div>
       ),
@@ -227,7 +225,6 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
           const payload = { dfb_id: book.promotion?.id, payWith: 'coin' };
           const res = await apiClient.post(`/buy/groupPromotion`, payload);
           if (res?.data?.code === 200) {
-            const respMsg = res.data?.message || 'ซื้อโปรโมชั่นสำเร็จ!';
 
             // Log buy_promotion
             console.log('[LOG] buy_promotion =>', { bookId, promotion_id: book.promotion?.id, price: book.promotion?.price, title: book.promotion?.title });
@@ -320,7 +317,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       setBuyAllModalOpen(true);
       setBuyLoading(false);
 
-    } catch (err) {
+    } catch {
       messageApi.error('เกิดข้อผิดพลาด ขณะเตรียมการซื้อ');
       setBuyLoading(false);
     }
@@ -428,92 +425,8 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
 
   const { settings } = useWebsiteStore()
 
-  const handleSendGift = async (sendType: 'heart' | 'flower', amount: number) => {
-    if (!isLoggedIn) {
-      openLoginModal();
-      return;
-    }
-    if (amount <= 0) return;
-
-    try {
-      const payload = {
-        sendType,
-        amount,
-        book_id: bookId,
-      };
-      const res = await apiClient.post('/user/sendGift', payload);
-      if (res?.data?.code === 200) {
-        notificationApi.success({
-          message: 'สำเร็จ',
-          description: 'ส่งของขวัญสำเร็จแล้ว',
-          placement: 'topRight',
-          icon: <div className="text-green-500">🎁</div>,
-        });
-
-        // Reset quantity
-        if (sendType === 'heart') setHeartQty(0);
-        else setRoseQty(0);
-
-        // Update user balance if token is returned
-        const responseData = res?.data?.data;
-        const maybeToken = typeof responseData === 'string' ? responseData : (responseData?.token ?? res?.data?.token);
-
-        if (maybeToken && typeof updateToken === 'function') {
-          updateToken(String(maybeToken));
-        }
-      } else {
-        messageApi.error(res?.data?.message || 'ส่งของขวัญไม่สำเร็จ');
-      }
-    } catch (err: any) {
-      messageApi.error(err?.response?.data?.message || 'เกิดข้อผิดพลาดขณะส่งของขวัญ');
-    }
-  };
 
   // Helper for Stepper
-  const Stepper = ({ value, onChange, min = 0 }: { value: number, onChange: (val: number) => void, min?: number }) => (
-    <div className="flex items-center border border-gray-200 rounded-lg bg-gray-50 h-8 w-fit mx-auto">
-      <button
-        onClick={() => onChange(Math.max(min, value - 1))}
-        className="w-8 h-full flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-l-lg transition-colors"
-        disabled={value <= min}
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-      </button>
-      <input
-        type="number"
-        value={value}
-        onChange={(e) => {
-          const val = parseInt(e.target.value);
-          if (!isNaN(val)) onChange(val);
-          else onChange(min);
-        }}
-        className="w-12 h-full text-center bg-transparent border-x border-gray-200 text-sm font-semibold text-gray-900 focus:outline-none no-spinners"
-      />
-      <button
-        onClick={() => onChange(value + 1)}
-        className="w-8 h-full flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-r-lg transition-colors"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-      </button>
-      <style jsx global>{`
-        .no-spinners::-webkit-outer-spin-button,
-        .no-spinners::-webkit-inner-spin-button {
-          -webkit-appearance: none;
-          appearance: none;
-          margin: 0;
-        }
-        .no-spinners {
-          -moz-appearance: textfield;
-          appearance: textfield;
-        }
-      `}</style>
-    </div>
-  );
 
   return (
     <aside className="w-full">
@@ -833,7 +746,6 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                         const payload = { eps: selectedEpisodeIds.map((id) => Number(id)), payWith: payWith };
                         const res = await apiClient.post(`/buy/eps`, payload);
                         if (res?.data?.code === 200) {
-                          const respMsg = res.data?.message || "ซื้อสำเร็จ! กำลังอัปเดตเนื้อหา...";
 
                           // Log buy_episode
                           console.log('[LOG] buy_episode =>', { bookId, episodes: selectedEpisodeIds.length, payWith });
@@ -846,7 +758,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                             try {
                               const refreshRes = await refreshToken();
                               if (refreshRes?.data?.token) updateToken(refreshRes.data.token);
-                            } catch (e) { }
+                            } catch { }
                           }
 
                           setManualBuyConfirmModalOpen(false);
@@ -903,11 +815,11 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                   <div className="bg-red-50 border border-red-100 p-3 rounded-xl text-xs text-gray-700 mt-3">
                       {book.end === 'end' ? (
                           <p>
-                              <span className="font-bold text-red-700">กรณีซื้อทั้งเรื่องที่สถานะจบ :</span> คุณจะได้รับสิทธิ์ในการเข้าถึงเนื้อหา "ทุกตอนที่ท่านยังไม่เคยทำการซื้อ" ทั้งหมด โดยราคาจะคำนวนเฉพาะตอนที่ยังไม่เคยซื้อ
+                              <span className="font-bold text-red-700">กรณีซื้อทั้งเรื่องที่สถานะจบ :</span> คุณจะได้รับสิทธิ์ในการเข้าถึงเนื้อหา &quot;ทุกตอนที่ท่านยังไม่เคยทำการซื้อ&quot; ทั้งหมด โดยราคาจะคำนวนเฉพาะตอนที่ยังไม่เคยซื้อ
                           </p>
                       ) : (
                           <p>
-                              <span className="font-bold text-red-700">สำหรับผลงานที่ยังไม่จบ:</span> คุณจะได้รับสิทธิ์ในการเข้าถึงเนื้อหา "ทุกตอนที่ท่านยังไม่เคยทำการซื้อ" ราคาที่แสดงจะเป็นการคำนวณยอดรวมเฉพาะ "ตอนที่อัปเดตล่าสุด ณ วันที่ทำรายการซื้อ" เท่านั้น (ไม่รวมถึงตอนที่จะอัปเดตเพิ่มในอนาคต)
+                              <span className="font-bold text-red-700">สำหรับผลงานที่ยังไม่จบ:</span> คุณจะได้รับสิทธิ์ในการเข้าถึงเนื้อหา &quot;ทุกตอนที่ท่านยังไม่เคยทำการซื้อ&quot; ราคาที่แสดงจะเป็นการคำนวณยอดรวมเฉพาะ &quot;ตอนที่อัปเดตล่าสุด ณ วันที่ทำรายการซื้อ&quot; เท่านั้น (ไม่รวมถึงตอนที่จะอัปเดตเพิ่มในอนาคต)
                           </p>
                       )}
                   </div>
@@ -952,7 +864,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                             try {
                               const refreshRes = await refreshToken();
                               if (refreshRes?.data?.token) updateToken(refreshRes.data.token);
-                            } catch (e) { }
+                            } catch { }
                           }
                           setBuyAllModalOpen(false);
                           setBuyAllIds([]);

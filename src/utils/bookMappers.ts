@@ -3,7 +3,7 @@
  * Normalizes inconsistent API responses into standardized formats
  */
 
-import { UniversalBook, BookData, NormalizedBook } from '@/types/api';
+import { UniversalBook, BookData } from '@/types/api';
 
 /**
  * Normalized book data for continue reading cards

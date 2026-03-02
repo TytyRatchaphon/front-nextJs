@@ -2,14 +2,14 @@
 
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
+import 'next/link';
 import { Alert } from 'antd';
 import GifLoader from '@/components/utility/GifLoader';
 import { fetchCampaignDetail } from '@/services/apiServices';
 import type { CampaignDetailData } from '@/types/api';
 import parse from 'html-react-parser';
 import CardBook from '@/components/novelCard/CardBook';
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 
 // Helper to format date if needed, though mostly using banners
 const formatDate = (dateString: string) => {
@@ -36,7 +36,7 @@ export default function CampaignDetail({ id }: { id: string }) {
         } else {
           setError('ไม่พบข้อมูลแคมเปญ');
         }
-      } catch (err) {
+      } catch {
         setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
       } finally {
         setLoading(false);

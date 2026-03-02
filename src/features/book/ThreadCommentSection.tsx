@@ -1,10 +1,10 @@
 "use client"
 
-import React, { useState, useEffect, useMemo } from "react";
-import { Alert, Button, Select, Popover, Tabs, Pagination, notification } from "antd";
+import React, { useState, useEffect } from "react";
+import { Button, Popover, Tabs, Pagination, notification } from "antd";
 import GifLoader from '@/components/utility/GifLoader';
 import { fetchThreadComments, fetchStickers, postThreadComment } from "@/services/apiServices"; // Modified imports
-import { CommentData, StickerSet, CommentThreadData } from "@/types/api";
+import { StickerSet, CommentThreadData } from "@/types/api";
 import ThreadCommentItem from "./ThreadCommentItem";
 import Image from "next/image";
 import { useAuthStore } from "@/stores/authStore";
@@ -18,7 +18,7 @@ export default function ThreadCommentSection({ topicId }: ThreadCommentSectionPr
   const [api, contextHolder] = notification.useNotification();
   const [comments, setComments] = useState<CommentThreadData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   
   // Auth
   const { token } = useAuthStore() as any;
@@ -39,7 +39,7 @@ export default function ThreadCommentSection({ topicId }: ThreadCommentSectionPr
         const decoded = JSON.parse(jsonPayload);
         const uid = decoded.user_id || decoded.id || decoded.sub || decoded.userId;
         setCurrentUserId(Number(uid));
-      } catch (error) {
+      } catch {
       }
     }
   }, [token]);
@@ -48,7 +48,7 @@ export default function ThreadCommentSection({ topicId }: ThreadCommentSectionPr
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [pageSize, setPageSize] = useState(10); // API uses 20 default, but let's sync
-  const [sortOrder, setSortOrder] = useState("newest");
+  useState("newest");
 
   // Form State
   const [newComment, setNewComment] = useState("");
@@ -63,7 +63,7 @@ export default function ThreadCommentSection({ topicId }: ThreadCommentSectionPr
   const lastCursorPosition = React.useRef<Range | null>(null);
 
   // Fetch Reviews
-  const loadReviews = async () => {
+  const loadReviews = React.useCallback(async () => {
       try {
         setLoading(true);
          // Note: fetchThreadComments takes page. 
@@ -97,16 +97,16 @@ export default function ThreadCommentSection({ topicId }: ThreadCommentSectionPr
              setComments([]);
              setTotalItems(0);
          }
-      } catch (err) {
+      } catch {
         setError("ไม่สามารถโหลดความคิดเห็นได้");
       } finally {
         setLoading(false);
       }
-  };
+  }, [topicId, currentPage]);
 
   useEffect(() => {
     if (topicId) loadReviews();
-  }, [topicId, currentPage]); // triggering load on page change
+  }, [topicId, loadReviews]); // triggering load on page change
 
   // Fetch Stickers
   useEffect(() => {
@@ -115,7 +115,7 @@ export default function ThreadCommentSection({ topicId }: ThreadCommentSectionPr
             setStickerLoading(true);
             const data = await fetchStickers();
             setStickers(data);
-        } catch (error) {
+        } catch {
         } finally {
             setStickerLoading(false);
         }
@@ -197,7 +197,9 @@ export default function ThreadCommentSection({ topicId }: ThreadCommentSectionPr
                                     onClick={() => handleAddSticker(sticker.img)}
                                     className="hover:bg-gray-100 p-1 rounded transition-colors"
                                 >
-                                    <img src={sticker.img} alt="sticker" className="w-full h-auto object-contain" />
+                                    <div className="relative w-full aspect-square">
+                                      <Image src={sticker.img} alt="sticker" fill sizes="72px" className="object-contain" unoptimized />
+                                    </div>
                                 </button>
                             ))}
                          </div>

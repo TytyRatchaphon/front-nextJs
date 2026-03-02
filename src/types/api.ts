@@ -1,4 +1,3 @@
-import type { Nullable } from './utils';
 
 /**
  * Generic API Response wrapper

@@ -5,40 +5,25 @@ import Image from 'next/image';
 import { PackCampaignDetail, BookPromotionOption } from '@/types/api';
 import { fetchBookPromotionOptions, buyGroupPromotion } from '@/services/apiServices';
 import { useAuthStore } from '@/stores/authStore';
-import apiClient from '@/services/apiClient';
+import '@/services/apiClient';
 import PackCardBookHorizontal from '@/components/novelCard/PackCardBookHorizontal';
 import PackCardBook from '@/components/novelCard/PackCardBook';
-import { Modal, Button, Spin, message, ConfigProvider, notification } from 'antd';
+import { Modal, Button, Spin, ConfigProvider, notification } from 'antd';
 import { CloseOutlined, CheckCircleFilled, CloseCircleFilled, ArrowLeftOutlined } from '@ant-design/icons';
 import th_TH from 'antd/locale/th_TH';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { useUIStore } from '@/stores/uiStore';
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
 interface PackCampaignProps {
     data: PackCampaignDetail | null;
 }
 
-const decodeToken = (token: string) => {
-    try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(
-            atob(base64)
-                .split('')
-                .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-                .join('')
-        );
-        return JSON.parse(jsonPayload);
-    } catch (e) {
-        return {};
-    }
-};
 
 function PackCampaign({ data }: PackCampaignProps) {
     const { settings } = useWebsiteStore();
-    const { user, updateToken, token, isLoggedIn } = useAuthStore();
+    const { updateToken, token, isLoggedIn } = useAuthStore();
     const openLoginModal = useUIStore((s) => s.openLoginModal);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [loadingOptions, setLoadingOptions] = useState(false);
@@ -63,7 +48,7 @@ function PackCampaign({ data }: PackCampaignProps) {
         try {
             const options = await fetchBookPromotionOptions(bookId);
             setPromotionOptions(options);
-        } catch (error) {
+        } catch {
             notification.error({
                 message: 'เกิดข้อผิดพลาด',
                 description: 'ไม่สามารถโหลดข้อมูลโปรโมชั่นได้',
@@ -336,7 +321,7 @@ function PackCampaign({ data }: PackCampaignProps) {
                         <div className="text-center pt-4 pb-2">
                             <CheckCircleFilled className="text-5xl text-[#00C853] mb-4" />
                             <h3 className="text-xl font-bold mb-2">ชำระเงินสำเร็จ</h3>
-                            <p className="text-gray-600 mb-6">คุณได้รับตอนทั้งหมด <span className="text-red-500 font-bold">"{selectedOption.user.user_chapter_received.toLocaleString()} ตอน"</span> เรียบร้อยแล้ว</p>
+                            <p className="text-gray-600 mb-6">คุณได้รับตอนทั้งหมด <span className="text-red-500 font-bold">&quot;{selectedOption.user.user_chapter_received.toLocaleString()} ตอน&quot;</span> เรียบร้อยแล้ว</p>
 
                             <div className="bg-gray-50 p-3 rounded-lg flex items-center gap-3 text-left mb-6">
                                 <div className="relative w-12 h-16 flex-shrink-0">

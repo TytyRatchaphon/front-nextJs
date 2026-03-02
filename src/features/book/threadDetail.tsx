@@ -3,13 +3,13 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchThreadDetail, deleteThread } from '@/services/apiServices';
-import { Alert, Tag, Modal, Button, message, Tooltip, Dropdown } from 'antd';
+import { Alert, Modal, Button, message } from 'antd';
 import GifLoader from '@/components/utility/GifLoader';
 import ThreadCommentSection from './ThreadCommentSection';
-import { ThreadDetail as ThreadDetailType } from '@/services/apiServices'; 
+import '@/services/apiServices'; 
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
-import { MoreOutlined, DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined } from '@ant-design/icons';
 
 interface ThreadDetailProps {
   topicId: string | number;
@@ -37,7 +37,7 @@ export default function ThreadDetail({ topicId }: ThreadDetailProps) {
         const decoded = JSON.parse(jsonPayload);
         const uid = decoded.user_id || decoded.id || decoded.sub || decoded.userId;
         setCurrentUserId(Number(uid));
-      } catch (error) {
+      } catch {
       }
     }
   }, [token]);
@@ -55,7 +55,7 @@ export default function ThreadDetail({ topicId }: ThreadDetailProps) {
       queryClient.invalidateQueries({ queryKey: ['threads'] });
       router.push('/thread'); // Redirect to thread list
     },
-    onError: (error) => {
+    onError: () => {
         messageApi.error('เกิดข้อผิดพลาดในการลบกระทู้');
     }
   });

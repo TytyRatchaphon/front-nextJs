@@ -18,7 +18,7 @@ declare global {
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
 const LoginApple = () => {
-    const { message, notification } = App.useApp();
+    const { notification } = App.useApp();
     const [loading, setLoading] = useState(false);
     const router = useRouter();
     const { login, updateToken } = useAuthStore();

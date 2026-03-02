@@ -12,8 +12,8 @@ import {
   Upload,
   Modal,
 } from 'antd';
-import type { TabsProps, UploadProps } from 'antd';
-import { UploadOutlined, CheckCircleOutlined, LockOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import type { TabsProps } from 'antd';
+import { UploadOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import axios from 'axios';
 import { isValidPhoneNumber } from 'libphonenumber-js';
@@ -49,7 +49,7 @@ const UserInfoForm = () => {
         const res = await apiClient.get('/category');
         const data = Array.isArray(res.data) ? res.data : (res.data.data || []);
         setCategories(data);
-      } catch (error) {
+      } catch {
       }
     };
     fetchCategories();
@@ -76,7 +76,7 @@ const UserInfoForm = () => {
     }
   }, [user]);
 
-  const handleValuesChange = (changedValues: any, allValues: any) => {
+  const handleValuesChange = (changedValues: any) => {
     if (changedValues.birthday) {
       updateUserProfile('birthday', changedValues.birthday.format('YYYY-MM-DD'));
     }
@@ -116,7 +116,7 @@ const UserInfoForm = () => {
       if (formValues.facebook) updateUserProfile('facebook', formValues.facebook);
       if (formValues.twitter) updateUserProfile('twitter', formValues.twitter);
     }
-  }, [user, form]);
+  }, [user, form, updateUserProfile]);
 
   const initialValues = {
     fullname: userProfileForm.fullname || user?.fullname || '',
@@ -213,7 +213,7 @@ const UserInfoForm = () => {
 
 // --- Component 2: Change Password Form ---
 const ChangePasswordForm = () => {
-  const { message, notification } = App.useApp();
+  const { notification } = App.useApp();
   const { user, token } = useAuthStore();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -295,7 +295,7 @@ const ChangePasswordForm = () => {
   );
 }
 
-const onChange = (key: string) => {
+const onChange = () => {
 };
 
 // --- Component 3: Profile Picture Tab ---
@@ -304,7 +304,7 @@ interface ProfilePictureTabProps {
 }
 
 const ProfilePictureTab = ({ onProfileFileChange }: ProfilePictureTabProps) => {
-  const { message, notification } = App.useApp();
+  const { notification } = App.useApp();
   const { token, user } = useAuthStore();
   const { updateUserProfile } = useFormStore();
 
@@ -357,7 +357,7 @@ const ProfilePictureTab = ({ onProfileFileChange }: ProfilePictureTabProps) => {
              setSelectedFrameInModal(null);
         }
       }
-    } catch (error: any) {
+    } catch {
       notification.error({
         message: 'เกิดข้อผิดพลาด',
         description: 'ไม่สามารถโหลดข้อมูลกรอบได้',
@@ -562,7 +562,7 @@ const ProfilePictureTab = ({ onProfileFileChange }: ProfilePictureTabProps) => {
 
 // --- Component 4: Combined User Info Tab (Updated Token Logic) ---
 const UserInfoTab = () => {
-  const { message, notification } = App.useApp();
+  const { notification } = App.useApp();
   const { userProfileForm } = useFormStore();
   const { token, user, updateToken } = useAuthStore();
   const [saving, setSaving] = useState(false);
@@ -610,9 +610,7 @@ const UserInfoTab = () => {
         frameIdToSend = frameIdToSend ?? (user as any)?.frame_id ?? null;
       }
 
-      const hasFiles = !!profileFile || !!bgFile;
-      let payload: any;
-      let headers: any = { 'Authorization': token };
+      const headers: any = { 'Authorization': token };
 
       const formData = new FormData();
       // Helper for appending
@@ -677,9 +675,7 @@ const UserInfoTab = () => {
       if (bgFile) formData.append('bgimg', bgFile);
 
       // Always use FormData, as backend seems to ignore/fail on JSON
-      payload = formData;
-
-      const response = await axios.post('/api/save_profile', payload, { headers });
+      const response = await axios.post('/api/save_profile', formData, { headers });
 
       const resData = response.data;
 
@@ -823,7 +819,7 @@ const items: TabsProps['items'] = [
 ];
 
 function Page() {
-  const { message, notification } = App.useApp();
+  const { notification } = App.useApp();
   const { user, isLoggedIn, hasMounted, setMounted } = useAuthStore();
   const router = useRouter();
 
@@ -841,7 +837,7 @@ function Page() {
       });
       router.push('/');
     }
-  }, [hasMounted, isLoggedIn, user, router, message]);
+  }, [hasMounted, isLoggedIn, user, router, notification]);
 
   if (!hasMounted || !isLoggedIn || !user) {
     return (

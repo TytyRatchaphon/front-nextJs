@@ -4,9 +4,9 @@ import React from 'react';
 import Link from "next/link";
 import Image from "next/image";
 import { useWebsiteStore } from '@/stores/websiteStore';
-import { Eye, Crown, Heart, List } from 'lucide-react';
+import { Eye, Heart, List } from 'lucide-react';
 import BookSwiper from './BookSwiper';
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 
 interface TopRankingProps {
   rankingGroup: any;

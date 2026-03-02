@@ -2,7 +2,7 @@
 
 import React from 'react'
 import Image from 'next/image'
-import { Progress, Button, App, notification } from 'antd'
+import { Progress, Button, notification } from 'antd';
 import { GiftOutlined } from '@ant-design/icons'
 import apiClient from '@/services/apiClient'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -23,8 +23,7 @@ export default function UserTopupCoin({
     const token = useAuthStore((state) => state.token) // ✅ Use selector instead of .getState()
 
     // 1. Fetch Functions
-    const fetchEventSummary = async (overrideToken?: string) => {
-        const currentToken = overrideToken || useAuthStore.getState().token
+    const fetchEventSummary = async () => {
         const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? ''
         const url = `${base}/user/event`
         const res = await apiClient.get(url)
@@ -58,7 +57,7 @@ export default function UserTopupCoin({
 
     const { mutate: handleClaim, isPending: isClaiming } = useMutation({
         mutationFn: claimRewardApi,
-        onSuccess: (responseData) => {
+        onSuccess: () => {
             notification.success({
                 message: 'รับรางวัลสำเร็จ!',
                 description: 'รับรางวัลเรียบร้อยแล้ว',
@@ -95,7 +94,7 @@ export default function UserTopupCoin({
     const leftLabel = 'เติมไปแล้ว'
     const displayLeftAmount = `${displayUsed} coin`
     const displayRightAmount = `${apiGoal} coin`
-    const avatar = '/images/money-bag.png' // Using a generic icon or reused icon
+ // Using a generic icon or reused icon
 
     if (!apiCoin) return null;
 

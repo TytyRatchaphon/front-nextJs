@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { useWebsiteStore } from '@/stores/websiteStore';
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 
 interface FreeCoinPillProps {
     amount: number;

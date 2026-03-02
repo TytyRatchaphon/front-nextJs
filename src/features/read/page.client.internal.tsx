@@ -17,7 +17,7 @@ import { fetchBookDetail } from "@/services/apiServices";
 import apiClient from '@/services/apiClient';
 import { useAuthStore, AuthState } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 
 // Hooks
 import { useContentProtection } from "@/hooks/reader/useContentProtection";
@@ -70,7 +70,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   const openLoginModal = useUIStore((s: any) => s.openLoginModal);
   const updateToken = useAuthStore((s: AuthState) => s.updateToken);
   const queryClient = useQueryClient();
-  const [messageApi, messageContextHolder] = message.useMessage();
+  const [, messageContextHolder] = message.useMessage();
 
   // --- 1. Fetch Data ---
   const {
@@ -85,10 +85,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     staleTime: 10 * 60 * 1000,
   });
 
-  const {
-    data: bookDetail,
-    isLoading: isLoadingBookDetail,
-  } = useQuery({
+  const { data: bookDetail } = useQuery({
     queryKey: ["bookDetail", bookId],
     queryFn: () => fetchBookDetail(bookId),
     enabled: !!bookId,
@@ -120,14 +117,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     fontFamilies, bgColors
   } = useReadingTheme(contentRef);
 
-  const {
-    episodesData,
-    allEpisodes,
-    displayTitle,
-    prevEpId,
-    nextEpId,
-    isListLoading
-  } = useEpisodeNavigation(bookId, episodeId, episode);
+  const { episodesData, displayTitle, prevEpId, nextEpId } = useEpisodeNavigation(bookId, episodeId, episode);
 
   // --- 2.5 Activity Logging ---
   const { log } = useLogger();
@@ -173,8 +163,8 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
         sessionStorage.setItem(reloadKey, "1");
         router.replace(window.location.pathname + window.location.search);
       }
-    } catch (err) { }
-  }, []);
+    } catch { }
+  }, [router]);
 
   // Effect to Auto-Expand Group containing current episode
   useEffect(() => {
@@ -199,7 +189,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
         if (container && activeItem) {
           const containerHeight = container.clientHeight;
           const itemHeight = activeItem.clientHeight;
-          const itemTop = activeItem.offsetTop; 
+ 
           const containerRect = container.getBoundingClientRect();
           const itemRect = activeItem.getBoundingClientRect();
           const relativeTop = itemRect.top - containerRect.top;
@@ -303,7 +293,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
           if (method === 'coin') finalCoin = Math.max(0, finalCoin - (Number(priceToDeduct) || 0));
           else if (method === 'freecoin') finalFreeCoin = Math.max(0, finalFreeCoin - (Number(priceToDeduct) || 0));
 
-          let updatedUser = { ...currentUser, coin: finalCoin, freecoin: finalFreeCoin };
+          const updatedUser = { ...currentUser, coin: finalCoin, freecoin: finalFreeCoin };
 
           // If backend returns token, use it to update (it will handle decoding)
           const maybeToken = res?.data?.data?.token ?? res?.data?.token;
@@ -326,7 +316,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                 placement: 'topRight',
             });
       }
-    } catch (err) {
+    } catch {
       notification.error({
                 message: 'ซื้อไม่สำเร็จ',
                 description: "ยอดเหรียญไม่เพียงพอ",

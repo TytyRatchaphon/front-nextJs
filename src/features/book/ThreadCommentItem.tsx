@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import { CommentThreadData } from "@/types/api";
 import { postThreadReply, reportThreadComment, reportThreadReply, deleteThreadReply, deleteThreadComment } from "@/services/apiServices"; // We need to export this
-import { Button, Input, notification, Popover, Modal } from "antd";
+import { Button, Input, notification, Popover } from "antd";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
 
@@ -45,9 +45,6 @@ export default function ThreadCommentItem({
     minute: "2-digit"
   });
 
-  const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-  return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
-}
 
   const handleReplySubmit = async () => {
     if (!token) {

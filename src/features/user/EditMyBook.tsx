@@ -28,7 +28,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 	const router = useRouter()
 	const [book, setBook] = useState<Partial<BookDetail> | null>(initialBook || null)
 	const [, setDataSource] = useState<'prop' | 'session' | 'api' | 'none'>(initialBook ? 'prop' : 'none')
-	const [debugOpen, setDebugOpen] = useState(false)
+	useState(false);
 
 	// Antd message api (avoid static message warning in App Router)
 	const [messageApi, messageContextHolder] = message.useMessage()
@@ -38,7 +38,8 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 	// runtime debug helpers
 	const log = (...args: any[]) => {
 		try {
-		} catch (e) {
+			void args
+		} catch {
 			// ignore
 		}
 	}
@@ -152,7 +153,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 			if (existing.some((g: any) => String(g.name ?? g.title ?? '').toLowerCase().trim() === lower)) {
 				return 'ชื่อนี้มีอยู่แล้ว'
 			}
-		} catch (e) {
+		} catch {
 			// ignore
 		}
 		return null
@@ -359,7 +360,6 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 		} catch (err: any) {
 			// Show more helpful error (status + message if available)
 			const status = err?.response?.status
-			const serverMsg = err?.response?.data?.message ?? err?.response?.data ?? err?.message
 			messageApi.error(status ? `ไม่สามารถลบตอนได้ (${status})` : 'ไม่สามารถลบตอนได้')
 			// also log to console the server message to help debugging
 		} finally {
@@ -484,7 +484,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 					// deleteGroupEpisode accepts string id; service will normalize as needed
 					await deleteGroupEpisode(eid, selectedGroupId ?? undefined)
 					success += 1
-				} catch (e) {
+				} catch {
 					failed += 1
 				}
 			})
@@ -578,7 +578,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 							if (!gid) return []
 							const resp: any = await fetchGroupEpisodes(String(gid))
 							return resp?.episodes ?? resp?.list ?? []
-						} catch (e) {
+						} catch {
 							return []
 						}
 					}))
@@ -593,7 +593,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 
 				// fallback to display total_eps
 				if (mounted) setComputedVisibleEps(Number((display as any)?.total_eps ?? 0))
-			} catch (e) {
+			} catch {
 				if (mounted) setComputedVisibleEps(Number((display as any)?.total_eps ?? 0))
 			}
 		}
@@ -602,19 +602,6 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 			mounted = false
 		}
 	}, [groupsQuery.data, display])
-
-	// Ensure Image src is valid for next/image: must start with '/' or 'http'
-	const safeImageSrc = (maybe: any) => {
-		try {
-			if (!maybe) return '/images/ejb.png'
-			if (typeof maybe !== 'string') return '/images/ejb.png'
-			if (maybe.startsWith('/') || maybe.startsWith('http')) return maybe
-			// if it's a bare filename or invalid, fallback to project image
-			return '/images/ejb.png'
-		} catch (e) {
-			return '/images/ejb.png'
-		}
-	}
 
 	// Canonical book name getter - handle different backend shapes
 	const getBookName = (d: any) => {
@@ -642,28 +629,6 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 			<GifLoader />
 		)
 	}
-
-
-
-	// Debug panel UI
-	const debugData = {
-		initialBook,
-		bookId,
-		sessionSnapshot: (() => {
-			try {
-				if (typeof window !== 'undefined' && bookId) {
-					return sessionStorage.getItem(`editBook_${bookId}`)
-				}
-			} catch (e) {
-				return String(e)
-			}
-			return null
-		})(),
-		fetchedBook: book,
-		display,
-		computedVisibleEps,
-	}
-
 	return (
 		<div className="max-w-5xl mx-auto py-10 px-6">
 			{messageContextHolder}
@@ -1365,7 +1330,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 							return (
 								<div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-200">
 									<p>ยังไม่มีโปรโมชั่น</p>
-									<p className="text-xs mt-1">คลิก "เพิ่มโปรโมชั่น" เพื่อเริ่มสร้างโปรโมชั่นใหม่</p>
+									<p className="text-xs mt-1">คลิก &quot;เพิ่มโปรโมชั่น&quot; เพื่อเริ่มสร้างโปรโมชั่นใหม่</p>
 								</div>
 							)
 						}

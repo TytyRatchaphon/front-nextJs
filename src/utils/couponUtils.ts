@@ -38,7 +38,7 @@ export const processCoupons = (data: any[]): CouponUI[] => {
             try {
                 let config: any = {};
                 if (typeof reward.rewardConfig === 'string') {
-                    try { config = JSON.parse(reward.rewardConfig); } catch (e) {}
+                    try { config = JSON.parse(reward.rewardConfig); } catch {}
                 } else if (typeof reward.rewardConfig === 'object') {
                     config = reward.rewardConfig;
                 }
@@ -60,7 +60,7 @@ export const processCoupons = (data: any[]): CouponUI[] => {
                     discountAmount = `${config?.amount || config?.coin || 0}${config?.type === 'PERCENT' ? '%' : '฿'}`;
                     type = 'discount';
                 }
-            } catch (e) {
+            } catch {
                 discountAmount = 'N/A';
             }
         }

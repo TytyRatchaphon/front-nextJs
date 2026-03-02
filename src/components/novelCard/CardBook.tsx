@@ -1,4 +1,4 @@
-import { write } from 'fs';
+
 import Image from 'next/image';
 import Link from 'next/link'
 import React from 'react'
@@ -6,7 +6,7 @@ import { postBookClick } from '@/services/apiServices';
 import FlashSaleSVG from './FlashSaleSvg';
 import SaleGroupSVG from './SaleGroupSvg';
 import { UniversalBook } from '../../types/api';
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 
 
 
@@ -20,14 +20,6 @@ interface CardBookProps {
 function CardBook({ book }: CardBookProps) {
 
   const [imgError, setImgError] = React.useState(false);
-
-  // Client-side debug: log whether shelveCount is present when the card mounts/updates
-  React.useEffect(() => {
-    try {
-    } catch (e) {
-      // ignore
-    }
-  }, [book.book_id, book.bookID, book.shelveCount, book['writer.writer_name'], book.writer_name, book.author]);
 
   const formatNumber = (num: number) => {
     if (num >= 1000 && num <= 999999) {

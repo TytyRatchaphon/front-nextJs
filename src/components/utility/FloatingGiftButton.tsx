@@ -7,7 +7,7 @@ import { useWebsiteStore } from '@/stores/websiteStore';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
 import Image from 'next/image';
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 
 
 const fetchWeeklyLogin = async (token?: string | null) => {

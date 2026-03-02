@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock FingerprintJS
-const mockGet = vi.fn()
+vi.fn();
 const mockLoad = vi.fn()
 
 vi.mock('@fingerprintjs/fingerprintjs', () => ({

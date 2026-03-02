@@ -29,7 +29,7 @@ export function useReadingProgress(bookId: string, episodeId: string, user: any)
                     }, 500);
                 }
                 isInitialSyncDone.current = true;
-            } catch (err) { }
+            } catch { }
         };
 
         if (episodeId) {

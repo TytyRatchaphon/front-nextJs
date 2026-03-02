@@ -40,7 +40,7 @@ interface SearchBarProps {
 function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [sortBy, setSortBy] = useState("date_at");
+  const [sortBy] = useState("date_at");
   const [order] = useState("DESC");
 
   // Initialize from parent props if available
@@ -167,7 +167,7 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
         } else {
           setCategories([]);
         }
-      } catch (error) {
+      } catch {
         setCategories([]);
       } finally {
         setIsLoadingCategories(false);
@@ -212,6 +212,7 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
 
   const handleCategoryChange = useCallback(
     (cateId: number, cateName: string) => {
+      void cateName;
       setSelectedFilters((prev) => {
         const currentList = [...prev.categories]; // Clone array
         const index = currentList.indexOf(cateId);

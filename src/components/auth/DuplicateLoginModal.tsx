@@ -4,7 +4,7 @@ import { Modal, Button } from 'antd';
 import { useUIStore } from '@/stores/uiStore';
 import { useAuthStore } from '@/stores/authStore';
 import { WarningOutlined } from '@ant-design/icons';
-import Image from 'next/image';
+import 'next/image';
 
 export default function DuplicateLoginModal() {
     const { isDuplicateLoginModalOpen, closeDuplicateLoginModal } = useUIStore();

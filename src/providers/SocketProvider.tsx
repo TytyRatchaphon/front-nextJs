@@ -106,12 +106,12 @@ export default function SocketProvider({
       }
     });
 
-    socketInstance.on('connect_error', (err) => {
+    socketInstance.on('connect_error', () => {
         // console.log('Socket connect error:', err.message);
     });
 
     // Handle force_refresh event
-    socketInstance.on('force_refresh', async (data: any) => {
+    socketInstance.on('force_refresh', async () => {
         // console.log("📢 Received force_refresh:", data);
         try {
             let currentToken = useAuthStore.getState().token;
@@ -140,7 +140,7 @@ export default function SocketProvider({
     return () => {
       socketInstance.disconnect();
     };
-  }, [authToken, resolvedUserId, fullname]);
+  }, [authToken, resolvedUserId, fullname, user]);
 
   // Handle visibility separate from socket creation
   useEffect(() => {

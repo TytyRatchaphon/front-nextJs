@@ -7,7 +7,7 @@ interface Props {
 }
 
 export default async function TopicRedirectPage({ params }: Props) {
-    const { slug } = await params;
+    await params;
 
     // Always redirect to /thread regardless of slugs
     redirect('/thread');

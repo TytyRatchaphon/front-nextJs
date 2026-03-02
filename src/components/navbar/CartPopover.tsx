@@ -1,16 +1,15 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchCartItems, updateCartItem, removeCartItem } from '@/services/cartService';
-import { Button, Empty, message, Collapse, App } from 'antd';
+import { Button, Collapse, App } from 'antd';
 import { ShoppingCartOutlined, BookOutlined, DeleteOutlined, MinusOutlined, PlusOutlined, ShopOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import Link from 'next/link';
 import GifLoader from '@/components/utility/GifLoader';
-import { CartItem, CartStore } from '@/interfaces/cart.interface';
+import { CartItem } from '@/interfaces/cart.interface';
 import { useWebsiteStore } from '@/stores/websiteStore';
-import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
+import { CheckCircleOutlined } from '@ant-design/icons';
 
-const { Panel } = Collapse;
 
 const CartPopover: React.FC = () => {
     const { settings } = useWebsiteStore();

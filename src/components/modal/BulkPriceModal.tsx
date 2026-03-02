@@ -50,7 +50,7 @@ export default function BulkPriceModal({
                 await updateEpisodesPrice(epIds, price)
                 msgApi.success('แก้ไขราคาสำเร็จ')
                 onClose()
-                onUpdated && onUpdated()
+                if (onUpdated) onUpdated();
               } catch (e: any) {
                 msgApi.error(e?.response?.data?.message ?? 'ไม่สามารถแก้ไขราคาได้')
               } finally {

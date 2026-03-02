@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { Alert, Rate, Input, Button, Select, Popover, Tabs, Pagination, App, Empty } from "antd";
+import React, { useState, useEffect } from "react";
+import { Alert, Button, Select, Popover, Tabs, Pagination, App, Empty } from "antd";
 import { fetchBookReviews, fetchStickers, postBookReview, fetchBookComments, postCommentNotification, postReviewNotification } from "@/services/apiServices";
 import { CommentData, CommentEpData, StickerSet } from "@/types/api";
 import CommentItem from "./CommentItem";
@@ -38,7 +38,7 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
         const decoded = JSON.parse(jsonPayload);
         const uid = decoded.user_id || decoded.id || decoded.sub || decoded.userId;
         setCurrentUserId(Number(uid));
-      } catch (error) {
+      } catch {
       }
     }
   }, [token]);
@@ -63,7 +63,7 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
   const lastCursorPosition = React.useRef<Range | null>(null);
 
   // Fetch Reviews - Server Side Pagination
-  const loadReviews = async () => {
+  const loadReviews = React.useCallback(async () => {
     try {
       setLoading(true);
       let data;
@@ -99,16 +99,16 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
         setComments([]);
         setTotalItems(0);
       }
-    } catch (err) {
+    } catch {
       setError("ไม่สามารถโหลดความคิดเห็นได้");
     } finally {
       setLoading(false);
     }
-  };
+  }, [mode, bookId, currentPage, pageSize, sortOrder]);
 
   useEffect(() => {
     if (bookId) loadReviews();
-  }, [bookId, mode, currentPage, pageSize, sortOrder]);
+  }, [bookId, loadReviews]);
 
   // Fetch Stickers
   useEffect(() => {
@@ -117,7 +117,7 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
         setStickerLoading(true);
         const data = await fetchStickers();
         setStickers(data);
-      } catch (error) {
+      } catch {
       } finally {
         setStickerLoading(false);
       }
@@ -218,7 +218,9 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
                       onClick={() => handleAddSticker(sticker.img)}
                       className="hover:bg-gray-100 p-1 rounded transition-colors"
                     >
-                      <img src={sticker.img} alt="sticker" className="w-full h-auto object-contain" />
+                      <div className="relative w-full aspect-square">
+                        <Image src={sticker.img} alt="sticker" fill sizes="72px" className="object-contain" unoptimized />
+                      </div>
                     </button>
                   ))}
                 </div>

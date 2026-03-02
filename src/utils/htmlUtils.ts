@@ -50,7 +50,7 @@ export const modifiedHtml = (detailData: string, currentFont: string, userData: 
 
     if (!detailData) return '';
 
-    let newDetail = detailData
+    const newDetail = detailData
             .replace(/<(\/)?font[^>]*>/g, '')
             .replace(/font-size:\d+pt;/g, '')
             .replace(/font-family:.+?;/g, '')

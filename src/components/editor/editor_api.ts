@@ -1,11 +1,10 @@
 import { AxiosProgressEvent } from "axios";
 import axios from "axios"; // Use direct axios to avoid interceptor/default header issues
 import Cookies from "js-cookie";
-import { useUIStore } from "@/stores/uiStore";
+import "@/stores/uiStore";
 
 // 1. ประกาศตัวแปร Config ในไฟล์นี้เลย
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-const ACCESS_TOKEN = process.env.NEXT_PUBLIC_ACCESS_TOKEN;
 
 // 2. สร้างฟังก์ชันสร้าง Headers ในไฟล์นี้ (ใช้ภายใน)
 const getHeaders = () => {

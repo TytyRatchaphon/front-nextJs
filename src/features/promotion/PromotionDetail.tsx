@@ -50,7 +50,7 @@ const PromotionBlockTypeB = ({ block }: { block: PromotingBlock }) => {
           }}
           className="h-full rounded-2xl"
         >
-          {randomBigBooks.map((book: PromotingBook, index: number) => {
+          {randomBigBooks.map((book: PromotingBook) => {
              const bigImgSource = book?.img;
              const bigImageUrl = bigImgSource
                ? (typeof bigImgSource === 'string' && bigImgSource.startsWith('https')
@@ -268,11 +268,14 @@ function PromotionDetail() {
     <div className="min-h-screen bg-[#FDFDFD] pb-20">
       {/* Main Banner */}
       {promotionData.banner && (
-        <div className="w-full max-w-[1152px] mx-auto mt-6 rounded-2xl overflow-hidden shadow-sm">
-          <img
+        <div className="relative w-full max-w-[1152px] mx-auto mt-6 rounded-2xl overflow-hidden shadow-sm h-[200px] md:h-[400px]">
+          <Image
             src={promotionData.banner}
             alt={promotionData.name}
-            className="w-full h-[200px] md:h-[400px] object-fill"
+            fill
+            sizes="100vw"
+            className="object-fill"
+            unoptimized
           />
         </div>
       )}
@@ -288,11 +291,14 @@ function PromotionDetail() {
           <div key={block.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             {/* Block Banner */}
             {block.banner && (
-              <div className="w-full mb-0">
-                <img
+              <div className="relative w-full mb-0 h-[150px] md:h-[250px]">
+                <Image
                   src={block.banner}
                   alt={`Block Banner ${block.id}`}
-                  className="w-full h-[150px] md:h-[250px] object-fill"
+                  fill
+                  sizes="100vw"
+                  className="object-fill"
+                  unoptimized
                 />
               </div>
             )}

@@ -6,7 +6,7 @@ import { Button, Card, Tag, Typography, List } from 'antd';
 import { WifiOutlined, DisconnectOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface LogItem {
   timestamp: string;

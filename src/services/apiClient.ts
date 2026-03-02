@@ -23,7 +23,6 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use( 
     async (config) => {
         // Log method/url and request body (headers may be augmented below)
-        const fullUrl = `${config.baseURL || ''}${config.url}`;
 
 
         // เช็คว่าอยู่ใน browser environment

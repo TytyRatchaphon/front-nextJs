@@ -2,7 +2,7 @@ import React from 'react'
 import UserProfileEvent from '@/components/event/UserProfileEvent'
 import UserUseCoin from '@/components/event/UserUseCoin'
 import SevenDaysLoginWrapper from '@/components/event/SevenDaysLoginWrapper'
-import AllEvent from '@/components/event/AllEvent'
+import '@/components/event/AllEvent';
 import UserTopupCoin from '@/components/event/UserTopupCoin'
 import AuthGuard from '@/components/auth/AuthGuard'
 

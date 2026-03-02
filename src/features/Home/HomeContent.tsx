@@ -4,11 +4,11 @@ import React from 'react';
 import DailyPopup from "@/components/utility/DailyPopup";
 import { BackToTopButton } from "@/components/utility/BackToTopButton";
 import FloatingGiftButton from "@/components/utility/FloatingGiftButton";
-import Link from "next/link";
+import "next/link";
 import Banner from "@/components/home/Banner";
 import DailyCheckinModal from "@/components/home/DailyCheckinModal";
 import BannerButtons from "@/components/home/BannerButtons";
-import Image from "next/image";
+import "next/image";
 import BookGroups from "@/components/home/BookGroups";
 import TopRanking from "@/components/home/TopRanking";
 import UpdateBookCard from "@/components/novelCard/UpdateBookCard";
@@ -35,28 +35,23 @@ export default function HomeContent({ initialData }: HomeContentProps) {
     initialData: initialData,
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <GifLoader />
-      </div>
-    );
-  }
-
   const { data: bookUpdates, isLoading: isBookUpdatesLoading, error: bookUpdatesError } = useQuery({
     queryKey: ['bookUpdates'],
     queryFn: fetchBookUpdates,
+    enabled: !isLoading,
     staleTime: 10 * 60 * 1000, // 10 minutes cache
   });
 
   const { data: rankingCategories, isLoading: isRankingCategoriesLoading, error: rankingCategoriesError } = useQuery({
     queryKey: ['rankingCategories'],
     queryFn: fetchRankingCategories,
+    enabled: !isLoading,
   });
 
   const { data: continueBooks, isLoading: isContinueBooksLoading, error: continueBooksError } = useQuery({
     queryKey: ['continueBooks'],
     queryFn: () => fetchUserShelveContinue(10), // Limit to 10 as per request
+    enabled: !isLoading,
     select: (data: any) => data?.books ?? [],
   });
 
@@ -79,6 +74,14 @@ export default function HomeContent({ initialData }: HomeContentProps) {
       }
     });
   }, [homeDataError, bookUpdatesError, rankingCategoriesError, continueBooksError]);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <GifLoader />
+      </div>
+    );
+  }
 
   const slides = homeData?.data?.slides || [];
   const groupBookHome = (homeData?.data as any)?.groupBookHome || [];
@@ -229,7 +232,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
                         title: book.name,
                         author: book.writer_name,
                         cover: book.img_full || book.img,
-                        chapters: book.BookTranEps?.map((ep, index) => ({
+                        chapters: book.BookTranEps?.map((ep) => ({
                           id: ep.ep_id,
                           bookId: book.book_id,
                           title: ep.name,

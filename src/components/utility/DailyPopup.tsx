@@ -66,7 +66,7 @@ const DailyPromoPopup: React.FC = () => {
              // No popup data found
              setDailyPopupProcessComplete(true);
         }
-      } catch (error) {
+      } catch {
         // Error fetching
         setDailyPopupProcessComplete(true);
       }

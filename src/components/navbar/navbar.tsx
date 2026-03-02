@@ -2,23 +2,23 @@
 
 import NovelMenu from './NovelMenu';
 import CartPopover from './CartPopover';
-import { Popover, App, Empty, Drawer } from 'antd';
+import { Popover, App, Drawer } from 'antd';
 import LoginButtonHeader from './LoginButtonHeader';
-import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import React, { useEffect } from 'react';
 import Image from 'next/image';
 import NotificationList from './NotificationList';
 import { useSocket } from '@/providers/SocketProvider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchRecentNotifications, fetchPromotingGroups, fetchActiveTypes, fetchActiveCategories } from '@/services/apiServices';
-import { fetchRankProfile, RankProfileResponse } from '@/services/api/userApi';
+import { fetchRankProfile } from '@/services/api/userApi';
 import { fetchCartItems } from '@/services/cartService';
 import { useAuthStore } from '@/stores/authStore';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { useLineLogin } from '@/hooks/useLineLogin';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import NavIcon from '@/assets/images/icon.png';
+import '@/assets/images/icon.png';
 import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill';
 import SmartAppBanner from '@/components/utility/SmartAppBanner';
@@ -127,7 +127,7 @@ function Navbar() {
       });
     };
 
-    const handleReadNotification = (data: any) => {
+    const handleReadNotification = () => {
       queryClient.invalidateQueries({ queryKey: ['recentNotifications'] });
     };
 
@@ -170,22 +170,13 @@ function Navbar() {
   // Initialize LIFF (without auto login)
   useEffect(() => {
     initLIFF();
-  }, []);
+  }, [initLIFF]);
 
   // Removed redundant manual token decoding - useAuthStore handles this and provides 'user' object
 
 
   const isActive = (path: string) => pathname === path;
 
-  const getPageTitle = () => {
-    if (pathname === '/') return 'หน้าหลัก';
-    if (pathname.startsWith('/cat')) return 'นิยาย';
-    if (pathname.startsWith('/writer')) return 'นักเขียน';
-    if (pathname.startsWith('/ranking')) return 'จัดอันดับ';
-    if (pathname.startsWith('/article')) return 'บทความ';
-    // if (pathname.startsWith('/campaign')) return 'แคมเปญ';
-    return 'หน้าหลัก';
-  };
 
   const getLinkClasses = (path: string) => {
     if (isActive(path)) {

@@ -4,6 +4,7 @@ import { Alert, Button, Pagination, App, Empty, Popover, Tabs } from "antd";
 import { fetchEpisodeComments, postEpisodeComment, fetchStickers, postCommentNotification } from "@/services/apiServices";
 import { CommentEpData, StickerSet } from "@/types/api";
 import CommentItem from "./CommentItem";
+import Image from "next/image";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
 import GifLoader from '@/components/utility/GifLoader';
@@ -83,7 +84,7 @@ export default function EpisodeCommentSection({ episodeId, theme }: EpisodeComme
                 const decoded = JSON.parse(jsonPayload);
                 const uid = decoded.user_id || decoded.id || decoded.sub || decoded.userId;
                 setCurrentUserId(Number(uid));
-            } catch (error) {
+            } catch {
             }
         }
     }, [token]);
@@ -106,7 +107,7 @@ export default function EpisodeCommentSection({ episodeId, theme }: EpisodeComme
     const lastCursorPosition = React.useRef<Range | null>(null);
 
     // Load Comments
-    const loadComments = async () => {
+    const loadComments = React.useCallback(async () => {
         try {
             setLoading(true);
             const ALL_LIMIT = 10000;
@@ -119,16 +120,16 @@ export default function EpisodeCommentSection({ episodeId, theme }: EpisodeComme
                 setComments([]);
                 setTotalItems(0);
             }
-        } catch (err) {
+        } catch {
             setError("ไม่สามารถโหลดความคิดเห็นได้");
         } finally {
             setLoading(false);
         }
-    };
+    }, [episodeId]);
 
     useEffect(() => {
         if (episodeId) loadComments();
-    }, [episodeId]);
+    }, [episodeId, loadComments]);
 
     // Fetch Stickers
     useEffect(() => {
@@ -137,7 +138,7 @@ export default function EpisodeCommentSection({ episodeId, theme }: EpisodeComme
                 setStickerLoading(true);
                 const data = await fetchStickers();
                 setStickers(data);
-            } catch (error) {
+            } catch {
             } finally {
                 setStickerLoading(false);
             }
@@ -228,7 +229,9 @@ export default function EpisodeCommentSection({ episodeId, theme }: EpisodeComme
                                         onClick={() => handleAddSticker(sticker.img)}
                                         className="hover:bg-gray-100 p-1 rounded transition-colors"
                                     >
-                                        <img src={sticker.img} alt="sticker" className="w-full h-auto object-contain" />
+                                        <div className="relative w-full aspect-square">
+                                            <Image src={sticker.img} alt="sticker" fill sizes="72px" className="object-contain" unoptimized />
+                                        </div>
                                     </button>
                                 ))}
                             </div>

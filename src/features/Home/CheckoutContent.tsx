@@ -19,7 +19,7 @@ const { Title, Text } = Typography;
 
 const AddressForm = ({ user, token, onSuccess }: { user: any, token: string | null, onSuccess: () => void }) => {
     const [form] = Form.useForm();
-    const { message, notification } = App.useApp();
+    const { notification } = App.useApp();
     const [loading, setLoading] = useState(false);
     const { updateUserBalance } = useAuthStore();
 
@@ -119,7 +119,7 @@ export default function CheckoutContent() {
     const { settings } = useWebsiteStore();
     const router = useRouter();
     const queryClient = useQueryClient();
-    const { message, modal, notification } = App.useApp();
+    const { notification } = App.useApp();
     const { user, token, updateToken } = useAuthStore();
     const [isProcessing, setIsProcessing] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
@@ -405,7 +405,7 @@ export default function CheckoutContent() {
             </div>
 
             <div className="mb-8">
-                <Steps current={currentStep} items={steps.map(({ id, ...rest }) => rest)} />
+                <Steps current={currentStep} items={steps.map(({ ...rest }) => rest)} />
             </div>
 
             <div className="mb-8">

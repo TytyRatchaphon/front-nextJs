@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Form, Input, Button, App, notification    } from 'antd';
 import { useRouter } from 'next/navigation';
 import apiClient from '@/services/apiClient';
-import { useAuthStore } from '@/stores/authStore';
+import '@/stores/authStore';
 import { CloseCircleOutlined } from '@ant-design/icons';
 
 interface ResetPasswordFieldType {
@@ -13,7 +13,7 @@ interface ResetPasswordFieldType {
 }
 
 export default function ResetPasswordPage({ params }: { params: { token: string } }) {
-  const { message, modal } = App.useApp();
+  const { modal } = App.useApp();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
@@ -45,7 +45,7 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
         newPassword: values.password,
       };
       
-      const response = await apiClient.post(
+      await apiClient.post(
         '/reset-password',
         payload
       );

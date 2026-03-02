@@ -13,11 +13,6 @@ export const useLogger = () => {
     const pageSessionIdRef = useRef<string | null>(null);
 
     // Generic UUID generator fallback
-    const uuidv4 = () => {
-        return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c =>
-            (+c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> +c / 4).toString(16)
-        );
-    }
 
     // Initialize or retrieve Application Session ID (persists across tabs/reloads until cleared manually or expires logic if added)
     const getAppSessionId = () => {
@@ -30,7 +25,8 @@ export const useLogger = () => {
             } else {
                  // Simple fallback if crypto.randomUUID is missing (e.g. older browsers / insecure context)
                 sid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                    const r = Math.random() * 16 | 0;
+                    const v = c === 'x' ? r : (r & 0x3 | 0x8);
                     return v.toString(16);
                 });
             }
@@ -46,7 +42,8 @@ export const useLogger = () => {
                 pageSessionIdRef.current = crypto.randomUUID();
             } else {
                 pageSessionIdRef.current = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                    const r = Math.random() * 16 | 0;
+                    const v = c === 'x' ? r : (r & 0x3 | 0x8);
                     return v.toString(16);
                 });
             }

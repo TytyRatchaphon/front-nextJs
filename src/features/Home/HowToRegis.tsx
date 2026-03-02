@@ -2,7 +2,7 @@
 
 import React from 'react'
 import Image from 'next/image'
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 
 
 function HowToRegis() {
@@ -69,13 +69,13 @@ function HowToRegis() {
 
         {/* Section 4: Forgot Password */}
         <section className="flex flex-col gap-4">
-          <h3 className="text-lg lg:text-xl font-bold underline decoration-1 underline-offset-4">กรณี ' ลืมรหัสผ่าน '</h3>
+          <h3 className="text-lg lg:text-xl font-bold underline decoration-1 underline-offset-4">กรณี &apos; ลืมรหัสผ่าน &apos;</h3>
 
           {/* Image Placeholder */}
           <Image src="https://img.enjoybook.co/img/smn/EJB2024Ib4xAYUoyEy2bTBAG1ki1206104903.png" alt="Forgot Password" width={600} height={600} unoptimized />
 
           <p className="text-base lg:text-lg leading-relaxed">
-            ในหน้าต่างเข้าสู่ระบบ สามารถกดปุ่ม 'ลืมรหัสผ่าน' ที่อยู่ด้านล่างได้
+            ในหน้าต่างเข้าสู่ระบบ สามารถกดปุ่ม &apos;ลืมรหัสผ่าน&apos; ที่อยู่ด้านล่างได้
             <br />
             โดยระบบจะให้กรอกอีเมลที่ใช้สมัคร หลังจากนั้นระบบจะส่งขั้นตอน
             <br />

@@ -59,7 +59,7 @@ export const fetchWriterCheck = async (): Promise<WriterCheckResponse | null> =>
   try {
     const response = await apiClient.get<{ code: number, status: string, message: string, data: WriterCheckResponse }>('/user/writer/check');
     return response.data?.data || null;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -141,7 +141,7 @@ export const fetchPublicWriterProfile = async (writerId: string | number): Promi
   try {
     const response = await apiClient.get<WriterProfileResponse>(`/profile/${writerId}`);
     return response.data?.data ?? null;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -161,7 +161,7 @@ export const fetchWriterBooks = async (
       }
     });
     return response.data?.data ?? null;
-  } catch (error: any) {
+  } catch {
     return null;
   }
 };
@@ -347,12 +347,40 @@ export interface RankProfileResponse {
   };
 }
 
+const DEFAULT_RANK_IMAGE = "/images/user.png";
+
+const normalizeRankImage = (value: string | null | undefined): string => {
+  const src = typeof value === "string" ? value.trim() : "";
+  if (!src) return DEFAULT_RANK_IMAGE;
+  if (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("data:") || src.startsWith("/")) {
+    return src;
+  }
+  if (src.startsWith("//")) {
+    return `https:${src}`;
+  }
+  // Backend may return path-only rank image (no protocol/host).
+  return `https://image.enjoybook.co/${src.replace(/^\/+/, "")}`;
+};
+
 export const fetchRankProfile = async (token?: string | null): Promise<RankProfileResponse['data'] | null> => {
   try {
     const config = token ? { headers: { Authorization: token } } : {};
     const response = await apiClient.get<RankProfileResponse>('/rank/profile', config);
-    return response.data?.data ?? null;
-  } catch (error) {
+    const payload = response.data?.data ?? null;
+    if (!payload) return null;
+
+    return {
+      ...payload,
+      current_rank: {
+        ...payload.current_rank,
+        rank_img: normalizeRankImage(payload.current_rank?.rank_img),
+      },
+      next_rank: {
+        ...payload.next_rank,
+        rank_img: normalizeRankImage(payload.next_rank?.rank_img),
+      },
+    };
+  } catch {
     return null;
   }
 };
@@ -383,8 +411,14 @@ export const fetchAllRanks = async (token?: string | null): Promise<RankItem[] |
   try {
     const config = token ? { headers: { Authorization: token } } : {};
     const response = await apiClient.get<AllRanksResponse>('/rank/all', config);
-    return response.data?.data?.ranks ?? null;
-  } catch (error) {
+    const ranks = response.data?.data?.ranks ?? null;
+    if (!Array.isArray(ranks)) return null;
+
+    return ranks.map((rank) => ({
+      ...rank,
+      rank_img: normalizeRankImage(rank.rank_img),
+    }));
+  } catch {
     return null;
   }
 };
@@ -421,7 +455,7 @@ export const fetchQuests = async (token?: string | null): Promise<QuestGroup[] |
     const config = token ? { headers: { Authorization: token } } : {};
     const response = await apiClient.get<QuestsResponse>('/rank/quests', config);
     return response.data?.data ?? null;
-  } catch (error) {
+  } catch {
     return null;
   }
 };

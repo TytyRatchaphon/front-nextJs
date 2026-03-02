@@ -115,9 +115,9 @@ export default function ExclusiveSwiper({ items, title, icon, link }: ExclusiveS
           nextEl: nextRef.current,
         }}
         onBeforeInit={(swiper) => {
-          // @ts-ignore
+          // @ts-expect-error -- Swiper navigation refs are assigned imperatively.
           swiper.params.navigation.prevEl = prevRef.current;
-          // @ts-ignore
+          // @ts-expect-error -- Swiper navigation refs are assigned imperatively.
           swiper.params.navigation.nextEl = nextRef.current;
         }}
         autoHeight={true}

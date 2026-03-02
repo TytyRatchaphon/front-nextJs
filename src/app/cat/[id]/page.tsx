@@ -1,7 +1,7 @@
 import Category from '@/features/Home/Category'
 import React from 'react'
-import FooterWrapper from '@/components/home/FooterWrapper'
-import Navbar from '@/components/navbar/navbar'
+import '@/components/home/FooterWrapper';
+import '@/components/navbar/navbar';
 
 function Page() {
   return (

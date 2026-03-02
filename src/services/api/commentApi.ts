@@ -24,7 +24,7 @@ export const fetchBookReviews = async (bookId: string | number, page: number = 1
     }
 
     return { comments: [] };
-  } catch (error: any) {
+  } catch {
     return { comments: [] };
   }
 };
@@ -106,7 +106,7 @@ export const fetchBookComments = async (bookId: string | number, page: number = 
       }
     }
     return { comments: [] };
-  } catch (error: any) {
+  } catch {
     return { comments: [] };
   }
 };
@@ -178,7 +178,7 @@ export const fetchEpisodeComments = async (epId: string | number, page: number =
       }
     }
     return { comments: [] };
-  } catch (error: any) {
+  } catch {
     return { comments: [] };
   }
 };

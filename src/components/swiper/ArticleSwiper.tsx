@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useId } from 'react';
+import React from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Scrollbar, A11y, EffectFade, FreeMode } from 'swiper/modules';
 import ArticleCard from '../novelCard/ArticleCard';
@@ -115,9 +115,9 @@ export default function ArticleSwiper({ items, title, icon, link }: ArticleSwipe
           nextEl: nextRef.current,
         }}
         onBeforeInit={(swiper) => {
-          // @ts-ignore
+          // @ts-expect-error -- Swiper navigation refs are assigned imperatively.
           swiper.params.navigation.prevEl = prevRef.current;
-          // @ts-ignore
+          // @ts-expect-error -- Swiper navigation refs are assigned imperatively.
           swiper.params.navigation.nextEl = nextRef.current;
         }}
         autoHeight={true}

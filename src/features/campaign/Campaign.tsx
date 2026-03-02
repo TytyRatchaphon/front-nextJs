@@ -4,9 +4,9 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Alert, Tag } from 'antd';
+import { Alert } from 'antd';
 import GifLoader from '@/components/utility/GifLoader';
-import { ClockCircleOutlined, CalendarOutlined } from '@ant-design/icons';
+import '@ant-design/icons';
 import dayjs from 'dayjs';
 import 'dayjs/locale/th';
 

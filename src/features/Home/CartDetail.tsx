@@ -2,10 +2,10 @@
 
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchCartItems, updateCartItem, removeCartItem, clearCart, fetchCartSummary } from '@/services/cartService';
-import { CartItem, CartStore } from '@/interfaces/cart.interface';
-import { Table, Checkbox, Button, InputNumber, Image as AntImage, Typography, Card, Space, Popconfirm, App, Empty, Spin, Collapse } from 'antd';
-import { DeleteOutlined, ShoppingCartOutlined, ShopOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { fetchCartItems, updateCartItem, removeCartItem, clearCart } from '@/services/cartService';
+import { CartItem } from '@/interfaces/cart.interface';
+import { Table, Checkbox, Button, InputNumber, Image as AntImage, Typography, Popconfirm, App, Empty, Collapse } from 'antd';
+import { DeleteOutlined, ShopOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/authStore';
 import { useWebsiteStore } from '@/stores/websiteStore';
@@ -16,13 +16,12 @@ import StampPill from '@/components/utility/StampPill';
 
 
 const { Title, Text } = Typography;
-const { Panel } = Collapse;
 
 export default function CartDetail() {
     const queryClient = useQueryClient();
-    const { token, user } = useAuthStore() as any;
+    const { user } = useAuthStore() as any;
     const { settings } = useWebsiteStore();
-    const { message, notification } = App.useApp();
+    const { notification } = App.useApp();
 
 
     const { data: cartStores, isLoading } = useQuery({
@@ -150,7 +149,7 @@ export default function CartDetail() {
             updateCartItem({ cart_item_id: item.cart_item_id, selected: checked })
         );
 
-        Promise.all(promises).then(() => {33333333333
+        Promise.all(promises).then(() => {
             queryClient.invalidateQueries({ queryKey: ['cartItems'] });
             queryClient.invalidateQueries({ queryKey: ['cartSummary'] });
             queryClient.invalidateQueries({ queryKey: ['checkoutItems'] });

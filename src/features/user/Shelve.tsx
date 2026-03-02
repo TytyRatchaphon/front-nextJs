@@ -10,7 +10,7 @@ import CollectionTab from '@/components/collection/CollectionTab';
 import ContinueCardBook from '@/components/novelCard/ContinueCardbook';
 import { useQuery } from '@tanstack/react-query';
 import { fetchUserShelve, fetchUserShelveContinue, fetchUserShelveBuy } from '@/services/apiServices';
-import { normalizeBookData, normalizeContinueBook, normalizePurchasedBook } from '@/utils/bookMappers';
+import { normalizeBookData, normalizeContinueBook } from '@/utils/bookMappers';
 import type { BookData } from '@/types/api';
 
 function Shelve() {

@@ -67,7 +67,7 @@ export const fetchHomeData = async (): Promise<HomeDataResponse | null> => {
   try {
     const response = await apiClient.get<HomeDataResponse>("/getAllBookHome");
     return response.data;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -76,7 +76,7 @@ export const fetchBookUpdates = async (): Promise<BookUpdate[]> => {
   try {
     const response = await apiClient.get<{ data: BookUpdate[] }>("/getBookUpdate");
     return Array.isArray(response.data?.data) ? response.data.data : [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };

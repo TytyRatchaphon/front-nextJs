@@ -48,7 +48,7 @@ interface RegisterResponse {
 }
 
 const LoginButtonHeader: React.FC = () => {
-  const { message, notification: api } = App.useApp();
+  const { notification: api } = App.useApp();
   const { login } = useAuthStore();
   const {
     isLoginModalOpen,
@@ -68,7 +68,7 @@ const LoginButtonHeader: React.FC = () => {
   const [passwordStrength, setPasswordStrength] = useState<number>(0);
 
   // เก็บข้อมูล form สำหรับใช้หลัง login/register สำเร็จ
-  const [loginFormData, setLoginFormData] = useState<LoginFieldType | null>(null);
+  const [, setLoginFormData] = useState<LoginFieldType | null>(null);
   const [, setRegisterFormData] = useState<RegisterFieldType | null>(null);
 
   // Password strength checker
@@ -216,7 +216,7 @@ const LoginButtonHeader: React.FC = () => {
             logActivity('login', 'user', '', { method: 'email', email: userData.email });
 
             setLoginFormData(null);
-          } catch (error) {
+          } catch {
             api.error({
               message: 'ไม่สามารถอ่านข้อมูลจาก Token ได้',
               description: '',
@@ -320,7 +320,7 @@ const LoginButtonHeader: React.FC = () => {
             });
             handleCancel();
             setRegisterFormData(null);
-          } catch (error) {
+          } catch {
             notification.error({
               message: 'ไม่สามารถอ่านข้อมูลจาก Token ได้',
               description: 'ไม่สามารถอ่านข้อมูลจาก Token ได้',
@@ -362,7 +362,7 @@ const LoginButtonHeader: React.FC = () => {
 
   const forgotPasswordMutation = useMutation({
     mutationFn: forgotPassword,
-    onSuccess: (responseData, variables) => {
+    onSuccess: (responseData) => {
       // แสดง notification แทน message
       api.success({
         message: 'ส่งคำขอรีเซ็ตรหัสผ่านสำเร็จ',
@@ -399,7 +399,7 @@ const LoginButtonHeader: React.FC = () => {
     forgotPasswordMutation.mutate(values);
   };
 
-  const onFinishFailed = (errorInfo: any) => {
+  const onFinishFailed = () => {
     notification.error({
       message: 'เกิดข้อผิดพลาด',
       description: 'กรุณากรอกข้อมูลให้ครบถ้วน',
@@ -739,4 +739,5 @@ const LoginButtonHeader: React.FC = () => {
 };
 
 export default LoginButtonHeader;
+
 

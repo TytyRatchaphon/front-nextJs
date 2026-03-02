@@ -10,7 +10,7 @@ import { InfoCircleOutlined } from '@ant-design/icons'
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useWebsiteStore } from '@/stores/websiteStore'
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 
 type LoginStatus = {
   latest_logged_in_day?: number
@@ -19,7 +19,7 @@ type LoginStatus = {
 }
 
 
-const fetchWeeklyLogin = async (token?: string | null): Promise<LoginStatus> => {
+const fetchWeeklyLogin = async (): Promise<LoginStatus> => {
   const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? ''
   const url = `${base}/user/event/login`
   // const headers: Record<string, string> = { 'Content-Type': 'application/json' }
@@ -37,9 +37,9 @@ export interface SevenDaysLoginProps {
 }
 
 function SevenDaysLogin({ onClose }: SevenDaysLoginProps) {
-  const { user, token, updateToken } = useAuthStore()
+  const { token, updateToken } = useAuthStore();
   const queryClient = useQueryClient()
-  const { data, isLoading, error } = useQuery({ queryKey: ['weekly-login', token], queryFn: () => fetchWeeklyLogin(token), retry: 1, staleTime: 60_000 })
+  const { data } = useQuery({ queryKey: ['weekly-login', token], queryFn: () => fetchWeeklyLogin(), retry: 1, staleTime: 60_000 });
   // `current_reward_day` is 1-based and defaults to 1 when no days are claimed yet.
   // We'll treat it as the "next reward day" index; days with index < currentRewardDay are already checked.
   const currentRewardDay = Number(data?.current_reward_day ?? 1)
@@ -72,13 +72,12 @@ function SevenDaysLogin({ onClose }: SevenDaysLoginProps) {
           newToken = newToken.token
       }
       
-      const activeToken = newToken ?? token;
 
       if (newToken && typeof newToken === 'string' && typeof updateToken === 'function') {
         try {
           updateToken(newToken)
-          try { /* apiClient uses localStorage */ } catch (e) { }
-        } catch (e) { }
+          try { /* apiClient uses localStorage */ } catch { }
+        } catch { }
       }
 
       // 2. Optimistic Update: เอาค่า Coupon ที่คำนวณเอง ทับลงไปใน User ล่าสุดใน Store
@@ -96,7 +95,7 @@ function SevenDaysLogin({ onClose }: SevenDaysLoginProps) {
 
 
       // refresh weekly-login data
-      try { queryClient.invalidateQueries({ queryKey: ['weekly-login'] }) } catch (e) { /* ignore */ }
+      try { queryClient.invalidateQueries({ queryKey: ['weekly-login'] }) } catch { /* ignore */ }
 
       setModalVisible(true)
     } catch (e: any) {
@@ -113,7 +112,7 @@ function SevenDaysLogin({ onClose }: SevenDaysLoginProps) {
   const handleModalOk = () => {
     setModalVisible(false)
     // ensure latest data
-    try { queryClient.invalidateQueries({ queryKey: ['weekly-login'] }) } catch (e) { }
+    try { queryClient.invalidateQueries({ queryKey: ['weekly-login'] }) } catch { }
 
     // If parent provided onClose, call it to close the DailyCheckinModal too
     if (onClose) {
@@ -169,7 +168,6 @@ function SevenDaysLogin({ onClose }: SevenDaysLoginProps) {
         <div className="flex flex-wrap md:flex-nowrap justify-center gap-2 md:gap-4 w-full mb-8">
            {[...Array(7)].map((_, i) => {
              const day = i + 1
-             const isRewardDay = day === 7
              const isChecked = day < currentRewardDay || (day === currentRewardDay && checkedToday)
              const isToday = day === currentRewardDay && !checkedToday;
              

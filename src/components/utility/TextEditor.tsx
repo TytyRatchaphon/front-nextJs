@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { imageUploadHandler } from '../editor/editor_api';
 
 declare global {
@@ -37,7 +37,7 @@ const TextEditor = ({ value, onChange, height, onInit }: TextEditorProps) => {
   const savedFont = (typeof window !== 'undefined' && localStorage.getItem('tinymceFontFamily')) || `Sarabun,sans-serif`;
   const savedSize = (typeof window !== 'undefined' && localStorage.getItem('tinymceFontSize')) || '20px';
 
-  const initializeTinyMCE = () => {
+  const initializeTinyMCE = useCallback(() => {
     if ((window as any).tinymce) {
       if ((window as any).tinymce.get('my-editor')) {
         (window as any).tinymce.get('my-editor').remove();
@@ -114,7 +114,7 @@ const TextEditor = ({ value, onChange, height, onInit }: TextEditorProps) => {
         }
       });
     }
-  };
+  }, [fontFormats, height, importUrl, onChange, onInit, savedFont, savedSize]);
 
   useEffect(() => {
     if (!scriptLoadedRef.current) {
@@ -142,7 +142,7 @@ const TextEditor = ({ value, onChange, height, onInit }: TextEditorProps) => {
         (window as any).tinymce.get('my-editor').remove();
       }
     };
-  }, []);
+  }, [initializeTinyMCE]);
 
   useEffect(() => {
     if (isEditorReady && editorRef.current && value !== editorRef.current.getContent()) {

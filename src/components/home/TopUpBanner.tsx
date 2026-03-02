@@ -26,7 +26,7 @@ const TopUpBanner = () => {
         window.location.href = `https://coinenjoy.enjoybook.co/?tk=${token}`;
     };
 
-    const ANIMATION_DURATION = 30; // seconds
+ // seconds
 
     return (
         <div 

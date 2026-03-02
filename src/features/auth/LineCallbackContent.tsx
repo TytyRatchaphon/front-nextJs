@@ -11,7 +11,7 @@ const LineCallbackContent = () => {
     const { initLIFF } = useLineLogin();
     const router = useRouter();
     const { message } = App.useApp();
-    const { isLoggedIn } = useAuthStore();
+    useAuthStore();
 
     useEffect(() => {
         const handleCallback = async () => {
@@ -21,7 +21,7 @@ const LineCallbackContent = () => {
                 // After initLIFF, we check if we are logged in.
 
                 // We can also check localStorage flag to be sure we came from login
-                const isLoginProcessing = localStorage.getItem('is_line_login_processing');
+                localStorage.getItem('is_line_login_processing');
 
                 // Give a small delay for store update or just check immediately?
                 // handleBackendLogin is awaited in initLIFF so store should be updated.

@@ -62,7 +62,7 @@ const NewBook: React.FC = () => {
     const [openModal, setOpenModal] = useState<boolean>(false);
     const [spinLoading, setSpinLoading] = useState<boolean>(false);
     const [isBook, setIsBook] = useState<boolean>(false);
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [imagePreview] = useState<string | null>(null);
     const [imagePreviewBanner, setImagePreviewBanner] = useState<string | null>(null);
 
     // State สำหรับเก็บข้อมูลที่เคยอยู่ใน Context
@@ -74,7 +74,6 @@ const NewBook: React.FC = () => {
     const [acceptBookCon, setAcceptBookCon] = useState<boolean>(false);
 
     // Configs
-    const IMAGE_BANNER_URL = process.env.NEXT_PUBLIC_IMAGE_BANNER_URL as string;
     const IMAGE_BOOK_URL = process.env.NEXT_PUBLIC_IMAGE_BOOK_URL as string;
     const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL as string;
     const ACCESS_TOKEN = process.env.NEXT_PUBLIC_ACCESS_TOKEN || '';
@@ -251,10 +250,6 @@ const NewBook: React.FC = () => {
 
         try {
             const token = Cookies.get('token') || localStorage.getItem('authToken');
-            const cleanToken = token ? token.replace(/^['"]+|['"]+$/g, '') : '';
-            const encodedApiKey = typeof window !== 'undefined'
-                ? btoa(ACCESS_TOKEN)
-                : Buffer.from(ACCESS_TOKEN).toString('base64');
 
             const response = await apiClient.post(`/user/mybook`, formdata, {
                 headers: {

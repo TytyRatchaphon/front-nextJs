@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button, Tabs, Upload, Input, Select, Table, Tag, Modal, InputNumber, notification } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
-import apiClient from '@/services/apiClient';
+import '@/services/apiClient';
 import { getBankList, updateBankIdCardAccount, getBankIdCardAccount, postWriterWithdraw, fetchWriterWithdrawHistory, fetchWriterWithdrawSetting } from '@/services/apiServices';
 import GifLoader from '@/components/utility/GifLoader';
 
@@ -119,7 +120,7 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
       try {
         const res = await fetchWriterWithdrawSetting();
         return res?.data ?? res ?? null;
-      } catch (e) {
+      } catch {
         return null;
       }
     },
@@ -185,7 +186,7 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
             updateToken(nt);
             if (typeof window !== 'undefined') localStorage.setItem('authToken', nt);
           }
-        } catch (e) {
+        } catch {
         }
 
         setShowWithdrawModal(false);
@@ -193,7 +194,7 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
 
         try {
           if (typeof refetchWithdrawHistory === 'function') refetchWithdrawHistory();
-        } catch (e) {
+        } catch {
         }
       } else {
         api.error({ message: data?.message || 'ไม่สามารถส่งคำขอถอนเงินได้' });
@@ -215,7 +216,7 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
         try {
           const d = new Date(val);
           return d.toLocaleString('th-TH');
-        } catch (e) {
+        } catch {
           return val;
         }
       }
@@ -378,7 +379,7 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
                         </div>
                         {existingIdCard && !idCardFile && (
                            <div className="mt-4 flex justify-center">
-                             <img src={existingIdCard} alt="ID Card" className="h-32 object-contain border rounded" />
+                             <Image src={existingIdCard} alt="ID Card" width={512} height={256} sizes="128px" unoptimized className="h-32 w-auto object-contain border rounded" />
                            </div>
                         )}
                         {!existingIdCard && !idCardFile && (
@@ -462,7 +463,7 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
                         </div>
                         {existingBankCert && !bankCertFile && (
                            <div className="mt-4 flex justify-center">
-                             <img src={existingBankCert} alt="Bank Cert" className="h-32 object-contain border rounded" />
+                             <Image src={existingBankCert} alt="Bank Cert" width={512} height={256} sizes="128px" unoptimized className="h-32 w-auto object-contain border rounded" />
                            </div>
                         )}
                         {!existingBankCert && !bankCertFile && (

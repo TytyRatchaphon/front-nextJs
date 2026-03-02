@@ -3,7 +3,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookTrans } from '@/types/api';
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 
 interface SpotlightCardProps {
   book: BookTrans;

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Eye, List } from "lucide-react";
 import { CategoryBook } from "@/types/api";
 import { TagSwiper } from "@/components/swiper/ImageSlider";
-import { imageLoader } from "@/utils/imageUtils";
+import "@/utils/imageUtils";
 
 interface CategoryHorizontalCardProps {
   book: CategoryBook;

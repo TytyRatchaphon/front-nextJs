@@ -7,7 +7,7 @@ import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSe
 import type { DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchUserCollections, createCollection, updateCollection, reorderCollections, pinCollections } from '@/services/api/collectionApi';
+import { fetchUserCollections, createCollection, reorderCollections, pinCollections } from '@/services/api/collectionApi';
 import type { CollectionItem } from '@/services/api/collectionApi';
 import CreateCollectionModal, { CollectionFormData } from './CreateCollectionModal';
 import SortableCollectionCard from './SortableCollectionCard';
@@ -32,7 +32,7 @@ export default function CollectionTab() {
     queryFn: () => fetchUserCollections(),
   });
 
-  const apiCollections: CollectionItem[] = data ?? [];
+  const apiCollections: CollectionItem[] = useMemo(() => data ?? [], [data]);
 
   // Sort: pinned first, then by order_index (only for API data)
   // When localOrder is set (from drag), use that order directly

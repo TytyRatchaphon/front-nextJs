@@ -11,10 +11,10 @@ import 'swiper/css';
 import 'swiper/css/free-mode';
 import { useQuery } from "@tanstack/react-query";
 import { fetchCategoryRankingBooks, CategoryRankingBookItem, fetchBookCategoryAll } from "@/services/apiServices";
-import { CategoryDetail } from "@/types/api";
+import "@/types/api";
 import { Select } from 'antd';
 import GifLoader from '@/components/utility/GifLoader';
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 
 interface CategoryRankProps {
     categoryId?: string | number;

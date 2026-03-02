@@ -29,7 +29,6 @@ const CouponCard: React.FC<CouponCardProps> = ({
     isUserCoupon = false, 
     onAction,
     onClick,
-    actionLabel,
     actionDisabled = false,
     isClaimable = true,
     ownedCount = 0,

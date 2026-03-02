@@ -44,7 +44,7 @@ const UploadCropBook: React.FC<UploadCropBookProps> = ({ src, onChange }) => {
         if (onChange) {
             onChange(file);
         }
-    } catch (error) {
+    } catch {
     }
   };
 

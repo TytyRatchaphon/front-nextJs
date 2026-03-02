@@ -2,7 +2,7 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button } from 'antd';
+import 'antd';
 
 interface Book {
   book_id?: number;
@@ -62,7 +62,7 @@ const MyBookCardNew: React.FC<MyBookCardNewProps> = ({ book }) => {
     if (bookParam) {
       try {
         sessionStorage.setItem(`editBook_${bookParam}`, JSON.stringify(book));
-      } catch (e) { }
+      } catch { }
     }
   }
 

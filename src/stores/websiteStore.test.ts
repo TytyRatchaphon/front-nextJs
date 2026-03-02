@@ -162,7 +162,7 @@ describe('websiteStore', () => {
   // fetchSettings - deduplication
   // -------------------------------------------------------------------
   it('deduplicates concurrent fetch calls', async () => {
-    let resolveFirst!: Function
+    let resolveFirst!: (value: { status: string; data: typeof mockSettings }) => void
     mockFetchWebsiteSettings.mockImplementationOnce(() => new Promise(r => { resolveFirst = r }))
 
     const p1 = useWebsiteStore.getState().fetchSettings(true)

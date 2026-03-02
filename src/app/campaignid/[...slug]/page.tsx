@@ -7,6 +7,7 @@ interface Props {
 }
 
 export default async function CampaignLegacyRedirectPage({ params }: Props) {
+    void params;
     // Always redirect to Home
     redirect('/');
 }

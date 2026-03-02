@@ -1,7 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Book as BookIcon } from 'lucide-react';
+import 'lucide-react';
 
 interface ContinueHomeCardBookProps {
   book: any;

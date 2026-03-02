@@ -48,7 +48,7 @@ export async function generateMetadata(
         images: [book.img],
       },
     }
-  } catch (error) {
+  } catch {
     return {
       title: 'Enjoybook อ่านนิยาย นิยายแปล อ่านนิยายฟรี นิยายจีน',
       description: 'นิยายหลากหลาย สนุกครบรส ที่ Enjoybook แหล่งรวมนิยายแปลชื่อดัง นิยายไทย แฟนตาซี กำลังภายใน'

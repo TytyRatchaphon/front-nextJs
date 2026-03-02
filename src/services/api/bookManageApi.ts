@@ -82,7 +82,7 @@ export const fetchBookStats = async (bookId: string | number): Promise<BookStats
   try {
     const response = await apiClient.get<BookStats>(`/managebook/${bookId}/stats`);
     return response.data?.data || null;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -93,7 +93,7 @@ export const fetchBookAnalytics = async (bookId: string | number, start: string,
       params: { start, end }
     });
     return response.data?.data || [];
-  } catch (error) {
+  } catch {
     return [];
   }
 }
@@ -107,7 +107,7 @@ export const fetchBookEpisodesStats = async (bookId: string | number, start: str
       total_data: response.data?.data?.total_data || [],
       total_purchase_list: response.data?.data?.total_purchase_list || []
     };
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -383,7 +383,7 @@ export const fetchUserMyBooks = async (params: MyBookSearchParams = {}) => {
       }
     });
     return response.data;
-  } catch (error) {
+  } catch {
     return null;
   }
 };

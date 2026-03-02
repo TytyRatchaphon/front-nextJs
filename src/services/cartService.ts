@@ -1,5 +1,5 @@
 import apiClient from './apiClient';
-import { CartItem, CartStore, AddToCartPayload, UpdateCartItemPayload, CartSummary, CheckoutItemsResponse, CheckoutAddressResponse, CheckoutSummaryResponse } from '../interfaces/cart.interface';
+import { CartStore, AddToCartPayload, UpdateCartItemPayload, CartSummary, CheckoutItemsResponse, CheckoutAddressResponse, CheckoutSummaryResponse } from '../interfaces/cart.interface';
 
 // 1. Get items in cart (grouped by store)
 export const fetchCartItems = async (): Promise<CartStore[]> => {
@@ -53,7 +53,7 @@ export const fetchCartCount = async (): Promise<number> => {
       // If the API /user/store/cart/count exists and returns number
       const response = await apiClient.get('/user/store/cart/count');
       return response.data?.count || response.data?.data || 0;
-  } catch (e) {
+  } catch {
       // If fail, fallback to summary? Or return 0
       return 0;
   }
@@ -64,7 +64,7 @@ export const fetchCartSummary = async (): Promise<CartSummary | null> => {
     try {
         const response = await apiClient.get('/user/store/cart/summary');
         return response.data?.data || null;
-    } catch (error) {
+    } catch {
         return null;
     }
 }

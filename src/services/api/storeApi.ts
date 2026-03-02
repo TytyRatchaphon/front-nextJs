@@ -6,7 +6,7 @@ export const fetchStoreData = async (): Promise<StoreCategory[]> => {
   try {
     const response = await apiClient.get<StoreResponse>('/user/store');
     return response.data?.data || [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };
@@ -38,7 +38,7 @@ export const fetchStickers = async (): Promise<StickerSet[]> => {
   try {
     const response = await apiClient.get<StickerResponse>("/stickers");
     return response.data?.data ?? [];
-  } catch (error: any) {
+  } catch {
     return [];
   }
 };
@@ -89,7 +89,7 @@ export const fetchAvailableCoupons = async (): Promise<Coupon[]> => {
   try {
     const response = await apiClient.get<{ code: number; status: string; message: string; data: Coupon[] }>("/user/coupon/available");
     return response.data?.data || [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };
@@ -98,7 +98,7 @@ export const fetchUserCoupons = async (): Promise<Coupon[]> => {
   try {
     const response = await apiClient.get<{ code: number; status: string; message: string; data: Coupon[] }>("/user/coupon/mine");
     return response.data?.data || [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };

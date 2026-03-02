@@ -1,11 +1,11 @@
 
 import Image from 'next/image';
-import Link from 'next/link'
+import 'next/link';
 import React from 'react'
-import { postBookClick } from '@/services/apiServices';
+import '@/services/apiServices';
 import SaleGroupSVG from './SaleGroupSvg';
 import { UniversalBook } from '../../types/api';
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 
 
 
@@ -17,14 +17,6 @@ interface PackCardBookProps {
 
 function PackCardBook({ book, onClick }: PackCardBookProps) {
     const [imgError, setImgError] = React.useState(false);
-
-    // Client-side debug: log whether shelveCount is present when the card mounts/updates
-    React.useEffect(() => {
-        try {
-        } catch (e) {
-            // ignore
-        }
-    }, [book.book_id, book.bookID, book.shelveCount, book['writer.writer_name'], book.writer_name, book.author]);
 
     const formatNumber = (num: number) => {
         if (num >= 1000 && num <= 999999) {
@@ -60,7 +52,6 @@ function PackCardBook({ book, onClick }: PackCardBookProps) {
     const ended = isEndedValue(book.end) || isEndedValue(book.status) || isEndedValue(book.finished) || isEndedValue(book.is_end) || isEndedValue(book.isFinished) || isEndedValue(book.finish) || isEndedValue(book.ended) || isEndedValue(book.end_status) || isEndedValue(book.publish_status) || isEndedValue(book.status_id) || isEndedValue(book.status_code) || isEndedValue(book.complete) || isEndedValue(book.is_complete) || isEndedValue(book.finish_status);
 
     // Prefer the short numeric `book_id` when available; fall back to the string `bookID`.
-    const bookParam = book.book_id ? String(book.book_id) : (book.bookID && String(book.bookID).trim() !== "" ? String(book.bookID) : "");
 
     return (
         <div className="w-full max-w-[180px] h-auto md:h-[380px] flex-shrink-0 relative z-0">

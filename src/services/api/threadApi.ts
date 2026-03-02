@@ -20,7 +20,7 @@ export const fetchThreads = async (params: FetchThreadsParams = {}): Promise<Thr
       }
     });
     return response.data;
-  } catch (error: any) {
+  } catch {
     return null;
   }
 };
@@ -83,7 +83,7 @@ export const fetchThreadComments = async (topicId: string | number, page: number
       }
     }
     return { comments: [] };
-  } catch (error: any) {
+  } catch {
     return { comments: [] };
   }
 };

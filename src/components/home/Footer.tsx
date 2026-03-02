@@ -8,9 +8,6 @@ import { useWebsiteStore } from '@/stores/websiteStore';
 export default function Footer() {
   const { settings } = useWebsiteStore();
 
-  const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-    return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
-  }
 
 
   const bgImage = settings?.img_footer_sm ? `url(${settings.img_footer_sm})` : "url('/images/Footer-sm.png')";

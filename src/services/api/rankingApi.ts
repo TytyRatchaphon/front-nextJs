@@ -39,7 +39,7 @@ export const fetchRankingBooks = async (range: RankingTimeRange = 'week', page: 
   try {
     const response = await apiClient.get<RankingResponse>(`/books/ranks/${range}?limit=${limit}&page=${page}${category_id ? `&category_id=${category_id}` : ''}`);
     return response.data?.data || { books: [], pagination: { page: 1, limit, total: 0, totalPages: 0, nextPage: null, prevPage: null } };
-  } catch (error) {
+  } catch {
     return { books: [], pagination: { page: 1, limit, total: 0, totalPages: 0, nextPage: null, prevPage: null } };
   }
 };
@@ -63,7 +63,7 @@ export const fetchRankingCategories = async (): Promise<RankingCategoryData | nu
       return response.data.data;
     }
     return null;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -118,7 +118,7 @@ export const fetchCategoryRankingBooks = async (categoryId: number, range: numbe
     }
 
     return [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };

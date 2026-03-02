@@ -33,7 +33,7 @@ export const syncReadingProgress = async (ep_id: string | number) => {
   try {
     const response = await apiClient.post('/reading-progress/sync', { ep_id: String(ep_id) });
     return response.data;
-  } catch (error: any) {
+  } catch {
     return null;
   }
 };
@@ -46,7 +46,7 @@ export const updateReadingProgress = async (book_id: string | number, ep_id: str
       progress
     });
     return response.data;
-  } catch (error: any) {
+  } catch {
     return null;
   }
 };
@@ -57,7 +57,7 @@ export const fetchBookCategoryAll = async (): Promise<CategoryDetail[]> => {
   try {
     const response = await apiClient.get<CategoryAllResponse>("/book-category/all");
     return response.data?.data || [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };
@@ -66,7 +66,7 @@ export const fetchAllCategories = async (): Promise<CategoryDetail[]> => {
   try {
     const response = await apiClient.get<CategoryAllResponse>('/book-category/all');
     return response.data?.data ?? [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };
@@ -84,7 +84,7 @@ export const fetchCategoryBooks = async (
       params: { type, categoryId, tab, limit, page, period }
     });
     return response.data;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -108,7 +108,7 @@ export const fetchActiveTypes = async (): Promise<ActiveType[]> => {
   try {
     const response = await apiClient.get<{ code: number; data: ActiveType[] }>('/active-types');
     return response.data?.data || [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };
@@ -119,7 +119,7 @@ export const fetchActiveCategories = async (type: string = 'all'): Promise<Activ
       params: { type }
     });
     return response.data?.data || [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };
@@ -168,7 +168,7 @@ export const fetchRecentNotifications = async (): Promise<NotificationData[]> =>
     }
 
     return [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };
@@ -188,7 +188,7 @@ export const fetchAllNotifications = async (page: number = 1, limit: number = 20
       }
     }
     return { notifications: [] };
-  } catch (error) {
+  } catch {
     return { notifications: [] };
   }
 };
@@ -197,7 +197,7 @@ export const markNotificationAsRead = async (notificationId: number) => {
   try {
     const response = await apiClient.patch(`/user/notifications/${notificationId}/read`);
     return response.data;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -206,7 +206,7 @@ export const markAllNotificationsAsRead = async () => {
   try {
     const response = await apiClient.patch('/user/notifications/read-all');
     return response.data;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -215,7 +215,7 @@ export const postCommentNotification = async (commentId: string | number) => {
   try {
     const response = await apiClient.post(`/user/notifications/comments/${commentId}`, {});
     return response.data;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -224,7 +224,7 @@ export const postReviewNotification = async (commentId: string | number) => {
   try {
     const response = await apiClient.post(`/user/notifications/reviews/${commentId}`, {});
     return response.data;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -233,7 +233,7 @@ export const postReviewReplyNotification = async (commentId: string | number) =>
   try {
     const response = await apiClient.post(`/user/notifications/reviews/replies/${commentId}`, {});
     return response.data;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -242,7 +242,7 @@ export const postCommentReplyNotification = async (commentId: string | number) =
   try {
     const response = await apiClient.post(`/user/notifications/comments/replies/${commentId}`, {});
     return response.data;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -259,7 +259,7 @@ export const fetchFaqs = async (): Promise<FaqItem[]> => {
     try {
         const response = await apiClient.get<{ code: number; data: FaqItem[] }>('/faq');
         return response.data?.data || [];
-    } catch (error) {
+    } catch {
         return [];
     }
 }
@@ -290,7 +290,7 @@ export const getSearchHistory = async (): Promise<SearchHistoryItem[]> => {
       return response.data.data || [];
     }
     return [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };
@@ -299,7 +299,7 @@ export const deleteSearchHistory = async (id: number): Promise<boolean> => {
   try {
     const response = await apiClient.delete<{ code: number; status: string; message: string }>(`/book/search/history/${id}`);
     return response.data?.code === 200;
-  } catch (error) {
+  } catch {
     return false;
   }
 };
@@ -308,7 +308,7 @@ export const saveSearchHistory = async (keyword: string): Promise<boolean> => {
   try {
     const response = await apiClient.post<{ code: number; status: string; message: string }>('/book/search/history', { keyword });
     return response.data?.code === 200;
-  } catch (error) {
+  } catch {
     return false;
   }
 };
@@ -317,7 +317,7 @@ export const clearSearchHistory = async (): Promise<boolean> => {
   try {
     const response = await apiClient.delete<{ code: number; status: string; message: string }>('/book/search/history');
     return response.data?.code === 200;
-  } catch (error) {
+  } catch {
     return false;
   }
 };
@@ -331,7 +331,7 @@ export const fetchPopularSearches = async (limit: number = 5): Promise<PopularSe
       return response.data.data || [];
     }
     return [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };
@@ -345,7 +345,7 @@ export const fetchSearchSuggestions = async (query: string): Promise<PopularSear
       return response.data.data || [];
     }
     return [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };

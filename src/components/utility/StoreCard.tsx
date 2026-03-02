@@ -9,7 +9,7 @@ import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import AddToCartSvg from '@/components/utility/AddToCartSvg';
 import { addToCart, fetchCartItems } from '@/services/cartService';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 
 
 interface StoreCardProps {
@@ -20,9 +20,9 @@ interface StoreCardProps {
 
 const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
   const { settings } = useWebsiteStore()
-  const { user, token } = useAuthStore() as any;
-  const { modal, message, notification } = App.useApp();
-  const router = useRouter();
+  const { token } = useAuthStore() as any;
+  const { notification } = App.useApp();
+  useRouter();
   const queryClient = useQueryClient();
 
   const { data: cartStores } = useQuery({
@@ -38,7 +38,7 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
     return item ? item.quantity : 0;
   }, [cartStores, pack.store_pack_id]);
 
-  const isLimitReached = React.useMemo(() => {
+  React.useMemo(() => {
     // 1. Check Remaining Count (from BE) which handles day/month limits
     if (typeof pack.remaining_count === 'number') {
         // If remaining_count is negative (e.g. -1), it means unlimited

@@ -2,16 +2,16 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { Image as AntdImage, Card, DatePicker, Table, Tabs, Button, Select, Segmented, Empty } from 'antd';
-import { EyeOutlined, UnorderedListOutlined, BookOutlined, CalendarOutlined } from '@ant-design/icons';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Image as AntdImage, DatePicker, Table, Button, Segmented, Empty } from 'antd';
+import { EyeOutlined, UnorderedListOutlined, BookOutlined } from '@ant-design/icons';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 
-import { fetchBookStats, BookStats, fetchBookAnalytics, AnalyticsDataPoint, fetchBookEpisodesStats, EpisodeStats, PurchaseItem } from '@/services/apiServices';
+import { fetchBookStats, fetchBookAnalytics, fetchBookEpisodesStats, EpisodeStats, PurchaseItem } from '@/services/apiServices';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { useShallow } from 'zustand/react/shallow';
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 
 const { RangePicker } = DatePicker;
 
@@ -42,15 +42,6 @@ interface ChartDataPoint {
     reads: number;
 }
 
-interface TransactionItem {
-    id: string;
-    date: string;
-    chapterName: string;
-    user: string;
-    price: number;
-    income: number;
-}
-
 // Mock Data
 const initialStats: StatsData = {
     totalRevenue: 0,
@@ -62,9 +53,7 @@ const initialStats: StatsData = {
     bookshelf: 0
 };
 
-const mockChartData: ChartDataPoint[] = [];
 
-const mockTransactions: TransactionItem[] = [];
 
 // Components
 const StatCard = ({ title, value }: { title: string; value: number }) => (
@@ -82,11 +71,11 @@ export default function Report({ bookId }: { bookId: string }) {
     const [episodesStats, setEpisodesStats] = useState<EpisodeStats[]>([]);
     const [purchaseList, setPurchaseList] = useState<PurchaseItem[]>([]);
     const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([dayjs().subtract(7, 'd'), dayjs()]);
-    const [loading, setLoading] = useState(true);
+    const [, setLoading] = useState(true);
 
     const { settings } = useWebsiteStore(useShallow((state) => ({ settings: state.settings })));
 
-    const loadAnalytics = async (start: string, end: string) => {
+    const loadAnalytics = React.useCallback(async (start: string, end: string) => {
         const analyticsData = await fetchBookAnalytics(bookId, start, end);
         if (analyticsData) {
             setChartData(analyticsData.map(item => ({
@@ -101,7 +90,7 @@ export default function Report({ bookId }: { bookId: string }) {
             setEpisodesStats(episodesData.total_data);
             setPurchaseList(episodesData.total_purchase_list);
         }
-    };
+    }, [bookId]);
 
     const handleDateSearch = () => {
         if (dateRange && dateRange[0] && dateRange[1]) {
@@ -139,7 +128,7 @@ export default function Report({ bookId }: { bookId: string }) {
         loadData();
         // Initial load for analytics
         loadAnalytics(dayjs().subtract(7, 'd').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD'));
-    }, [bookId]);
+    }, [bookId, loadAnalytics]);
 
     // Calucalate Totals for Header
     const totalCoin = React.useMemo(() => episodesStats.reduce((acc, curr) => acc + (curr.sales_coin || 0), 0), [episodesStats]);

@@ -9,7 +9,7 @@ export const fetchPackCampaignDetail = async (id: string): Promise<PackCampaignD
       return null;
     }
     return response.data.data;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
@@ -21,7 +21,7 @@ export const fetchCampaignsDiscount = async (): Promise<CampaignDiscount[]> => {
       return [];
     }
     return response.data.data || [];
-  } catch (error) {
+  } catch {
     return [];
   }
 }
@@ -30,7 +30,7 @@ export const fetchCampaignDetail = async (id: string | number): Promise<Campaign
   try {
     const response = await apiClient.get<CampaignDetailResponse>(`/campaigns/${id}`);
     return response.data.data;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -39,14 +39,14 @@ export const postCampaignClick = async (campaignId: number) => {
   try {
     if (!campaignId) return;
     await apiClient.post(`/campaigns/${campaignId}/click`, { id: campaignId });
-  } catch (error) {
+  } catch {
   }
 };
 
 export const postBannerClick = async (bannerId: number) => {
   try {
     await apiClient.post('/banner-click', { banner_id: bannerId });
-  } catch (error) {
+  } catch {
   }
 };
 
@@ -65,7 +65,7 @@ export const fetchPromotingGroups = async (): Promise<PromotingGroup[]> => {
   try {
     const response = await apiClient.get<{ code: number; data: PromotingGroup[] }>("/promoting-groups");
     return response.data?.data || [];
-  } catch (error) {
+  } catch {
     return [];
   }
 };
@@ -115,7 +115,7 @@ export const fetchPromotingGroupDetail = async (id: string | number): Promise<Pr
   try {
     const response = await apiClient.get<{ code: number; data: PromotingGroupDetail }>(`/promoting-group/${id}`);
     return response.data?.data || null;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -141,7 +141,7 @@ export const fetchPromotingBlockBooks = async (blockId: string | number, page: n
       params: { page, limit }
     });
     return response.data?.data || null;
-  } catch (error) {
+  } catch {
     return null;
   }
 };

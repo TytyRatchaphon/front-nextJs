@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Input, Button, notification, Upload, Select, Steps, ConfigProvider } from 'antd';
 import { UploadOutlined, UserOutlined, BankOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { registerWriter, updateWriter, fetchWriterProfile, checkWriterStatus, getBankList, getBankIdCardAccount, updateBankIdCardAccount } from '@/services/apiServices';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
-const { TextArea } = Input;
 const { Option } = Select;
 
 interface MyBookWriterInfoTabProps {
@@ -15,8 +15,8 @@ interface MyBookWriterInfoTabProps {
   updateToken: (token: string) => void;
 }
 
-const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, isWriter, updateToken }) => {
-  const router = useRouter();
+const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, isWriter }) => {
+  useRouter();
   const [api, contextHolder] = notification.useNotification();
   const queryClient = useQueryClient();
 
@@ -64,7 +64,7 @@ const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, 
   });
 
   // Fetch writer status
-  const { data: writerStatus, isLoading: isWriterStatusLoading } = useQuery({
+  const { data: writerStatus } = useQuery({
     queryKey: ['writerStatus', token],
     queryFn: () => checkWriterStatus(token),
     enabled: !!token,
@@ -109,7 +109,7 @@ const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, 
       if (!regFullname) setRegFullname(user.fullname || '');
       if (!regEmail) setRegEmail(user.email || '');
     }
-  }, [writerInfo, user]);
+  }, [writerInfo, user, regEmail, regFullname]);
 
   // Populate Step 2 (Bank/ID)
   useEffect(() => {
@@ -132,7 +132,7 @@ const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, 
     if (regFullname && !accountName) {
       setAccountName(regFullname);
     }
-  }, [regFullname]);
+  }, [regFullname, accountName]);
 
 
   // Combined Submit Handler for Existing Writer (Single Step)
@@ -506,7 +506,7 @@ const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, 
                             )}
                             
                             {(existingIdCard && !idCardFile) && (
-                                <img src={existingIdCard} alt="ID Card" className="h-40 object-contain mx-auto border rounded mb-4" />
+                                <Image src={existingIdCard} alt="ID Card" width={640} height={400} sizes="160px" unoptimized className="h-40 w-auto object-contain mx-auto border rounded mb-4" />
                             )}
 
                             <Upload
@@ -561,7 +561,7 @@ const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, 
                             )}
 
                             {(existingBankCert && !bankCertFile) && (
-                                <img src={existingBankCert} alt="Bank Book" className="h-40 object-contain mx-auto border rounded mb-4" />
+                                <Image src={existingBankCert} alt="Bank Book" width={640} height={400} sizes="160px" unoptimized className="h-40 w-auto object-contain mx-auto border rounded mb-4" />
                             )}
 
                             <Upload

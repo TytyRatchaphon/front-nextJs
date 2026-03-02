@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { Pagination, ConfigProvider, Select, Empty } from 'antd';
-import { fetchRankingBooks, fetchActiveCategories, RankingTimeRange, RankingBook } from '@/services/apiServices';
+import { fetchRankingBooks, fetchActiveCategories, RankingTimeRange } from '@/services/apiServices';
 import { TagSwiper } from "@/components/swiper/ImageSlider";
 import GifLoader from '@/components/utility/GifLoader';
 
@@ -61,12 +61,6 @@ export default function Rank() {
     }
   };
 
-  const getRankBadgeStyle = (rank: number) => {
-    // Top 3 Badge Styles could be custom images or colors
-    // For this design, it looks like a simple outlined number #1, #2... 
-    // but typically Top 3 have special treatment. The design shows simple badges.
-    return "border border-yellow-500 text-yellow-600 bg-yellow-50";
-  };
 
 
 

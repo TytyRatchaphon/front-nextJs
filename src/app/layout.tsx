@@ -140,8 +140,6 @@ export default function RootLayout({
           gtag('config', 'AW-16724162319');
         `}
       </Script>
-      <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID || ""} />
-
       {/* Facebook Pixel */}
       <Script id="facebook-pixel" strategy="afterInteractive">
         {`
@@ -162,6 +160,7 @@ export default function RootLayout({
         className={`flex flex-col w-full min-h-[100vh] font-bai-jamjuree font-medium`}>
         {/* Facebook Pixel NoScript */}
         <noscript>
+          {/* eslint-disable-next-line @next/next/no-img-element -- noscript tracking pixel requires a native img tag */}
           <img
             height="1"
             width="1"

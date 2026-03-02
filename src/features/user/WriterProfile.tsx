@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useState, Suspense, useCallback } from "react";
 import Image from "next/image";
 import { Image as AntdImage } from "antd";
-import { Pagination, Select, Tabs, Empty, Button, message, Modal } from "antd";
+import { Pagination, Select, Empty, Button, message, Modal } from "antd";
 import { fetchWriterBooks, fetchPublicWriterProfile, followWriter, WriterBook, WriterProfileResponse } from "@/services/apiServices";
 import CardBook from "@/components/novelCard/CardBook";
 import { useSearchParams } from "next/navigation";
@@ -30,7 +30,7 @@ function WriterProfileContent() {
     const [activeTab, setActiveTab] = useState("all");
     const [currentPage, setCurrentPage] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
-    const [pageSize, setPageSize] = useState(24);
+    const [pageSize] = useState(24);
     const [sortBy, setSortBy] = useState("view");
 
     // Follow State
@@ -74,7 +74,7 @@ function WriterProfileContent() {
 
     // Share logic replaced by react-share components directly in JSX
 
-    const fetchBooks = async () => {
+    const fetchBooks = useCallback(async () => {
         setLoading(true);
         try {
             const data = await fetchWriterBooks(writerId, activeTab, currentPage, pageSize, sortBy);
@@ -85,15 +85,15 @@ function WriterProfileContent() {
                 setBooks([]);
                 setTotalItems(0);
             }
-        } catch (error) {
+        } catch {
         } finally {
             setLoading(false);
         }
-    };
+    }, [writerId, activeTab, currentPage, pageSize, sortBy]);
 
     useEffect(() => {
         fetchBooks();
-    }, [writerId, activeTab, currentPage, pageSize, sortBy]);
+    }, [fetchBooks]);
 
     // Handle Tab Change
     const handleTabChange = (key: string) => {
@@ -132,7 +132,7 @@ function WriterProfileContent() {
                 });
             }
 
-        } catch (error) {
+        } catch {
             messageApi.error("เกิดข้อผิดพลาด กรุณาลองใหม่");
         } finally {
             setFollowLoading(false);

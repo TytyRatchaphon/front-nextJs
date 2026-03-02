@@ -42,7 +42,7 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
 
         const res = await apiClient.get('/sales-report', { params });
         return res.data;
-      } catch (err) {
+      } catch {
         return [];
       }
     },
@@ -68,7 +68,7 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
         try {
           const m = cd.match(/filename\*?=(?:UTF-8'')?"?([^;\"\n]+)"?/);
           if (m && m[1]) filename = decodeURIComponent(m[1]);
-        } catch (e) {
+        } catch {
           // ignore
         }
       }
@@ -220,7 +220,7 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
             onClick={() => {
               try {
                 if (typeof refetchSales === 'function') refetchSales();
-              } catch (e) {
+              } catch {
               }
             }}
             disabled={isLoadingSales}

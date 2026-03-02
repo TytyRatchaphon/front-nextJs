@@ -3,7 +3,7 @@ import Image from 'next/image';
 import React from 'react'
 import { UniversalBook } from '../../types/api';
 import SaleGroupSVG from './SaleGroupSvg';
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 
 
 

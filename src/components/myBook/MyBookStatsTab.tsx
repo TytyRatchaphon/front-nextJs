@@ -61,7 +61,7 @@ const MyBookStatsTab: React.FC<MyBookStatsTabProps> = ({ myBooks, token }) => {
         };
         const res = await apiClient.get('/bookstats', { params });
         return res.data;
-      } catch (e) {
+      } catch {
         return null;
       }
     },
@@ -90,7 +90,7 @@ const MyBookStatsTab: React.FC<MyBookStatsTabProps> = ({ myBooks, token }) => {
       }
       const rows = Object.keys(dataRows).sort().map(dk => dataRows[dk]);
       return { statsChartData: rows, statsSeriesKeys: seriesKeys };
-    } catch (e) {
+    } catch {
       return { statsChartData: [], statsSeriesKeys: [] };
     }
   }, [bookStatsResponse]);
@@ -146,7 +146,7 @@ const MyBookStatsTab: React.FC<MyBookStatsTabProps> = ({ myBooks, token }) => {
             try {
               setStatsSearched(true);
               if (typeof refetchBookStats === 'function') refetchBookStats();
-            } catch (e) {
+            } catch {
             }
           }}
           disabled={isLoadingBookStats}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchRecentNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '@/services/apiServices';
-import { Empty, Avatar, List, Tooltip, Button, Tag } from 'antd';
+import { Tooltip, Button, Tag } from 'antd';
 import { BellOutlined, CheckOutlined, BookOutlined, MessageOutlined, InfoCircleOutlined, UserOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -45,7 +45,7 @@ interface NotificationItem {
 const NotificationList: React.FC = () => {
     const queryClient = useQueryClient();
     const router = useRouter(); // Initialize router
-    const [exitingIds, setExitingIds] = React.useState<Set<number>>(new Set());
+    React.useState<Set<number>>(new Set());
 
     const { data: notifications, isLoading } = useQuery({
         queryKey: ['recentNotifications'],

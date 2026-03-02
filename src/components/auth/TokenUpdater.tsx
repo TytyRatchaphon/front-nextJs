@@ -1,77 +1,97 @@
-"use client"
+﻿"use client"
 
 import { useEffect } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { useAuthStore } from '@/stores/authStore'
-import { App, notification} from 'antd'
+import { notification } from 'antd'
 import DuplicateLoginModal from './DuplicateLoginModal'
 import { refreshToken } from '@/services/apiServices'
 
 import Cookies from 'js-cookie'
 import { CheckCircleOutlined } from '@ant-design/icons'
+import { parseJwtToken } from '@/utils/jwtParser'
+
+const getTokenUserId = (token: string | null | undefined): string | null => {
+    try {
+        const cleaned = parseJwtToken(token);
+        if (!cleaned) return null;
+
+        const payloadPart = cleaned.split('.')[1];
+        if (!payloadPart) return null;
+
+        const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+        const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+        const payload = JSON.parse(atob(padded));
+        const userId = payload?.userId ?? payload?.user_id ?? payload?.id ?? payload?.sub;
+
+        return userId !== undefined && userId !== null ? String(userId) : null;
+    } catch {
+        return null;
+    }
+};
 
 export default function TokenUpdater() {
-    const searchParams = useSearchParams()
-    const router = useRouter()
-    const pathname = usePathname()
-    const updateToken = useAuthStore((state) => state.updateToken)
-    const { message } = App.useApp()
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const pathname = usePathname();
+    const updateToken = useAuthStore((state) => state.updateToken);
 
     useEffect(() => {
-        // Check for 'token' or 'tk' in query params
-        const newToken = searchParams.get('token') || searchParams.get('tk')
+        const incomingRawToken = searchParams.get('token') || searchParams.get('tk');
+        if (!incomingRawToken) return;
 
-        if (newToken) {
-            // Get current token directly from store to avoid dependency loop
-            const oldToken = useAuthStore.getState().token
+        // Clean query token from URL immediately to reduce leakage risk.
+        const newParams = new URLSearchParams(searchParams.toString());
+        newParams.delete('token');
+        newParams.delete('tk');
+        const newQuery = newParams.toString();
+        const newUrl = newQuery ? `${pathname}?${newQuery}` : pathname;
+        router.replace(newUrl);
 
-            // Update store with new token
-            if (newToken !== oldToken) {
-                updateToken(newToken)
-                notification.success({
-                    message: 'อัปเดตยอดเงินสำเร็จ',
-                    description: 'อัปเดตยอดเงินเรียบร้อยแล้ว',
-                    icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
-                    placement: 'topRight',
-                });
-            }
+        const incomingToken = parseJwtToken(incomingRawToken);
+        const currentToken =
+            useAuthStore.getState().token ||
+            parseJwtToken(Cookies.get('token')) ||
+            parseJwtToken(localStorage.getItem('token')) ||
+            parseJwtToken(localStorage.getItem('authToken'));
 
-            // Clean up the URL by removing the token param
-            const newParams = new URLSearchParams(searchParams.toString())
-            newParams.delete('token')
-            newParams.delete('tk')
+        // Do not allow URL token to bootstrap a new login session.
+        if (!incomingToken || !currentToken || incomingToken === currentToken) return;
 
-            const newQuery = newParams.toString()
-            const newUrl = newQuery ? `${pathname}?${newQuery}` : pathname
+        const incomingUserId = getTokenUserId(incomingToken);
+        const currentUserId = getTokenUserId(currentToken);
 
-            router.replace(newUrl)
-        }
-    }, [searchParams, router, pathname, updateToken, message])
+        // Accept token update only when it belongs to current account.
+        if (incomingUserId && currentUserId && incomingUserId !== currentUserId) return;
+
+        updateToken(incomingToken);
+        notification.success({
+            message: 'อัปเดตยอดเงินสำเร็จ',
+            description: 'อัปเดตยอดเงินเรียบร้อยแล้ว',
+            icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+            placement: 'topRight',
+        });
+    }, [searchParams, router, pathname, updateToken]);
 
     useEffect(() => {
         const fetchRefreshToken = async () => {
-            // Check if token exists in storage before calling API
             const savedToken = Cookies.get('token') || localStorage.getItem('token') || localStorage.getItem('authToken');
             if (!savedToken) return;
 
             try {
                 const res = await refreshToken();
-                // API returns { code: 200, data: "token_string", ... }
                 if (res?.code === 200 && typeof res.data === 'string') {
                     updateToken(res.data);
                 } else if (res?.data?.token) {
-                     // Fallback in case structure changes or I misread
                     updateToken(res.data.token);
                 }
-            } catch (error) {
+            } catch {
                 // Silent fail for background refresh
             }
         };
 
         fetchRefreshToken();
-    }, []);
-
-
+    }, [updateToken]);
 
     return (
         <>

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { CollectionCommentData, postCollectionReply, deleteCollectionComment, deleteCollectionReply, reportCollectionComment, reportCollectionReply } from "@/services/api/collectionApi";
 import { Button, Input, Modal, App, Popover } from "antd";
 import { useAuthStore } from "@/stores/authStore";
@@ -211,7 +212,7 @@ export default function CollectionCommentItem({
             <div className="flex gap-4">
                 {/* Avatar & Frame Container */}
                 <div className="flex-shrink-0">
-                    <div className="relative w-10 h-10 sm:w-12 sm:h-12 border bg-gray-100 border-gray-200 rounded-full overflow-hidden">
+                    <Link href={`/profile/${comment.user_id}`} className="block relative w-10 h-10 sm:w-12 sm:h-12 border bg-gray-100 border-gray-200 rounded-full overflow-hidden">
                         <SafeAvatar 
                             src={userAvatar} 
                             alt={comment.user?.fullname || "User"} 
@@ -229,16 +230,18 @@ export default function CollectionCommentItem({
                                 />
                             </div>
                         )}
-                    </div>
+                    </Link>
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 min-w-0 pr-6">
                     {/* Header */}
                     <div className="mb-2">
-                        <h4 className="text-sm font-semibold mb-1 text-gray-900">
-                            {comment.user?.fullname || "Anonymous User"}
-                        </h4>
+                        <Link href={`/profile/${comment.user_id}`}>
+                            <h4 className="text-sm font-semibold mb-1 text-gray-900 hover:underline">
+                                {comment.user?.fullname || "Anonymous User"}
+                            </h4>
+                        </Link>
                         <div className="flex items-center gap-2">
                             <span className="text-xs text-gray-400">• {formattedDate}</span>
                         </div>
@@ -294,17 +297,19 @@ export default function CollectionCommentItem({
                                     <div className="flex items-center justify-between mb-2">
                                         <div className="flex items-center gap-2">
                                             {/* Small Avatar for Replier */}
-                                            <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 bg-gray-200">
+                                            <Link href={`/profile/${reply.user_id}`} className="block w-5 h-5 rounded-full overflow-hidden shrink-0 bg-gray-200">
                                                 <SafeAvatar 
                                                     src={reply.user?.img} 
                                                     alt="Replier" 
                                                     className="object-cover w-full h-full"
                                                     isReply={true}
                                                 />
-                                            </div>
-                                            <span className="text-xs sm:text-sm font-bold text-gray-800">
-                                                {reply.user?.fullname || "Admin"}
-                                            </span>
+                                            </Link>
+                                            <Link href={`/profile/${reply.user_id}`}>
+                                                <span className="text-xs sm:text-sm font-bold text-gray-800 hover:underline">
+                                                    {reply.user?.fullname || "Admin"}
+                                                </span>
+                                            </Link>
                                             <span className="text-[10px] text-gray-400">
                                                 {new Date(reply.created_at).toLocaleDateString("th-TH")}
                                             </span>

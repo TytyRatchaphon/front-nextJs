@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { fetchPromotingBlockBooks, PromotingBook, PromotingBlockBooksResponse } from '@/services/apiServices';
+import { fetchPromotingBlockBooks, PromotingBook } from '@/services/apiServices';
 import CardBook from '@/components/novelCard/CardBook';
 import { Spin, Button } from 'antd';
 import Image from 'next/image';
@@ -11,7 +11,6 @@ import { ArrowLeftOutlined } from '@ant-design/icons';
 
 function PromotionBlockDetail() {
   const params = useParams();
-  const id = params?.id as string;
   const blockId = params?.blockId as string;
   const router = useRouter();
 
@@ -83,11 +82,14 @@ function PromotionBlockDetail() {
 
         {/* Banner */}
         {displayBanner && (
-          <div className="w-full mb-8 rounded-xl overflow-hidden shadow-sm">
-             <img
+          <div className="relative w-full mb-8 rounded-xl overflow-hidden shadow-sm h-[150px] md:h-[250px]">
+             <Image
               src={displayBanner}
               alt="Block Banner"
-              className="w-full h-[150px] md:h-[250px] object-fill"
+              fill
+              sizes="100vw"
+              className="object-fill"
+              unoptimized
             />
           </div>
         )}

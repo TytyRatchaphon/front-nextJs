@@ -18,9 +18,9 @@ declare global {
 }
 
 const LoginGoogle = () => {
-  const { message, notification } = App.useApp();
+  const { notification } = App.useApp();
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  useRouter();
   const { login, updateToken } = useAuthStore();
   const { closeLoginModal } = useUIStore();
   const { log: logActivity } = useLogger();
@@ -42,7 +42,7 @@ const LoginGoogle = () => {
     try {
       if (!token) return false;
       return false;
-    } catch (e) {
+    } catch {
       return false;
     }
   };
@@ -135,7 +135,7 @@ const LoginGoogle = () => {
             placement: 'topRight',
         });
       }
-    } catch (error) {
+    } catch {
       setLoading(false);
       notification.error({
         message: 'เกิดข้อผิดพลาด',

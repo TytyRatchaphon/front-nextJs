@@ -7,7 +7,7 @@ import { Tooltip } from 'antd';
 
 import { useAuthStore } from '@/stores/authStore';
 import { useWebsiteStore } from '@/stores/websiteStore';
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 
 interface AmountPillProps {
     amount: number;

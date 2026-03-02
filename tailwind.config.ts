@@ -1,7 +1,6 @@
 import type { Config } from 'tailwindcss'
-const defaultTheme = require("tailwindcss/defaultTheme");
-// import scrollbarHide from 'tailwind-scrollbar-hide' 
-// (ถ้าใช้ require('tailwind-scrollbar-hide') ด้านล่าง, import นี้ไม่จำเป็น)
+import defaultTheme from 'tailwindcss/defaultTheme'
+import scrollbarHide from 'tailwind-scrollbar-hide'
 
 const config: Config = {
   
@@ -24,7 +23,7 @@ const config: Config = {
     },
   },
   plugins: [
-    require('tailwind-scrollbar-hide')
+    scrollbarHide
   ],
 }
 export default config

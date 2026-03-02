@@ -4,7 +4,7 @@ import Link from 'next/link';
 import parse from 'html-react-parser';
 import { Clock, Eye } from 'lucide-react';
 import { ArticleItem } from '@/types/api';
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 
 interface ArticleCardProps {
   article: ArticleItem;

@@ -46,7 +46,7 @@ export function useReadingTheme(contentRef: React.RefObject<HTMLElement>) {
                     if (parsed.fontSize && typeof parsed.fontSize === 'string') setFontSize(20);
                 }
             }
-        } catch (err) { } finally {
+        } catch { } finally {
             setIsLoaded(true);
         }
     }, []);
@@ -58,7 +58,7 @@ export function useReadingTheme(contentRef: React.RefObject<HTMLElement>) {
             const key = "reading_theme_v2";
             const payload = { bgColor, fontSize, fontFamily, isBold, textAlign };
             localStorage.setItem(key, JSON.stringify(payload));
-        } catch (err) { }
+        } catch { }
     }, [bgColor, fontSize, fontFamily, isBold, textAlign, isLoaded]);
 
     // Navbar Style Override
@@ -114,7 +114,7 @@ export function useReadingTheme(contentRef: React.RefObject<HTMLElement>) {
                 const s = document.getElementById(styleId);
                 if (s) s.remove();
             };
-        } catch (err) { }
+        } catch { }
     }, [bgColor, fontFamily]);
 
     // Auto Scroll Logic

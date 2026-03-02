@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Ticket } from 'lucide-react';
-import { message, Tabs, ConfigProvider, Button, Input, Empty, notification } from 'antd';
+import { message, Tabs, ConfigProvider, Button, Input, notification } from 'antd';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { claimCouponByCode, fetchAvailableCoupons, fetchUserCoupons } from '@/services/apiServices';
 import AvailableCoupons from './AvailableCoupons';
@@ -16,7 +16,7 @@ dayjs.extend(buddhistEra);
 dayjs.locale('th');
 
 const CouponDetail = () => {
-    const [messageApi, contextHolder] = message.useMessage();
+    const [, contextHolder] = message.useMessage();
     const queryClient = useQueryClient();
     const [couponCode, setCouponCode] = useState('');
 
@@ -33,7 +33,7 @@ const CouponDetail = () => {
              return data || [];
         }
     });
-     const { data: userCoupons = [] } = useQuery({
+     useQuery({
         queryKey: ['userCouponsForCount'],
         queryFn: async () => {
              const data = await fetchUserCoupons();

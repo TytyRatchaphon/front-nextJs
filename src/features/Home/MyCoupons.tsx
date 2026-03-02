@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchUserCoupons, useCoupon } from '@/services/apiServices';
+import { fetchUserCoupons, useCoupon as applyCoupon } from '@/services/apiServices';
 import { Empty, message, Modal, Checkbox, Button, Image as AntImage } from 'antd';
 import { Ticket, Percent, Coins, BookOpenCheck, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
 import GifLoader from '@/components/utility/GifLoader';
@@ -33,7 +33,7 @@ const MyCoupons = () => {
     });
 
     const useCouponMutation = useMutation({
-        mutationFn: (data: { userCouponId: number, selectedRewardIds: number[] }) => useCoupon(data.userCouponId, data.selectedRewardIds),
+        mutationFn: (data: { userCouponId: number, selectedRewardIds: number[] }) => applyCoupon(data.userCouponId, data.selectedRewardIds),
         onSuccess: (response: any) => {
              // Close selection modal first
              setIsModalOpen(false);
@@ -66,16 +66,16 @@ const MyCoupons = () => {
                      
                      if (r.config) {
                         if (typeof r.config === 'string') {
-                            try { config = JSON.parse(r.config); } catch (e) {}
+                            try { config = JSON.parse(r.config); } catch {}
                         } else if (typeof r.config === 'object') {
                             config = r.config;
                         }
                      } else if (r.rewardConfig) {
                          if (typeof r.rewardConfig === 'string') {
-                            try { config = JSON.parse(r.rewardConfig); } catch (e) {}
+                            try { config = JSON.parse(r.rewardConfig); } catch {}
                             // Handle double stringifying just in case
                             if (typeof config === 'string') {
-                                try { config = JSON.parse(config); } catch (e) {}
+                                try { config = JSON.parse(config); } catch {}
                             }
                          } else if (typeof r.rewardConfig === 'object') {
                             config = r.rewardConfig;
@@ -111,7 +111,7 @@ const MyCoupons = () => {
                              // Fallback: Try to find details in selectedCoupon
                              let originalReward = selectedCoupon?.rewards?.find((or: any) => {
                                  let orConfig: any = {};
-                                 try { orConfig = typeof or.rewardConfig === 'string' ? JSON.parse(or.rewardConfig) : or.rewardConfig; } catch (e) {}
+                                 try { orConfig = typeof or.rewardConfig === 'string' ? JSON.parse(or.rewardConfig) : or.rewardConfig; } catch {}
                                  // loose equality for ID
                                  return or.rewardType === 'NOVEL_WHOLE' && (String(orConfig?.book_id) == String(config?.book_id));
                              });
@@ -338,7 +338,7 @@ const MyCoupons = () => {
                                          {selectedCoupon.rewards.map((reward, index) => {
                                              let config: any = {};
                                              if (typeof reward.rewardConfig === 'string') {
-                                                 try { config = JSON.parse(reward.rewardConfig); } catch (e) {}
+                                                 try { config = JSON.parse(reward.rewardConfig); } catch {}
                                              } else if (typeof reward.rewardConfig === 'object') {
                                                  config = reward.rewardConfig;
                                              }

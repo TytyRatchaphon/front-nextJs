@@ -17,6 +17,7 @@ export interface ImageLoaderParams {
  * @returns The image URL
  */
 export const imageLoader = ({ src, width }: { src: string; width?: number }): string => {
+  void width;
   // For external URLs (http/https), return as-is
   if (src.startsWith('http://') || src.startsWith('https://')) {
     return src;

@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { Input, Select, Button, Pagination } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import MyBookCardNew from '@/components/novelCard/MyBookCardNew';
-import { genresCommon, translatedSpecifics } from '../navbar/NovelMenu';
+import '../navbar/NovelMenu';
 
 const { Option } = Select;
 

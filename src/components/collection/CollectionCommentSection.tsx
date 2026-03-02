@@ -37,7 +37,7 @@ export default function CollectionCommentSection({ collectionId }: CollectionCom
         const decoded = JSON.parse(jsonPayload);
         const uid = decoded.user_id || decoded.id || decoded.sub || decoded.userId;
         setCurrentUserId(Number(uid));
-      } catch (error) {
+      } catch {
       }
     }
   }, [token]);
@@ -50,7 +50,7 @@ export default function CollectionCommentSection({ collectionId }: CollectionCom
   // Form State
   const [newComment, setNewComment] = useState("");
 
-  const loadComments = async () => {
+  const loadComments = React.useCallback(async () => {
     try {
       setLoading(true);
       const data = await fetchCollectionComments(collectionId, currentPage, pageSize);
@@ -67,16 +67,16 @@ export default function CollectionCommentSection({ collectionId }: CollectionCom
         setComments([]);
         setTotalItems(0);
       }
-    } catch (err) {
+    } catch {
       setError("ไม่สามารถโหลดความคิดเห็นได้");
     } finally {
       setLoading(false);
     }
-  };
+  }, [collectionId, currentPage, pageSize]);
 
   useEffect(() => {
     if (collectionId) loadComments();
-  }, [collectionId, currentPage, pageSize]);
+  }, [collectionId, loadComments]);
 
   const handleSubmit = async () => {
     if (!token) {

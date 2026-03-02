@@ -3,11 +3,11 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchThreads, createThread, deleteThread } from '@/services/apiServices';
-import { Pagination, Select, Tabs, Modal, Input, Button, Form, message, Popconfirm, Dropdown } from 'antd';
+import { Pagination, Select, Tabs, Modal, Input, Button, Form, message } from 'antd';
 import GifLoader from '@/components/utility/GifLoader';
 import Link from 'next/link';
-import Image from 'next/image';
-import { ClockCircleOutlined, EyeOutlined, MessageOutlined, FireOutlined, EditOutlined, MoreOutlined, DeleteOutlined } from '@ant-design/icons';
+import 'next/image';
+import { ClockCircleOutlined, EyeOutlined, MessageOutlined, FireOutlined, EditOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import 'dayjs/locale/th';
 import TextEditor from '@/components/utility/TextEditor';
@@ -56,7 +56,7 @@ export default function Threads() {
         const decoded = JSON.parse(jsonPayload);
         const uid = decoded.user_id || decoded.id || decoded.sub || decoded.userId;
         setCurrentUserId(Number(uid));
-      } catch (error) {
+      } catch {
       }
     }
   }, [token]);
@@ -79,7 +79,7 @@ export default function Threads() {
       form.resetFields();
       queryClient.invalidateQueries({ queryKey: ['threads'] });
     },
-    onError: (error) => {
+    onError: () => {
       messageApi.error('เกิดข้อผิดพลาดในการตั้งกระทู้');
     },
   });
@@ -90,14 +90,13 @@ export default function Threads() {
       messageApi.success('ลบกระทู้สำเร็จ');
       queryClient.invalidateQueries({ queryKey: ['threads'] });
     },
-    onError: (error) => {
+    onError: () => {
         messageApi.error('เกิดข้อผิดพลาดในการลบกระทู้');
     }
   });
 
-  const handleDeleteThread = (id: number) => {
-    deleteThreadMutation.mutate(id);
-  };
+  void deleteThreadMutation;
+
 
   const threads = threadResponse?.data?.list || [];
   const pagination = threadResponse?.data?.paginate;
@@ -217,8 +216,8 @@ export default function Threads() {
                  <div className="absolute top-10 left-8 w-4 h-4 bg-black rounded-full"></div>
                  <div className="absolute top-10 right-8 w-4 h-4 bg-black rounded-full"></div>
                  <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-8 h-4 bg-pink-300 rounded-b-full"></div>
-                 <div className="absolute bottom-10 left-4 text-pink-300 text-xl">///</div>
-                 <div className="absolute bottom-10 right-4 text-pink-300 text-xl">///</div>
+                 <div className="absolute bottom-10 left-4 text-pink-300 text-xl">{'///'}</div>
+                 <div className="absolute bottom-10 right-4 text-pink-300 text-xl">{'///'}</div>
               </div>
           </div>
           

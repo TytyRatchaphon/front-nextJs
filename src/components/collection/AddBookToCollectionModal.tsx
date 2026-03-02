@@ -244,7 +244,6 @@ function SearchAllTab({
       });
     }
     return chips;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, categories]);
 
   const clearAllFilters = () => {

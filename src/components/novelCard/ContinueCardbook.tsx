@@ -31,20 +31,11 @@ function CardBook({ book }: CardBookProps) {
   // Client-side debug: log whether shelveCount is present when the card mounts/updates
   React.useEffect(() => {
     try {
-    } catch (e) {
+    } catch {
       // ignore
     }
   }, [book.book_id, book.bookID, book.shelveCount]);
   
-  const formatNumber = (num: number) => {
-    if (num >= 1000 && num <= 999999) {
-      return `${(num / 1000).toFixed(0)}k`;
-    }
-    if (num >= 1000000) {
-      return `${(num / 1000000).toFixed(1)}M`;
-    }
-    return num;
-}
   // สร้าง URL รูปภาพ
   // Support both full URLs and filename keys from the API.
   const imageUrl = book.img

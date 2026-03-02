@@ -1,15 +1,15 @@
 "use client"
 
 import React from 'react'
-import { Card, Tabs, Table, Empty, notification, Collapse } from 'antd'
+import { Card, Tabs, Table, Empty, notification } from 'antd';
 import apiClient from '@/services/apiClient'
 import { useQuery } from '@tanstack/react-query'
 import { get_date as use_date } from '@/utils/dateUtils'
-import { StoreBanner } from '@/components/home/Banner'
+import '@/components/home/Banner';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import GifLoader from '@/components/utility/GifLoader';
 import Image from 'next/image';
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 import { CloseCircleOutlined } from '@ant-design/icons';
 
 
@@ -27,12 +27,12 @@ function History() {
   ]
 
   // table columns that apply for most history lists
-  const columns = [
+  const columns = React.useMemo(() => [
     { title: 'วัน/เดือน/ปี', dataIndex: 'date', key: 'date', width: 180 },
     { title: 'รายละเอียดสินค้า', dataIndex: 'detail', key: 'detail' },
     { title: 'ราคา', dataIndex: 'price', key: 'price', width: 120, align: 'right' as const },
     { title: 'สถานะ', dataIndex: 'status', key: 'status', width: 140, align: 'center' as const },
-  ]
+  ], [])
 
   // no data for now; each tab will render a table with Empty when data is empty
   const data: any[] = []
@@ -42,7 +42,7 @@ function History() {
     if (v === null || v === undefined) return ''
     try {
       return String(v).replace(/\uFEFF|\r|\n|\u200B/g, '').trim()
-    } catch (e) {
+    } catch {
       return String(v)
     }
   }
@@ -110,7 +110,7 @@ function History() {
       raw: it,
       key: `${it.paymentID ?? it.paymentId ?? it.id ?? 'payment'}-${idx}`,
     }))
-  }, [paymentsQuery.data, paymentsQuery.isFetching])
+  }, [paymentsQuery])
 
   // (pagination state declared above)
 
@@ -161,7 +161,10 @@ function History() {
 
 
   const redeemPrev = (redeemQuery as any).previousData
-  const redeemRawSafe = redeemQuery.data?.data ?? redeemQuery.data ?? redeemPrev?.data ?? redeemPrev ?? {}
+  const redeemRawSafe = React.useMemo(
+    () => redeemQuery.data?.data ?? redeemQuery.data ?? redeemPrev?.data ?? redeemPrev ?? {},
+    [redeemQuery.data, redeemPrev]
+  )
   const redeems = React.useMemo(() => {
     const container = redeemRawSafe
     const list = Array.isArray(container)
@@ -187,10 +190,13 @@ function History() {
       raw: it,
       key: `${it.code ?? it.redeemCode ?? idx}-${idx}`,
     }))
-  }, [redeemQuery.data, redeemQuery.isFetching])
+  }, [redeemRawSafe])
 
   const gachaPrev = (gachaQuery as any).previousData
-  const gachaRaw = gachaQuery.data?.data ?? gachaQuery.data ?? gachaPrev?.data ?? gachaPrev ?? []
+  const gachaRaw = React.useMemo(
+    () => gachaQuery.data?.data ?? gachaQuery.data ?? gachaPrev?.data ?? gachaPrev ?? [],
+    [gachaQuery.data, gachaPrev]
+  )
   const gachas = React.useMemo(() => {
     const list = Array.isArray(gachaRaw)
       ? gachaRaw
@@ -207,10 +213,13 @@ function History() {
       raw: it,
       key: `${it.id ?? it.txId ?? it.user_id ?? 'gacha'}-${idx}`,
     }))
-  }, [gachaQuery.data])
+  }, [gachaRaw])
 
   const getMorePrev = (getMoreQuery as any).previousData
-  const getMoreRaw = getMoreQuery.data?.data ?? getMoreQuery.data ?? getMorePrev?.data ?? getMorePrev ?? []
+  const getMoreRaw = React.useMemo(
+    () => getMoreQuery.data?.data ?? getMoreQuery.data ?? getMorePrev?.data ?? getMorePrev ?? [],
+    [getMoreQuery.data, getMorePrev]
+  )
   const getMores = React.useMemo(() => {
     const list = Array.isArray(getMoreRaw)
       ? getMoreRaw
@@ -229,10 +238,13 @@ function History() {
       raw: it,
       key: `${it.id ?? it.user_id ?? idx}-getmore-${idx}`,
     }))
-  }, [getMoreQuery.data])
+  }, [getMoreRaw])
 
   const useCoinPrev = (useCoinQuery as any).previousData
-  const useCoinRaw = useCoinQuery.data?.data ?? useCoinQuery.data ?? useCoinPrev?.data ?? useCoinPrev ?? []
+  const useCoinRaw = React.useMemo(
+    () => useCoinQuery.data?.data ?? useCoinQuery.data ?? useCoinPrev?.data ?? useCoinPrev ?? [],
+    [useCoinQuery.data, useCoinPrev]
+  )
   const useCoins = React.useMemo(() => {
     const list = Array.isArray(useCoinRaw)
       ? useCoinRaw
@@ -326,7 +338,10 @@ function History() {
   ])
 
   const giftPrev = (giftQuery as any).previousData
-  const giftRaw = giftQuery.data?.data ?? giftQuery.data ?? giftPrev?.data ?? giftPrev ?? {}
+  const giftRaw = React.useMemo(
+    () => giftQuery.data?.data ?? giftQuery.data ?? giftPrev?.data ?? giftPrev ?? {},
+    [giftQuery.data, giftPrev]
+  )
   const gifts = React.useMemo(() => {
     const container = giftRaw
     const list = Array.isArray(container)
@@ -345,10 +360,13 @@ function History() {
       raw: it,
       key: `${it.id ?? it.txId ?? it.giftID ?? 'gift'}-${idx}`,
     }))
-  }, [giftQuery.data, giftQuery.isFetching])
+  }, [giftRaw])
 
   const storeHistoryPrev = (storeHistoryQuery as any).previousData
-  const storeHistoryRaw = storeHistoryQuery.data?.data ?? storeHistoryQuery.data ?? storeHistoryPrev?.data ?? storeHistoryPrev ?? {}
+  const storeHistoryRaw = React.useMemo(
+    () => storeHistoryQuery.data?.data ?? storeHistoryQuery.data ?? storeHistoryPrev?.data ?? storeHistoryPrev ?? {},
+    [storeHistoryQuery.data, storeHistoryPrev]
+  )
   const storeHistories = React.useMemo(() => {
     const list = Array.isArray(storeHistoryRaw)
       ? storeHistoryRaw
@@ -368,7 +386,7 @@ function History() {
       raw: it,
       key: `${it.id ?? idx}-store-${idx}`,
     }))
-  }, [storeHistoryQuery.data, storeHistoryQuery.isFetching])
+  }, [storeHistoryRaw])
 
   // Ensure current page indices stay within valid range when data or pageSize changes
   React.useEffect(() => {
@@ -406,15 +424,25 @@ function History() {
     gachas.length,
     getMores.length,
     gifts.length,
+    storeHistories.length,
     pageSize,
-    paymentsQuery.data,
-    useCoinQuery.data,
-    redeemQuery.data,
-    gachaQuery.data,
-    getMoreQuery.data,
-    giftQuery.data,
-    storeHistoryQuery.data,
+    paymentsPage,
+    useCoinsPage,
+    redeemPage,
+    gachaPage,
+    getmorePage,
+    giftPage,
+    storeHistoryPage,
+    paymentsQuery,
+    useCoinQuery,
+    redeemQuery,
+    gachaQuery,
+    getMoreQuery,
+    giftQuery,
+    storeHistoryQuery,
   ])
+
+  const { settings } = useWebsiteStore();
 
   const tableColumns = React.useMemo(() => {
     if (activeKey === '1') {
@@ -532,13 +560,7 @@ function History() {
                               stamp: settings?.stamp || '/images/stamp.png',
                             }
                             const src = map[curLower];
-
-                            const unitMap: Record<string, string> = {
-                                coin: 'เหรียญ',
-                                freecoin: 'ถุงเงิน',
-                                stamp: 'แสตมป์',
-                            };
-                            const unitName = unitMap[curLower] || currency;
+                            const unitName = currency;
 
                             if (src) {
                                 return (
@@ -631,9 +653,18 @@ function History() {
     }
 
     return columns
-  }, [activeKey, paymentsQuery.data, useCoinQuery.data, redeemQuery.data, gachaQuery.data, getMoreQuery.data])
-
-  const { settings } = useWebsiteStore();
+  }, [
+    activeKey,
+    columns,
+    settings?.coin,
+    settings?.coupon,
+    settings?.exp,
+    settings?.fast_ticket,
+    settings?.flower,
+    settings?.freecoin,
+    settings?.heart,
+    settings?.stamp,
+  ])
 
   return (
     <div className="mt-10 mb-10">
@@ -748,13 +779,6 @@ function History() {
                                              const src = currency === 'coin' ? (settings?.coin || '/images/e-coin.png') :
                                                          currency === 'freecoin' ? (settings?.freecoin || '/images/money-bag.png') :
                                                          currency === 'stamp' ? (settings?.stamp || '/images/stamp.png') : null;
-                                             
-                                             const unitMap: Record<string, string> = {
-                                                coin: 'เหรียญ',
-                                                freecoin: 'ถุงเงิน',
-                                                stamp: 'แสตมป์',
-                                             };
-                                             const unitName = unitMap[currency] || '';
 
                                              return (
                                                 <div key={i} className="flex items-center justify-between text-sm py-2 border-b border-gray-100 last:border-0">

@@ -96,19 +96,7 @@ function MyProfileContent() {
         );
     }
 
-    const {
-        fullname,
-        banner,
-        img: profileImg,
-        frame,
-        aka,
-        flower = 0,
-        heart = 0,
-        stamp = 0,
-        coupon = 0,
-        coin = 0,
-        freecoin = 0,
-    } = user as any; // Cast for additional fallback fields
+    const { fullname, banner, img: profileImg, frame, aka, stamp = 0, coin = 0, freecoin = 0 } = user as any; // Cast for additional fallback fields
 
     return (
         <div className="min-h-screen bg-white font-primary pb-10">
@@ -214,7 +202,7 @@ function MyProfileContent() {
                             {/* Background Rank Image */}
                             <div className="absolute -right-10 -bottom-10 w-50 h-50 opacity-15 pointer-events-none">
                                 <Image 
-                                    src={rankData.current_rank.rank_img || "/images/rank_dummy.png"} 
+                                    src={rankData.current_rank.rank_img || "/images/user.png"} 
                                     alt="" 
                                     fill 
                                     className="object-contain"
@@ -227,14 +215,13 @@ function MyProfileContent() {
                                     {/* Badge Icon */}
                                     <div className="w-16 h-16 bg-white/60 rounded-full shadow-sm flex items-center justify-center p-2 border border-white/80 shrink-0">
                                         <Image 
-                                            src={rankData.current_rank.rank_img || "/images/rank_dummy.png"} 
+                                            src={rankData.current_rank.rank_img || "/images/user.png"} 
                                             alt={rankData.current_rank.name} 
                                             width={48} 
                                             height={48} 
+                                            sizes="48px"
                                             className="object-contain"
-                                            onError={(e) => {
-                                                (e.target as HTMLImageElement).src = 'https://image.enjoybook.co/enjoybook.image/rank/202602241505545qtm.png';
-                                            }}
+                                            unoptimized
                                         />
                                     </div>
                                     {/* Rank Details */}
@@ -246,14 +233,16 @@ function MyProfileContent() {
                                 
                                 {/* Total RP */}
                                 <div className="flex items-center gap-1.5 bg-red-100/50 px-3 py-1.5 rounded-xl border border-red-200/50">
-                                    <Image
-                                        src={settings?.rank_point || ""}
-                                        alt="RP"
-                                        width={18}
-                                        height={18}
-                                        className="object-contain"
-                                        unoptimized
-                                    />
+                                    {settings?.rank_point && (
+                                        <Image
+                                            src={settings.rank_point}
+                                            alt="RP"
+                                            width={18}
+                                            height={18}
+                                            className="object-contain"
+                                            unoptimized
+                                        />
+                                    )}
                                     <span className="text-red-600 font-bold text-lg">{rankData.total_rp.toLocaleString()}</span>
                                 </div>
                             </div>
@@ -342,10 +331,11 @@ function MyProfileContent() {
                                             rank.is_current_rank ? 'bg-red-50 ring-2 ring-red-300' : 'bg-gray-50'
                                         }`}>
                                             <Image 
-                                                src={rank.rank_img} 
+                                                src={rank.rank_img || "/images/user.png"} 
                                                 alt={rank.name} 
                                                 width={90} 
                                                 height={90} 
+                                                sizes="90px"
                                                 className="object-contain"
                                                 unoptimized
                                             />

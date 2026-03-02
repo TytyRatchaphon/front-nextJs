@@ -2,7 +2,7 @@ import { Suspense } from "react";
 // import Image from "next/image";
 import SearchClient from "@/components/search/SearchClient";
 import GifLoader from "@/components/utility/GifLoader";
-import { SearchBanner } from "@/components/home/Banner";
+import "@/components/home/Banner";
 
 export default function SearchPage() {
   return (

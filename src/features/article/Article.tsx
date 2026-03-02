@@ -5,7 +5,7 @@ import parse from 'html-react-parser';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
-import { fetchPopularArticles, fetchLatestArticles, PopularArticle, LatestArticle } from '@/services/apiServices';
+import { fetchPopularArticles, fetchLatestArticles, LatestArticle } from '@/services/apiServices';
 
 // Helper to format date to Thai string "19 พ.ค. 2025"
 const formatDate = (dateString: string) => {
@@ -16,7 +16,7 @@ const formatDate = (dateString: string) => {
       month: 'short',
       year: 'numeric',
     });
-  } catch (error) {
+  } catch {
     return dateString;
   }
 };

@@ -3,13 +3,13 @@
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Alert, Divider, Tag } from 'antd';
-import { Eye, Clock, Share2, User, ChevronRight, Calendar } from 'lucide-react';
+import { Alert, Tag } from 'antd';
+import { Eye, Clock, Share2, ChevronRight } from 'lucide-react';
 import { fetchArticleDetail } from '@/services/apiServices';
-import type { ArticleResponse, ArticleDetail as ArticleDetailType, ArticleRecommend } from '@/types/api';
+import type { ArticleResponse } from '@/types/api';
 import GifLoader from '@/components/utility/GifLoader';
 import { useLogger } from '@/hooks/useLogger';
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 
 
 // Helper for date formatting
@@ -41,7 +41,7 @@ export default function ArticleDetail({ id }: { id: string }) {
         } else {
           setError('ไม่พบข้อมูลบทความ');
         }
-      } catch (err) {
+      } catch {
         setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
       } finally {
         setLoading(false);
@@ -176,11 +176,8 @@ export default function ArticleDetail({ id }: { id: string }) {
                 {/* Action Buttons */}
                 <div className="flex flex-col gap-4 mb-8">
                     {[1, 2, 3].map((num) => {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         const img = (detail as any)[`button${num}_img`];
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         const type = (detail as any)[`button${num}_type`];
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         const data = (detail as any)[`button${num}_data`];
 
                         if (!img) return null;

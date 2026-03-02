@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAvailableCoupons, claimCoupon, fetchUserCoupons } from '@/services/apiServices';
 import { Empty, message, Modal, Button, Image as AntImage } from 'antd';
-import { Ticket, Percent, Coins, BookOpenCheck, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import { Ticket, Percent, Coins, BookOpenCheck, AlertCircle, Clock } from 'lucide-react';
 import GifLoader from '@/components/utility/GifLoader';
 import CouponCard from '@/components/coupon/CouponCard';
 import { processCoupons, CouponUI } from '@/utils/couponUtils';
@@ -154,7 +154,7 @@ const AvailableCoupons = () => {
                                          {selectedCoupon.rewards.map((reward, index) => {
                                              let config: any = {};
                                              if (typeof reward.rewardConfig === 'string') {
-                                                 try { config = JSON.parse(reward.rewardConfig); } catch (e) {}
+                                                 try { config = JSON.parse(reward.rewardConfig); } catch {}
                                              } else if (typeof reward.rewardConfig === 'object') {
                                                  config = reward.rewardConfig;
                                              }

@@ -11,7 +11,7 @@ export function get_date(value: any): string {
     const ts = num < 1e12 ? num * 1000 : num
     try {
       return new Date(ts).toLocaleString()
-    } catch (e) {
+    } catch {
       return String(value)
     }
   }
@@ -20,7 +20,7 @@ export function get_date(value: any): string {
   try {
     const d = new Date(String(value))
     if (!isNaN(d.getTime())) return d.toLocaleString()
-  } catch (e) {}
+  } catch {}
 
   return String(value)
 }

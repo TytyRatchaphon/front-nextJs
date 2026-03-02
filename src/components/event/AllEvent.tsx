@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useRef } from 'react'
+import React, { useState } from 'react'
 import Image from 'next/image'
 import { Modal, Button, notification } from 'antd'
 import { useAuthStore } from '@/stores/authStore'
@@ -9,10 +9,6 @@ import { useWebsiteStore } from '@/stores/websiteStore'
 function AllEvent() {
   const { user, token, updateToken } = useAuthStore()
   const [api, contextHolder] = notification.useNotification()
-  const [modalOpen, setModalOpen] = useState(false)
-  const [stage, setStage] = useState<number>(1)
-  const [gachaImage, setGachaImage] = useState<string>('/images/gachaStatic.gif')
-  const [gachaResult, setGachaResult] = useState<any>(null)
 
   // Stamp modal state (simple implementation)
   const [stampModalOpen, setStampModalOpen] = useState(false)
@@ -21,9 +17,6 @@ function AllEvent() {
   const [stampLoading, setStampLoading] = useState(false)
   const STAMP_COST = 200
 
-  const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-    return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
-  }
 
   const handleConfirmStampExchange = async () => {
     if (!stampType) return
@@ -73,8 +66,8 @@ function AllEvent() {
       if (newToken && typeof updateToken === 'function') {
         try {
           updateToken(newToken)
-          try { /* apiClient uses localStorage */ } catch (e) { /* ignore */ }
-        } catch (e) { }
+          try { /* apiClient uses localStorage */ } catch { /* ignore */ }
+        } catch { }
       }
 
       // ============================================================
@@ -111,7 +104,7 @@ function AllEvent() {
               useAuthStore.setState({ user: profile, token: authForFetch, isLoggedIn: true })
               localStorage.setItem('userData', JSON.stringify(profile))
             }
-          } catch (e) {
+          } catch {
           }
         }, 1000)
       }
@@ -127,7 +120,7 @@ function AllEvent() {
       setStampModalOpen(false)
       setStampAmount(1)
       setStampType('flower')
-    } catch (e) {
+    } catch {
       // แจ้งเตือนกรณี API Error
       notification.error({
         message: 'ผิดพลาด',
@@ -138,14 +131,6 @@ function AllEvent() {
       setStampLoading(false)
     }
   }
-
-  const timerRef = useRef<number | null>(null)
-
-
-
-  const couponCount = Number(user?.coupon ?? (user as any)?.coupons ?? 0)
-
-
 
   // Helper: try to find a JWT-like token anywhere in a response object
   const extractTokenFromResponse = (res: any): string | undefined => {
@@ -180,7 +165,7 @@ function AllEvent() {
           if (typeof v === 'object') stack.push(v)
         }
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
     return undefined
@@ -196,123 +181,8 @@ function AllEvent() {
     return s || undefined
   }
 
-  const openGachaModal = () => {
-    setStage(1)
-    setModalOpen(true)
-  }
 
-  const handleStage1Action = async () => {
-    if (couponCount <= 0) return
 
-    // เริ่มอนิเมชัน
-    setStage(2)
-    setGachaImage(`/images/gacha.gif?t=${Date.now()}`)
-    setGachaResult(null)
-
-    try {
-      const base = process.env.NEXT_PUBLIC_API_BASE_URL 
-      const url = `${base}/user/event/gacha`
-      // 1. ยิง API
-      const res = await apiClient.post(url, {})
-      const data = res.data?.data ?? res.data
-      setGachaResult(data)
-
-      // 2. เตรียมข้อมูลสำหรับ Optimistic Update (คูปองลดลง)
-      let nextCouponCount = couponCount;
-      if (user) {
-        const current = Number(user.coupon ?? (user as any).coupons ?? 0)
-        nextCouponCount = Math.max(0, current - 1)
-      }
-
-      // 3. จัดการ Token (ถ้ามี)
-      const gachaRaw = extractTokenFromResponse(res) ?? res.data?.token ?? res.data?.data?.token ?? res.headers?.authorization ?? res.headers?.Authorization
-      const gachaToken = normalizeToken(gachaRaw)
-
-      if (gachaToken && typeof updateToken === 'function') {
-        try {
-          updateToken(gachaToken)
-          try { /* apiClient uses localStorage */ } catch (e) { /* ignore */ }
-        } catch (e) { }
-      }
-
-      // ============================================================
-      // ✨ 4. CRITICAL FIX: อัปเดตทั้ง "คูปองที่ลด" และ "ของรางวัลที่เพิ่ม" ✨
-      // ============================================================
-      if (user) {
-        // 4.1 เตรียม User Object ใหม่ที่มีคูปองลดแล้ว
-        const updatedUser = {
-          ...user,
-          coupon: nextCouponCount,
-          coupons: nextCouponCount
-        }
-
-        // 4.2 ตรวจสอบของรางวัลที่ได้ แล้วบวกเพิ่มเข้าไปทันที
-        if (data) {
-          const type = (data.type ?? data.reward_type ?? '').toString().toLowerCase();
-          const unit = Number(data.unit ?? data.amount ?? 0);
-
-          if (type.includes('flower')) {
-            updatedUser.flower = Number(updatedUser.flower ?? 0) + unit;
-          } else if (type.includes('heart')) {
-            updatedUser.heart = Number(updatedUser.heart ?? 0) + unit;
-          } else if (type.includes('freecoin') || type.includes('money')) {
-            updatedUser.freecoin = Number(updatedUser.freecoin ?? 0) + unit;
-          } else if (type.includes('coin') && !type.includes('free')) {
-            updatedUser.coin = Number(updatedUser.coin ?? 0) + unit;
-          } else if (type.includes('stamp')) {
-            updatedUser.stamp = Number(updatedUser.stamp ?? 0) + unit;
-          }
-        }
-
-        // 4.3 ยัดใส่ Store ทันที
-        useAuthStore.setState({ user: updatedUser })
-        // (Optional) บันทึกลง LocalStorage เผื่อ refresh หน้า
-        localStorage.setItem('userData', JSON.stringify(updatedUser))
-      }
-      // ============================================================
-
-      // 5. รอ 1 วินาที แล้วดึงข้อมูลจริงจาก Server มา Sync (เพื่อความชัวร์)
-      const activeToken = gachaToken ?? token
-
-      if (activeToken) {
-        setTimeout(async () => {
-          try {
-            const meRes = await apiClient.get(`${base}/user/me`)
-            const profile = meRes.data?.data ?? meRes.data
-
-            if (profile) {
-              useAuthStore.setState({ user: profile, token: activeToken, isLoggedIn: true })
-              localStorage.setItem('userData', JSON.stringify(profile))
-            }
-          } catch (e) {
-          }
-        }, 1000)
-      }
-
-    } catch (e) {
-      notification.error({ message: 'เกิดข้อผิดพลาด', description: 'ไม่สามารถเชื่อมต่อกาชาปองได้' })
-      setStage(1)
-      setGachaImage('/images/gachaStatic.gif')
-      return
-    }
-
-    if (timerRef.current) {
-      window.clearTimeout(timerRef.current)
-      timerRef.current = null
-    }
-    timerRef.current = window.setTimeout(() => {
-      setStage(3)
-      timerRef.current = null
-    }, 3000)
-  }
-
-  const handleSkip = () => {
-    if (timerRef.current) {
-      window.clearTimeout(timerRef.current)
-      timerRef.current = null
-    }
-    setStage(3)
-  }
 
   const { settings } = useWebsiteStore();
 

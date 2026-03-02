@@ -100,7 +100,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                     priority: 0.8,
                 };
             }
-        } catch (error) {
+        } catch {
             // Ignore errors for specific books to avoid breaking the whole sitemap
             return null;
         }

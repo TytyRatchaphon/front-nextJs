@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { useFormStore } from '@/stores/formStore';
+import '@/stores/formStore';
 import Cookies from 'js-cookie'
 import { parseJwtToken, decodeAndMapUserFromToken } from '@/utils/jwtParser';
 
@@ -99,7 +99,7 @@ export const useAuthStore = create<AuthState>()(
 
         const updatedUser = { ...currentUser, ...updates };
         set({ user: updatedUser });
-        try { localStorage.setItem('userData', JSON.stringify(updatedUser)) } catch (e) { }
+        try { localStorage.setItem('userData', JSON.stringify(updatedUser)) } catch { }
       },
 
       updateToken: (newToken: string) => {
@@ -107,7 +107,7 @@ export const useAuthStore = create<AuthState>()(
         if (!cleaned) return;
 
         set({ token: cleaned, isLoggedIn: true });
-        try { localStorage.setItem('authToken', cleaned); } catch (e) { }
+        try { localStorage.setItem('authToken', cleaned); } catch { }
 
         try {
           const currentUser = get().user;
@@ -121,7 +121,7 @@ export const useAuthStore = create<AuthState>()(
           const updatedUser = decodeAndMapUserFromToken(cleaned, baseUser);
           if (updatedUser) {
              set({ user: updatedUser });
-             try { localStorage.setItem('userData', JSON.stringify(updatedUser)); } catch (e) { }
+             try { localStorage.setItem('userData', JSON.stringify(updatedUser)); } catch { }
           }
         } catch (error) {
           console.error("Token update logic failed", error);
@@ -137,7 +137,7 @@ export const useAuthStore = create<AuthState>()(
             try {
               const userData = JSON.parse(backupUserData);
               set({ user: userData, token: backupToken, isLoggedIn: true });
-            } catch (e) { }
+            } catch { }
           }
         }
         set({ hasMounted: true });
@@ -146,7 +146,7 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       skipHydration: false,
-      onRehydrateStorage: () => (state) => {
+      onRehydrateStorage: () => () => {
       }
     }
   )

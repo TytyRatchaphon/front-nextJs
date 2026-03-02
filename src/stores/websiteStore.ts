@@ -24,7 +24,7 @@ export const useWebsiteStore = create<WebsiteStore>()(
       fetchPromise: null,
 
       fetchSettings: async (force = false) => {
-        const { settings, isLoading, lastFetched, fetchPromise } = get();
+        const { settings, lastFetched, fetchPromise } = get();
         const now = Date.now();
 
         // 1. Check cache freshness

@@ -32,7 +32,7 @@ function MyCardBook({ book }: CardBookProps) {
   // Client-side debug: log whether shelveCount is present when the card mounts/updates
   React.useEffect(() => {
     try {
-    } catch (e) {
+    } catch {
       // ignore
     }
   }, [book.book_id, book.bookID, book.shelveCount]);
@@ -77,7 +77,7 @@ function MyCardBook({ book }: CardBookProps) {
     if (bookParam) {
       try {
         sessionStorage.setItem(`editBook_${bookParam}`, JSON.stringify(book));
-      } catch (e) {
+      } catch {
       }
       router.push(`/w/b/${encodeURIComponent(bookParam)}`);
       return;

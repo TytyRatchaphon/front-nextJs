@@ -5,7 +5,6 @@ import axios from "axios";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Image as AntImage, App, Modal, Dropdown } from "antd";
-import type { MenuProps } from "antd";
 import apiClient from "@/services/apiClient";
 import { fetchLatestReadEpisode } from "@/services/apiServices";
 import { fetchUserCollections, addBooksToCollection } from "@/services/api/collectionApi";
@@ -16,7 +15,7 @@ import { useUIStore } from "@/stores/uiStore";
 import { FacebookShareButton, TwitterShareButton, LineShareButton } from "react-share";
 import { TagSwiper } from "@/components/swiper/ImageSlider";
 import { useWebsiteStore } from '@/stores/websiteStore';
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 
 interface BookDetailHeaderProps {
   book: {
@@ -64,7 +63,7 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
   const [currentUserId, setCurrentUserId] = useState<string | number | null>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [readEpInfo, setReadEpInfo] = useState<{ id: number | string; label: string } | null>(null);
-  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [, setMoreMenuOpen] = useState(false);
   const [collectionModalOpen, setCollectionModalOpen] = useState(false);
   const [collections, setCollections] = useState<CollectionItem[]>([]);
   const [collectionsLoading, setCollectionsLoading] = useState(false);
@@ -127,7 +126,7 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
         // Try to find user ID from token payload
         const uid = decoded.user_id || decoded.id || decoded.sub || decoded.userId;
         setCurrentUserId(uid);
-      } catch (error) {
+      } catch {
       }
     }
   }, [token]);
@@ -164,7 +163,7 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
         setIsAdded(true);
         notification.success({ message: "เพิ่มเข้าชั้นหนังสือแล้ว" });
       }
-    } catch (error) {
+    } catch {
       notification.error({ message: "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง" });
     } finally {
       setLoading(false);
@@ -255,7 +254,7 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
     }
   };
 
-  const { settings } = useWebsiteStore();
+  useWebsiteStore();
   
   return (
     <div className="relative w-full">

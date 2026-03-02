@@ -1,11 +1,11 @@
 'use client'
 
-import { StoreBanner } from '@/components/home/Banner'
+import '@/components/home/Banner';
 import React, { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { Tabs, Spin, Modal, notification, Input } from 'antd'
 import { CheckCircleOutlined } from '@ant-design/icons'
-import { fetchStoreData, buyStorePack, updateUserAddress } from '@/services/apiServices'
+import { fetchStoreData, updateUserAddress } from '@/services/apiServices';
 import { useAuthStore } from '@/stores/authStore'
 import type { StoreCategory, StorePack } from '@/types/api'
 import Link from 'next/link'
@@ -17,13 +17,13 @@ import FreeCoinPill from '@/components/utility/FreeCoinPill'
 import dayjs from 'dayjs'
 import { isValidPhoneNumber } from 'libphonenumber-js'
 
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 import { fetchCartItems } from '@/services/cartService';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 
 function Store() {
-  const { user, updateToken, updateUserBalance, token } = useAuthStore() // Added token
+  const { user, updateToken, token } = useAuthStore(); // Added token
   const [storeData, setStoreData] = useState<StoreCategory[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -43,7 +43,7 @@ function Store() {
   const [phoneInput, setPhoneInput] = useState('');
 
   const [api, contextHolder] = notification.useNotification();
-  const queryClient = useQueryClient();
+  useQueryClient();
 
   // Fetch cart items for limit checking
   const { data: cartStores } = useQuery({
@@ -261,7 +261,7 @@ function Store() {
         setLoading(true)
         const data = await fetchStoreData()
         setStoreData(data)
-      } catch (error) {
+      } catch {
       } finally {
         setLoading(false)
       }

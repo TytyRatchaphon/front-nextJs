@@ -2,9 +2,10 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { CommentData, CommentEpData } from "@/types/api";
 import { postReply, deleteBookReview, reportBookReview, postCommentReply, deleteBookComment, reportBookComment, deleteBookReviewReply, reportBookReviewReply, deleteBookCommentReply, reportBookCommentReply, postReviewReplyNotification, postEpisodeReply, deleteEpisodeComment, reportEpisodeComment, deleteEpisodeReply, reportEpisodeReply, postCommentReplyNotification } from "@/services/apiServices";
-import { Rate, Button, Input, notification, Popover, Modal } from "antd";
+import { Button, Input, notification, Popover, Modal } from "antd";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
 
@@ -19,11 +20,9 @@ interface CommentItemProps {
 
 // Helper Component for safe avatar loading
 const SafeAvatar = ({ src, alt, className, theme, isReply = false }: { src?: string | null, alt: string, className?: string, theme?: any, isReply?: boolean }) => {
+    void theme;
     const [hasError, setHasError] = useState(false);
 
-    const imageLoader = ({ src, width, quality }: { src: string; width?: number; quality?: number }): string => {
-        return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
-    }
 
     if (!src || hasError) {
         // Fallback Image
@@ -280,14 +279,14 @@ export default function CommentItem({
                 <div className="flex-shrink-0">
                     <div className="relative w-10 h-10 sm:w-12 sm:h-12">
                         {/* Base Avatar */}
-                        <div className={`relative w-full h-full rounded-full overflow-hidden border ${theme?.key === 'black' ? 'bg-[#1f1f1f] border-[#333]' : theme?.key === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-gray-100 border-gray-200'}`}>
+                        <Link href={`/profile/${review.user_id}`} className={`block relative w-full h-full rounded-full overflow-hidden border ${theme?.key === 'black' ? 'bg-[#1f1f1f] border-[#333]' : theme?.key === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-gray-100 border-gray-200'}`}>
                             <SafeAvatar 
                                 src={userAvatar} 
                                 alt={review.user?.fullname || "User"} 
                                 className="object-cover"
                                 theme={theme}
                             />
-                        </div>
+                        </Link>
 
                         {/* Frame Overlay (if exists) */}
                         {userFrame && (
@@ -308,9 +307,11 @@ export default function CommentItem({
                 <div className="flex-1 min-w-0 pr-6"> {/* Added padding right for menu */}
                     {/* Header */}
                     <div className="mb-2">
-                        <h4 className={`text-sm font-semibold mb-1 ${theme ? theme.text : 'text-gray-900'}`}>
-                            {review.user?.fullname || "Anonymous User"}
-                        </h4>
+                        <Link href={`/profile/${review.user_id}`}>
+                            <h4 className={`text-sm font-semibold mb-1 hover:underline ${theme ? theme.text : 'text-gray-900'}`}>
+                                {review.user?.fullname || "Anonymous User"}
+                            </h4>
+                        </Link>
                         <div className="flex items-center gap-2">
                             {/* {isReview(review) && (
                     <>
@@ -384,7 +385,7 @@ export default function CommentItem({
                                     <div className="flex items-center justify-between mb-2">
                                         <div className="flex items-center gap-2">
                                             {/* Small Avatar for Replier */}
-                                            <div className={`w-5 h-5 rounded-full overflow-hidden shrink-0 ${theme?.key === 'black' ? 'bg-[#333]' : theme?.key === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                                            <Link href={`/profile/${reply.user_id}`} className={`block w-5 h-5 rounded-full overflow-hidden shrink-0 ${theme?.key === 'black' ? 'bg-[#333]' : theme?.key === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}>
                                                 <SafeAvatar 
                                                     src={reply.user?.img} 
                                                     alt="Replier" 
@@ -392,10 +393,12 @@ export default function CommentItem({
                                                     isReply={true}
                                                     theme={theme}
                                                 />
-                                            </div>
-                                            <span className={`text-xs sm:text-sm font-bold ${theme ? theme.text : 'text-gray-800'}`}>
-                                                {reply.user?.fullname || "Admin"}
-                                            </span>
+                                            </Link>
+                                            <Link href={`/profile/${reply.user_id}`}>
+                                                <span className={`text-xs sm:text-sm font-bold hover:underline ${theme ? theme.text : 'text-gray-800'}`}>
+                                                    {reply.user?.fullname || "Admin"}
+                                                </span>
+                                            </Link>
                                             {/* Optional: Add Date for reply if needed */}
                                             <span className="text-[10px] text-gray-400">
                                                 {new Date(reply.update_at).toLocaleDateString("th-TH")}

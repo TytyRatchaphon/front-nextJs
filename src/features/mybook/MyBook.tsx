@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Tabs } from 'antd';
 import type { TabsProps } from 'antd';
 import { useQuery } from '@tanstack/react-query';
-import apiClient from '@/services/apiClient';
+import '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
 import { fetchUserMyBookInfo, fetchUserMyBooks, fetchWriterCheck } from '@/services/apiServices';
 
@@ -33,7 +33,7 @@ function MyBook() {
           useAuthStore.getState().updateToken(backupToken);
           return;
         }
-      } catch (e) {
+      } catch {
       }
 
       router.push('/');
@@ -113,7 +113,7 @@ function MyBook() {
       if (decodedToken.totalFollowers !== undefined && decodedToken.totalFollowers !== null) {
         setUserTotalFollowers(Number(decodedToken.totalFollowers));
       }
-    } catch (e) {
+    } catch {
       // ignore decode errors
     }
   }, [token]);
@@ -129,7 +129,7 @@ function MyBook() {
   const [booksPage, setBooksPage] = useState<number>(1);
   const booksLimit = 10;
   // Keep the raw response so we can read pagination totals
-  const { data: myBooksResponse = null, isLoading: isLoadingMyBooks, refetch: refetchMyBooks } = useQuery({
+  const { data: myBooksResponse = null, isLoading: isLoadingMyBooks } = useQuery({
     queryKey: ['myBooks', booksPage, booksLimit, filterStatus, filterSortBy, filterOrder, filterEnd, filterQ],
     queryFn: () => fetchUserMyBooks({
       page: booksPage,

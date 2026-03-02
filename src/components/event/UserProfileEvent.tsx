@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState } from 'react' // เพิ่ม useEffect, useState
 import Image from 'next/image'
-import { Image as AntdImage } from 'antd'
+import 'antd';
 import { useAuthStore } from '@/stores/authStore'
 import { useWebsiteStore } from '@/stores/websiteStore'
-import { imageLoader } from '@/utils/imageUtils';
+import '@/utils/imageUtils';
 
 
 type Props = {
@@ -28,9 +28,6 @@ export default function UserProfileEvent({
   name,
   email,
   stamps,
-  flowers,
-  hearts,
-  coupons,
   coins,
   freecoins,
 }: Props) {
@@ -49,7 +46,7 @@ export default function UserProfileEvent({
       // เรียก updateToken เพื่อให้มัน Decode ข้อมูลล่าสุดจาก Token ลง Store ทันที
       updateToken(currentToken);
     }
-  }, []); // [] หมายถึงทำแค่ครั้งเดียวตอน Component โหลด
+  }, [token, updateToken]);
 
   // 3. ป้องกัน Hydration Mismatch (Optional แต่แนะนำ)
   if (!isMounted) {
@@ -60,7 +57,7 @@ export default function UserProfileEvent({
   const finalEmail = user?.email ?? email ?? 'enjoy@gmail.com';
 
   const getAvatarUrl = () => {
-    let src = user?.img ?? user?.profileImage ?? avatar ?? '/images/default-avatar.png';
+    const src = user?.img ?? user?.profileImage ?? avatar ?? '/images/default-avatar.png';
     if (!src || src === 'null') return '/images/default-avatar.png';
 
     // ถ้าเป็นรูป default หรือ full url หรือ base64 ให้ใช้เลย
@@ -78,9 +75,6 @@ export default function UserProfileEvent({
   const finalAvatar = getAvatarUrl();
 
   const finalStamps = user?.stamp ?? stamps ?? 0;
-  const finalFlowers = user?.flower ?? flowers ?? 0;
-  const finalHearts = user?.heart ?? hearts ?? 0;
-  const finalCoupons = user?.coupon ?? ((user as any)?.coupons) ?? coupons ?? 0;
   const finalCoins = user?.coin ?? coins ?? 0;
   const finalFreecoins = user?.freecoin ?? freecoins ?? 0;
   return (
@@ -156,3 +150,4 @@ export default function UserProfileEvent({
     </div>
   )
 }
+

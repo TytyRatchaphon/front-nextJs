@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { imageUploadHandler } from '@/components/editor/editor_api';
 
 // 1. ประกาศ Interface สำหรับ Props
@@ -44,7 +44,7 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
   const fontFormats = thaiFonts.map(f => `${f}='${f}',sans-serif`).join(';');
 
   // ฟังก์ชันสำหรับ initialize TinyMCE
-  const initializeTinyMCE = () => {
+  const initializeTinyMCE = useCallback(() => {
     // ใช้ (window as any).tinymce แทน window.tinymce
     if ((window as any).tinymce) {
       
@@ -111,7 +111,7 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
         }
       });
     }
-  };
+  }, [editorId, fontFormats, height, importUrl, onBlur, onChange, value]);
 
   // Load TinyMCE script เมื่อ component mount
   useEffect(() => {
@@ -143,11 +143,11 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
                     editor.remove();
                 }
             }
-        } catch (err) {
+        } catch {
         }
         setIsEditorReady(false);
     };
-  }, []);
+  }, [editorId, initializeTinyMCE]);
 
   useEffect(() => {
     if (isEditorReady && editorRef.current && value !== undefined && value !== editorRef.current.getContent()) {

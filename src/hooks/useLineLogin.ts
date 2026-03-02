@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
@@ -26,7 +26,7 @@ const checkBeforeLogin = (token: string): boolean => {
   try {
     if (!token) return false;
     return false;
-  } catch (e) {
+  } catch {
     return false;
   }
 };
@@ -34,7 +34,7 @@ const checkBeforeLogin = (token: string): boolean => {
 export const useLineLogin = () => {
   const { login, updateToken, isLoggedIn } = useAuthStore();
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
+  useRouter();
 
   const handleBackendLogin = async () => {
     try {
@@ -90,7 +90,7 @@ export const useLineLogin = () => {
           }
         }
       }
-    } catch (error) {
+    } catch {
       localStorage.removeItem('is_line_login_processing');
     } finally {
       setLoading(false);
@@ -111,7 +111,7 @@ export const useLineLogin = () => {
         // Flag is cleared in handleBackendLogin
         await handleBackendLogin();
       }
-    } catch (error) {
+    } catch {
     }
   };
 
@@ -164,7 +164,7 @@ export const useLineLogin = () => {
       } else {
         return await handleBackendLogin();
       }
-    } catch (error) {
+    } catch {
     }
   };
 

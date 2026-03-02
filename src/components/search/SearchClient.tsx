@@ -43,7 +43,6 @@ const searchBooks = async (
   queryParams.append("page", page.toString());
   queryParams.append("limit", limit.toString());
 
-  const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/book/search?${queryParams.toString()}`;
 
   const response = await apiClient.get(`/book/search?${queryParams.toString()}`);
 
@@ -197,11 +196,11 @@ export default function SearchClient() {
 
     // Debug: show whether the API provided any shelve/shelf fields and the normalized result
     try {
-      const rawShelveInfo = apiResponse.items.map((it: any) => ({
+      apiResponse.items.map((it: any) => ({
         book_id: it.book_id ?? it.bookID,
         shelveCount_raw: it.shelveCount ?? it.shelfCount ?? it.shelve_count ?? it.shelf_count ?? null,
       }));
-    } catch (e) {
+    } catch {
     }
 
     return normalized;

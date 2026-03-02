@@ -55,7 +55,7 @@ export default function AddGroupModal({
                 msgApi.success('สร้างเล่มเรียบร้อย')
                 setName('')
                 onClose()
-                onCreated && onCreated()
+                if (onCreated) onCreated();
               } catch (e: any) {
                 msgApi.error(e?.response?.data?.message ?? 'ไม่สามารถสร้างเล่มได้')
               } finally {

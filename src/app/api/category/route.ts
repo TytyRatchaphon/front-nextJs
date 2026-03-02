@@ -11,7 +11,7 @@ export async function GET() {
 
     // ส่งข้อมูลกลับไปที่ Frontend
     return NextResponse.json(response.data);
-  } catch (error: any) {
+  } catch {
     return NextResponse.json([], { status: 500 });
   }
 }
