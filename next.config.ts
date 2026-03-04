@@ -2,6 +2,17 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  allowedDevOrigins: ['192.168.220.172'],
+  experimental: {
+    optimizePackageImports: [
+      'antd',
+      '@ant-design/icons',
+      'lucide-react',
+      'recharts',
+      'apexcharts',
+      'swiper'
+    ],
+  },
   images: {
     qualities: [100, 70, 70, 70, 70, 70, 70, 75],
     remotePatterns: [

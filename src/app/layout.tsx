@@ -98,7 +98,7 @@ const chakraPetch = Chakra_Petch({
   display: "swap",
 });
 
-import { fetchWebsiteSettings } from "@/services/apiServices";
+import { fetchWebsiteSettings } from "@/services/api/userApi";
 
 export async function generateMetadata(): Promise<Metadata> {
   const settingsResponse = await fetchWebsiteSettings();

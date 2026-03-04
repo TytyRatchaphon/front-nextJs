@@ -16,10 +16,12 @@ import ContinueReadingSwiper from "@/components/swiper/ContinueReadingSwiper";
 import SpotlightCard from "@/components/novelCard/SpotlightCard";
 import NewArrivalCard from "@/components/novelCard/NewArrivalCard";
 import { fetchHomeData, HomeDataResponse, fetchBookUpdates, fetchRankingCategories, fetchUserShelveContinue } from "@/services/apiServices";
+import { fetchPinnedReviews } from "@/services/api/commentApi";
 import { useQuery } from "@tanstack/react-query";
 import RankingCategoryLeft from "@/components/home/RankingCategoryLeft";
 import RankingCategoryRight from "@/components/home/RankingCategoryRight";
 import GifLoader from "@/components/utility/GifLoader";
+import PinnedReviewsSwiper from "@/components/swiper/PinnedReviewsSwiper";
 import { notification } from "antd";
 import { CloseCircleOutlined } from "@ant-design/icons";
 
@@ -55,12 +57,20 @@ export default function HomeContent({ initialData }: HomeContentProps) {
     select: (data: any) => data?.books ?? [],
   });
 
+  const { data: pinnedReviewsData, isLoading: isPinnedReviewsLoading, error: pinnedReviewsError } = useQuery({
+    queryKey: ['pinnedReviews'],
+    queryFn: fetchPinnedReviews,
+    enabled: !isLoading,
+  });
+  const pinnedReviews = pinnedReviewsData?.reviews || [];
+
   React.useEffect(() => {
     const errorConfigs = [
       { isError: homeDataError, title: 'หน้าหลัก' },
       { isError: bookUpdatesError, title: 'นิยายอัพเดตล่าสุด' },
       { isError: rankingCategoriesError, title: 'หมวดหมู่นิยายฮิต' },
-      { isError: continueBooksError, title: 'อ่านต่อ' }
+      { isError: continueBooksError, title: 'อ่านต่อ' },
+      { isError: pinnedReviewsError, title: 'ปักหมุดรีวิว' }
     ];
 
     errorConfigs.forEach(({ isError, title }) => {
@@ -73,7 +83,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
         });
       }
     });
-  }, [homeDataError, bookUpdatesError, rankingCategoriesError, continueBooksError]);
+  }, [homeDataError, bookUpdatesError, rankingCategoriesError, continueBooksError, pinnedReviewsError]);
 
   if (isLoading) {
     return (
@@ -180,6 +190,17 @@ export default function HomeContent({ initialData }: HomeContentProps) {
           <div className="w-full -mt-4">
             <TopRanking rankingGroup={rankingGroup} />
           </div>
+        </div>
+      </div>
+          
+      {!isPinnedReviewsLoading && pinnedReviews.length > 0 && (
+         <div className="w-full mt-4 mb-4">
+           <PinnedReviewsSwiper reviews={pinnedReviews} />
+         </div>
+      )}
+
+      <div className="w-full flex justify-center">
+        <div className="max-w-[1440px] w-full px-4 lg:px-[156px]">
 
           {/* Ranking Category Section */}
           <div className="w-full flex flex-col md:flex-row justify-center items-center gap-4 md:gap-6 lg:gap-10 mt-4 mb-4 px-4">

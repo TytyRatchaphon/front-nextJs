@@ -2,6 +2,22 @@
 import apiClient from "../apiClient";
 import type { CommentResponse, CommentData, CommentEpData } from "@/types/api";
 
+// --- Pinned Reviews (Home page) ---
+export const fetchPinnedReviews = async (): Promise<{ reviews: any[], pagination?: any }> => {
+  try {
+    const response = await apiClient.get(`/review/feed?sort=liked`);
+    if (response.data && response.data.data) {
+      return {
+        reviews: response.data.data.reviews || [],
+        pagination: response.data.data.pagination
+      };
+    }
+    return { reviews: [] };
+  } catch {
+    return { reviews: [] };
+  }
+};
+
 // --- Book Reviews (BookDetail page) ---
 
 export const fetchBookReviews = async (bookId: string | number, page: number = 1, limit: number = 10, sort: string = 'newest'): Promise<{ comments: CommentData[], pagination?: any }> => {
@@ -33,6 +49,16 @@ export const postBookReview = async (bookId: string | number, comment: string, s
   try {
     const payload = { comment, star };
     const response = await apiClient.post(`/bookdetail/${bookId}/reviews`, payload);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const postPinnedReview = async (bookId: string | number, rating: number, content: string, is_spoiler: boolean = false) => {
+  try {
+    const payload = { rating, content, is_spoiler };
+    const response = await apiClient.post(`/review/book/${bookId}`, payload);
     return response.data;
   } catch (error: any) {
     throw error;

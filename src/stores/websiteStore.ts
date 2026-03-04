@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { WebsiteSettingsData } from '@/types/api';
-import { fetchWebsiteSettings } from '@/services/apiServices';
+import { fetchWebsiteSettings } from '@/services/api/userApi';
 import { getErrorMessage } from '@/types/errors';
 
 interface WebsiteStore {
