@@ -3,16 +3,18 @@ import { Modal, Rate, Input, Switch, Button, App } from 'antd';
 import Image from 'next/image';
 import { postPinnedReview } from '@/services/api/commentApi';      
 import SelectNovelModal from './SelectNovelModal';
+import { useQueryClient } from '@tanstack/react-query';
 
 const { TextArea } = Input;
 
 interface WriteReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialBook?: any | null; // Optional initially selected book
+  initialBook?: any | null;
+  onSuccess?: () => void;
 }
 
-export default function WriteReviewModal({ isOpen, onClose, initialBook }: WriteReviewModalProps) {
+export default function WriteReviewModal({ isOpen, onClose, initialBook, onSuccess }: WriteReviewModalProps) {
   const [selectedBook, setSelectedBook] = useState<any | null>(initialBook || null);
   const [isSelectNovelOpen, setIsSelectNovelOpen] = useState(false);
   
@@ -22,6 +24,7 @@ export default function WriteReviewModal({ isOpen, onClose, initialBook }: Write
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { notification } = App.useApp();
+  const queryClient = useQueryClient();
 
   // Reset state when opened with a new or same initialBook
   React.useEffect(() => {
@@ -50,20 +53,15 @@ export default function WriteReviewModal({ isOpen, onClose, initialBook }: Write
     try {
       setIsSubmitting(true);
       const bookId = selectedBook.book_id || selectedBook.bookID || selectedBook.id;
-      // The spoiler flag might need backend support if added later, but we will send it or just keep it UI for now
-      // The existing postBookReview takes (bookId, comment, star)
-      // I'll format the comment with a spoiler tag if they checked it, or we just pass it to API if supported.
-      // E.g. `<p>${content}</p>` - for now passing standard params
-      let finalContent = content;
-      if (isSpoiler) {
-         finalContent = `[SPOILER] ${content} [/SPOILER]`; // Simple text prefix if API doesn't support spoiler flag directly yet
-      }
+      // Send content directly; is_spoiler is sent as a boolean flag to API
 
-      const res = await postPinnedReview(bookId, rating, finalContent);
+      const res = await postPinnedReview(bookId, rating, content, isSpoiler);
       notification.success({ 
         message: res?.message || 'ส่งรีวิวสำเร็จ', 
         placement: 'topRight' 
       });
+      queryClient.invalidateQueries({ queryKey: ['allPinnedReviews'] });
+      onSuccess?.();
       onClose();
     } catch (error: any) {
       console.error(error);

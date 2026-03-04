@@ -11,13 +11,18 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/th';
 import ReviewModal from '@/components/modal/ReviewModal';
 import WriteReviewModal from '@/components/modal/WriteReviewModal';
+import EditReviewModal from '@/components/modal/EditReviewModal';
 import SpoilerCardWrapper from '@/components/ui/SpoilerCardWrapper';
+import { useAuthStore } from '@/stores/authStore';
+import { Dropdown, App } from 'antd';
+import { deleteUserReview } from '@/services/api/commentApi';
+import { MoreVertical, Edit2, Trash2, Heart, Share2, MessageCircle } from 'lucide-react';
 
 dayjs.extend(relativeTime);
 dayjs.locale('th');
 
 export default function AllReview() {
-  const { data: pinnedReviewsData, isLoading, error } = useQuery({
+  const { data: pinnedReviewsData, isLoading, error, refetch } = useQuery({
     queryKey: ['allPinnedReviews'],
     queryFn: fetchPinnedReviews,
   });
@@ -25,10 +30,51 @@ export default function AllReview() {
   const [selectedReview, setSelectedReview] = React.useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [isWriteModalOpen, setIsWriteModalOpen] = React.useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+
+  const { user } = useAuthStore();
+  const currentUserId = user?.user_id;
+  const { notification, modal } = App.useApp();
 
   const handleReviewClick = (review: any) => {
     setSelectedReview(review);
     setIsModalOpen(true);
+  };
+
+  const handleEditClick = (e: any, review: any) => {
+    e.stopPropagation();
+    setSelectedReview(review);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeleteClick = (e: any, review: any) => {
+    e.stopPropagation();
+    modal.confirm({
+      title: 'ต้องการลบรีวิวนี้ใช่หรือไม่?',
+      content: 'เมื่อลบแล้วจะไม่สามารถกู้คืนได้',
+      okText: 'ลบ',
+      okType: 'danger',
+      cancelText: 'ยกเลิก',
+      onOk: async () => {
+        try {
+          const reviewId = review.review_id || review.id;
+          const res = await deleteUserReview(reviewId);
+          notification.success({
+            message: res?.message || 'ลบรีวิวสำเร็จ',
+            placement: 'topRight'
+          });
+          setSelectedReview(null);
+          setIsModalOpen(false);
+          refetch(); // Reload the data
+        } catch (error: any) {
+          console.error('Failed to delete review:', error);
+          notification.error({
+            message: error?.response?.data?.message || 'เกิดข้อผิดพลาดในการลบรีวิว',
+            placement: 'topRight'
+          });
+        }
+      }
+    });
   };
 
   const reviews = pinnedReviewsData?.reviews || [];
@@ -45,7 +91,7 @@ export default function AllReview() {
 
         <div className="mb-6 flex justify-between items-center">
            <h1 className="text-2xl font-bold text-black border-l-4 border-[#E33527] pl-3 m-0">ปักหมุดรีวิวจากนักอ่านทั้งหมด</h1>
-           <button 
+           {currentUserId ? (<button 
              onClick={() => setIsWriteModalOpen(true)}
              className="bg-[#E33527] hover:bg-red-700 !text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors"
            >
@@ -53,7 +99,7 @@ export default function AllReview() {
                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
              </svg>
              เขียนรีวิว
-           </button>
+           </button>) : null}
         </div>
 
         {/* Loading State */}
@@ -118,8 +164,8 @@ export default function AllReview() {
               if (cleanContent.startsWith('<p>')) {
                  cleanContent = cleanContent.replace(/<[^>]+>/g, '');
               }
-              const isSpoilerCard = cleanContent.includes('[SPOILER]');
-              cleanContent = cleanContent.replace(/\[\/?SPOILER\]/gi, '');
+              cleanContent = cleanContent.replace(/\[\/?\s*SPOILER\s*\]/gi, '');
+              const isSpoilerCard = !!review.is_spoiler;
 
               const cardContent = (
                 <>
@@ -131,7 +177,47 @@ export default function AllReview() {
                       </div>
                       <span className="text-sm font-semibold text-gray-800 line-clamp-1">{userName}</span>
                     </div>
-                    <span className="text-xs text-gray-400 whitespace-nowrap">{timeAgo}</span>
+                    <div className="flex items-center gap-2">
+                       <span className="text-xs text-gray-400 whitespace-nowrap">{timeAgo}</span>
+                       {currentUserId === review.user?.user_id && (
+                         <Dropdown
+                           menu={{
+                             items: [
+                               {
+                                 key: 'edit',
+                                 label: (
+                                   <div className="flex items-center gap-2 text-gray-700">
+                                     <Edit2 size={16} />
+                                     <span>แก้ไข</span>
+                                   </div>
+                                 ),
+                                 onClick: (e) => handleEditClick(e.domEvent, review)
+                               },
+                               {
+                                 key: 'delete',
+                                 danger: true,
+                                 label: (
+                                   <div className="flex items-center gap-2">
+                                     <Trash2 size={16} />
+                                     <span>ลบ</span>
+                                   </div>
+                                 ),
+                                 onClick: (e) => handleDeleteClick(e.domEvent, review)
+                               }
+                             ]
+                           }}
+                           trigger={['click']}
+                           placement="bottomRight"
+                         >
+                           <button 
+                             onClick={(e) => e.stopPropagation()} 
+                             className="text-gray-400 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                           >
+                             <MoreVertical size={16} />
+                           </button>
+                         </Dropdown>
+                       )}
+                    </div>
                   </div>
 
                   {/* Rating & Episode */}
@@ -141,8 +227,24 @@ export default function AllReview() {
                   </div>
 
                   {/* Content */}
-                  <div className="text-sm text-gray-700 line-clamp-3 mb-4 flex-1 break-words">
+                  <div className="text-sm text-gray-700 line-clamp-3 mb-2 flex-1 break-words">
                     {cleanContent}
+                  </div>
+
+                  {/* Interaction Stats */}
+                  <div className="flex items-center gap-4 mb-3 text-xs text-gray-400">
+                    <span className="flex items-center gap-1">
+                      <Heart size={13} fill={review.is_liked ? '#E33527' : 'none'} className={review.is_liked ? 'text-[#E33527]' : ''} />
+                      {(review.like_count || review.likes || 0) > 0 && (review.like_count || review.likes || 0)}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MessageCircle size={13} />
+                      {(review.comment_count || review.comments || 0) > 0 && (review.comment_count || review.comments || 0)}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Share2 size={13} />
+                      {(review.share_count || review.shares || 0) > 0 && (review.share_count || review.shares || 0)}
+                    </span>
                   </div>
                   {/* Book Info footer */}
                   <Link 
@@ -178,12 +280,30 @@ export default function AllReview() {
       <ReviewModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        review={selectedReview} 
+        review={selectedReview}
+        currentUserId={currentUserId}
+        onEdit={(review: any) => {
+          setIsModalOpen(false);
+          setSelectedReview(review);
+          setIsEditModalOpen(true);
+        }}
+        onDelete={(review: any) => {
+          setIsModalOpen(false);
+          handleDeleteClick({ stopPropagation: () => {} }, review);
+        }}
       />
 
       <WriteReviewModal 
         isOpen={isWriteModalOpen} 
-        onClose={() => setIsWriteModalOpen(false)} 
+        onClose={() => setIsWriteModalOpen(false)}
+        onSuccess={() => refetch()}
+      />
+
+      <EditReviewModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        review={selectedReview}
+        onSuccess={() => refetch()}
       />
     </div>
   );

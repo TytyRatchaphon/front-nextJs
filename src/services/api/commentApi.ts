@@ -65,6 +65,77 @@ export const postPinnedReview = async (bookId: string | number, rating: number, 
   }
 };
 
+export const updateBookReview = async (reviewId: string | number, rating: number, content: string, is_spoiler: boolean = false) => {
+  try {
+    const payload = { rating, content, is_spoiler };
+    const response = await apiClient.put(`/review/${reviewId}`, payload);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const deleteUserReview = async (reviewId: string | number) => {
+  try {
+    const response = await apiClient.delete(`/review/${reviewId}`);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+// --- Review Interactions (Like, Share, Comment, Report) ---
+
+export const likeReview = async (reviewId: string | number) => {
+  try {
+    const response = await apiClient.post(`/review/${reviewId}/like`);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const shareReview = async (reviewId: string | number) => {
+  try {
+    const response = await apiClient.post(`/review/${reviewId}/share`);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const postReviewComment = async (reviewId: string | number, content: string) => {
+  try {
+    const payload = { content };
+    const response = await apiClient.post(`/review/${reviewId}/comment`, payload);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const fetchReviewComments = async (reviewId: string | number): Promise<{ comments: any[] }> => {
+  try {
+    const response = await apiClient.get(`/review/${reviewId}/comment`);
+    if (response.data && response.data.data) {
+      return { comments: Array.isArray(response.data.data) ? response.data.data : response.data.data.comments || [] };
+    }
+    return { comments: [] };
+  } catch {
+    return { comments: [] };
+  }
+};
+
+export const reportReviewOrComment = async (targetType: 'review' | 'comment', targetId: string | number) => {
+  try {
+    const payload = { target_type: targetType, target_id: targetId };
+    const response = await apiClient.post(`/review/report`, payload);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
 export const postReply = async (commentBookId: string | number, comment: string) => {
   try {
     const payload = { comment };

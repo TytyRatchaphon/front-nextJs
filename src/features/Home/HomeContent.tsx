@@ -22,8 +22,9 @@ import RankingCategoryLeft from "@/components/home/RankingCategoryLeft";
 import RankingCategoryRight from "@/components/home/RankingCategoryRight";
 import GifLoader from "@/components/utility/GifLoader";
 import PinnedReviewsSwiper from "@/components/swiper/PinnedReviewsSwiper";
-import { notification } from "antd";
+import { App } from "antd";
 import { CloseCircleOutlined } from "@ant-design/icons";
+import { useAuthStore } from "@/stores/authStore";
 
 
 interface HomeContentProps {
@@ -31,6 +32,9 @@ interface HomeContentProps {
 }
 
 export default function HomeContent({ initialData }: HomeContentProps) {
+  const { notification } = App.useApp();
+  const { user } = useAuthStore();
+
   const { data: homeData, isLoading, error: homeDataError } = useQuery({
     queryKey: ['homeData'],
     queryFn: fetchHomeData,
@@ -53,7 +57,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
   const { data: continueBooks, isLoading: isContinueBooksLoading, error: continueBooksError } = useQuery({
     queryKey: ['continueBooks'],
     queryFn: () => fetchUserShelveContinue(10), // Limit to 10 as per request
-    enabled: !isLoading,
+    enabled: !isLoading && !!user,
     select: (data: any) => data?.books ?? [],
   });
 
