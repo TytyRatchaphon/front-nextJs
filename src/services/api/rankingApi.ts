@@ -44,6 +44,120 @@ export const fetchRankingBooks = async (range: RankingTimeRange = 'week', page: 
   }
 };
 
+export interface LeaderboardUserProfile {
+  user_id: number;
+  fullname: string;
+  img: string | null;
+  Frame_img: string | null;
+}
+
+export interface LeaderboardUserItem {
+  rank: number | null;
+  user: LeaderboardUserProfile;
+  totalPrice: number;
+}
+
+export interface LeaderboardTopResponse {
+  code: number;
+  status: string;
+  message: string;
+  data: {
+    page: number;
+    limit: number;
+    total: number;
+    hasMore: boolean;
+    range: string;
+    users: LeaderboardUserItem[];
+  };
+}
+
+export interface LeaderboardPagination {
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+  totalPages: number;
+}
+
+export interface LeaderboardUsersResult {
+  users: LeaderboardUserItem[];
+  pagination: LeaderboardPagination;
+  range: string;
+}
+
+const mapLeaderboardRange = (range: RankingTimeRange): string => {
+  if (range === 'week') return 'week';
+  if (range === 'month') return 'month';
+  if (range === 'year') return 'year';
+  return range;
+};
+
+const createEmptyLeaderboardResult = (range: RankingTimeRange, page: number, limit: number): LeaderboardUsersResult => ({
+  users: [],
+  pagination: {
+    page,
+    limit,
+    total: 0,
+    hasMore: false,
+    totalPages: 0,
+  },
+  range,
+});
+
+export const fetchLeaderboardUsers = async (
+  range: RankingTimeRange = 'week',
+  page: number = 1,
+  limit: number = 10
+): Promise<LeaderboardUsersResult> => {
+  try {
+    const mappedRange = mapLeaderboardRange(range);
+    const response = await apiClient.get<LeaderboardTopResponse>(
+      `/rank/leaderboard/top?range=${mappedRange}&limit=${limit}&page=${page}`
+    );
+    const payload = response.data?.data;
+    if (!payload) {
+      return createEmptyLeaderboardResult(range, page, limit);
+    }
+
+    const safeLimit = Number(payload.limit) > 0 ? Number(payload.limit) : limit;
+    const total = Number(payload.total) || 0;
+
+    return {
+      users: Array.isArray(payload.users) ? payload.users : [],
+      pagination: {
+        page: Number(payload.page) || page,
+        limit: safeLimit,
+        total,
+        hasMore: Boolean(payload.hasMore),
+        totalPages: safeLimit > 0 ? Math.ceil(total / safeLimit) : 0,
+      },
+      range: payload.range || range,
+    };
+  } catch {
+    return createEmptyLeaderboardResult(range, page, limit);
+  }
+};
+
+export interface LeaderboardUserRankResponse {
+  code: number;
+  status: string;
+  message: string;
+  data: LeaderboardUserItem;
+}
+
+export const fetchLeaderboardUserRank = async (
+  userId: number | string,
+  range?: RankingTimeRange
+): Promise<LeaderboardUserItem | null> => {
+  try {
+    const query = range ? `?range=${range}` : '';
+    const response = await apiClient.get<LeaderboardUserRankResponse>(`/rank/leaderboard/user/${userId}${query}`);
+    return response.data?.data || null;
+  } catch {
+    return null;
+  }
+};
+
 export interface RankingCategoryData {
   left: { id: number; name: string };
   right: { id: number; name: string };
@@ -122,3 +236,5 @@ export const fetchCategoryRankingBooks = async (categoryId: number, range: numbe
     return [];
   }
 };
+
+

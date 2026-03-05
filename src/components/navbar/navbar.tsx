@@ -259,7 +259,7 @@ function Navbar() {
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-gray-100">
-              <Image src={settings?.rank_point || ''} alt="RP" width={14} height={14} className="object-contain" unoptimized />
+              <Image src={settings?.rank_point || "https://image.enjoybook.co/enjoybook.image/web/20260225154739zflt.png"} alt="RP" width={14} height={14} className="object-contain" unoptimized />
               <span className="text-xs font-bold text-gray-700">{rankData.total_rp.toLocaleString()}</span>
             </div>
             <span className="text-[10px] text-red-500 font-semibold group-hover:text-red-600 whitespace-nowrap flex items-center gap-0.5">
@@ -331,12 +331,12 @@ function Navbar() {
         </Link>
         <Link href="/achievement" onClick={() => setIsUserMenuOpen(false)} className="group flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M12.1504 16.5V18.6" stroke="#B01F1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M7.15039 22H17.1504V21C17.1504 19.9 16.2504 19 15.1504 19H9.15039C8.05039 19 7.15039 19.9 7.15039 21V22V22Z" stroke="#B01F1F" stroke-width="1.5" stroke-miterlimit="10"/>
-                <path d="M6.15039 22H18.1504" stroke="#B01F1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M12 16C8.13 16 5 12.87 5 9V6C5 3.79 6.79 2 9 2H15C17.21 2 19 3.79 19 6V9C19 12.87 15.87 16 12 16Z" stroke="#B01F1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M5.47004 11.65C4.72004 11.41 4.06004 10.97 3.54004 10.45C2.64004 9.44998 2.04004 8.24998 2.04004 6.84998C2.04004 5.44998 3.14004 4.34998 4.54004 4.34998H5.19004C4.99004 4.80998 4.89004 5.31998 4.89004 5.84998V8.84998C4.89004 9.84998 5.10004 10.79 5.47004 11.65Z" stroke="#B01F1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M18.5303 11.65C19.2803 11.41 19.9403 10.97 20.4603 10.45C21.3603 9.44998 21.9603 8.24998 21.9603 6.84998C21.9603 5.44998 20.8603 4.34998 19.4603 4.34998H18.8103C19.0103 4.80998 19.1103 5.31998 19.1103 5.84998V8.84998C19.1103 9.84998 18.9003 10.79 18.5303 11.65Z" stroke="#B01F1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12.1504 16.5V18.6" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M7.15039 22H17.1504V21C17.1504 19.9 16.2504 19 15.1504 19H9.15039C8.05039 19 7.15039 19.9 7.15039 21V22V22Z" stroke="#B01F1F" strokeWidth="1.5" strokeMiterlimit="10"/>
+                <path d="M6.15039 22H18.1504" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 16C8.13 16 5 12.87 5 9V6C5 3.79 6.79 2 9 2H15C17.21 2 19 3.79 19 6V9C19 12.87 15.87 16 12 16Z" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M5.47004 11.65C4.72004 11.41 4.06004 10.97 3.54004 10.45C2.64004 9.44998 2.04004 8.24998 2.04004 6.84998C2.04004 5.44998 3.14004 4.34998 4.54004 4.34998H5.19004C4.99004 4.80998 4.89004 5.31998 4.89004 5.84998V8.84998C4.89004 9.84998 5.10004 10.79 5.47004 11.65Z" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M18.5303 11.65C19.2803 11.41 19.9403 10.97 20.4603 10.45C21.3603 9.44998 21.9603 8.24998 21.9603 6.84998C21.9603 5.44998 20.8603 4.34998 19.4603 4.34998H18.8103C19.0103 4.80998 19.1103 5.31998 19.1103 5.84998V8.84998C19.1103 9.84998 18.9003 10.79 18.5303 11.65Z" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
           <span className="font-primary text-black group-hover:text-red-600 transition-colors">ความสำเร็จ</span>
         </Link>
@@ -786,12 +786,12 @@ function Navbar() {
             </Link>
             <Link href="/achievement" onClick={() => setIsMobileDrawerOpen(false)} className="group flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M12.1504 16.5V18.6" stroke="#B01F1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M7.15039 22H17.1504V21C17.1504 19.9 16.2504 19 15.1504 19H9.15039C8.05039 19 7.15039 19.9 7.15039 21V22V22Z" stroke="#B01F1F" stroke-width="1.5" stroke-miterlimit="10"/>
-                <path d="M6.15039 22H18.1504" stroke="#B01F1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M12 16C8.13 16 5 12.87 5 9V6C5 3.79 6.79 2 9 2H15C17.21 2 19 3.79 19 6V9C19 12.87 15.87 16 12 16Z" stroke="#B01F1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M5.47004 11.65C4.72004 11.41 4.06004 10.97 3.54004 10.45C2.64004 9.44998 2.04004 8.24998 2.04004 6.84998C2.04004 5.44998 3.14004 4.34998 4.54004 4.34998H5.19004C4.99004 4.80998 4.89004 5.31998 4.89004 5.84998V8.84998C4.89004 9.84998 5.10004 10.79 5.47004 11.65Z" stroke="#B01F1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M18.5303 11.65C19.2803 11.41 19.9403 10.97 20.4603 10.45C21.3603 9.44998 21.9603 8.24998 21.9603 6.84998C21.9603 5.44998 20.8603 4.34998 19.4603 4.34998H18.8103C19.0103 4.80998 19.1103 5.31998 19.1103 5.84998V8.84998C19.1103 9.84998 18.9003 10.79 18.5303 11.65Z" stroke="#B01F1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12.1504 16.5V18.6" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M7.15039 22H17.1504V21C17.1504 19.9 16.2504 19 15.1504 19H9.15039C8.05039 19 7.15039 19.9 7.15039 21V22V22Z" stroke="#B01F1F" strokeWidth="1.5" strokeMiterlimit="10"/>
+                <path d="M6.15039 22H18.1504" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 16C8.13 16 5 12.87 5 9V6C5 3.79 6.79 2 9 2H15C17.21 2 19 3.79 19 6V9C19 12.87 15.87 16 12 16Z" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M5.47004 11.65C4.72004 11.41 4.06004 10.97 3.54004 10.45C2.64004 9.44998 2.04004 8.24998 2.04004 6.84998C2.04004 5.44998 3.14004 4.34998 4.54004 4.34998H5.19004C4.99004 4.80998 4.89004 5.31998 4.89004 5.84998V8.84998C4.89004 9.84998 5.10004 10.79 5.47004 11.65Z" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M18.5303 11.65C19.2803 11.41 19.9403 10.97 20.4603 10.45C21.3603 9.44998 21.9603 8.24998 21.9603 6.84998C21.9603 5.44998 20.8603 4.34998 19.4603 4.34998H18.8103C19.0103 4.80998 19.1103 5.31998 19.1103 5.84998V8.84998C19.1103 9.84998 18.9003 10.79 18.5303 11.65Z" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               <span className="font-primary text-black group-hover:text-red-600 transition-colors">ความสำเร็จ</span>
             </Link>

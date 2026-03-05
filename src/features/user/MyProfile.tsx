@@ -13,6 +13,7 @@ import FreeCoinPill from "@/components/utility/FreeCoinPill";
 import StampPill from "@/components/utility/StampPill";
 import { fetchRankProfile, RankProfileResponse, fetchAllRanks, RankItem, fetchQuests, QuestGroup } from "@/services/api/userApi";
 import QuestSection from "@/components/quest/QuestSection";
+import ProfileAchievements from "@/components/achievement/ProfileAchievements";
 import Cookies from "js-cookie";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperType } from 'swiper';
@@ -264,18 +265,8 @@ function MyProfileContent() {
                         </div>
                     )}
 
-                    {/* Quest Section */}
-                    <QuestSection
-                        questGroups={questGroups}
-                        onRefresh={async () => {
-                            const rawToken = Cookies.get('token') || localStorage.getItem('token') || localStorage.getItem('authToken');
-                            const token = rawToken ? rawToken.replace(/^['"]+|['"]+$/g, '') : '';
-                            if (token) {
-                                const quests = await fetchQuests(token);
-                                if (Array.isArray(quests)) setQuestGroups(quests);
-                            }
-                        }}
-                    />
+                    {/* Achievements Section */}
+                    <ProfileAchievements />
 
                 </div>
             </div>

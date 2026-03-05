@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Button, Popover, Modal, Slider, Switch, Select, ConfigProvider, message, notification } from "antd";
+import { Alert, Button, Popover, Modal, Slider, Switch, Select, ConfigProvider, message, App } from "antd";
 import parse from "html-react-parser";
 import { BackToTopButton } from "@/components/utility/BackToTopButton";
 import Link from "next/link";
@@ -71,6 +71,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   const updateToken = useAuthStore((s: AuthState) => s.updateToken);
   const queryClient = useQueryClient();
   const [, messageContextHolder] = message.useMessage();
+  const { notification } = App.useApp();
 
   // --- 1. Fetch Data ---
   const {

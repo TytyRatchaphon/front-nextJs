@@ -32,3 +32,38 @@ export const claimAchievement = async (achievementId: string | number): Promise<
     throw err;
   }
 };
+
+// --- Fetch Completed Achievements ---
+export const fetchCompletedAchievements = async (): Promise<any[]> => {
+  try {
+    const response = await apiClient.get('/achievement/completed');
+    return response.data?.data || [];
+  } catch (err) {
+    console.error('[fetchCompletedAchievements] error:', err);
+    return [];
+  }
+};
+
+// --- Fetch Showcase Achievements ---
+export const fetchAchievementShowcase = async (): Promise<any[]> => {
+  try {
+    const response = await apiClient.get('/achievement/showcase');
+    return response.data?.data || [];
+  } catch (err) {
+    console.error('[fetchAchievementShowcase] error:', err);
+    return [];
+  }
+};
+
+// --- Update Showcase Achievements ---
+export const updateAchievementShowcase = async (showcaseIds: number[]): Promise<any> => {
+  try {
+    const response = await apiClient.put('/achievement/showcase', {
+      showcase_ids: showcaseIds,
+    });
+    return response.data;
+  } catch (err) {
+    console.error('[updateAchievementShowcase] error:', err);
+    throw err;
+  }
+};

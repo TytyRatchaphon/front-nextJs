@@ -7,6 +7,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Trophy, Award, Target, BookOpen, Coins, Flame, Gift, ChevronRight, X } from 'lucide-react';
 import { fetchAchievements, fetchAchievementDetail, claimAchievement } from '@/services/api/achievementApi';
+import { useAuthStore } from '@/stores/authStore';
+import { useWebsiteStore } from '@/stores/websiteStore';
 
 const conditionLabels: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   login_streak: { label: 'ล็อกอินต่อเนื่อง', icon: <Flame size={16} />, color: '#F59E0B' },
@@ -24,6 +26,8 @@ export default function AchievementPageClient() {
   const [claiming, setClaiming] = useState(false);
   const queryClient = useQueryClient();
   const { notification } = App.useApp();
+  const { updateToken } = useAuthStore();
+  const { settings } = useWebsiteStore();
 
   const { data, isLoading } = useQuery({
     queryKey: ['achievements'],
@@ -50,6 +54,16 @@ export default function AchievementPageClient() {
     setClaiming(true);
     try {
       const res = await claimAchievement(achievementId);
+
+      // Update token if API returns a new one
+      let newToken = res?.token ?? res?.data?.token;
+      if (typeof newToken === 'object' && newToken?.token) {
+        newToken = newToken.token;
+      }
+      if (newToken && typeof newToken === 'string' && typeof updateToken === 'function') {
+        updateToken(newToken);
+      }
+
       notification.success({
         message: res?.message || 'รับรางวัลสำเร็จ!',
         placement: 'topRight',
@@ -72,7 +86,7 @@ export default function AchievementPageClient() {
       <div className="max-w-[1440px] w-full mx-auto px-4 lg:px-[156px]">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-6">
-          <Link href="/" className="text-gray-500 hover:text-[#E33527] transition-colors">หน้าหลัก</Link>
+          <Link href="/mprofile" className="text-gray-500 hover:text-[#E33527] transition-colors">ข้อมูลของฉัน</Link>
           <span className="text-gray-400">/</span>
           <span className="text-[#E33527] font-semibold">ความสำเร็จ</span>
         </div>
@@ -234,6 +248,7 @@ export default function AchievementPageClient() {
         footer={null}
         centered
         width={480}
+        zIndex={5000}
         closeIcon={<X size={20} />}
         styles={{ body: { padding: 0 } }}
       >
@@ -317,11 +332,17 @@ export default function AchievementPageClient() {
                           className="flex items-center justify-between p-3 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl border border-amber-100"
                         >
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-                              <Coins size={16} className="text-amber-600" />
+                            <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center overflow-hidden">
+                              {reward.reward_type === 'coin' ? (
+                                <Image src={settings?.coin || '/images/e-coin.png'} alt="เหรียญ" width={24} height={24} unoptimized className="object-contain" />
+                              ) : reward.reward_type === 'freecoin' ? (
+                                <Image src={settings?.freecoin || '/images/money-bag.png'} alt="ถุงเงิน" width={24} height={24} unoptimized className="object-contain" />
+                              ) : (
+                                <Coins size={16} className="text-amber-600" />
+                              )}
                             </div>
                             <span className="text-sm font-medium text-gray-700 capitalize">
-                              {reward.reward_type === 'freecoin' ? 'เหรียญฟรี' : reward.reward_type}
+                              {reward.reward_type === 'coin' ? 'เหรียญ' : reward.reward_type === 'freecoin' ? 'ถุงเงิน' : reward.reward_type}
                             </span>
                           </div>
                           <span className="text-lg font-bold text-amber-600">
