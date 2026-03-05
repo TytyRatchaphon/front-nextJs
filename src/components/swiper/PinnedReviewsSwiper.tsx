@@ -111,8 +111,8 @@ export default function PinnedReviewsSwiper({ reviews }: PinnedReviewsSwiperProp
           if (cleanContent.startsWith('<p>')) {
              cleanContent = cleanContent.replace(/<[^>]+>/g, '');
           }
-          const isSpoilerCard = cleanContent.includes('[SPOILER]');
-          cleanContent = cleanContent.replace(/\[\/?SPOILER\]/gi, '');
+          const isSpoilerCard = Boolean(review.is_spoiler);
+          cleanContent = cleanContent.replace(/\[\/?\s*SPOILER\s*\]/gi, '');
 
           const cardContent = (
             <>

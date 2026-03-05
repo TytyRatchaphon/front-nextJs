@@ -11,10 +11,11 @@ interface WriteReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialBook?: any | null;
+  lockBook?: boolean;
   onSuccess?: () => void;
 }
 
-export default function WriteReviewModal({ isOpen, onClose, initialBook, onSuccess }: WriteReviewModalProps) {
+export default function WriteReviewModal({ isOpen, onClose, initialBook, lockBook = false, onSuccess }: WriteReviewModalProps) {
   const [selectedBook, setSelectedBook] = useState<any | null>(initialBook || null);
   const [isSelectNovelOpen, setIsSelectNovelOpen] = useState(false);
   
@@ -108,24 +109,28 @@ export default function WriteReviewModal({ isOpen, onClose, initialBook, onSucce
                 <h4 className="text-lg font-bold text-gray-800 text-center line-clamp-2 px-4 mb-3">
                   {selectedBook.name || selectedBook.title || selectedBook.bookname}
                 </h4>
-                <Button 
-                  onClick={() => setIsSelectNovelOpen(true)}
-                  className="rounded-full text-[#E33527] border-[#E33527] hover:bg-red-50 flex items-center justify-center gap-1 px-4"
-                >
-                  <span className="text-lg leading-none">+</span> เปลี่ยนเรื่อง
-                </Button>
+                {!lockBook && (
+                  <Button 
+                    onClick={() => setIsSelectNovelOpen(true)}
+                    className="rounded-full text-[#E33527] border-[#E33527] hover:bg-red-50 flex items-center justify-center gap-1 px-4"
+                  >
+                    <span className="text-lg leading-none">+</span> เปลี่ยนเรื่อง
+                  </Button>
+                )}
               </>
             ) : (
               <>
                 <div className="w-32 h-44 rounded-lg bg-gray-200 mb-4 flex items-center justify-center text-gray-400 shadow-inner">
                   ไม่มีรูปภาพ
                 </div>
-                <Button 
-                  onClick={() => setIsSelectNovelOpen(true)}
-                  className="rounded-full text-[#E33527] border-[#E33527] hover:bg-red-50 flex items-center justify-center gap-1 px-4"
-                >
-                  <span className="text-lg leading-none">+</span> เลือกเรื่อง
-                </Button>
+                {!lockBook && (
+                  <Button 
+                    onClick={() => setIsSelectNovelOpen(true)}
+                    className="rounded-full text-[#E33527] border-[#E33527] hover:bg-red-50 flex items-center justify-center gap-1 px-4"
+                  >
+                    <span className="text-lg leading-none">+</span> เลือกเรื่อง
+                  </Button>
+                )}
               </>
             )}
           </div>

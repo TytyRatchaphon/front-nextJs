@@ -329,6 +329,17 @@ function Navbar() {
           </svg>
           <span className="font-primary text-black group-hover:text-red-600 transition-colors">กิจกรรม</span>
         </Link>
+        <Link href="/achievement" onClick={() => setIsUserMenuOpen(false)} className="group flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12.1504 16.5V18.6" stroke="#B01F1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M7.15039 22H17.1504V21C17.1504 19.9 16.2504 19 15.1504 19H9.15039C8.05039 19 7.15039 19.9 7.15039 21V22V22Z" stroke="#B01F1F" stroke-width="1.5" stroke-miterlimit="10"/>
+                <path d="M6.15039 22H18.1504" stroke="#B01F1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 16C8.13 16 5 12.87 5 9V6C5 3.79 6.79 2 9 2H15C17.21 2 19 3.79 19 6V9C19 12.87 15.87 16 12 16Z" stroke="#B01F1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M5.47004 11.65C4.72004 11.41 4.06004 10.97 3.54004 10.45C2.64004 9.44998 2.04004 8.24998 2.04004 6.84998C2.04004 5.44998 3.14004 4.34998 4.54004 4.34998H5.19004C4.99004 4.80998 4.89004 5.31998 4.89004 5.84998V8.84998C4.89004 9.84998 5.10004 10.79 5.47004 11.65Z" stroke="#B01F1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M18.5303 11.65C19.2803 11.41 19.9403 10.97 20.4603 10.45C21.3603 9.44998 21.9603 8.24998 21.9603 6.84998C21.9603 5.44998 20.8603 4.34998 19.4603 4.34998H18.8103C19.0103 4.80998 19.1103 5.31998 19.1103 5.84998V8.84998C19.1103 9.84998 18.9003 10.79 18.5303 11.65Z" stroke="#B01F1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+          <span className="font-primary text-black group-hover:text-red-600 transition-colors">ความสำเร็จ</span>
+        </Link>
         <Link href="/redeem" onClick={() => setIsUserMenuOpen(false)} className="group flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path d="M19.5 12.5C19.5 11.12 20.62 10 22 10V9C22 5 21 4 17 4H7C3 4 2 5 2 9V9.5C3.38 9.5 4.5 10.62 4.5 12C4.5 13.38 3.38 14.5 2 14.5V15C2 19 3 20 7 20H17C21 20 22 19 22 15C20.62 15 19.5 13.88 19.5 12.5Z" fill="white" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -772,6 +783,17 @@ function Navbar() {
                 <path d="M12.6298 10.99L13.1998 11.88C13.2898 12.02 13.4898 12.16 13.6398 12.2L14.6598 12.46C15.2898 12.62 15.4598 13.16 15.0498 13.66L14.3798 14.47C14.2798 14.6 14.1998 14.83 14.2098 14.99L14.2698 16.04C14.3098 16.69 13.8498 17.02 13.2498 16.78L12.2698 16.39C12.1198 16.33 11.8698 16.33 11.7198 16.39L10.7398 16.78C10.1398 17.02 9.67978 16.68 9.71978 16.04L9.77978 14.99C9.78978 14.83 9.70978 14.59 9.60978 14.47L8.93978 13.66C8.52978 13.16 8.69978 12.62 9.32978 12.46L10.3498 12.2C10.5098 12.16 10.7098 12.01 10.7898 11.88L11.3598 10.99C11.7198 10.45 12.2798 10.45 12.6298 10.99Z" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               <span className="font-primary text-black group-hover:text-red-600 transition-colors">กิจกรรม</span>
+            </Link>
+            <Link href="/achievement" onClick={() => setIsMobileDrawerOpen(false)} className="group flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M12.1504 16.5V18.6" stroke="#B01F1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M7.15039 22H17.1504V21C17.1504 19.9 16.2504 19 15.1504 19H9.15039C8.05039 19 7.15039 19.9 7.15039 21V22V22Z" stroke="#B01F1F" stroke-width="1.5" stroke-miterlimit="10"/>
+                <path d="M6.15039 22H18.1504" stroke="#B01F1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 16C8.13 16 5 12.87 5 9V6C5 3.79 6.79 2 9 2H15C17.21 2 19 3.79 19 6V9C19 12.87 15.87 16 12 16Z" stroke="#B01F1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M5.47004 11.65C4.72004 11.41 4.06004 10.97 3.54004 10.45C2.64004 9.44998 2.04004 8.24998 2.04004 6.84998C2.04004 5.44998 3.14004 4.34998 4.54004 4.34998H5.19004C4.99004 4.80998 4.89004 5.31998 4.89004 5.84998V8.84998C4.89004 9.84998 5.10004 10.79 5.47004 11.65Z" stroke="#B01F1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M18.5303 11.65C19.2803 11.41 19.9403 10.97 20.4603 10.45C21.3603 9.44998 21.9603 8.24998 21.9603 6.84998C21.9603 5.44998 20.8603 4.34998 19.4603 4.34998H18.8103C19.0103 4.80998 19.1103 5.31998 19.1103 5.84998V8.84998C19.1103 9.84998 18.9003 10.79 18.5303 11.65Z" stroke="#B01F1F" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span className="font-primary text-black group-hover:text-red-600 transition-colors">ความสำเร็จ</span>
             </Link>
             <Link href="/redeem" onClick={() => setIsMobileDrawerOpen(false)} className="group flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">

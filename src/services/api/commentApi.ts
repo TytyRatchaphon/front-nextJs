@@ -18,6 +18,28 @@ export const fetchPinnedReviews = async (): Promise<{ reviews: any[], pagination
   }
 };
 
+// --- Book Reviews (new review system per book) ---
+export const fetchBookReviewsNew = async (
+  bookId: string | number,
+  sort: string = 'liked',
+  page: number = 1
+): Promise<{ reviews: any[], pagination?: any }> => {
+  try {
+    const response = await apiClient.get(`/review/book/${bookId}`, {
+      params: { sort, page }
+    });
+    if (response.data && response.data.data) {
+      return {
+        reviews: response.data.data.reviews || [],
+        pagination: response.data.data.pagination
+      };
+    }
+    return { reviews: [] };
+  } catch {
+    return { reviews: [] };
+  }
+};
+
 // --- Book Reviews (BookDetail page) ---
 
 export const fetchBookReviews = async (bookId: string | number, page: number = 1, limit: number = 10, sort: string = 'newest'): Promise<{ comments: CommentData[], pagination?: any }> => {
@@ -81,6 +103,23 @@ export const deleteUserReview = async (reviewId: string | number) => {
     return response.data;
   } catch (error: any) {
     throw error;
+  }
+};
+
+// --- Fetch Single Review by ID ---
+export const fetchReviewById = async (reviewId: string | number): Promise<any> => {
+  try {
+    const response = await apiClient.get(`/review/${reviewId}`);
+    console.log('[fetchReviewById] response:', JSON.stringify(response.data, null, 2));
+    // Try multiple response shapes
+    const d = response.data;
+    if (d?.data?.review) return d.data.review;
+    if (d?.data) return d.data;
+    if (d?.review) return d.review;
+    return d || null;
+  } catch (err) {
+    console.error('[fetchReviewById] error:', err);
+    return null;
   }
 };
 

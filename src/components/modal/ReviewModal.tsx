@@ -25,6 +25,8 @@ interface ReviewModalProps {
 }
 
 export default function ReviewModal({ isOpen, onClose, review, currentUserId, onEdit, onDelete }: ReviewModalProps) {
+  const REVIEW_MODAL_Z_INDEX = 3000;
+
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [shareCount, setShareCount] = useState(0);
@@ -95,6 +97,7 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
       return;
     }
     modal.confirm({
+      zIndex: REVIEW_MODAL_Z_INDEX + 10,
       title: 'ยืนยันการรายงาน',
       content: targetType === 'review' ? 'ต้องการรายงานรีวิวนี้ใช่หรือไม่?' : 'ต้องการรายงานความคิดเห็นนี้ใช่หรือไม่?',
       okText: 'รายงาน',
@@ -150,6 +153,7 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
       footer={null}
       centered
       width={600}
+      zIndex={REVIEW_MODAL_Z_INDEX}
       className="font-primary"
       closeIcon={<span className="text-gray-400 hover:text-red-500 transition-colors">✕</span>}
     >

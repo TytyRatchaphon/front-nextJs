@@ -7,6 +7,7 @@ import BookDetailHeader from "@/components/bookdetail/BookDetailHeader";
 import BookInfoCard from "@/components/bookdetail/BookInfoCard";
 import Footer from "@/components/home/Footer";
 import CommentSection from "@/components/bookdetail/CommentSection";
+import BookReviewsTab from "@/components/bookdetail/BookReviewsTab";
 import { BackToTopButton } from "@/components/utility/BackToTopButton";
 import GifLoader from '@/components/utility/GifLoader';
 import { useAuthStore } from "@/stores/authStore";
@@ -143,7 +144,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
         latestUpdate={book?.update_at}
       />
     ),
-    รีวิวทั้งหมด: <CommentSection bookId={String(bookId)} mode="comment" />,
+    รีวิวทั้งหมด: <BookReviewsTab bookId={String(bookId)} book={book} />,
     ความคิดเห็นทั้งหมด: <CommentSection bookId={String(bookId)} mode="comment_ep" />,
   };
 

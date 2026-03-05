@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation';
+import ReviewPageClient from '@/features/review/ReviewPageClient';
 
 interface Props {
     params: Promise<{
@@ -6,15 +6,15 @@ interface Props {
     }>;
 }
 
-export default async function ReviewRedirectPage({ params }: Props) {
+export default async function ReviewPage({ params }: Props) {
     const { slug } = await params;
 
     if (slug && slug.length > 0) {
-        // If there are slugs (e.g. /review/123), redirect to /article/123
-        const path = slug.join('/');
-        redirect(`/article/${path}`);
-    } else {
-        // If no slug (e.g. /review), redirect to /article
-        redirect('/article');
+        const reviewId = slug[0];
+        return <ReviewPageClient reviewId={reviewId} />;
     }
+
+    // No slug → redirect to home
+    const { redirect } = await import('next/navigation');
+    redirect('/');
 }
