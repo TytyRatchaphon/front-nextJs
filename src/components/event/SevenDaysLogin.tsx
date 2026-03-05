@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { useAuthStore } from '@/stores/authStore'
 import apiClient from '@/services/apiClient'
 import { useQuery } from '@tanstack/react-query'
-import { Modal, Button, Popover } from 'antd'
+import { Modal, Button, Popover, App } from 'antd'
 import { InfoCircleOutlined } from '@ant-design/icons'
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -39,6 +39,7 @@ export interface SevenDaysLoginProps {
 function SevenDaysLogin({ onClose }: SevenDaysLoginProps) {
   const { user, token, updateToken } = useAuthStore()
   const queryClient = useQueryClient()
+  const { modal } = App.useApp()
   const { data, isLoading, error } = useQuery({ queryKey: ['weekly-login', token], queryFn: () => fetchWeeklyLogin(token), retry: 1, staleTime: 60_000 })
   // `current_reward_day` is 1-based and defaults to 1 when no days are claimed yet.
   // We'll treat it as the "next reward day" index; days with index < currentRewardDay are already checked.
@@ -102,7 +103,7 @@ function SevenDaysLogin({ onClose }: SevenDaysLoginProps) {
     } catch (e: any) {
       console.error('Checkin Error:', e)
       const errorMsg = e.response?.data?.message || 'เกิดข้อผิดพลาดขณะเช็คอิน'
-      Modal.error({ title: 'เช็คอินล้มเหลว', content: errorMsg })
+      modal.error({ title: 'เช็คอินล้มเหลว', content: errorMsg })
     } finally {
       setConfirmLoading(false)
     }
