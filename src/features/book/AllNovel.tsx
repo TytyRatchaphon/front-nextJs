@@ -6,7 +6,7 @@ import GifLoader from '@/components/utility/GifLoader';
 import { useQuery } from '@tanstack/react-query';
 import CardBook from '@/components/novelCard/CardBook';
 
-interface SearchParams {
+export interface SearchParams {
   query: string;
   categories: number[];
   types: string[];
@@ -16,7 +16,7 @@ interface SearchParams {
   order: string;
 }
 
-const searchBooks = async (
+export const searchBooks = async (
   params: SearchParams,
   page: number,
   limit: number
@@ -52,7 +52,7 @@ const searchBooks = async (
   throw new Error("Invalid response format");
 };
 
-function AllNovel() {
+function AllNovel({ initialData }: { initialData?: any }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState('all');
   const [searchParams, setSearchParams] = useState<SearchParams>({
@@ -76,6 +76,7 @@ function AllNovel() {
     queryKey: ["searchBooks", searchParams, currentPage],
     queryFn: () => searchBooks(searchParams, currentPage, pageSize),
     staleTime: 5 * 60 * 1000,
+    initialData: currentPage === 1 ? initialData : undefined,
   });
 
   const handlePageChange = (page: number) => {

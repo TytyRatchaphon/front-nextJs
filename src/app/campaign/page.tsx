@@ -1,10 +1,14 @@
 import React from 'react';
-import Campaign from '@/features/campaign/Campaign';
+import Campaign, { fetchCampaigns } from '@/features/campaign/Campaign';
 
-export default function CampaignPage() {
+export const revalidate = 60; // Cache for 60 seconds
+
+export default async function CampaignPage() {
+  const initialData = await fetchCampaigns().catch(() => undefined);
+
   return (
     <div>
-      <Campaign />
+      <Campaign initialData={initialData} />
     </div>
   );
 }

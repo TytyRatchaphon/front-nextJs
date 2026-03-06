@@ -106,6 +106,14 @@ export const BookEpisodesTab = ({ episodesData, bookId, bookDetail, settings, is
                                         }
 
                                         const hasPromo = !episode.isBuy && promoPrice !== undefined && promoPrice < regularPrice && promoPrice >= 0;
+                                        const rpEarn = Number((episode as any)?.rp_campaign?.rp_earn ?? 0);
+                                        const rpCampaignEnd = (episode as any)?.rp_campaign?.end_date
+                                            ? Date.parse((episode as any).rp_campaign.end_date)
+                                            : null;
+                                        const isRpCampaignActive = !episode.isBuy
+                                            && regularPrice > 0
+                                            && rpEarn > 0
+                                            && (rpCampaignEnd === null || (Number.isFinite(rpCampaignEnd) && rpCampaignEnd > Date.now()));
 
                                         return (
                                             <Link
@@ -127,51 +135,68 @@ export const BookEpisodesTab = ({ episodesData, bookId, bookDetail, settings, is
                                                     </div>
                                                 </div>
 
-                                                {hasPromo && activePromo?.end_date && (
-                                                    <div className="flex-shrink-0 px-2 hidden sm:block">
-                                                        <CountdownTimer targetDate={activePromo.end_date} />
-                                                    </div>
-                                                )}
-
                                                 <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0 text-right">
                                                     <div className="flex flex-col items-end justify-center min-w-[60px]">
                                                         {(regularPrice > 0 || hasPromo) ? (
-                                                            <div className="flex items-center gap-1.5 justify-end">
-                                                                {((settings: any) => {
-                                                                    const bookUseFreecoin = (bookDetail as any)?.use_freecoin;
-                                                                    const epUseFreecoin = (episode as any)?.use_freecoin;
-                                                                    const canUseFreecoin = epUseFreecoin !== undefined && epUseFreecoin !== null
-                                                                        ? Number(epUseFreecoin) === 1
-                                                                        : (bookUseFreecoin !== undefined && bookUseFreecoin !== null ? Number(bookUseFreecoin) === 1 : true);
-
-                                                                    return (
-                                                                        <>
-                                                                            {canUseFreecoin && (
-                                                                                <Image src={settings?.freecoin || '/images/money-bag.png'} alt="freecoin" width={16} height={16} unoptimized />
+                                                            <div className="flex flex-col items-end gap-1">
+                                                                {isRpCampaignActive && (
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700 whitespace-nowrap">
+                                                                            <span>{`+${rpEarn}`}</span>
+                                                                            {settings?.rank_point ? (
+                                                                                <Image
+                                                                                    src={settings.rank_point}
+                                                                                    alt="rank point"
+                                                                                    width={12}
+                                                                                    height={12}
+                                                                                    className="object-contain"
+                                                                                    unoptimized
+                                                                                />
+                                                                            ) : (
+                                                                                <span>RP</span>
                                                                             )}
-                                                                            <Image src={settings?.coin || '/images/e-coin.png'} alt="coin" width={16} height={16} unoptimized />
-                                                                        </>
-                                                                    );
-                                                                })(settings)}
-                                                                {episode.isBuy ? (
-                                                                    <span className="text-sm font-semibold text-gray-400 line-through">{regularPrice}</span>
-                                                                ) : hasPromo ? (
-                                                                    <>
-                                                                        <span className="text-sm font-semibold text-rose-600">{promoPrice}</span>
-                                                                        <span className="text-xs text-gray-400 line-through decoration-gray-300">{regularPrice}</span>
-                                                                    </>
-                                                                ) : (
-                                                                    <span className="text-sm font-semibold text-orange-600">{regularPrice}</span>
+                                                                        </span>
+                                                                        {(episode as any)?.rp_campaign?.end_date && (
+                                                                            <CountdownTimer targetDate={(episode as any).rp_campaign.end_date} variant="violet" label="RP" />
+                                                                        )}
+                                                                    </div>
                                                                 )}
+                                                                {hasPromo && activePromo?.end_date && (
+                                                                    <div className="flex items-center justify-end">
+                                                                        <CountdownTimer targetDate={activePromo.end_date} variant="rose" label="ลดอีก" />
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex items-center gap-1.5 justify-end">
+                                                                    {((settings: any) => {
+                                                                        const bookUseFreecoin = (bookDetail as any)?.use_freecoin;
+                                                                        const epUseFreecoin = (episode as any)?.use_freecoin;
+                                                                        const canUseFreecoin = epUseFreecoin !== undefined && epUseFreecoin !== null
+                                                                            ? Number(epUseFreecoin) === 1
+                                                                            : (bookUseFreecoin !== undefined && bookUseFreecoin !== null ? Number(bookUseFreecoin) === 1 : true);
+
+                                                                        return (
+                                                                            <>
+                                                                                {canUseFreecoin && (
+                                                                                    <Image src={settings?.freecoin || '/images/money-bag.png'} alt="freecoin" width={16} height={16} unoptimized />
+                                                                                )}
+                                                                                <Image src={settings?.coin || '/images/e-coin.png'} alt="coin" width={16} height={16} unoptimized />
+                                                                            </>
+                                                                        );
+                                                                    })(settings)}
+                                                                    {episode.isBuy ? (
+                                                                        <span className="text-sm font-semibold text-gray-400 line-through">{regularPrice}</span>
+                                                                    ) : hasPromo ? (
+                                                                        <>
+                                                                            <span className="text-sm font-semibold text-rose-600">{promoPrice}</span>
+                                                                            <span className="text-xs text-gray-400 line-through decoration-gray-300">{regularPrice}</span>
+                                                                        </>
+                                                                    ) : (
+                                                                        <span className="text-sm font-semibold text-orange-600">{regularPrice}</span>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         ) : (
                                                             <span className="text-sm font-semibold text-emerald-600">อ่านฟรี</span>
-                                                        )}
-
-                                                        {hasPromo && activePromo?.end_date && (
-                                                            <div className="sm:hidden mt-1">
-                                                                <CountdownTimer targetDate={activePromo.end_date} />
-                                                            </div>
                                                         )}
                                                     </div>
 

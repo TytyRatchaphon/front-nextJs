@@ -277,6 +277,14 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
           name: (episode as any)?.name || displayTitle || '',
         });
 
+        if (res.data?.data?.rp_earned && res.data.data.rp_earned > 0) {
+          notification.success({
+            message: 'ยินดีด้วย!',
+            description: `คุณได้รับ RP + ${res.data.data.rp_earned}`,
+            placement: 'topRight',
+          });
+        }
+
         notification.success({
                 message: respMsg,
                 description: respMsg,

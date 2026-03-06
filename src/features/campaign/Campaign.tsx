@@ -13,7 +13,7 @@ import 'dayjs/locale/th';
 dayjs.locale('th');
 import { postCampaignClick } from '@/services/apiServices';
 
-interface CampaignData {
+export interface CampaignData {
   cp_id: number;
   name: string;
   detail: string;
@@ -28,7 +28,7 @@ interface CampaignData {
   ref_id: string;
 }
 
-const fetchCampaigns = async (): Promise<CampaignData[]> => {
+export const fetchCampaigns = async (): Promise<CampaignData[]> => {
   const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/campaigns`;
   const response = await fetch(url);
 
@@ -79,10 +79,11 @@ function CountdownTimer({ targetDate }: { targetDate: string }) {
   );
 }
 
-function Campaign() {
+function Campaign({ initialData }: { initialData?: CampaignData[] }) {
   const { data: campaigns, isLoading, isError, error } = useQuery({
     queryKey: ['campaigns'],
     queryFn: fetchCampaigns,
+    initialData,
   });
 
   return (

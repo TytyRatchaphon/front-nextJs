@@ -14,6 +14,7 @@ import GifLoader from '@/components/utility/GifLoader';
 import SuccessAnimation from '@/components/utility/SuccessAnimation';
 import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill';
+import { CountdownTimer as CommonCountdownTimer } from "@/components/common/CountdownTimer";
 import { useWebsiteStore } from '@/stores/websiteStore';
 import "jwt-decode";
 import '@/utils/imageUtils';
@@ -156,7 +157,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   const { token, isLoggedIn, updateToken, user } = useAuthStore();
   const openLoginModal = useUIStore((s) => s.openLoginModal);
   const queryClient = useQueryClient();
-  const { message: messageApi, modal: modalApi } = App.useApp();
+  const { message: messageApi, modal: modalApi, notification } = App.useApp();
   const { log } = useLogger();
   const [buyLoading, setBuyLoading] = useState(false);
   // Removed redundant local state for coins/flowers/hearts - using auth store directly
@@ -356,6 +357,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   const resolveEpisodePrice = (episode: any) => {
     const regularPrice = Number(episode.coin ?? 0);
     let promoPrice: number | undefined = undefined;
+    let activePromo: any = null;
 
     // Helper to safe parse price
     const getPrice = (val: any) => {
@@ -367,12 +369,18 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     // 1. Check Discount Object (Priority 1)
     if (episode.Discount) {
       const p = getPrice(episode.Discount.discount_price);
-      if (p !== undefined) promoPrice = p;
+      if (p !== undefined) {
+        promoPrice = p;
+        activePromo = episode.Discount;
+      }
     }
     // 2. Fallback: Nested promotions
     else if (Array.isArray(episode.promotions) && episode.promotions.length > 0) {
       const p = getPrice(episode.promotions[0].discount_price);
-      if (p !== undefined) promoPrice = p;
+      if (p !== undefined) {
+        promoPrice = p;
+        activePromo = episode.promotions[0];
+      }
     }
     // 3. Fallback: Direct property
     else if (episode.discount_price !== undefined) {
@@ -383,7 +391,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     const hasPromo = !episode.isBuy && promoPrice !== undefined && promoPrice < regularPrice && promoPrice >= 0;
     const finalPrice = hasPromo ? (promoPrice as number) : regularPrice;
 
-    return { regularPrice, promoPrice, hasPromo, finalPrice };
+    return { regularPrice, promoPrice, hasPromo, finalPrice, activePromo };
   };
 
   const selectedSummary = useMemo(() => {
@@ -651,7 +659,15 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                                 {group.list.map((episode: any) => {
                                   const disabled = episode.coin <= 0 || episode.isBuy;
                                   const checked = selectedEpisodeIds.includes(episode.ep_id);
-                                  const { regularPrice, promoPrice, hasPromo } = resolveEpisodePrice(episode);
+                                  const { regularPrice, promoPrice, hasPromo, activePromo } = resolveEpisodePrice(episode);
+                                  const rpEarn = Number(episode?.rp_campaign?.rp_earn ?? 0);
+                                  const rpCampaignEnd = episode?.rp_campaign?.end_date
+                                    ? Date.parse(episode.rp_campaign.end_date)
+                                    : null;
+                                  const isRpCampaignActive = !episode.isBuy
+                                    && regularPrice > 0
+                                    && rpEarn > 0
+                                    && (rpCampaignEnd === null || (Number.isFinite(rpCampaignEnd) && rpCampaignEnd > Date.now()));
 
                                   return (
                                     <div key={episode.ep_id} className={`flex items-center justify-between px-4 py-3 ${disabled ? 'opacity-60' : ''}`}>
@@ -670,21 +686,50 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                                       </div>
                                       <div className="flex items-center gap-3">
                                         {(regularPrice > 0 || hasPromo) ? (
-                                          <div className="flex items-center gap-1.5 justify-end">
-                                            <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={16} height={16} unoptimized />
-                                            {book.use_freecoin === 1 && (
-                                              <Image src={settings?.freecoin || "/images/money-bag.png"} alt="freecoin" width={16} height={16} unoptimized />
+                                          <div className="flex flex-col items-end gap-1">
+                                            {isRpCampaignActive && (
+                                              <div className="flex items-center gap-1.5">
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700">
+                                                  +{rpEarn}
+                                                  {settings?.rank_point ? (
+                                                    <Image
+                                                      src={settings.rank_point}
+                                                      alt="rank point"
+                                                      width={12}
+                                                      height={12}
+                                                      className="object-contain"
+                                                      unoptimized
+                                                    />
+                                                  ) : (
+                                                    <span>RP</span>
+                                                  )}
+                                                </span>
+                                                {episode?.rp_campaign?.end_date && (
+                                                  <CommonCountdownTimer targetDate={episode.rp_campaign.end_date} variant="violet" label="RP" />
+                                                )}
+                                              </div>
                                             )}
-                                            {hasPromo ? (
-                                              <>
-                                                <span className="text-sm font-semibold text-rose-600">{promoPrice}</span>
-                                                <span className="text-xs text-gray-400 line-through decoration-gray-300">{regularPrice}</span>
-                                              </>
-                                            ) : (
-                                              <span className="text-sm font-semibold text-orange-600">
-                                                {regularPrice}
-                                              </span>
+                                            {hasPromo && activePromo?.end_date && (
+                                              <div className="flex items-center justify-end">
+                                                <CommonCountdownTimer targetDate={activePromo.end_date} variant="rose" label="ลดอีก" />
+                                              </div>
                                             )}
+                                            <div className="flex items-center gap-1.5 justify-end">
+                                              <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={16} height={16} unoptimized />
+                                              {book.use_freecoin === 1 && (
+                                                <Image src={settings?.freecoin || "/images/money-bag.png"} alt="freecoin" width={16} height={16} unoptimized />
+                                              )}
+                                              {hasPromo ? (
+                                                <>
+                                                  <span className="text-sm font-semibold text-rose-600">{promoPrice}</span>
+                                                  <span className="text-xs text-gray-400 line-through decoration-gray-300">{regularPrice}</span>
+                                                </>
+                                              ) : (
+                                                <span className="text-sm font-semibold text-orange-600">
+                                                  {regularPrice}
+                                                </span>
+                                              )}
+                                            </div>
                                           </div>
                                         ) : (
                                           <span className="text-sm font-semibold text-emerald-600">อ่านฟรี</span>
@@ -751,6 +796,14 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                           console.log('[LOG] buy_episode =>', { bookId, episodes: selectedEpisodeIds.length, payWith });
                           log('buy_episode', 'book', String(bookId), { episodes_count: selectedEpisodeIds.length, total: selectedSummary.total, method: payWith, book_title: book?.title });
                           setShowSuccess(true);
+
+                          if (res.data?.data?.rp_earned && res.data.data.rp_earned > 0) {
+                            notification.success({
+                              message: 'ยินดีด้วย!',
+                              description: `คุณได้รับ RP + ${res.data.data.rp_earned}`,
+                              placement: 'topRight',
+                            });
+                          }
 
                           if (res.data?.data?.token) {
                             updateToken(res.data.data.token);
@@ -838,6 +891,14 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                           log('buy_episode', 'book', String(bookId), { episodes_count: buyAllIds.length, total: buyAllTotal, method: payWith, buy_all: true, book_title: book?.title });
 
                           setShowSuccess(true);
+
+                          if (res.data?.data?.rp_earned && res.data.data.rp_earned > 0) {
+                            notification.success({
+                              message: 'ยินดีด้วย!',
+                              description: `คุณได้รับ RP + ${res.data.data.rp_earned}`,
+                              placement: 'topRight',
+                            });
+                          }
                           if (res.data?.data?.token) {
                             const newToken = res.data.data.token;
                             const decoded = decodeToken(newToken);

@@ -22,6 +22,8 @@ export interface UserData {
   coin?: number;
   freecoin?: number;
   exp?: number;
+  current_rp?: number;
+  total_rp?: number;
 
   // Additional Profile Data (ที่ใช้ใน Sprofile)
   phone?: string | null;

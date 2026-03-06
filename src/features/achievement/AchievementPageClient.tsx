@@ -263,7 +263,6 @@ export default function AchievementPageClient() {
           const progress = detail.target_value > 0 
             ? Math.min(Math.round((detail.current_value / detail.target_value) * 100), 100) 
             : 0;
-
           return (
             <div className="font-primary">
               {/* Header */}
@@ -280,7 +279,6 @@ export default function AchievementPageClient() {
                   <p className="text-white/80 text-sm mt-1">{detail.description}</p>
                 )}
               </div>
-
               {/* Body */}
               <div className="p-6">
                 {/* Status */}

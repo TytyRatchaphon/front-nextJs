@@ -96,6 +96,8 @@ function Navbar() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const rpValue = Number(user?.current_rp ?? user?.total_rp ?? rankData?.total_rp ?? 0);
+
   useEffect(() => {
     if (!socket || !isLoggedIn) return;
 
@@ -260,7 +262,7 @@ function Navbar() {
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-gray-100">
               <Image src={settings?.rank_point || "https://image.enjoybook.co/enjoybook.image/web/20260225154739zflt.png"} alt="RP" width={14} height={14} className="object-contain" unoptimized />
-              <span className="text-xs font-bold text-gray-700">{rankData.total_rp.toLocaleString()}</span>
+              <span className="text-xs font-bold text-gray-700">{rpValue.toLocaleString()}</span>
             </div>
             <span className="text-[10px] text-red-500 font-semibold group-hover:text-red-600 whitespace-nowrap flex items-center gap-0.5">
               เพิ่มเติม
@@ -719,7 +721,7 @@ function Navbar() {
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-gray-100">
                     <Image src={settings?.rank_point || ''} alt="RP" width={14} height={14} className="object-contain" unoptimized />
-                    <span className="text-xs font-bold text-gray-700">{rankData.total_rp.toLocaleString()}</span>
+                    <span className="text-xs font-bold text-gray-700">{rpValue.toLocaleString()}</span>
                   </div>
                   <span className="text-[10px] text-red-500 font-semibold group-hover:text-red-600 whitespace-nowrap flex items-center gap-0.5">
                     เพิ่มเติม
