@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Form, Input, Select, DatePicker, notification, Modal } from "antd";
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import axios from "axios";
+import "axios";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
 
@@ -37,7 +37,6 @@ interface ChapterFormValues {
 }
 
 // Configs
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 const ACCESS_TOKEN = process.env.NEXT_PUBLIC_ACCESS_TOKEN || '';
 
 // --- Constants ---
@@ -46,7 +45,7 @@ const priceCoin = Array.from({ length: 11 }, (_, i) => ({
     value: `${i}`
 }));
 
-const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
+const EditChapter: React.FC<EditChapterProps> = ({ epID }) => {
     const router = useRouter();
     const [api, contextHolder] = notification.useNotification();
     const [formEditChapter] = Form.useForm();
@@ -66,7 +65,7 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
 
     // --- Helper: สร้าง Headers ---
     const getHeaders = () => {
-        const token = Cookies.get('token') || localStorage.getItem('authToken');
+        const token = Cookies.get('token');
         const cleanToken = token ? token.replace(/^['"]+|['"]+$/g, '') : '';
 
         const encodedApiKey = typeof window !== 'undefined'
@@ -152,7 +151,7 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
                             }
                         }
                     }
-                } catch (error) {
+                } catch {
                     api.error({ message: "ไม่สามารถดึงข้อมูลตอนได้" });
                 } finally {
                     setSpinLoading(false);
@@ -338,7 +337,6 @@ const EditChapter: React.FC<EditChapterProps> = ({ groupID, bookID, epID }) => {
                                         <Form.Item name='detail'>
                                             <TextEditorTiny
                                                 height={400}
-                                                onChange={() => { }}
                                             />
                                         </Form.Item>
                                     </div>

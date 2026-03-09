@@ -263,8 +263,8 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
       const epId = String(ep?.ep_id ?? ep?.epID ?? episodeId);
       const hasDiscount = ep?.coin_discount !== null && ep?.coin_discount !== undefined;
       const coinPrice = hasDiscount ? (ep?.coin_discount ?? 0) : (ep?.coin ?? 0);
-      const freeCoinPrice = ep?.freecoin ?? 0;
-      const priceToDeduct = method === 'coin' ? coinPrice : freeCoinPrice;
+      // BE rule: freecoin purchase must use coin-based price
+      const priceToDeduct = coinPrice;
 
       const payload = { eps: [Number(epId)], payWith: method };
       const res = await apiClient.post(`/buy/eps`, payload);
@@ -329,9 +329,9 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
         <p className="text-sm text-gray-500 mb-4">ตอนนี้ยังไม่มีเนื้อหา หากต้องการอ่าน กรุณาซื้อ</p>
         <div className="flex items-center justify-center gap-3">
           {canUseFreecoin && (
-            <button onClick={() => openConfirm("freecoin", ep?.freecoin ?? null)} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg">
+            <button onClick={() => openConfirm("freecoin", coinPrice)} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg">
               <Image src={settings?.freecoin || '/images/money-bag.png'} alt="Coin Icon" width={20} height={20} unoptimized />
-              ซื้อด้วยถุงเงิน {ep?.freecoin ? `(${ep.freecoin})` : ""}
+              ซื้อด้วยถุงเงิน ({coinPrice})
             </button>
           )}
           <button onClick={() => openConfirm("coin", coinPrice)} className={`flex items-center gap-2 px-4 py-2 ${canUseFreecoin ? 'bg-yellow-400' : 'bg-red-600'} text-white rounded-lg`}>

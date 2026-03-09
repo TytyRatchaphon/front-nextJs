@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useEffect, useState } from "react";
-import { Form, Input, Select, DatePicker, notification, Button, Modal } from "antd"; // ✨ เพิ่ม Modal
+import { Form, Input, Select, DatePicker, notification, Modal } from "antd"; // ✨ เพิ่ม Modal
 import type { Dayjs } from "dayjs";
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import axios from "axios";
+import "axios";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation"; // ✨ เพิ่ม useRouter
 import { fetchGroupEpisodes } from "@/services/apiServices";
@@ -16,7 +16,6 @@ import TextEditorTiny from "@/components/editor/TextEditorTiny";
 import GifLoader from '@/components/utility/GifLoader';
 
 dayjs.extend(customParseFormat);
-const { RangePicker } = DatePicker;
 
 // --- Interfaces ---
 interface NewChapterProps {
@@ -39,7 +38,6 @@ interface ChapterFormValues {
 }
 
 // Configs
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 const ACCESS_TOKEN = process.env.NEXT_PUBLIC_ACCESS_TOKEN || '';
 
 // --- Constants ---
@@ -66,7 +64,7 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
 
     // --- Helper: สร้าง Headers ---
     const getHeaders = () => {
-        const token = Cookies.get('token') || localStorage.getItem('authToken');
+        const token = Cookies.get('token');
         const cleanToken = token ? token.replace(/^['"]+|['"]+$/g, '') : '';
 
         const encodedApiKey = typeof window !== 'undefined'
@@ -107,7 +105,7 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
                             order_by: data.order_by
                         });
                     }
-                } catch (error) {
+                } catch {
                 } finally {
                     setSpinLoading(false);
                 }
@@ -128,7 +126,7 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
                         publish: 'publish',
                         order_by: maxOrder + 1
                     });
-                } catch (error) {
+                } catch {
                     // Fallback
                     formEditChapter.setFieldsValue({
                         groupID: groupID,
@@ -327,7 +325,6 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
                                         <Form.Item name='detail'>
                                             <TextEditorTiny
                                                 height={400}
-                                                onChange={() => { }}
                                             />
                                         </Form.Item>
                                     </div>
