@@ -8,11 +8,12 @@ import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSe
 import type { DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchUserCollections, fetchCollectionBooks, deleteCollection, removeBookFromCollection, reorderBooksInCollection, updateBookVisibility, fetchHiddenBooks } from '@/services/api/collectionApi';
+import { fetchUserCollections, fetchCollectionBooks, deleteCollection, removeBookFromCollection, reorderBooksInCollection, updateBookVisibility, fetchHiddenBooks, updateCollectionDetails } from '@/services/api/collectionApi';
 import type { CollectionItem, CollectionBook } from '@/services/api/collectionApi';
 import SortableBookCard from './SortableBookCard';
 import CardBook from '@/components/novelCard/CardBook';
 import AddBookToCollectionModal from './AddBookToCollectionModal';
+import CreateCollectionModal, { CollectionFormData } from './CreateCollectionModal';
 import { Segmented } from 'antd';
 import CollectionCommentSection from './CollectionCommentSection';
 
@@ -25,6 +26,7 @@ export default function CollectionDetail({ collectionId }: Props) {
   const queryClient = useQueryClient();
   const { notification, modal } = App.useApp();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditCollectionModal, setShowEditCollectionModal] = useState(false);
   const [localBooks, setLocalBooks] = useState<CollectionBook[] | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [viewMode, setViewMode] = useState<'visible' | 'hidden'>('visible');
@@ -185,6 +187,24 @@ export default function CollectionDetail({ collectionId }: Props) {
     },
   });
 
+  const updateCollectionMutation = useMutation({
+    mutationFn: (formData: CollectionFormData) =>
+      updateCollectionDetails(Number(collectionId), {
+        name: formData.name,
+        description: formData.description,
+        is_public: formData.isPublished,
+        cover_image: formData.coverFile,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userCollections'] });
+      setShowEditCollectionModal(false);
+      notification.success({ message: 'แก้ไขคอลเลคชั่นสำเร็จ' });
+    },
+    onError: (error: any) => {
+      notification.error({ message: error?.response?.data?.message || 'ไม่สามารถแก้ไขคอลเลคชั่นได้' });
+    },
+  });
+
   const handleDeleteCollection = () => {
     modal.confirm({
       title: 'ลบคอลเลคชั่น',
@@ -222,16 +242,30 @@ export default function CollectionDetail({ collectionId }: Props) {
   return (
     <div className="min-h-screen bg-white py-6">
       <div className="container mx-auto px-4" style={{ maxWidth: '1200px' }}>
-        {/* Back button */}
-        <button
-          onClick={() => router.push('/shelve?tab=4')}
-          className="flex items-center gap-2 text-gray-500 hover:text-red-600 transition-colors mb-4 md:mb-6 group"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:-translate-x-1 transition-transform mb-4">
-            <polyline points="15 18 9 12 15 6"></polyline>
-          </svg>
-          <span className="text-sm font-medium mb-4">กลับไปชั้นหนังสือ</span>
-        </button>
+        <div className="flex items-center justify-between gap-3 mb-4 md:mb-6">
+          <button
+            onClick={() => router.push('/shelve?tab=4')}
+            className="flex items-center gap-2 text-gray-500 hover:text-red-600 transition-colors group"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:-translate-x-1 transition-transform">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            <span className="text-sm font-medium">กลับไปชั้นหนังสือ</span>
+          </button>
+
+          <Button
+            onClick={() => setShowEditCollectionModal(true)}
+            className="rounded-full px-4 md:px-5 h-8 md:h-9 text-xs md:text-sm font-medium !border-gray-300 !text-gray-600 hover:!border-red-400 hover:!text-red-600"
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+            }
+          >
+            แก้ไขคอลเลคชั่น
+          </Button>
+        </div>
 
         {/* Collection Header */}
         <div className="relative w-full h-[180px] md:h-[260px] rounded-2xl overflow-hidden mb-6 md:mb-8 shadow-lg">
@@ -428,6 +462,21 @@ export default function CollectionDetail({ collectionId }: Props) {
         collectionId={Number(collectionId)}
         existingBookIds={existingBookIds}
       />
+
+      {collection && (
+        <CreateCollectionModal
+          open={showEditCollectionModal}
+          onClose={() => setShowEditCollectionModal(false)}
+          onSave={(data) => updateCollectionMutation.mutate(data)}
+          loading={updateCollectionMutation.isPending}
+          initialData={{
+            name: collection.name,
+            description: collection.description,
+            isPublished: collection.is_public,
+            coverPreview: collection.cover_image || '',
+          }}
+        />
+      )}
     </div>
   );
 }

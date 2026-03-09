@@ -6,6 +6,7 @@ import 'antd';
 import { useAuthStore } from '@/stores/authStore'
 import { useWebsiteStore } from '@/stores/websiteStore'
 import '@/utils/imageUtils';
+import Cookies from 'js-cookie';
 
 
 type Props = {
@@ -39,8 +40,8 @@ export default function UserProfileEvent({
   useEffect(() => {
     setIsMounted(true);
 
-    // พยายามดึง Token จาก Store หรือ LocalStorage
-    const currentToken = token || localStorage.getItem('authToken');
+    // พยายามดึง Token จาก Store หรือ Cookie
+    const currentToken = token || Cookies.get('token');
 
     if (currentToken) {
       // เรียก updateToken เพื่อให้มัน Decode ข้อมูลล่าสุดจาก Token ลง Store ทันที

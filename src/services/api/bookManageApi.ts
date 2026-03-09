@@ -153,9 +153,7 @@ export const createGroup = async (bookId: string | number, name: string) => {
 }
 
 export const updateGroup = async (groupId: string | number, name: string) => {
-  const rawToken = Cookies.get('token')
-    || localStorage.getItem('token')
-    || localStorage.getItem('authToken');
+  const rawToken = Cookies.get('token');
 
   const token = rawToken ? rawToken.replace(/^['"]+|['"]+$/g, '') : '';
 

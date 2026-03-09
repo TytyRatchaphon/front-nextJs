@@ -51,7 +51,7 @@ function MyProfileContent() {
     useEffect(() => {
         const loadRank = async () => {
             if (!isLoggedIn) return;
-            const rawToken = Cookies.get('token') || localStorage.getItem('token') || localStorage.getItem('authToken');
+            const rawToken = Cookies.get('token');
             const token = rawToken ? rawToken.replace(/^['"]+|['"]+$/g, '') : '';
             if (!token) return;
             try {

@@ -9,7 +9,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 // 2. สร้างฟังก์ชันสร้าง Headers ในไฟล์นี้ (ใช้ภายใน)
 const getHeaders = () => {
     // 1. ดึง Token
-    const rawToken = Cookies.get('token') || localStorage.getItem('authToken');
+    const rawToken = Cookies.get('token');
     const token = rawToken ? rawToken.replace(/^Bearer\s+/i, '').trim() : '';
 
     const encodedApiKey = typeof window !== 'undefined'

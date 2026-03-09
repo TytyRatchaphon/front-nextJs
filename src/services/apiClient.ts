@@ -1,6 +1,9 @@
 import axios from "axios";
 import { useUIStore } from "@/stores/uiStore";
 import { getDeviceId } from "@/utils/deviceUtils";
+import Cookies from "js-cookie";
+import { useAuthStore } from "@/stores/authStore";
+import { parseJwtToken } from "@/utils/jwtParser";
 
 // API Response Interface
 export interface ApiResponse<T = any> {
@@ -37,14 +40,10 @@ apiClient.interceptors.request.use(
                 console.error('Error getting device ID:', error);
             }
 
-            const raw = localStorage.getItem('authToken');
-            if (raw) {
-                // Sanitize stored token: remove any accidental 'Bearer ' prefix and trim whitespace
-                const tokenValue = raw.replace(/^Bearer\s+/i, '').trim();
-                if (tokenValue) {
-                    config.headers.Authorization = `${tokenValue}`;
-                } else {
-                }
+            const stateToken = useAuthStore.getState().token;
+            const tokenValue = parseJwtToken(stateToken || Cookies.get('token'));
+            if (tokenValue) {
+                config.headers.Authorization = `${tokenValue}`;
             }
         }
         return config;

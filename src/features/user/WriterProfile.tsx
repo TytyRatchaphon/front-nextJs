@@ -11,6 +11,7 @@ import { FacebookShareButton, TwitterShareButton, LineShareButton } from "react-
 import { useUIStore } from "@/stores/uiStore";
 import GifLoader from '@/components/utility/GifLoader';
 import { imageLoader } from '@/utils/imageUtils';
+import Cookies from 'js-cookie';
 
 
 const TABS = [
@@ -102,7 +103,7 @@ function WriterProfileContent() {
     };
 
     const handleFollow = async () => {
-        const token = localStorage.getItem('authToken');
+        const token = Cookies.get('token');
         if (!token) {
             openLoginModal();
             return;

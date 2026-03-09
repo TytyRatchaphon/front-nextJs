@@ -94,14 +94,6 @@ export const fetchMyBookDetail = async (bookId: string): Promise<BookDetail> => 
 
 export const fetchBookEpisodes = async (bookId: string | number) => {
   try {
-    let token = null;
-    if (typeof window !== 'undefined') {
-      token = localStorage.getItem('authToken');
-    }
-
-    if (!token) {
-    }
-
     const response = await apiClient.get(`/bookgroup/${bookId}`);
 
     if (response.data && response.data.code === 200 && response.data.data) {

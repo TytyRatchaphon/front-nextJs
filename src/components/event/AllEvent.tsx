@@ -89,7 +89,6 @@ function AllEvent() {
 
         // 4.4 ยัดใส่ Store
         useAuthStore.setState({ user: updatedUser })
-        localStorage.setItem('userData', JSON.stringify(updatedUser))
       }
       // ============================================================
 
@@ -102,7 +101,6 @@ function AllEvent() {
             const profile = meRes.data?.data ?? meRes.data
             if (profile) {
               useAuthStore.setState({ user: profile, token: authForFetch, isLoggedIn: true })
-              localStorage.setItem('userData', JSON.stringify(profile))
             }
           } catch {
           }

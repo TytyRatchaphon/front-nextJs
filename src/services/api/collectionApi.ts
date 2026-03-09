@@ -399,3 +399,43 @@ export const fetchHiddenBooks = async (
     return null;
   }
 };
+
+/** PUT /user/collections/:id — update collection details (multipart) */
+export const updateCollectionDetails = async (
+  collectionId: number,
+  data: {
+    name: string;
+    description: string;
+    is_public: boolean;
+    cover_image?: File | null;
+  }
+): Promise<any> => {
+  try {
+    const formData = new FormData();
+    formData.append('name', data.name);
+    formData.append('description', data.description);
+    formData.append('is_public', String(data.is_public));
+    if (data.cover_image) {
+      formData.append('cover_image', data.cover_image);
+    }
+
+    const response = await apiClient.put(`/user/collections/${collectionId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error('updateCollectionDetails error:', error);
+    throw error;
+  }
+};
+
+/** POST /user/collections/:id/copy — copy a public collection to my collections */
+export const copyCollection = async (collectionId: number | string): Promise<any> => {
+  try {
+    const response = await apiClient.post(`/user/collections/${collectionId}/copy`);
+    return response.data;
+  } catch (error: any) {
+    console.error('copyCollection error:', error);
+    throw error;
+  }
+};

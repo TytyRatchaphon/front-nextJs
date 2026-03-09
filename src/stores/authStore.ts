@@ -4,6 +4,20 @@ import '@/stores/formStore';
 import Cookies from 'js-cookie'
 import { parseJwtToken, decodeAndMapUserFromToken } from '@/utils/jwtParser';
 
+const getTokenCookieOptions = () => {
+  const isSecureContext = typeof window !== 'undefined' && window.location.protocol === 'https:';
+  return { sameSite: 'lax' as const, secure: isSecureContext };
+};
+
+const clearLegacyLocalAuthStorage = () => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
+    localStorage.removeItem('token');
+  } catch { }
+};
+
 // ✅ อัปเดต Interface ให้ครบถ้วนตามที่ใช้จริงใน Sprofile และ Token
 export interface UserData {
   user_id?: number;
@@ -78,17 +92,19 @@ export const useAuthStore = create<AuthState>()(
 
       // Actions
       login: (userData: UserData, token: string) => {
+        clearLegacyLocalAuthStorage();
         set({ user: userData, token: token, isLoggedIn: true });
-        localStorage.setItem('authToken', token);
-        localStorage.setItem('userData', JSON.stringify(userData));
+        const cleaned = parseJwtToken(token);
+        if (cleaned) {
+          Cookies.set('token', cleaned, getTokenCookieOptions());
+        }
         
         // Immediately refine data from token to ensure user_id is correct
         get().updateToken(token);
       },
 
       logout: () => {
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userData');
+        clearLegacyLocalAuthStorage();
         Cookies.remove('token');
         Cookies.remove('tk');
         set({ user: null, token: null, isLoggedIn: false });
@@ -101,15 +117,15 @@ export const useAuthStore = create<AuthState>()(
 
         const updatedUser = { ...currentUser, ...updates };
         set({ user: updatedUser });
-        try { localStorage.setItem('userData', JSON.stringify(updatedUser)) } catch { }
       },
 
       updateToken: (newToken: string) => {
         const cleaned = parseJwtToken(newToken);
         if (!cleaned) return;
 
+        clearLegacyLocalAuthStorage();
         set({ token: cleaned, isLoggedIn: true });
-        try { localStorage.setItem('authToken', cleaned); } catch { }
+        Cookies.set('token', cleaned, getTokenCookieOptions());
 
         try {
           const currentUser = get().user;
@@ -123,7 +139,6 @@ export const useAuthStore = create<AuthState>()(
           const updatedUser = decodeAndMapUserFromToken(cleaned, baseUser);
           if (updatedUser) {
              set({ user: updatedUser });
-             try { localStorage.setItem('userData', JSON.stringify(updatedUser)); } catch { }
           }
         } catch (error) {
           console.error("Token update logic failed", error);
@@ -131,15 +146,12 @@ export const useAuthStore = create<AuthState>()(
       },
 
       setMounted: () => {
+        clearLegacyLocalAuthStorage();
         const state = get();
         if (!state.user && !state.token && !state.isLoggedIn) {
-          const backupToken = localStorage.getItem('authToken');
-          const backupUserData = localStorage.getItem('userData');
-          if (backupToken && backupUserData) {
-            try {
-              const userData = JSON.parse(backupUserData);
-              set({ user: userData, token: backupToken, isLoggedIn: true });
-            } catch { }
+          const cookieToken = parseJwtToken(Cookies.get('token'));
+          if (cookieToken) {
+            get().updateToken(cookieToken);
           }
         }
         set({ hasMounted: true });
@@ -148,6 +160,9 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       skipHydration: false,
+      version: 1,
+      partialize: () => ({}),
+      migrate: () => ({} as Partial<AuthState>),
       onRehydrateStorage: () => () => {
       }
     }

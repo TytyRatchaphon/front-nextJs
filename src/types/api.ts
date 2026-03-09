@@ -235,6 +235,8 @@ export interface Episode {
   name: string;
   coin: number;
   freecoin: number;
+  isFastTicket?: boolean;
+  isFast_buyable?: boolean;
   publish_datetime: string;
   update_at: string;
   publish: string;

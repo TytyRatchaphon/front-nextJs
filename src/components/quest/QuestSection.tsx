@@ -62,7 +62,7 @@ export default function QuestSection({ questGroups, onRefresh }: QuestSectionPro
     const handleClaim = useCallback(async (questId: number) => {
         setClaimingId(questId);
         try {
-            const rawToken = Cookies.get("token") || localStorage.getItem("token") || localStorage.getItem("authToken");
+            const rawToken = Cookies.get("token");
             const token = rawToken ? rawToken.replace(/^['"]+|['"]+$/g, "") : "";
 
             await claimQuest(questId, token || undefined);

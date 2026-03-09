@@ -685,7 +685,6 @@ const UserInfoTab = () => {
 
         if (newToken) {
           // localStorage.setItem('token', newToken); 
-          localStorage.setItem('authToken', newToken);
           updateToken(newToken); // เรียกใช้ updateToken เพื่อแตก user data
         }
 

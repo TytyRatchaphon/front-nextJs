@@ -279,6 +279,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   const [manualBuyConfirmModalOpen, setManualBuyConfirmModalOpen] = useState(false);
   const [buyAllIds, setBuyAllIds] = useState<number[]>([]);
   const [buyAllTotal, setBuyAllTotal] = useState(0);
+  const [buyAllFastTicketCount, setBuyAllFastTicketCount] = useState(0);
 
   const handleBuyAllClick = async () => {
     if (buyLoading) return;
@@ -297,23 +298,28 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       const groups = epsData?.groups ?? [];
       const selectableIds: number[] = [];
       let total = 0;
+      let fastTicketCount = 0;
       for (const g of groups) {
         for (const ep of g.list) {
-          if (ep.coin > 0 && !ep.isBuy) {
+          if (isEpisodeSelectable(ep)) {
             selectableIds.push(Number(ep.ep_id));
-            total += Number(ep.coin || 0);
+            const { finalPrice } = resolveEpisodePrice(ep);
+            total += finalPrice;
+            if (isEpisodeFastBuyable(ep)) fastTicketCount += 1;
           }
         }
       }
 
       if (selectableIds.length === 0) {
         messageApi.info('ไม่มีตอนที่ต้องชำระเงินให้ซื้อทั้งหมด');
+        setBuyAllFastTicketCount(0);
         setBuyLoading(false);
         return;
       }
 
       setBuyAllIds(selectableIds);
       setBuyAllTotal(total);
+      setBuyAllFastTicketCount(fastTicketCount);
       setPayWith('coin'); // Default to coin
       setBuyAllModalOpen(true);
       setBuyLoading(false);
@@ -344,7 +350,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
 
   const toggleGroupSelect = (group: any) => {
     // select all selectable episodes in group, or deselect if all already selected
-    const selectable = group.list.filter((ep: any) => ep.coin > 0 && !ep.isBuy).map((ep: any) => ep.ep_id);
+    const selectable = group.list.filter((ep: any) => isEpisodeSelectable(ep)).map((ep: any) => ep.ep_id);
     const allSelected = selectable.every((id: number) => selectedEpisodeIds.includes(id));
     if (allSelected) {
       setSelectedEpisodeIds((prev) => prev.filter((id) => !selectable.includes(id)));
@@ -394,18 +400,25 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     return { regularPrice, promoPrice, hasPromo, finalPrice, activePromo };
   };
 
+  const isEpisodeFastTicket = (episode: any) => Boolean(episode?.isFastTicket);
+  const isEpisodeFastLocked = (episode: any) => isEpisodeFastTicket(episode) && !Boolean(episode?.isFast_buyable);
+  const isEpisodeSelectable = (episode: any) => Number(episode?.coin ?? 0) > 0 && !episode?.isBuy && !isEpisodeFastLocked(episode);
+  const isEpisodeFastBuyable = (episode: any) => isEpisodeFastTicket(episode) && Boolean(episode?.isFast_buyable) && isEpisodeSelectable(episode);
+
   const selectedSummary = useMemo(() => {
-    if (!episodesData?.groups) return { count: 0, total: 0 };
+    if (!episodesData?.groups) return { count: 0, total: 0, fastTicketCount: 0 };
     let total = 0;
+    let fastTicketCount = 0;
     for (const g of episodesData.groups) {
       for (const ep of g.list) {
-        if (selectedEpisodeIds.includes(ep.ep_id) && ep.coin > 0) {
+        if (selectedEpisodeIds.includes(ep.ep_id) && isEpisodeSelectable(ep)) {
           const { finalPrice } = resolveEpisodePrice(ep);
           total += finalPrice;
+          if (isEpisodeFastBuyable(ep)) fastTicketCount += 1;
         }
       }
     }
-    return { count: selectedEpisodeIds.length, total };
+    return { count: selectedEpisodeIds.length, total, fastTicketCount };
   }, [selectedEpisodeIds, episodesData]);
 
   const allSelectableIds = useMemo(() => {
@@ -413,7 +426,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     const ids: number[] = [];
     for (const g of episodesData.groups) {
       for (const ep of g.list) {
-        if (ep.coin > 0 && !ep.isBuy) ids.push(ep.ep_id);
+        if (isEpisodeSelectable(ep)) ids.push(ep.ep_id);
       }
     }
     return ids;
@@ -432,6 +445,18 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   // useEffect for syncing local state removed - accessing user.coin directly in render
 
   const { settings } = useWebsiteStore()
+
+  useEffect(() => {
+    if (selectedSummary.fastTicketCount > 0 && payWith !== 'coin') {
+      setPayWith('coin');
+    }
+  }, [selectedSummary.fastTicketCount, payWith]);
+
+  useEffect(() => {
+    if (buyAllFastTicketCount > 0 && payWith !== 'coin') {
+      setPayWith('coin');
+    }
+  }, [buyAllFastTicketCount, payWith]);
 
 
   // Helper for Stepper
@@ -610,12 +635,20 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                       </div>
                       <div className="flex items-center gap-3 text-sm text-gray-700">
                         <div>เลือก {selectedSummary.count} ตอน</div>
+                        {selectedSummary.fastTicketCount > 0 && (
+                          <div className="font-semibold text-amber-600 flex items-center gap-1">
+                            FastTicket {selectedSummary.fastTicketCount}
+                            <div className="relative w-4 h-4 shrink-0">
+                              <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" fill className="object-contain" unoptimized />
+                            </div>
+                          </div>
+                        )}
                         <div className="font-semibold text-red-600 flex items-center gap-1">
                           รวม {selectedSummary.total}
                           <div className="relative w-4 h-4 shrink-0">
                             <Image src={settings?.coin || "/images/e-coin.png"} alt="Coin" fill className="object-contain" unoptimized />
                           </div>
-                          {book.use_freecoin === 1 && (
+                          {book.use_freecoin === 1 && selectedSummary.fastTicketCount === 0 && (
                             <div className="relative w-4 h-4 shrink-0">
                               <Image src={settings?.freecoin || "/images/money-bag.png"} alt="FreeCoin" fill className="object-contain" unoptimized />
                             </div>
@@ -628,7 +661,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                       {episodesData?.groups?.map((group: EpisodeGroup) => {
                         const gid = String(group.group_id);
                         const isExpanded = expandedGroups[gid] ?? false;
-                        const selectableIds = group.list.filter((ep: any) => ep.coin > 0 && !ep.isBuy).map((ep: any) => ep.ep_id);
+                        const selectableIds = group.list.filter((ep: any) => isEpisodeSelectable(ep)).map((ep: any) => ep.ep_id);
                         const selectedCountInGroup = selectableIds.filter((id: number) => selectedEpisodeIds.includes(id)).length;
                         const allSelectedInGroup = selectableIds.length > 0 && selectedCountInGroup === selectableIds.length;
 
@@ -657,7 +690,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                             {isExpanded && (
                               <div className="divide-y">
                                 {group.list.map((episode: any) => {
-                                  const disabled = episode.coin <= 0 || episode.isBuy;
+                                  const fastLocked = isEpisodeFastLocked(episode);
+                                  const fastBuyable = isEpisodeFastBuyable(episode);
+                                  const disabled = Number(episode.coin ?? 0) <= 0 || episode.isBuy || fastLocked;
                                   const checked = selectedEpisodeIds.includes(episode.ep_id);
                                   const { regularPrice, promoPrice, hasPromo, activePromo } = resolveEpisodePrice(episode);
                                   const rpEarn = Number(episode?.rp_campaign?.rp_earn ?? 0);
@@ -681,6 +716,18 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                                           <div className={`text-sm font-medium line-clamp-2 ${disabled ? 'text-gray-500' : 'text-gray-900'}`}>
                                             {episode.name}
                                           </div>
+                                          {fastLocked && (
+                                            <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600">
+                                              <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={12} height={12} unoptimized />
+                                              ตอนล่วงหน้า (ยังซื้อไม่ได้)
+                                            </div>
+                                          )}
+                                          {fastBuyable && (
+                                            <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                                              <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={12} height={12} unoptimized />
+                                              ใช้ FastTicket + เหรียญ
+                                            </div>
+                                          )}
                                           <div className="text-xs text-gray-500">{episode.view} • {new Date(episode.publish_datetime).toLocaleDateString('th-TH')}</div>
                                         </div>
                                       </div>
@@ -716,7 +763,10 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                                             )}
                                             <div className="flex items-center gap-1.5 justify-end">
                                               <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={16} height={16} unoptimized />
-                                              {book.use_freecoin === 1 && (
+                                              {fastBuyable && (
+                                                <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={16} height={16} unoptimized />
+                                              )}
+                                              {book.use_freecoin === 1 && !fastBuyable && (
                                                 <Image src={settings?.freecoin || "/images/money-bag.png"} alt="freecoin" width={16} height={16} unoptimized />
                                               )}
                                               {hasPromo ? (
@@ -770,7 +820,14 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                     <Image src={payWith === 'freecoin' ? (settings?.freecoin || "/images/money-bag.png") : (settings?.coin || "/images/e-coin.png")} alt="currency" width={20} height={20} unoptimized />
                   </div>
 
-                  {book.use_freecoin === 1 && (
+                  {selectedSummary.fastTicketCount > 0 && (
+                    <div className="text-center flex justify-center items-center gap-2 text-amber-700">
+                      ต้องใช้ FastTicket <b>{selectedSummary.fastTicketCount}</b>
+                      <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={18} height={18} unoptimized />
+                    </div>
+                  )}
+
+                  {book.use_freecoin === 1 && selectedSummary.fastTicketCount === 0 && (
                     <div className="flex justify-center mt-2">
                       <Radio.Group value={payWith} onChange={(e) => setPayWith(e.target.value)} buttonStyle="solid">
                         <Radio.Button value="coin">
@@ -787,6 +844,10 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                     <Button onClick={() => setManualBuyConfirmModalOpen(false)} className="w-1/2 !bg-white !text-red-600 hover:!border-red-600">ยกเลิก</Button>
                     <Button type="primary" danger loading={buyLoading} className="w-1/2 !bg-red-600" onClick={async () => {
                       try {
+                        if (selectedSummary.fastTicketCount > 0 && payWith === 'freecoin') {
+                          messageApi.error('ตอนล่วงหน้าต้องใช้ FastTicket + เหรียญ');
+                          return;
+                        }
                         setBuyLoading(true);
                         const payload = { eps: selectedEpisodeIds.map((id) => Number(id)), payWith: payWith };
                         const res = await apiClient.post(`/buy/eps`, payload);
@@ -834,7 +895,10 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
               <Modal
                 title="ยืนยันการซื้อ"
                 open={buyAllModalOpen}
-                onCancel={() => setBuyAllModalOpen(false)}
+                onCancel={() => {
+                  setBuyAllModalOpen(false);
+                  setBuyAllFastTicketCount(0);
+                }}
                 centered
                 footer={null}
                 width={400}
@@ -851,7 +915,14 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                     <Image src={payWith === 'freecoin' ? (settings?.freecoin || "/images/money-bag.png") : (settings?.coin || "/images/e-coin.png")} alt="currency" width={20} height={20} unoptimized />
                   </div>
 
-                  {book.use_freecoin === 1 && (
+                  {buyAllFastTicketCount > 0 && (
+                    <div className="text-center flex justify-center items-center gap-2 text-amber-700">
+                      ต้องใช้ FastTicket <b>{buyAllFastTicketCount}</b>
+                      <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={18} height={18} unoptimized />
+                    </div>
+                  )}
+
+                  {book.use_freecoin === 1 && buyAllFastTicketCount === 0 && (
                     <div className="flex justify-center mt-2">
                       <Radio.Group value={payWith} onChange={(e) => setPayWith(e.target.value)} buttonStyle="solid">
                         <Radio.Button value="coin">
@@ -881,6 +952,10 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                     <Button onClick={() => setBuyAllModalOpen(false)} className="w-1/2 !bg-white !text-red-600 hover:!border-red-600">ยกเลิก</Button>
                     <Button type="primary" danger loading={buyLoading} className="w-1/2 !bg-red-600" onClick={async () => {
                       try {
+                        if (buyAllFastTicketCount > 0 && payWith === 'freecoin') {
+                          messageApi.error('ตอนล่วงหน้าต้องใช้ FastTicket + เหรียญ');
+                          return;
+                        }
                         setBuyLoading(true);
                         const payload = { eps: buyAllIds, payWith: payWith };
                         const res = await apiClient.post(`/buy/eps`, payload);
@@ -929,6 +1004,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                           }
                           setBuyAllModalOpen(false);
                           setBuyAllIds([]);
+                          setBuyAllFastTicketCount(0);
                         } else {
                           messageApi.error(res?.data?.message || 'ไม่สามารถทำการซื้อได้');
                         }

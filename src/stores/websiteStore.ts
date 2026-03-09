@@ -14,6 +14,52 @@ interface WebsiteStore {
   fetchPromise: Promise<void> | null;
 }
 
+// Keep localStorage payload small.
+// Add new keys here if a future feature needs them to be available before fetch completes.
+const PERSISTED_SETTINGS_KEYS: Array<keyof WebsiteSettingsData> = [
+  'logo',
+  'img_error',
+  'img_footer',
+  'coin',
+  'freecoin',
+  'stamp',
+  'flower',
+  'heart',
+  'coupon',
+  'exp',
+  'fast_ticket',
+  'rank_point',
+  'line_link',
+  'fb_link',
+  'ig_link',
+  'tiktok_link',
+  'yt_link',
+  'twitter_link',
+  'phone',
+  'email',
+  'address',
+  'work_time',
+  'seo_title',
+  'seo_keyword',
+  'seo_description',
+  'app_store',
+  'play_store',
+];
+
+const pickPersistedSettings = (settings: WebsiteSettingsData | null): WebsiteSettingsData | null => {
+  if (!settings) return null;
+
+  const reduced: WebsiteSettingsData = {} as WebsiteSettingsData;
+  for (const key of PERSISTED_SETTINGS_KEYS) {
+    const value = settings[key];
+    if (typeof value === 'string' && value.length > 0) {
+      reduced[key] = value;
+    }
+  }
+
+  return Object.keys(reduced).length > 0 ? reduced : null;
+};
+
 export const useWebsiteStore = create<WebsiteStore>()(
   persist(
     (set, get) => ({
@@ -71,7 +117,7 @@ export const useWebsiteStore = create<WebsiteStore>()(
       name: 'website-settings-storage',
       skipHydration: false,
       partialize: (state) => ({ 
-          settings: state.settings, 
+          settings: pickPersistedSettings(state.settings), 
           lastFetched: state.lastFetched 
       }), // Don't persist isLoading, error, or fetchPromise
     }

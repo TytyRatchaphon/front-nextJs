@@ -89,7 +89,6 @@ function SevenDaysLogin({ onClose }: SevenDaysLoginProps) {
           coupon: currentCoupon + rewardAmount
         }
         useAuthStore.setState({ user: optimisticUser })
-        localStorage.setItem('userData', JSON.stringify(optimisticUser))
       }
 
 

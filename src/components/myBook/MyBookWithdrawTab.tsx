@@ -184,7 +184,6 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
           if (returnedToken) {
             const nt = String(returnedToken);
             updateToken(nt);
-            if (typeof window !== 'undefined') localStorage.setItem('authToken', nt);
           }
         } catch {
         }

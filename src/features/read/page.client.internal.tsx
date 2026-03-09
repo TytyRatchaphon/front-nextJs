@@ -256,6 +256,28 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     try {
       setBuyLoading(true);
       const ep = episode as any;
+      const isFastTicketEpisode = Boolean(ep?.isFastTicket);
+      const isFastBuyable = Boolean(ep?.isFast_buyable);
+      const isFastLocked = isFastTicketEpisode && !isFastBuyable;
+
+      if (isFastLocked) {
+        notification.error({
+          message: 'ตอนนี้ยังไม่เปิดให้ซื้อ',
+          description: 'ตอนล่วงหน้ายังไม่สามารถซื้อได้ในตอนนี้',
+          placement: 'topRight',
+        });
+        return;
+      }
+
+      if (isFastTicketEpisode && method === 'freecoin') {
+        notification.error({
+          message: 'ไม่รองรับการซื้อด้วยถุงเงิน',
+          description: 'ตอนล่วงหน้าต้องใช้ FastTicket + เหรียญ',
+          placement: 'topRight',
+        });
+        return;
+      }
+
       const epId = String(ep?.ep_id ?? ep?.epID ?? episodeId);
       const hasDiscount = ep?.coin_discount !== null && ep?.coin_discount !== undefined;
       const coinPrice = hasDiscount ? (ep?.coin_discount ?? 0) : (ep?.coin ?? 0);
@@ -340,6 +362,9 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   // --- 6. Render Helpers ---
   function PurchaseFallback() {
     const ep = episode as any;
+    const isFastTicketEpisode = Boolean(ep?.isFastTicket);
+    const isFastBuyable = Boolean(ep?.isFast_buyable);
+    const isFastLocked = isFastTicketEpisode && !isFastBuyable;
     const bookUseFreecoin = (bookDetail as any)?.use_freecoin;
     const epUseFreecoin = ep?.use_freecoin;
     const canUseFreecoin = epUseFreecoin !== undefined && epUseFreecoin !== null
@@ -353,17 +378,26 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
       <div className="text-center py-12">
         <Image src={settings?.img_buyep || '/images/unlock.png'} alt="No Content" width={100} height={100} unoptimized className="justify-center mx-auto" />
         <p className="text-sm text-gray-500 mb-4">ตอนนี้ยังไม่มีเนื้อหา หากต้องการอ่าน กรุณาซื้อ</p>
+        {isFastTicketEpisode && (
+          <div className={`mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${isFastLocked ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-700'}`}>
+            <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={16} height={16} unoptimized />
+            {isFastLocked ? 'ตอนล่วงหน้า ยังไม่เปิดให้ซื้อ' : 'ตอนล่วงหน้า ใช้ FastTicket + เหรียญ'}
+          </div>
+        )}
         <div className="flex items-center justify-center gap-3">
-          {canUseFreecoin && (
+          {canUseFreecoin && !isFastTicketEpisode && (
             <button onClick={() => openConfirm("freecoin", ep?.freecoin ?? null)} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg">
               <Image src={settings?.freecoin || '/images/money-bag.png'} alt="Coin Icon" width={20} height={20} unoptimized />
               ซื้อด้วยถุงเงิน {ep?.freecoin ? `(${ep.freecoin})` : ""}
             </button>
           )}
-          <button onClick={() => openConfirm("coin", coinPrice)} className={`flex items-center gap-2 px-4 py-2 ${canUseFreecoin ? 'bg-yellow-400' : 'bg-red-600'} text-white rounded-lg`}>
+          <button onClick={() => openConfirm("coin", coinPrice)} disabled={isFastLocked} className={`flex items-center gap-2 px-4 py-2 ${(canUseFreecoin && !isFastTicketEpisode) ? 'bg-yellow-400' : 'bg-red-600'} text-white rounded-lg disabled:opacity-60 disabled:cursor-not-allowed`}>
             <Image src={settings?.coin || '/images/e-coin.png'} alt="Coin Icon" width={20} height={20} unoptimized />
+            {isFastTicketEpisode && (
+              <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="Fast Ticket" width={20} height={20} unoptimized />
+            )}
             <div className="flex items-center gap-1 text-white">
-              <span>ซื้อด้วยเหรียญ</span>
+              <span>{isFastTicketEpisode ? 'ซื้อด้วย FastTicket + เหรียญ' : 'ซื้อด้วยเหรียญ'}</span>
               {hasDiscount ? (
                 <>
                   <span className="line-through opacity-60 text-xs text-white">({ep?.coin})</span>
@@ -712,7 +746,12 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
         zIndex={2000}
         footer={[
           <Button key="cancel" onClick={() => setConfirmOpen(false)} disabled={buyLoading} className="transition-colors" onMouseEnter={() => setCancelHover(true)} onMouseLeave={() => setCancelHover(false)} style={{ borderColor: cancelHover ? '#dc2626' : 'transparent', color: cancelHover ? '#dc2626' : undefined }}>ยกเลิก</Button>,
-          <Button key="confirm" type="primary" danger loading={buyLoading} onClick={() => { if (confirmMethod) handleBuy(confirmMethod); }}>{confirmMethod === 'coin' ? 'ยืนยันซื้อด้วยเหรียญ' : 'ยืนยันซื้อด้วยถุงเงิน'}</Button>,
+          <Button key="confirm" type="primary" danger loading={buyLoading} onClick={() => { if (confirmMethod) handleBuy(confirmMethod); }}>{(() => {
+            const ep = episode as any;
+            const isFastTicketEpisode = Boolean(ep?.isFastTicket);
+            if (confirmMethod === 'coin' && isFastTicketEpisode) return 'ยืนยันซื้อด้วย FastTicket + เหรียญ';
+            return confirmMethod === 'coin' ? 'ยืนยันซื้อด้วยเหรียญ' : 'ยืนยันซื้อด้วยถุงเงิน';
+          })()}</Button>,
         ]}
       >
         <div className="space-y-2 text-center">
@@ -722,6 +761,9 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
               <Image src={settings?.freecoin || '/images/money-bag.png'} alt="ถุงเงิน" width={18} height={18} unoptimized />
             ) : (
               <Image src={settings?.coin || '/images/e-coin.png'} alt="เหรียญ" width={18} height={18} unoptimized />
+            )}
+            {confirmMethod === 'coin' && Boolean((episode as any)?.isFastTicket) && (
+              <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={18} height={18} unoptimized />
             )}
             <span>{confirmAmount != null ? confirmAmount : '---'}</span>
           </div>

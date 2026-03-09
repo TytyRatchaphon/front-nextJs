@@ -98,8 +98,6 @@ export default function UserUseCoin({
         // 🚀 ยัดใส่ Store ทันที! (Header จะเปลี่ยนเลขเดี๋ยวนี้เลย)
         useAuthStore.setState({ user: optimisticUser });
 
-        // (Optional) Update LocalStorage ด้วย
-        localStorage.setItem('userData', JSON.stringify(optimisticUser));
       }
 
       // --- STEP C: ซ่อนปุ่มทันที (Optimistic Cache Update) ---
@@ -126,7 +124,6 @@ export default function UserUseCoin({
           const realProfile = meRes.data?.data || meRes.data;
           if (realProfile) {
             useAuthStore.setState({ user: realProfile });
-            localStorage.setItem('userData', JSON.stringify(realProfile));
           }
         } catch {
         }

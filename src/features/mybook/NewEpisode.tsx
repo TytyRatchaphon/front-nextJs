@@ -64,7 +64,7 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
 
     // --- Helper: สร้าง Headers ---
     const getHeaders = () => {
-        const token = Cookies.get('token') || localStorage.getItem('authToken');
+        const token = Cookies.get('token');
         const cleanToken = token ? token.replace(/^['"]+|['"]+$/g, '') : '';
 
         const encodedApiKey = typeof window !== 'undefined'
@@ -325,7 +325,6 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
                                         <Form.Item name='detail'>
                                             <TextEditorTiny
                                                 height={400}
-                                                onChange={() => { }}
                                             />
                                         </Form.Item>
                                     </div>

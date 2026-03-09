@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Modal, Input, Switch } from 'antd';
 import Image from 'next/image';
 
@@ -29,6 +29,15 @@ export default function CreateCollectionModal({ open, onClose, onSave, loading, 
   const [coverPreview, setCoverPreview] = useState(initialData?.coverPreview || '');
   const [isPublished, setIsPublished] = useState(initialData?.isPublished ?? true);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setName(initialData?.name || '');
+    setDescription(initialData?.description || '');
+    setCoverFile(initialData?.coverFile || null);
+    setCoverPreview(initialData?.coverPreview || '');
+    setIsPublished(initialData?.isPublished ?? true);
+  }, [open, initialData]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
 import { fetchUserMyBookInfo, fetchUserMyBooks, fetchWriterCheck } from '@/services/apiServices';
+import Cookies from 'js-cookie';
 
 import MyBookHeader from '../../components/myBook/MyBookHeader';
 import MyBookListTab from '../../components/myBook/MyBookListTab';
@@ -25,9 +26,9 @@ function MyBook() {
     if (!hasMounted) return; // wait for hydration
 
     if (!isLoggedIn || !token) {
-      // Try to recover from localStorage backup first (in case hydration missed)
+      // Try to recover from cookie backup first
       try {
-        const backupToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+        const backupToken = typeof window !== 'undefined' ? Cookies.get('token') || null : null;
         if (backupToken) {
           // Apply backup token to auth store and avoid redirect
           useAuthStore.getState().updateToken(backupToken);

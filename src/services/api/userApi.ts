@@ -265,9 +265,7 @@ export const refreshToken = async (tokenOverride?: string) => {
     let token = tokenOverride;
 
     if (!token) {
-        const rawToken = Cookies.get('token')
-          || localStorage.getItem('token')
-          || localStorage.getItem('authToken');
+        const rawToken = Cookies.get('token');
         token = rawToken ? rawToken.replace(/^['"]+|['"]+$/g, '') : '';
     }
 

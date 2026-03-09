@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '@/stores/authStore';
+import Cookies from 'js-cookie';
+import { parseJwtToken } from '@/utils/jwtParser';
 
 interface SocketContextType {
   socket: Socket | null;
@@ -35,26 +37,16 @@ export default function SocketProvider({
     // ใช้ URL เดียวกับ API โดย fallback ไปที่ค่า default ถ้าไม่มี env
     const socketUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.220.214:3331';
     
-    // Retrieve token from store or local storage fallback
+    // Retrieve token from store or cookie fallback
     let token = authToken;
     let currentUser = user;
 
-    if (typeof window !== 'undefined') {
-       if (!token) {
-           const raw = localStorage.getItem('authToken');
-           if (raw) {
-              token = raw.replace(/^Bearer\s+/i, '').trim();
-           }
-       }
-       if (!currentUser) {
-           const rawUser = localStorage.getItem('userData');
-           if (rawUser) {
-               try { currentUser = JSON.parse(rawUser); } catch {}
-           }
-       }
-    } else if (token) {
-        token = token.replace(/^Bearer\s+/i, '').trim();
+    if (!token && typeof window !== 'undefined') {
+      token = parseJwtToken(Cookies.get('token')) || null;
     }
+    if (token) {
+         token = token.replace(/^Bearer\s+/i, '').trim();
+    } 
 
     const currentUserId = currentUser?.user_id || (currentUser as any)?.id || (currentUser as any)?.userId;
     
@@ -83,9 +75,8 @@ export default function SocketProvider({
       auth: (cb) => {
         // ⚡ Dynamic Auth: Fetch latest token on every connection/reconnection attempt
         let latestToken = useAuthStore.getState().token;
-        if (!latestToken && typeof window !== 'undefined') {
-            const raw = localStorage.getItem('authToken');
-            if (raw) latestToken = raw.replace(/^Bearer\s+/i, '').trim();
+        if (!latestToken) {
+            latestToken = parseJwtToken(Cookies.get('token')) || null;
         }
         cb({ token: latestToken });
       },
@@ -115,10 +106,7 @@ export default function SocketProvider({
         // console.log("📢 Received force_refresh:", data);
         try {
             let currentToken = useAuthStore.getState().token;
-            if (!currentToken) {
-                 const raw = localStorage.getItem('authToken');
-                 if (raw) currentToken = raw.replace(/^Bearer\s+/i, '').trim();
-            }
+            if (!currentToken) currentToken = parseJwtToken(Cookies.get('token')) || null;
 
             if (currentToken) {
                  const refreshToken = (await import('@/services/apiServices')).refreshToken;

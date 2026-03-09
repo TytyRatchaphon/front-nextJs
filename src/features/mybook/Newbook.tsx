@@ -88,7 +88,7 @@ const NewBook: React.FC = () => {
             // ---------------------------------------------------------
             console.group("🕵️‍♂️ Debug 1: ตรวจสอบค่าก่อนยิง API");
 
-            const rawToken = Cookies.get('token') || localStorage.getItem('authToken');
+            const rawToken = Cookies.get('token');
             const rawAccessToken = ACCESS_TOKEN; // มาจาก process.env ด้านบน
 
 
@@ -249,7 +249,7 @@ const NewBook: React.FC = () => {
         setSpinLoading(true);
 
         try {
-            const token = Cookies.get('token') || localStorage.getItem('authToken');
+            const token = Cookies.get('token');
 
             const response = await apiClient.post(`/user/mybook`, formdata, {
                 headers: {

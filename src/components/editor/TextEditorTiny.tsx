@@ -1,14 +1,16 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { imageUploadHandler } from '@/components/editor/editor_api';
 
 // 1. ประกาศ Interface สำหรับ Props
 interface TextEditorTinyProps {
   value?: string;
-  onChange: (content: string, index: any) => void;
+  onChange?: (content: string, index?: any) => void;
   height?: number | string;
-  onBlur?: (content: string, index: any) => void;
+  onBlur?: (content: string, index?: any) => void;
   contentSelected?: any;
 }
+
+type TinyOnChange = (content: string, index?: any) => void;
 
 
 
@@ -23,14 +25,54 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
   const editorRef = useRef<any>(null);
   const indexRef = useRef<any>(contentSelected);
   const scriptLoadedRef = useRef<boolean>(false);
-  const [isEditorReady, setIsEditorReady] = useState<boolean>(false);
+  const onChangeRef = useRef<TinyOnChange>(() => {});
+  const onBlurRef = useRef(onBlur);
+  const valueRef = useRef<string>(value ?? '');
+  const lastSyncedContentRef = useRef<string>('');
+  const [thaiWordCount, setThaiWordCount] = useState<number>(0);
   
   // Use a unique ID for each instance
   const [editorId] = useState(() => `tiny-editor-${Math.random().toString(36).substr(2, 9)}`);
 
+  const countThaiWords = (html: string) => {
+    if (typeof window === 'undefined') return 0;
+    const temp = document.createElement('div');
+    temp.innerHTML = html || '';
+    const text = (temp.textContent || temp.innerText || '').trim();
+    if (!text) return 0;
+
+    try {
+      const SegmenterCtor = (Intl as any).Segmenter;
+      if (typeof SegmenterCtor === 'function') {
+        const segmenter = new SegmenterCtor('th', { granularity: 'word' });
+        let count = 0;
+        for (const segment of segmenter.segment(text)) {
+          if (segment?.isWordLike) count += 1;
+        }
+        return count;
+      }
+    } catch {
+    }
+
+    const compact = text.replace(/\s+/g, ' ').trim();
+    return compact ? compact.split(' ').length : 0;
+  };
+
   useEffect(() => {
     indexRef.current = contentSelected;
   }, [contentSelected]);
+
+  useEffect(() => {
+    onChangeRef.current = onChange || (() => {});
+  }, [onChange]);
+
+  useEffect(() => {
+    onBlurRef.current = onBlur;
+  }, [onBlur]);
+
+  useEffect(() => {
+    valueRef.current = value ?? '';
+  }, [value]);
 
   const thaiFonts = [
     'Anakotmai', 'Athiti', 'Chakra Petch', 'Chonburi', 'Itim', 'K2D', 'Kanit',
@@ -43,17 +85,16 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
   // Add Sarabun explicitly if not in list, though it is there.
   const fontFormats = thaiFonts.map(f => `${f}='${f}',sans-serif`).join(';');
 
-  // ฟังก์ชันสำหรับ initialize TinyMCE
-  const initializeTinyMCE = useCallback(() => {
-    // ใช้ (window as any).tinymce แทน window.tinymce
-    if ((window as any).tinymce) {
-      
+  // Load TinyMCE script เมื่อ component mount
+  useEffect(() => {
+    const initializeTinyMCE = () => {
+      if (!(window as any).tinymce) return;
+
       const existingEditor = (window as any).tinymce.get(editorId);
       if (existingEditor) {
         existingEditor.remove();
       }
 
-      // สร้าง editor ใหม่
       (window as any).tinymce.init({
         selector: `#${editorId}`,
         license_key: 'gpl',
@@ -63,7 +104,7 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
         plugins: [
           'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
           'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-          'insertdatetime', 'media', 'table', 'help', 'wordcount'
+          'insertdatetime', 'media', 'table', 'help'
         ],
         toolbar:
           'undo redo | fontsize fontfamily | bold italic backcolor forecolor | ' +
@@ -72,6 +113,7 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
 
         font_family_formats: fontFormats,
         branding: false,
+        statusbar: false,
         automatic_uploads: true,
         images_upload_handler: imageUploadHandler,
         content_style: `
@@ -85,12 +127,11 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
         setup: (editor: any) => {
           editor.on('init', () => {
             editorRef.current = editor;
-            setIsEditorReady(true);
-            
-            // Set initial content if value exists
-            if (value) {
-                editor.setContent(value);
-            }
+
+            const initialContent = valueRef.current || '';
+            editor.setContent(initialContent);
+            lastSyncedContentRef.current = initialContent;
+            setThaiWordCount(countThaiWords(initialContent));
           });
 
           editor.addShortcut('ctrl+h', 'Open replace dialog', () => {
@@ -99,22 +140,21 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
 
           editor.on('change keyup paste undo redo', () => {
             const content = editor.getContent();
-            onChange(content, indexRef.current);
+            lastSyncedContentRef.current = content;
+            setThaiWordCount(countThaiWords(content));
+            onChangeRef.current(content);
           });
 
           editor.on('blur', () => {
             const content = editor.getContent();
-            if (onBlur) {
-                onBlur(content, indexRef.current);
+            if (onBlurRef.current) {
+                onBlurRef.current(content, indexRef.current);
             }
           });
         }
       });
-    }
-  }, [editorId, fontFormats, height, importUrl, onBlur, onChange, value]);
+    };
 
-  // Load TinyMCE script เมื่อ component mount
-  useEffect(() => {
     if (!scriptLoadedRef.current) {
       if ((window as any).tinymce) {
         initializeTinyMCE();
@@ -131,8 +171,6 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
         };
         document.head.appendChild(script);
       }
-    } else {
-      initializeTinyMCE();
     }
 
     return () => {
@@ -145,19 +183,26 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
             }
         } catch {
         }
-        setIsEditorReady(false);
+        editorRef.current = null;
     };
-  }, [editorId, initializeTinyMCE]);
+  }, [editorId, fontFormats, height, importUrl]);
 
   useEffect(() => {
-    if (isEditorReady && editorRef.current && value !== undefined && value !== editorRef.current.getContent()) {
-      editorRef.current.setContent(value || '');
+    const editor = editorRef.current;
+    if (!editor || value === undefined) return;
+
+    const incoming = value || '';
+    if (incoming !== lastSyncedContentRef.current) {
+      editor.setContent(incoming);
+      lastSyncedContentRef.current = incoming;
+      setThaiWordCount(countThaiWords(incoming));
     }
-  }, [value, isEditorReady]);
+  }, [value]);
 
   return (
     <div>
       <textarea id={editorId} style={{ visibility: 'hidden' }} />
+      <div className="mt-1 text-right text-xs text-gray-500">{thaiWordCount.toLocaleString('th-TH')} คำ</div>
     </div>
   );
 };

@@ -51,9 +51,7 @@ export default function TokenUpdater() {
         const incomingToken = parseJwtToken(incomingRawToken);
         const currentToken =
             useAuthStore.getState().token ||
-            parseJwtToken(Cookies.get('token')) ||
-            parseJwtToken(localStorage.getItem('token')) ||
-            parseJwtToken(localStorage.getItem('authToken'));
+            parseJwtToken(Cookies.get('token'));
 
         // Do not allow URL token to bootstrap a new login session.
         if (!incomingToken || !currentToken || incomingToken === currentToken) return;
@@ -75,7 +73,7 @@ export default function TokenUpdater() {
 
     useEffect(() => {
         const fetchRefreshToken = async () => {
-            const savedToken = Cookies.get('token') || localStorage.getItem('token') || localStorage.getItem('authToken');
+            const savedToken = Cookies.get('token');
             if (!savedToken) return;
 
             try {

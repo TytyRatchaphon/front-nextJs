@@ -198,7 +198,6 @@ function Store() {
         if (resAddress.code === 200 || resAddress.status === 'success') {
            const newToken = resAddress.data?.token;
            if (newToken) {
-             localStorage.setItem('authToken', newToken);
              updateToken(newToken);
            }
         } else {

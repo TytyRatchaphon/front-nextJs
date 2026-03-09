@@ -77,6 +77,9 @@ export const BookEpisodesTab = ({ episodesData, bookId, bookDetail, settings, is
                                 <div className="divide-y divide-gray-50">
                                     {group.list.map((episode: any) => {
                                         const regularPrice = Number(episode.coin ?? 0);
+                                        const isFastTicketEpisode = Boolean(episode?.isFastTicket);
+                                        const isFastBuyable = isFastTicketEpisode && Boolean(episode?.isFast_buyable);
+                                        const isFastLocked = isFastTicketEpisode && !Boolean(episode?.isFast_buyable);
                                         let promoPrice: number | undefined = undefined;
                                         let activePromo: any = null;
 
@@ -127,9 +130,21 @@ export const BookEpisodesTab = ({ episodesData, bookId, bookDetail, settings, is
                                                         <p className="text-sm text-gray-900 group-hover:text-red-600 font-medium truncate">
                                                             {episode.name.trim()}
                                                         </p>
-                                                        {episode.isBuy && (
+                                                                {episode.isBuy && (
                                                             <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full whitespace-nowrap">
                                                                 ✓ ซื้อแล้ว
+                                                            </span>
+                                                        )}
+                                                        {isFastLocked && (
+                                                            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600 whitespace-nowrap">
+                                                                <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={12} height={12} unoptimized />
+                                                                ตอนล่วงหน้า
+                                                            </span>
+                                                        )}
+                                                        {isFastBuyable && (
+                                                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 whitespace-nowrap">
+                                                                <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={12} height={12} unoptimized />
+                                                                FastTicket + เหรียญ
                                                             </span>
                                                         )}
                                                     </div>
@@ -173,17 +188,23 @@ export const BookEpisodesTab = ({ episodesData, bookId, bookDetail, settings, is
                                                                         const canUseFreecoin = epUseFreecoin !== undefined && epUseFreecoin !== null
                                                                             ? Number(epUseFreecoin) === 1
                                                                             : (bookUseFreecoin !== undefined && bookUseFreecoin !== null ? Number(bookUseFreecoin) === 1 : true);
+                                                                        const allowFreecoin = canUseFreecoin && !isFastTicketEpisode;
 
                                                                         return (
                                                                             <>
-                                                                                {canUseFreecoin && (
+                                                                                {allowFreecoin && (
                                                                                     <Image src={settings?.freecoin || '/images/money-bag.png'} alt="freecoin" width={16} height={16} unoptimized />
+                                                                                )}
+                                                                                {isFastTicketEpisode && (
+                                                                                    <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={16} height={16} unoptimized />
                                                                                 )}
                                                                                 <Image src={settings?.coin || '/images/e-coin.png'} alt="coin" width={16} height={16} unoptimized />
                                                                             </>
                                                                         );
                                                                     })(settings)}
-                                                                    {episode.isBuy ? (
+                                                                    {isFastLocked ? (
+                                                                        <span className="text-xs font-semibold text-gray-500">ยังซื้อไม่ได้</span>
+                                                                    ) : episode.isBuy ? (
                                                                         <span className="text-sm font-semibold text-gray-400 line-through">{regularPrice}</span>
                                                                     ) : hasPromo ? (
                                                                         <>

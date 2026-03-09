@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
-import { Image as AntdImage } from "antd";
+import { App, Image as AntdImage } from "antd";
 import { useRouter } from "next/navigation";
 import GifLoader from '@/components/utility/GifLoader';
 import { imageLoader } from '@/utils/imageUtils';
@@ -10,13 +10,51 @@ import { useWebsiteStore } from "@/stores/websiteStore";
 import CollectionCard from "@/components/collection/CollectionCard";
 import { usePublicUserProfileData } from "./hooks/usePublicUserProfile";
 import { AchievementShowcaseCard } from "./components/AchievementShowcaseCard";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { copyCollection } from "@/services/api/collectionApi";
+import { useAuthStore } from "@/stores/authStore";
+import { useUIStore } from "@/stores/uiStore";
 
 function UserProfileContent({ userId }: { userId: string }) {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const { settings } = useWebsiteStore();
+    const { notification } = App.useApp();
+    const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+    const openLoginModal = useUIStore((s) => s.openLoginModal);
     const [bannerError, setBannerError] = useState(false);
+    const [copyingCollectionId, setCopyingCollectionId] = useState<number | null>(null);
 
     const { profile, rank, achievements, collections, isLoading, isError } = usePublicUserProfileData(userId);
+
+    const copyCollectionMutation = useMutation({
+        mutationFn: (collectionId: number) => copyCollection(collectionId),
+        onSuccess: (res) => {
+            notification.success({
+                message: res?.message || 'คัดลอกคอลเล็กชันสำเร็จ',
+                placement: 'topRight',
+            });
+            queryClient.invalidateQueries({ queryKey: ['userCollections'] });
+        },
+        onError: (err: any) => {
+            notification.error({
+                message: err?.response?.data?.message || 'ไม่สามารถคัดลอกคอลเล็กชันได้',
+                placement: 'topRight',
+            });
+        },
+        onSettled: () => {
+            setCopyingCollectionId(null);
+        },
+    });
+
+    const handleCopyCollection = (collectionId: number) => {
+        if (!isLoggedIn) {
+            openLoginModal();
+            return;
+        }
+        setCopyingCollectionId(collectionId);
+        copyCollectionMutation.mutate(collectionId);
+    };
 
     useEffect(() => {
         if (profile?.fullname) {
@@ -242,8 +280,25 @@ function UserProfileContent({ userId }: { userId: string }) {
                     {collections?.list && collections.list.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                             {collections.list.map((collection: any) => (
-                                <div key={collection.id} onClick={() => router.push(`/profile/${userId}/collection/${collection.id}`)} className="cursor-pointer transition-transform hover:-translate-y-1 duration-300">
+                                <div key={collection.id} className="relative transition-transform hover:-translate-y-1 duration-300">
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleCopyCollection(collection.id);
+                                        }}
+                                        disabled={copyingCollectionId === collection.id}
+                                        className="absolute top-3 right-3 z-20 inline-flex items-center gap-1.5 rounded-full bg-white/95 border border-gray-200 px-3 py-1.5 text-xs font-semibold !text-black hover:text-red-600 hover:border-red-300 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                        {copyingCollectionId === collection.id ? 'กำลังคัดลอก...' : 'คัดลอก'}
+                                    </button>
+                                    <div onClick={() => router.push(`/profile/${userId}/collection/${collection.id}`)} className="cursor-pointer">
                                     <CollectionCard collection={collection} />
+                                    </div>
                                 </div>
                             ))}
                         </div>
