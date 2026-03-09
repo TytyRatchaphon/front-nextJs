@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, Button, Popover, Modal, Slider, Switch, Select, ConfigProvider, message, App } from "antd";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { Alert, Button, Popover, Modal, Slider, Switch, Select, ConfigProvider, message, App, Input } from "antd";
 import parse from "html-react-parser";
 import { BackToTopButton } from "@/components/utility/BackToTopButton";
 import Link from "next/link";
 import GifLoader from '@/components/utility/GifLoader';
 import EpisodeCommentSection from "@/components/bookdetail/EpisodeCommentSection";
 import Image from "next/image";
-import { modifiedHtml } from "@/utils/htmlUtils";
+import { modifiedHtml, addParagraphIndexes } from "@/utils/htmlUtils";
 import { decryptContent } from "@/utils/securityUtils";
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { fetchBookDetail } from "@/services/apiServices";
@@ -30,6 +30,14 @@ import { CheckCircleOutlined } from "@ant-design/icons";
 type Props = {
   bookId: string;
   episodeId: string;
+};
+
+type EpisodeBookmark = {
+  id: number;
+  ep_id: number;
+  paragraph_index: number;
+  note?: string;
+  created_at?: string;
 };
 
 // API function
@@ -72,6 +80,13 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   const queryClient = useQueryClient();
   const [, messageContextHolder] = message.useMessage();
   const { notification } = App.useApp();
+  const [isBookmarkPopoverOpen, setIsBookmarkPopoverOpen] = useState(false);
+  const [bookmarkModalOpen, setBookmarkModalOpen] = useState(false);
+  const [bookmarkNote, setBookmarkNote] = useState('');
+  const [bookmarkParagraphIndex, setBookmarkParagraphIndex] = useState<number | null>(null);
+  const [editingBookmarkId, setEditingBookmarkId] = useState<number | null>(null);
+  const [selectedParagraphIndex, setSelectedParagraphIndex] = useState<number | null>(null);
+  const [trackedParagraphIndex, setTrackedParagraphIndex] = useState<number | null>(null);
 
   // --- 1. Fetch Data ---
   const {
@@ -92,6 +107,78 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     enabled: !!bookId,
     staleTime: 10 * 60 * 1000,
     retry: 2,
+  });
+
+  const { data: bookmarks = [], isFetching: isFetchingBookmarks } = useQuery<EpisodeBookmark[]>({
+    queryKey: ["episodeBookmarks", episodeId],
+    queryFn: async () => {
+      const res = await apiClient.get(`/user/bookmarks`, { params: { ep_id: Number(episodeId) } });
+      const list = Array.isArray(res?.data?.data) ? res.data.data : [];
+      return list
+        .map((item: any) => ({
+          id: Number(item?.id),
+          ep_id: Number(item?.ep_id),
+          paragraph_index: Number(item?.paragraph_index),
+          note: item?.note,
+          created_at: item?.created_at,
+        }))
+        .filter((item: EpisodeBookmark) => Number.isFinite(item.paragraph_index) && item.paragraph_index > 0)
+        .sort((a: EpisodeBookmark, b: EpisodeBookmark) => a.paragraph_index - b.paragraph_index);
+    },
+    enabled: !!episodeId && isLoggedIn,
+    staleTime: 30 * 1000,
+  });
+
+  const createBookmarkMutation = useMutation({
+    mutationFn: async (payload: { paragraph_index: number; note: string }) => {
+      return apiClient.post('/user/bookmarks', {
+        book_id: Number(bookId),
+        ep_id: Number(episodeId),
+        paragraph_index: payload.paragraph_index,
+        note: payload.note,
+      });
+    },
+    onSuccess: () => {
+      notification.success({ message: 'บันทึกตำแหน่งสำเร็จ', placement: 'topRight' });
+      queryClient.invalidateQueries({ queryKey: ['episodeBookmarks', episodeId] });
+      setBookmarkModalOpen(false);
+      setBookmarkNote('');
+      setBookmarkParagraphIndex(null);
+      setEditingBookmarkId(null);
+    },
+    onError: (err: any) => {
+      notification.error({ message: err?.response?.data?.message || 'บันทึกตำแหน่งไม่สำเร็จ', placement: 'topRight' });
+    },
+  });
+
+  const updateBookmarkMutation = useMutation({
+    mutationFn: async (payload: { bookmark_id: number; note: string }) => {
+      return apiClient.patch('/user/bookmarks', payload);
+    },
+    onSuccess: () => {
+      notification.success({ message: 'แก้ไข Bookmark สำเร็จ', placement: 'topRight' });
+      queryClient.invalidateQueries({ queryKey: ['episodeBookmarks', episodeId] });
+      setBookmarkModalOpen(false);
+      setBookmarkNote('');
+      setBookmarkParagraphIndex(null);
+      setEditingBookmarkId(null);
+    },
+    onError: (err: any) => {
+      notification.error({ message: err?.response?.data?.message || 'แก้ไข Bookmark ไม่สำเร็จ', placement: 'topRight' });
+    },
+  });
+
+  const deleteBookmarkMutation = useMutation({
+    mutationFn: async (bookmarkId: number) => {
+      return apiClient.delete('/user/bookmarks', { data: { bookmark_ids: [bookmarkId] } });
+    },
+    onSuccess: () => {
+      notification.success({ message: 'ลบ Bookmark สำเร็จ', placement: 'topRight' });
+      queryClient.invalidateQueries({ queryKey: ['episodeBookmarks', episodeId] });
+    },
+    onError: (err: any) => {
+      notification.error({ message: err?.response?.data?.message || 'ลบ Bookmark ไม่สำเร็จ', placement: 'topRight' });
+    },
   });
 
   // --- 2. Custom Hooks ---
@@ -117,6 +204,239 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     currentBg, currentFontFamily,
     fontFamilies, bgColors
   } = useReadingTheme(contentRef);
+
+  const renderedEpisodeHtml = useMemo(() => {
+    const rawHtml = episode?.des || episode?.content || '';
+    if (!rawHtml) return '';
+    const normalizedHtml = modifiedHtml(rawHtml, currentFontFamily?.family || "var(--font-sarabun), sans-serif", user);
+    return addParagraphIndexes(normalizedHtml).html;
+  }, [episode?.des, episode?.content, currentFontFamily?.family, user]);
+
+  const bookmarkedParagraphIndexes = useMemo(
+    () => new Set(bookmarks.map((b) => b.paragraph_index).filter((n) => Number.isFinite(n) && n > 0)),
+    [bookmarks]
+  );
+
+  const scrollToParagraph = (paragraphIndex: number) => {
+    const root = innerContentRef.current;
+    if (!root) return;
+
+    const target = root.querySelector(`[data-paragraph-index="${paragraphIndex}"]`) as HTMLElement | null;
+    if (!target) {
+      notification.warning({
+        message: 'ไม่พบตำแหน่งที่บุ๊กมาร์กไว้',
+        description: `ย่อหน้าที่ ${paragraphIndex} ไม่มีในเนื้อหาปัจจุบัน`,
+        placement: 'topRight',
+      });
+      return;
+    }
+
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    target.classList.add('bookmark-highlight');
+    window.setTimeout(() => target.classList.remove('bookmark-highlight'), 1400);
+    setIsBookmarkPopoverOpen(false);
+  };
+
+  const getCurrentParagraphIndex = () => {
+    const root = innerContentRef.current;
+    if (!root) return null;
+
+    const nodes = Array.from(root.querySelectorAll('[data-paragraph-index]')) as HTMLElement[];
+    if (nodes.length === 0) return null;
+
+    const anchorY = window.innerHeight * 0.35;
+    let closestIdx: number | null = null;
+    let closestDistance = Number.POSITIVE_INFINITY;
+
+    nodes.forEach((node) => {
+      const idx = Number(node.getAttribute('data-paragraph-index'));
+      if (!Number.isFinite(idx)) return;
+
+      const rect = node.getBoundingClientRect();
+      const topDistance = Math.abs(rect.top - anchorY);
+
+      if (topDistance < closestDistance) {
+        closestDistance = topDistance;
+        closestIdx = idx;
+      }
+    });
+
+    return closestIdx;
+  };
+
+  const openCreateBookmarkModal = () => {
+    if (!isLoggedIn) {
+      openLoginModal();
+      return;
+    }
+
+    const idx = getCurrentParagraphIndex();
+    if (!idx) {
+      notification.warning({ message: 'ไม่พบย่อหน้าปัจจุบัน', placement: 'topRight' });
+      return;
+    }
+
+    const existing = bookmarks.find((item) => item.paragraph_index === idx);
+    if (existing) {
+      setEditingBookmarkId(existing.id);
+      setBookmarkParagraphIndex(existing.paragraph_index);
+      setBookmarkNote(existing.note || '');
+      setBookmarkModalOpen(true);
+      return;
+    }
+
+    setEditingBookmarkId(null);
+    setBookmarkParagraphIndex(idx);
+    setBookmarkNote('');
+    setBookmarkModalOpen(true);
+  };
+
+  const openCreateBookmarkModalByIndex = (paragraphIndex: number) => {
+    if (!isLoggedIn) {
+      openLoginModal();
+      return;
+    }
+
+    const existing = bookmarks.find((item) => item.paragraph_index === paragraphIndex);
+    if (existing) {
+      setEditingBookmarkId(existing.id);
+      setBookmarkParagraphIndex(existing.paragraph_index);
+      setBookmarkNote(existing.note || '');
+      setBookmarkModalOpen(true);
+      return;
+    }
+
+    setEditingBookmarkId(null);
+    setBookmarkParagraphIndex(paragraphIndex);
+    setBookmarkNote('');
+    setBookmarkModalOpen(true);
+  };
+
+  const openEditBookmarkModal = (bookmark: EpisodeBookmark) => {
+    setEditingBookmarkId(bookmark.id);
+    setBookmarkParagraphIndex(bookmark.paragraph_index);
+    setBookmarkNote(bookmark.note || '');
+    setBookmarkModalOpen(true);
+  };
+
+  const handleDeleteBookmark = (bookmarkId: number) => {
+    Modal.confirm({
+      title: 'ลบ Bookmark',
+      content: 'ยืนยันการลบบุ๊กมาร์กนี้?',
+      okText: 'ลบ',
+      cancelText: 'ยกเลิก',
+      okButtonProps: { danger: true, loading: deleteBookmarkMutation.isPending },
+      onOk: async () => {
+        await deleteBookmarkMutation.mutateAsync(bookmarkId);
+      },
+    });
+  };
+
+  const submitBookmarkModal = () => {
+    if (!bookmarkParagraphIndex) {
+      notification.warning({ message: 'ไม่พบย่อหน้าที่ต้องการบันทึก', placement: 'topRight' });
+      return;
+    }
+
+    if (editingBookmarkId) {
+      updateBookmarkMutation.mutate({
+        bookmark_id: editingBookmarkId,
+        note: bookmarkNote.trim() || `Bookmark ย่อหน้า ${bookmarkParagraphIndex}`,
+      });
+      return;
+    }
+
+    createBookmarkMutation.mutate({
+      paragraph_index: bookmarkParagraphIndex,
+      note: bookmarkNote.trim() || `Bookmark ย่อหน้า ${bookmarkParagraphIndex}`,
+    });
+  };
+
+  useEffect(() => {
+    const onSelectionChange = () => {
+      const root = innerContentRef.current;
+      if (!root || !isFocused) return;
+
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+        setSelectedParagraphIndex(null);
+        return;
+      }
+
+      const range = selection.getRangeAt(0);
+      const container = range.commonAncestorContainer;
+      const targetNode = container.nodeType === Node.ELEMENT_NODE ? container as Element : container.parentElement;
+
+      if (!targetNode || !root.contains(targetNode)) {
+        setSelectedParagraphIndex(null);
+        return;
+      }
+
+      const paragraphEl = (targetNode as Element).closest('[data-paragraph-index]') as HTMLElement | null;
+      if (!paragraphEl) {
+        setSelectedParagraphIndex(null);
+        return;
+      }
+
+      const idx = Number(paragraphEl.getAttribute('data-paragraph-index'));
+      if (!Number.isFinite(idx) || idx <= 0) {
+        setSelectedParagraphIndex(null);
+        return;
+      }
+
+      setSelectedParagraphIndex(idx);
+    };
+
+    document.addEventListener('selectionchange', onSelectionChange);
+    return () => document.removeEventListener('selectionchange', onSelectionChange);
+  }, [isFocused]);
+
+  useEffect(() => {
+    if (!isFocused) {
+      setTrackedParagraphIndex(null);
+      return;
+    }
+
+    const updateTrackedParagraph = () => {
+      setTrackedParagraphIndex(getCurrentParagraphIndex());
+    };
+
+    updateTrackedParagraph();
+    window.addEventListener('scroll', updateTrackedParagraph, { passive: true });
+    window.addEventListener('resize', updateTrackedParagraph);
+
+    return () => {
+      window.removeEventListener('scroll', updateTrackedParagraph);
+      window.removeEventListener('resize', updateTrackedParagraph);
+    };
+  }, [isFocused, renderedEpisodeHtml]);
+
+  useEffect(() => {
+    const root = innerContentRef.current;
+    if (!root) return;
+
+    const nodes = Array.from(root.querySelectorAll('[data-paragraph-index]')) as HTMLElement[];
+    nodes.forEach((node) => node.classList.remove('paragraph-tracked-current'));
+
+    if (!trackedParagraphIndex) return;
+    const target = root.querySelector(`[data-paragraph-index="${trackedParagraphIndex}"]`) as HTMLElement | null;
+    if (target) target.classList.add('paragraph-tracked-current');
+  }, [trackedParagraphIndex, renderedEpisodeHtml]);
+
+  useEffect(() => {
+    const root = innerContentRef.current;
+    if (!root) return;
+
+    const nodes = Array.from(root.querySelectorAll('[data-paragraph-index]')) as HTMLElement[];
+    nodes.forEach((node) => node.classList.remove('paragraph-bookmarked'));
+
+    bookmarkedParagraphIndexes.forEach((idx) => {
+      const target = root.querySelector(`[data-paragraph-index="${idx}"]`) as HTMLElement | null;
+      if (target) target.classList.add('paragraph-bookmarked');
+    });
+  }, [bookmarkedParagraphIndexes, renderedEpisodeHtml]);
+
+  const bookmarkIconStroke = currentBg?.key === 'dark' ? '#DFDFEC' : '#4B5563';
 
   const { episodesData, displayTitle, prevEpId, nextEpId } = useEpisodeNavigation(bookId, episodeId, episode);
 
@@ -499,7 +819,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
 
   return (
     <div
-      className={`min-h-screen ${currentBg?.bg} ${currentBg?.text} transition-colors duration-300 select-none`}
+      className={`min-h-screen ${currentBg?.bg} ${currentBg?.text} transition-colors duration-300 select-none ${currentBg?.key === 'dark' ? 'reader-theme-dark' : 'reader-theme-light'}`}
       style={{ userSelect: "none", minHeight: "100vh" }}
       onCopy={(e) => e.preventDefault()}
       onCut={(e) => e.preventDefault()}
@@ -566,8 +886,14 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
         <div className="min-h-[500px] p-4 flex flex-col items-center">
           <div className={`min-h-[1000px] rounded-md w-full lg:max-w-[1000px] ${currentBg?.paper || currentBg?.bg} ${currentBg?.text} shadow-lg relative flex flex-col`}>
             {/* Header */}
-            <div className={`transition-all duration-300 w-full sticky top-0 z-[1100] ${currentBg?.paper || currentBg?.bg}`}
-              style={{ borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)", borderBottomWidth: "1px" }}>
+            <div className={`transition-all duration-300 w-full sticky top-0 z-[120] ${currentBg?.paper || currentBg?.bg}`}
+              style={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 120,
+                borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)",
+                borderBottomWidth: "1px"
+              }}>
               <div className="flex items-center justify-between px-2 py-2">
                 <div className="flex items-center gap-1">
                   <Link href={bookId ? `/book/${bookId}` : "/"} className={`p-2 rounded-full transition-colors ${currentBg?.text} ${currentBg?.key === "dark" ? "hover:bg-white/10" : "hover:bg-black/5"}`} style={{ color: currentBg?.key === "dark" ? "white" : undefined }}>
@@ -576,7 +902,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                       <span className="hidden sm:inline">หน้าหลัก</span>
                     </div>
                   </Link>
-                  <Popover placement="bottomLeft" title={<div className="text-sm font-semibold">สารบัญ</div>} content={renderEpisodesList()} trigger="click" open={isListPopoverOpen} onOpenChange={(open) => setIsListPopoverOpen(open)}>
+                  <Popover placement="bottomLeft" zIndex={900} title={<div className="text-sm font-semibold">สารบัญ</div>} content={renderEpisodesList()} trigger="click" open={isListPopoverOpen} onOpenChange={(open) => setIsListPopoverOpen(open)}>
                     <button className={`p-2 rounded-full transition-colors ${currentBg?.text} ${currentBg?.key === "dark" ? "hover:bg-white/10" : "hover:bg-black/5"}`} title="สารบัญ" style={{ color: currentBg?.key === "dark" ? "white" : undefined }}>
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
                     </button>
@@ -587,6 +913,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
 
                 <Popover
                   placement="bottomRight"
+                  zIndex={900}
                   title={
                     <div className="flex items-center justify-between border-b pb-2 mb-2">
                       <span className="text-base font-semibold">ตั้งค่าการอ่าน</span>
@@ -598,7 +925,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                     </div>
                   }
                   content={
-                    <div className="w-72 flex flex-col gap-4 p-1">
+                    <div className="w-72 flex flex-col gap-4 p-1 bg-white text-gray-900">
                       {/* Alignment */}
                       <div className="grid grid-cols-3 gap-2">
                         {['left', 'center', 'justify'].map((align) => (
@@ -656,6 +983,69 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                     <button className={`p-2 rounded-full transition-colors font-serif font-bold text-lg flex items-center justify-center w-10 h-10 ${currentBg?.text} ${currentBg?.key === "dark" ? "hover:bg-white/10" : "hover:bg-black/5"}`} title="ตั้งค่าการอ่าน" style={{ color: currentBg?.key === "dark" ? "white" : undefined }}>Aa</button>
                   </div>
                 </Popover>
+
+                <Popover
+                  placement="bottomRight"
+                  zIndex={900}
+                  trigger="click"
+                  open={isBookmarkPopoverOpen}
+                  onOpenChange={setIsBookmarkPopoverOpen}
+                  title={<div className="text-sm font-semibold">ตำแหน่งที่บุ๊กมาร์กไว้</div>}
+                  content={
+                    <div className="w-80 bg-white text-gray-900">
+                      <div className="mb-2 flex items-center justify-end">
+                        <Button size="small" type="primary" onClick={openCreateBookmarkModal}>
+                          เพิ่มจากตำแหน่งปัจจุบัน
+                        </Button>
+                      </div>
+                      <div className="max-h-72 overflow-auto">
+                        {isFetchingBookmarks ? (
+                          <div className="py-4 text-center text-xs text-gray-500">กำลังโหลด...</div>
+                        ) : bookmarks.length === 0 ? (
+                          <div className="py-4 text-center text-xs text-gray-500">ยังไม่มีบุ๊กมาร์กในตอนนี้</div>
+                        ) : (
+                          <div className="space-y-1">
+                            {bookmarks.map((bookmark) => (
+                              <div key={bookmark.id} className="w-full px-3 py-2 rounded-lg transition-colors hover:bg-gray-100">
+                                <button
+                                  onClick={() => scrollToParagraph(bookmark.paragraph_index)}
+                                  className="w-full text-left"
+                                >
+                                  <div className="text-sm font-medium text-gray-800">ย่อหน้า {bookmark.paragraph_index}</div>
+                                  {bookmark.note && <div className="text-xs truncate text-gray-500">{bookmark.note}</div>}
+                                </button>
+                                <div className="mt-2 flex items-center justify-end gap-2">
+                                  <button
+                                    onClick={() => openEditBookmarkModal(bookmark)}
+                                    className="text-xs text-blue-500 hover:text-blue-600"
+                                  >
+                                    แก้ไข
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteBookmark(bookmark.id)}
+                                    className="text-xs text-red-500 hover:text-red-600"
+                                  >
+                                    ลบ
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  }
+                >
+                  <button
+                    className={`p-2 rounded-full transition-colors ${currentBg?.text} ${currentBg?.key === "dark" ? "hover:bg-white/10" : "hover:bg-black/5"}`}
+                    title="Bookmark"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none">
+                      <path d="M14 2C16 2 17 3.01 17 5.03V12.08C17 14.07 15.59 14.84 13.86 13.8L12.54 13C12.24 12.82 11.76 12.82 11.46 13L10.14 13.8C8.41 14.84 7 14.07 7 12.08V5.03C7 3.01 8 2 10 2H14Z" stroke={bookmarkIconStroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M6.82 4.98996C3.41 5.55996 2 7.65996 2 11.9V14.93C2 19.98 4 22 9 22H15C20 22 22 19.98 22 14.93V11.9C22 7.58996 20.54 5.47996 17 4.95996" stroke={bookmarkIconStroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                </Popover>
               </div>
             </div>
 
@@ -683,10 +1073,8 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                   pointerEvents: isFocused ? 'auto' : 'none',
                 }}>
                 {isFocused ? (
-                  episode?.des ? (
-                    parse(modifiedHtml(episode.des, currentFontFamily?.family || "var(--font-sarabun), sans-serif", user))
-                  ) : episode?.content ? (
-                    parse(modifiedHtml(episode.content, currentFontFamily?.family || "var(--font-sarabun), sans-serif", user))
+                  renderedEpisodeHtml ? (
+                    parse(renderedEpisodeHtml)
                   ) : (
                     <PurchaseFallback />
                   )
@@ -701,6 +1089,27 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                 </div>
               )}
             </article>
+
+            {isFocused && selectedParagraphIndex && (
+              <div className="fixed bottom-24 right-6 z-[850]">
+                <button
+                  onClick={() => {
+                    openCreateBookmarkModalByIndex(selectedParagraphIndex);
+                    window.getSelection()?.removeAllRanges();
+                    setSelectedParagraphIndex(null);
+                  }}
+                  className="px-4 py-2 rounded-full bg-red-600 text-white text-sm font-semibold shadow-lg hover:bg-red-700 transition-colors"
+                >
+                  บันทึกย่อหน้า {selectedParagraphIndex}
+                </button>
+              </div>
+            )}
+
+            {isFocused && trackedParagraphIndex && (
+              <div className="fixed bottom-24 left-6 z-[840] px-3 py-1.5 rounded-full bg-black/60 text-white text-xs font-medium pointer-events-none">
+                ย่อหน้า {trackedParagraphIndex.toLocaleString('th-TH')}
+              </div>
+            )}
 
             {/* Sticky Navigation Footer */}
             {(showNav) && (
@@ -769,6 +1178,55 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
           </div>
         </div>
       </Modal>
+      <Modal
+        open={bookmarkModalOpen}
+        title={editingBookmarkId ? 'แก้ไข Bookmark' : 'เพิ่ม Bookmark'}
+        onCancel={() => {
+          setBookmarkModalOpen(false);
+          setBookmarkNote('');
+          setBookmarkParagraphIndex(null);
+          setEditingBookmarkId(null);
+        }}
+        onOk={submitBookmarkModal}
+        okText={editingBookmarkId ? 'บันทึกการแก้ไข' : 'บันทึก'}
+        cancelText="ยกเลิก"
+        confirmLoading={createBookmarkMutation.isPending || updateBookmarkMutation.isPending}
+      >
+        <div className="space-y-3 pt-2">
+          <div className="text-sm text-gray-600">ตำแหน่งย่อหน้า: <span className="font-semibold text-gray-900">{bookmarkParagraphIndex ?? '-'}</span></div>
+          <Input.TextArea
+            value={bookmarkNote}
+            onChange={(e) => setBookmarkNote(e.target.value)}
+            rows={3}
+            maxLength={120}
+            placeholder="เพิ่มโน้ต (ไม่บังคับ)"
+          />
+        </div>
+      </Modal>
+      <style jsx global>{`
+        .bookmark-highlight {
+          background: rgba(227, 28, 61, 0.14);
+          transition: background-color 0.25s ease;
+          border-radius: 6px;
+        }
+        .paragraph-tracked-current {
+          background: rgba(107, 114, 128, 0.14);
+          border-radius: 6px;
+          transition: background-color 0.2s ease;
+        }
+        .reader-theme-light .paragraph-bookmarked {
+          background: rgba(59, 130, 246, 0.08);
+          border-left: 3px solid rgba(59, 130, 246, 0.55);
+          border-radius: 6px;
+          padding-left: 10px;
+        }
+        .reader-theme-dark .paragraph-bookmarked {
+          background: rgba(148, 163, 184, 0.14);
+          border-left: 3px solid rgba(203, 213, 225, 0.65);
+          border-radius: 6px;
+          padding-left: 10px;
+        }
+      `}</style>
     </div>
   );
 }

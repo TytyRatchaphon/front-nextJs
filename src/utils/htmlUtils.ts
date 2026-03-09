@@ -68,3 +68,43 @@ export const modifiedHtml = (detailData: string, currentFont: string, userData: 
 
     return newDetail;
 }
+
+export const addParagraphIndexes = (html: string) => {
+    if (!html) return { html: '', paragraphCount: 0 };
+
+    if (typeof window === 'undefined' || typeof DOMParser === 'undefined') {
+        let index = 0;
+        const indexedHtml = html.replace(/<(p|blockquote|li|pre)([^>]*)>/gi, (_, tag, attrs) => {
+            index += 1;
+            return `<${tag}${attrs} data-paragraph-index="${index}">`;
+        });
+        return { html: indexedHtml, paragraphCount: index };
+    }
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const blocks = doc.body.querySelectorAll('p, blockquote, li, pre');
+
+    const getVisibleText = (el: Element) => {
+        const clone = el.cloneNode(true) as Element;
+        // Remove invisible watermark spans inserted by modifiedHtml
+        clone.querySelectorAll('span[style*="color:transparent"], span[style*="font-size:0"], span.no-select[style*="transparent"]').forEach((n) => n.remove());
+        return (clone.textContent || '')
+            .replace(/\u00a0/g, ' ')
+            .replace(/\u200b/g, '')
+            .trim();
+    };
+
+    let index = 0;
+    blocks.forEach((el) => {
+        const text = getVisibleText(el);
+        if (!text) {
+            el.removeAttribute('data-paragraph-index');
+            return;
+        }
+        index += 1;
+        el.setAttribute('data-paragraph-index', String(index));
+    });
+
+    return { html: doc.body.innerHTML, paragraphCount: index };
+}

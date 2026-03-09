@@ -79,7 +79,7 @@ export const BookEpisodesTab = ({ episodesData, bookId, bookDetail, settings, is
                                         const regularPrice = Number(episode.coin ?? 0);
                                         const isFastTicketEpisode = Boolean(episode?.isFastTicket);
                                         const isFastBuyable = isFastTicketEpisode && Boolean(episode?.isFast_buyable);
-                                        const isFastLocked = isFastTicketEpisode && !Boolean(episode?.isFast_buyable);
+                                        const isFastLocked = isFastTicketEpisode && !Boolean(episode?.isFast_buyable) && !Boolean(episode?.isBuy);
                                         let promoPrice: number | undefined = undefined;
                                         let activePromo: any = null;
 

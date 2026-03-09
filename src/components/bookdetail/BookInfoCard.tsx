@@ -300,12 +300,13 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       let total = 0;
       let fastTicketCount = 0;
       for (const g of groups) {
-        for (const ep of g.list) {
-          if (isEpisodeSelectable(ep)) {
+        for (let index = 0; index < g.list.length; index += 1) {
+          const ep = g.list[index];
+          if (isEpisodeSequentiallyUnlocked(ep, index, g.list)) {
             selectableIds.push(Number(ep.ep_id));
             const { finalPrice } = resolveEpisodePrice(ep);
             total += finalPrice;
-            if (isEpisodeFastBuyable(ep)) fastTicketCount += 1;
+            if (isEpisodeFastTicket(ep)) fastTicketCount += 1;
           }
         }
       }
@@ -350,7 +351,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
 
   const toggleGroupSelect = (group: any) => {
     // select all selectable episodes in group, or deselect if all already selected
-    const selectable = group.list.filter((ep: any) => isEpisodeSelectable(ep)).map((ep: any) => ep.ep_id);
+    const selectable = group.list
+      .filter((ep: any, index: number) => isEpisodeSequentiallyUnlocked(ep, index, group.list))
+      .map((ep: any) => ep.ep_id);
     const allSelected = selectable.every((id: number) => selectedEpisodeIds.includes(id));
     if (allSelected) {
       setSelectedEpisodeIds((prev) => prev.filter((id) => !selectable.includes(id)));
@@ -401,20 +404,33 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   };
 
   const isEpisodeFastTicket = (episode: any) => Boolean(episode?.isFastTicket);
-  const isEpisodeFastLocked = (episode: any) => isEpisodeFastTicket(episode) && !Boolean(episode?.isFast_buyable);
-  const isEpisodeSelectable = (episode: any) => Number(episode?.coin ?? 0) > 0 && !episode?.isBuy && !isEpisodeFastLocked(episode);
-  const isEpisodeFastBuyable = (episode: any) => isEpisodeFastTicket(episode) && Boolean(episode?.isFast_buyable) && isEpisodeSelectable(episode);
+  const isEpisodeFastLocked = (episode: any) => isEpisodeFastTicket(episode) && !Boolean(episode?.isFast_buyable) && !Boolean(episode?.isBuy);
+  const isEpisodeBaseSelectable = (episode: any) => Number(episode?.coin ?? 0) > 0 && !episode?.isBuy;
+  const isEpisodeSelectable = (episode: any) => isEpisodeBaseSelectable(episode) && !isEpisodeFastLocked(episode);
+  const isPrevEpisodeUnlocking = (prevEpisode: any) => {
+    if (!prevEpisode) return false;
+    return Boolean(prevEpisode?.isBuy)
+      || Number(prevEpisode?.coin ?? 0) <= 0
+      || selectedEpisodeIds.includes(Number(prevEpisode?.ep_id));
+  };
+  const isEpisodeSequentiallyUnlocked = (episode: any, index: number, groupList: any[]) => {
+    if (!isEpisodeBaseSelectable(episode)) return false;
+    if (!isEpisodeFastLocked(episode)) return true;
+    const prevEpisode = groupList[index - 1];
+    return isPrevEpisodeUnlocking(prevEpisode);
+  };
 
   const selectedSummary = useMemo(() => {
     if (!episodesData?.groups) return { count: 0, total: 0, fastTicketCount: 0 };
     let total = 0;
     let fastTicketCount = 0;
-    for (const g of episodesData.groups) {
-      for (const ep of g.list) {
-        if (selectedEpisodeIds.includes(ep.ep_id) && isEpisodeSelectable(ep)) {
+      for (const g of episodesData.groups) {
+      for (let index = 0; index < g.list.length; index += 1) {
+        const ep = g.list[index];
+        if (selectedEpisodeIds.includes(ep.ep_id) && isEpisodeSequentiallyUnlocked(ep, index, g.list)) {
           const { finalPrice } = resolveEpisodePrice(ep);
           total += finalPrice;
-          if (isEpisodeFastBuyable(ep)) fastTicketCount += 1;
+          if (isEpisodeFastTicket(ep)) fastTicketCount += 1;
         }
       }
     }
@@ -425,12 +441,13 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     if (!episodesData?.groups) return [] as number[];
     const ids: number[] = [];
     for (const g of episodesData.groups) {
-      for (const ep of g.list) {
-        if (isEpisodeSelectable(ep)) ids.push(ep.ep_id);
+      for (let index = 0; index < g.list.length; index += 1) {
+        const ep = g.list[index];
+        if (isEpisodeSequentiallyUnlocked(ep, index, g.list)) ids.push(ep.ep_id);
       }
     }
     return ids;
-  }, [episodesData]);
+  }, [episodesData, selectedEpisodeIds]);
 
   const allSelected = allSelectableIds.length > 0 && allSelectableIds.every((id) => selectedEpisodeIds.includes(id));
 
@@ -457,6 +474,26 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       setPayWith('coin');
     }
   }, [buyAllFastTicketCount, payWith]);
+
+  useEffect(() => {
+    if (!episodesData?.groups || selectedEpisodeIds.length === 0) return;
+
+    const validSelected = new Set<number>();
+    for (const group of episodesData.groups) {
+      for (let index = 0; index < group.list.length; index += 1) {
+        const ep = group.list[index];
+        const epId = Number(ep?.ep_id);
+        if (!selectedEpisodeIds.includes(epId)) continue;
+        if (isEpisodeSequentiallyUnlocked(ep, index, group.list)) {
+          validSelected.add(epId);
+        }
+      }
+    }
+
+    if (validSelected.size !== selectedEpisodeIds.length) {
+      setSelectedEpisodeIds((prev) => prev.filter((id) => validSelected.has(id)));
+    }
+  }, [episodesData, selectedEpisodeIds]);
 
 
   // Helper for Stepper
@@ -661,7 +698,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                       {episodesData?.groups?.map((group: EpisodeGroup) => {
                         const gid = String(group.group_id);
                         const isExpanded = expandedGroups[gid] ?? false;
-                        const selectableIds = group.list.filter((ep: any) => isEpisodeSelectable(ep)).map((ep: any) => ep.ep_id);
+                        const selectableIds = group.list
+                          .filter((ep: any, index: number) => isEpisodeSequentiallyUnlocked(ep, index, group.list))
+                          .map((ep: any) => ep.ep_id);
                         const selectedCountInGroup = selectableIds.filter((id: number) => selectedEpisodeIds.includes(id)).length;
                         const allSelectedInGroup = selectableIds.length > 0 && selectedCountInGroup === selectableIds.length;
 
@@ -689,10 +728,12 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
 
                             {isExpanded && (
                               <div className="divide-y">
-                                {group.list.map((episode: any) => {
-                                  const fastLocked = isEpisodeFastLocked(episode);
-                                  const fastBuyable = isEpisodeFastBuyable(episode);
-                                  const disabled = Number(episode.coin ?? 0) <= 0 || episode.isBuy || fastLocked;
+                                {group.list.map((episode: any, index: number) => {
+                                  const sequentialUnlocked = isEpisodeSequentiallyUnlocked(episode, index, group.list);
+                                  const isFastEpisode = isEpisodeFastTicket(episode);
+                                  const fastLocked = isFastEpisode && !sequentialUnlocked && !episode?.isBuy;
+                                  const fastBuyable = isFastEpisode && sequentialUnlocked && !episode?.isBuy;
+                                  const disabled = Number(episode.coin ?? 0) <= 0 || episode.isBuy || !sequentialUnlocked;
                                   const checked = selectedEpisodeIds.includes(episode.ep_id);
                                   const { regularPrice, promoPrice, hasPromo, activePromo } = resolveEpisodePrice(episode);
                                   const rpEarn = Number(episode?.rp_campaign?.rp_earn ?? 0);
@@ -716,10 +757,16 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                                           <div className={`text-sm font-medium line-clamp-2 ${disabled ? 'text-gray-500' : 'text-gray-900'}`}>
                                             {episode.name}
                                           </div>
-                                          {fastLocked && (
+                                          {fastLocked && !sequentialUnlocked && (
                                             <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600">
                                               <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={12} height={12} unoptimized />
                                               ตอนล่วงหน้า (ยังซื้อไม่ได้)
+                                            </div>
+                                          )}
+                                          {fastLocked && sequentialUnlocked && (
+                                            <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                                              <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={12} height={12} unoptimized />
+                                              ตอนล่วงหน้า (ปลดล็อคแล้ว)
                                             </div>
                                           )}
                                           {fastBuyable && (
@@ -763,10 +810,10 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                                             )}
                                             <div className="flex items-center gap-1.5 justify-end">
                                               <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={16} height={16} unoptimized />
-                                              {fastBuyable && (
+                                              {isFastEpisode && (
                                                 <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={16} height={16} unoptimized />
                                               )}
-                                              {book.use_freecoin === 1 && !fastBuyable && (
+                                              {book.use_freecoin === 1 && !isFastEpisode && (
                                                 <Image src={settings?.freecoin || "/images/money-bag.png"} alt="freecoin" width={16} height={16} unoptimized />
                                               )}
                                               {hasPromo ? (
