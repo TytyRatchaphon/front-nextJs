@@ -11,7 +11,6 @@ import DailyCheckinModal from "@/components/home/DailyCheckinModal";
 import BannerButtons from "@/components/home/BannerButtons";
 import Image from "next/image";
 import BookGroups from "@/components/home/BookGroups";
-import TopRanking from "@/components/home/TopRanking";
 import UpdateBookCard from "@/components/novelCard/UpdateBookCard";
 import ContinueReadingSwiper from "@/components/swiper/ContinueReadingSwiper";
 import SpotlightCard from "@/components/novelCard/SpotlightCard";
@@ -67,7 +66,6 @@ export default function HomeContent({ initialData, initialBookUpdates, initialRa
 
   const slides = homeData?.data?.slides || [];
   const groupBookHome = (homeData?.data as any)?.groupBookHome || [];
-  const rankingGroup = groupBookHome.find((group: any) => group.type === 'ranking');
 
 
 
@@ -153,11 +151,6 @@ export default function HomeContent({ initialData, initialBookUpdates, initialRa
 
           {/* Other Groups Section */}
           <BookGroups groupBookHome={groupBookHome} />
-
-          {/* Top 10 Ranking Section */}
-          <div className="w-full -mt-4">
-            <TopRanking rankingGroup={rankingGroup} />
-          </div>
 
           {/* Ranking Category Section */}
           <div className="w-full flex flex-col md:flex-row justify-center items-center gap-4 md:gap-6 lg:gap-10 mt-4 mb-4 px-4">
