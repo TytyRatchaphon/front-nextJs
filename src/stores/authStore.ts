@@ -35,6 +35,7 @@ export interface UserData {
   coupon?: number;
   coin?: number;
   freecoin?: number;
+  fast_ticket?: number;
   exp?: number;
   current_rp?: number;
   total_rp?: number;

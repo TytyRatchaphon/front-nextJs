@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchAllNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '@/services/apiServices';
-import { Button, Tag, Pagination } from 'antd';
+import { fetchAllNotifications, markNotificationAsRead, markAllNotificationsAsRead, NotificationTab } from '@/services/apiServices';
+import { Button, Tag, Pagination, Tabs } from 'antd';
 import { BellOutlined, CheckOutlined, BookOutlined, MessageOutlined, InfoCircleOutlined, UserOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -12,6 +12,7 @@ import GifLoader from '@/components/utility/GifLoader';
 import 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+
 
 dayjs.extend(relativeTime);
 dayjs.locale('th');
@@ -50,6 +51,7 @@ const NotificationPage: React.FC = () => {
     const queryClient = useQueryClient();
     const router = useRouter();
     const [page, setPage] = useState(1);
+    const [activeTab, setActiveTab] = useState<NotificationTab>('all');
 
     React.useEffect(() => {
         if (!token) {
@@ -59,9 +61,10 @@ const NotificationPage: React.FC = () => {
 
     // We fetch with pagination now
     const { data, isLoading } = useQuery({
-        queryKey: ['allNotifications', page],
-        queryFn: () => fetchAllNotifications(page, 20),
-        refetchInterval: 30000,
+        queryKey: ['allNotifications', activeTab, page],
+        queryFn: () => fetchAllNotifications(page, 20, activeTab),
+        staleTime: 30000,
+        refetchOnWindowFocus: true,
     });
 
     const notifications = data?.notifications || [];
@@ -78,7 +81,7 @@ const NotificationPage: React.FC = () => {
     });
 
     const markAllReadMutation = useMutation({
-        mutationFn: markAllNotificationsAsRead,
+        mutationFn: (tab: NotificationTab) => markAllNotificationsAsRead(tab),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['allNotifications'] });
             queryClient.invalidateQueries({ queryKey: ['recentNotifications'] });
@@ -103,7 +106,7 @@ const NotificationPage: React.FC = () => {
     };
 
     const handleMarkAllRead = () => {
-        markAllReadMutation.mutate();
+        markAllReadMutation.mutate(activeTab);
     };
 
     const getIconByType = (type: string) => {
@@ -122,7 +125,7 @@ const NotificationPage: React.FC = () => {
     const getTypeLabel = (type: string) => {
         switch (type) {
             case 'book_new': return { text: 'เรื่องใหม่', color: 'green' };
-            case 'book_update': return { text: 'ตอนใหม่', color: 'blue' };
+            case 'book_update': return { text: 'นิยาย', color: 'blue' };
             case 'system': return { text: 'ระบบ', color: 'red' };
             case 'comment_book_id':
             case 'comment_ep_id':
@@ -172,6 +175,21 @@ const NotificationPage: React.FC = () => {
                 )}
             </div>
 
+            <Tabs
+                activeKey={activeTab}
+                onChange={(key) => {
+                    setActiveTab(key as NotificationTab);
+                    setPage(1);
+                }}
+                className="mb-5"
+                items={[
+                    { key: 'all', label: 'ทั้งหมด' },
+                    { key: 'comment', label: 'ความคิดเห็น' },
+                    { key: 'system', label: 'ระบบ' },
+                    { key: 'book', label: 'นิยาย' },
+                ]}
+            />
+
             {/* List */}
             {!notifications || notifications.length === 0 ? (
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 flex flex-col items-center justify-center text-gray-400">
@@ -183,7 +201,7 @@ const NotificationPage: React.FC = () => {
                 </div>
             ) : (
                 <div className="flex flex-col gap-3">
-                    {notifications.map((item: any) => { // Using any for mapping to be safe with DB variations
+                    {notifications.map((item: any) => {
                         const typeInfo = getTypeLabel(item.NotiType.type);
                         const isSystem = item.NotiType.type === 'system';
                         const isExpanded = expandedIds.has(item.id);
@@ -200,7 +218,7 @@ const NotificationPage: React.FC = () => {
                                 {item.readed === 'N' && (
                                     <div className="absolute left-0 top-6 bottom-6 w-1 bg-[#E31C3D] rounded-r-full" />
                                 )}
-
+                                    
                                 <div className="flex gap-5">
                                     {/* Image / Icon */}
                                     <div className="shrink-0 pt-1">

@@ -26,6 +26,7 @@ interface ReviewModalProps {
 
 export default function ReviewModal({ isOpen, onClose, review, currentUserId, onEdit, onDelete }: ReviewModalProps) {
   const REVIEW_MODAL_Z_INDEX = 3000;
+  const REVIEW_NOTIFICATION_Z_INDEX = 3200;
 
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -63,7 +64,7 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
 
   const handleLike = async () => {
     if (!review || !user) {
-      notification.warning({ message: 'กรุณาเข้าสู่ระบบเพื่อกดถูกใจ', placement: 'topRight' });
+      notification.warning({ message: 'กรุณาเข้าสู่ระบบเพื่อกดถูกใจ', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
       return;
     }
     try {
@@ -72,7 +73,7 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
       setLiked(!liked);
       setLikeCount(prev => liked ? prev - 1 : prev + 1);
     } catch {
-      notification.error({ message: 'เกิดข้อผิดพลาด', placement: 'topRight' });
+      notification.error({ message: 'เกิดข้อผิดพลาด', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
     }
   };
 
@@ -85,15 +86,15 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
       // Copy link to clipboard
       const url = `${window.location.origin}/review/${reviewId}`;
       await navigator.clipboard.writeText(url);
-      notification.success({ message: 'คัดลอกลิงก์แล้ว', placement: 'topRight' });
+      notification.success({ message: 'คัดลอกลิงก์แล้ว', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
     } catch {
-      notification.error({ message: 'เกิดข้อผิดพลาดในการแชร์', placement: 'topRight' });
+      notification.error({ message: 'เกิดข้อผิดพลาดในการแชร์', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
     }
   };
 
   const handleReport = (targetType: 'review' | 'comment', targetId: string | number) => {
     if (!user) {
-      notification.warning({ message: 'กรุณาเข้าสู่ระบบเพื่อรายงาน', placement: 'topRight' });
+      notification.warning({ message: 'กรุณาเข้าสู่ระบบเพื่อรายงาน', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
       return;
     }
     modal.confirm({
@@ -106,9 +107,9 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
       onOk: async () => {
         try {
           await reportReviewOrComment(targetType, targetId);
-          notification.success({ message: 'รายงานสำเร็จ ขอบคุณสำหรับการแจ้ง', placement: 'topRight' });
+          notification.success({ message: 'รายงานสำเร็จ ขอบคุณสำหรับการแจ้ง', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
         } catch (error: any) {
-          notification.error({ message: error?.response?.data?.message || 'เกิดข้อผิดพลาดในการรายงาน', placement: 'topRight' });
+          notification.error({ message: error?.response?.data?.message || 'เกิดข้อผิดพลาดในการรายงาน', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
         }
       }
     });
@@ -117,7 +118,7 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
   const handleSubmitComment = async () => {
     if (!review || !commentText.trim()) return;
     if (!user) {
-      notification.warning({ message: 'กรุณาเข้าสู่ระบบเพื่อแสดงความคิดเห็น', placement: 'topRight' });
+      notification.warning({ message: 'กรุณาเข้าสู่ระบบเพื่อแสดงความคิดเห็น', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
       return;
     }
     try {
@@ -125,10 +126,10 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
       const reviewId = review.review_id || review.id;
       await postReviewComment(reviewId, commentText.trim());
       setCommentText('');
-      notification.success({ message: 'แสดงความคิดเห็นสำเร็จ', placement: 'topRight' });
+      notification.success({ message: 'แสดงความคิดเห็นสำเร็จ', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
       loadComments(); // Reload comments
     } catch (error: any) {
-      notification.error({ message: error?.response?.data?.message || 'เกิดข้อผิดพลาด', placement: 'topRight' });
+      notification.error({ message: error?.response?.data?.message || 'เกิดข้อผิดพลาด', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
     } finally {
       setIsSubmitting(false);
     }

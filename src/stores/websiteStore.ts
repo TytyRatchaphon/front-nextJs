@@ -44,6 +44,7 @@ const PERSISTED_SETTINGS_KEYS: Array<keyof WebsiteSettingsData> = [
   'seo_description',
   'app_store',
   'play_store',
+  'book_conditions',
 ];
 
 const pickPersistedSettings = (settings: WebsiteSettingsData | null): WebsiteSettingsData | null => {
@@ -74,7 +75,7 @@ export const useWebsiteStore = create<WebsiteStore>()(
         const now = Date.now();
 
         // 1. Check cache freshness
-        if (!force && (settings && now - lastFetched < 300000)) {
+        if (!force && (settings && now - lastFetched < 60000)) {
           return;
         }
 

@@ -77,9 +77,15 @@ export const BookEpisodesTab = ({ episodesData, bookId, bookDetail, settings, is
                                 <div className="divide-y divide-gray-50">
                                     {group.list.map((episode: any) => {
                                         const regularPrice = Number(episode.coin ?? 0);
-                                        const isFastTicketEpisode = Boolean(episode?.isFastTicket);
-                                        const isFastBuyable = isFastTicketEpisode && Boolean(episode?.isFast_buyable);
-                                        const isFastLocked = isFastTicketEpisode && !Boolean(episode?.isFast_buyable) && !Boolean(episode?.isBuy);
+                                        const early = episode?.early_access || {};
+                                        const hasEarlyAccess = Boolean(early?.fast_ticket || early?.fast_coin || episode?.isFastTicket);
+                                        const canPayByFastTicket = Boolean(early?.fast_ticket ?? episode?.isFastTicket);
+                                        const canPayByFastCoin = hasEarlyAccess;
+                                        const isFastBuyable = hasEarlyAccess && Boolean(early?.isFast_buyable ?? episode?.isFast_buyable);
+                                        const isFastLocked = hasEarlyAccess && !isFastBuyable && !Boolean(episode?.isBuy);
+                                        const rawFastTicketPrice = Number(early?.fastTicketPrice);
+                                        const fastTicketPrice = Number.isFinite(rawFastTicketPrice) && rawFastTicketPrice > 0 ? rawFastTicketPrice : 1;
+                                        const fastCoinPrice = Number(early?.fastCoinPrice ?? regularPrice);
                                         let promoPrice: number | undefined = undefined;
                                         let activePromo: any = null;
 
@@ -109,6 +115,7 @@ export const BookEpisodesTab = ({ episodesData, bookId, bookDetail, settings, is
                                         }
 
                                         const hasPromo = !episode.isBuy && promoPrice !== undefined && promoPrice < regularPrice && promoPrice >= 0;
+                                        const displayRegularPrice = hasPromo ? Number(promoPrice) : regularPrice;
                                         const rpEarn = Number((episode as any)?.rp_campaign?.rp_earn ?? 0);
                                         const rpCampaignEnd = (episode as any)?.rp_campaign?.end_date
                                             ? Date.parse((episode as any).rp_campaign.end_date)
@@ -137,14 +144,12 @@ export const BookEpisodesTab = ({ episodesData, bookId, bookDetail, settings, is
                                                         )}
                                                         {isFastLocked && (
                                                             <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600 whitespace-nowrap">
-                                                                <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={12} height={12} unoptimized />
                                                                 ตอนล่วงหน้า
                                                             </span>
                                                         )}
                                                         {isFastBuyable && (
-                                                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 whitespace-nowrap">
-                                                                <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={12} height={12} unoptimized />
-                                                                FastTicket + เหรียญ
+                                                            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600 whitespace-nowrap">
+                                                                ตอนล่วงหน้า
                                                             </span>
                                                         )}
                                                     </div>
@@ -188,17 +193,19 @@ export const BookEpisodesTab = ({ episodesData, bookId, bookDetail, settings, is
                                                                         const canUseFreecoin = epUseFreecoin !== undefined && epUseFreecoin !== null
                                                                             ? Number(epUseFreecoin) === 1
                                                                             : (bookUseFreecoin !== undefined && bookUseFreecoin !== null ? Number(bookUseFreecoin) === 1 : true);
-                                                                        const allowFreecoin = canUseFreecoin && !isFastTicketEpisode;
+                                                                        const allowFreecoin = canUseFreecoin && !hasEarlyAccess;
 
                                                                         return (
                                                                             <>
                                                                                 {allowFreecoin && (
                                                                                     <Image src={settings?.freecoin || '/images/money-bag.png'} alt="freecoin" width={16} height={16} unoptimized />
                                                                                 )}
-                                                                                {isFastTicketEpisode && (
+                                                                                {canPayByFastTicket && !episode.isBuy && (
                                                                                     <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={16} height={16} unoptimized />
                                                                                 )}
-                                                                                <Image src={settings?.coin || '/images/e-coin.png'} alt="coin" width={16} height={16} unoptimized />
+                                                                                {(canPayByFastCoin || !hasEarlyAccess) && (
+                                                                                    <Image src={settings?.coin || '/images/e-coin.png'} alt="coin" width={16} height={16} unoptimized />
+                                                                                )}
                                                                             </>
                                                                         );
                                                                     })(settings)}
@@ -206,6 +213,37 @@ export const BookEpisodesTab = ({ episodesData, bookId, bookDetail, settings, is
                                                                         <span className="text-xs font-semibold text-gray-500">ยังซื้อไม่ได้</span>
                                                                     ) : episode.isBuy ? (
                                                                         <span className="text-sm font-semibold text-gray-400 line-through">{regularPrice}</span>
+                                                                    ) : hasEarlyAccess && isFastBuyable ? (
+                                                                        <div className="flex items-center gap-2 justify-end text-xs font-medium">
+                                                                            <div className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-amber-700">
+                                                                                <span>(</span>
+                                                                                {canPayByFastTicket && (
+                                                                                    <>
+                                                                                        <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={14} height={14} unoptimized />
+                                                                                        <span className="text-sm font-semibold">{fastTicketPrice}</span>
+                                                                                    </>
+                                                                                )}
+                                                                                {canPayByFastTicket && canPayByFastCoin && <span className="text-gray-400">/</span>}
+                                                                                {canPayByFastCoin && (
+                                                                                    <>
+                                                                                        <Image src={settings?.coin || '/images/e-coin.png'} alt="fast coin" width={14} height={14} unoptimized />
+                                                                                 <span className="text-sm font-semibold">{fastCoinPrice}</span>
+                                                                                     </>
+                                                                                 )}
+                                                                                 <span>)</span>
+                                                                             </div>
+                                                                             <span className="text-gray-400">+</span>
+                                                                            <div className="inline-flex items-center gap-1 text-orange-600">
+                                                                                <Image src={settings?.coin || '/images/e-coin.png'} alt="coin" width={14} height={14} unoptimized />
+                                                                                {((episode as any)?.use_freecoin === 1 || ((episode as any)?.use_freecoin == null && (bookDetail as any)?.use_freecoin === 1)) && (
+                                                                                    <Image src={settings?.freecoin || '/images/money-bag.png'} alt="freecoin" width={14} height={14} unoptimized />
+                                                                                )}
+                                                                                <span className="text-sm font-semibold">{displayRegularPrice}</span>
+                                                                                {hasPromo && (
+                                                                                    <span className="text-xs text-gray-400 line-through decoration-gray-300">{regularPrice}</span>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
                                                                     ) : hasPromo ? (
                                                                         <>
                                                                             <span className="text-sm font-semibold text-rose-600">{promoPrice}</span>

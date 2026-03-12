@@ -46,6 +46,17 @@ export const initialUserProfile: UserProfileForm = {
   aka_id: null,
 };
 
+const pickPersistedProfileForm = (form: UserProfileForm): Partial<UserProfileForm> => ({
+  gender: form.gender,
+  cat1: form.cat1,
+  cat2: form.cat2,
+  des: form.des,
+  facebook: form.facebook,
+  twitter: form.twitter,
+  frame_id: form.frame_id,
+  aka_id: form.aka_id,
+});
+
 export const useFormStore = create<FormState>()(
   persist(
     (set) => ({
@@ -74,8 +85,15 @@ export const useFormStore = create<FormState>()(
     }),
     { 
       name: 'form-storage',
+      version: 1,
+      migrate: (persistedState) => {
+        const state = persistedState as { userProfileForm?: UserProfileForm } | undefined;
+        return {
+          userProfileForm: state?.userProfileForm ? { ...initialUserProfile, ...pickPersistedProfileForm(state.userProfileForm) } : initialUserProfile,
+        };
+      },
       partialize: (state) => ({ 
-        userProfileForm: state.userProfileForm 
+        userProfileForm: pickPersistedProfileForm(state.userProfileForm) 
       })
     }
   )

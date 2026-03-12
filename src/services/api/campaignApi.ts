@@ -2,6 +2,37 @@
 import apiClient from "../apiClient";
 import type { CampaignDetailResponse, CampaignDetailData, CampaignDiscount, PackCampaignDetail } from "@/types/api";
 
+export interface CampaignData {
+  cp_id: number;
+  name: string;
+  detail: string;
+  start_date: string;
+  end_date: string;
+  img_banner: string;
+  img_banner2: string;
+  img_shelf: string;
+  color_bg: string;
+  img_card: string[];
+  status: string;
+  ref_id: string;
+}
+
+export const fetchCampaigns = async (): Promise<CampaignData[]> => {
+  const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/campaigns`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch campaigns');
+  }
+
+  const result = await response.json();
+  if (result.code === 200 && result.data) {
+    return result.data;
+  }
+
+  throw new Error(result.message || 'Failed to load data');
+};
+
 export const fetchPackCampaignDetail = async (id: string): Promise<PackCampaignDetail | null> => {
   try {
     const response = await apiClient.get<{ code: number; data: PackCampaignDetail }>(`/pack-campaign/${id}`);

@@ -15,8 +15,8 @@ import GifLoader from '@/components/utility/GifLoader';
 // --- 1. Constant Data ---
 const novelType = [
     { label: 'นิยายแปล', value: 'tran', color: 'bg-rose-400' },
-    // { label: 'นิยายแต่ง', value: 'write', color: 'bg-indigo-400' },
-    // { label: 'แฟนฟิค', value: 'fanfic', color: 'bg-teal-400' },
+    { label: 'นิยายแต่ง', value: 'write', color: 'bg-indigo-400' },
+    { label: 'แฟนฟิค', value: 'fanfic', color: 'bg-teal-400' },
 ];
 
 // --- 2. Interfaces ---
@@ -24,10 +24,6 @@ interface Category {
     id: number | string;
     name: string;
     order_by: number | string;
-}
-
-interface WebsiteData {
-    book_conditions: string;
 }
 
 interface BookFormValues {
@@ -48,6 +44,7 @@ interface BookFormValues {
 
 import { useRouter } from "next/navigation";
 import apiClient from '@/services/apiClient';
+import { useWebsiteStore } from '@/stores/websiteStore';
 
 // ... [Imports]
 
@@ -67,11 +64,10 @@ const NewBook: React.FC = () => {
 
     // State สำหรับเก็บข้อมูลที่เคยอยู่ใน Context
     const [category, setCategory] = useState<Category[]>([]);
-    const [website, setWebsite] = useState<WebsiteData | null>(null);
-
     const [category1, setCategory1] = useState<Category[]>([]);
     const [category2, setCategory2] = useState<Category[]>([]);
     const [acceptBookCon, setAcceptBookCon] = useState<boolean>(false);
+    const { settings: website, fetchSettings } = useWebsiteStore();
 
     // Configs
     const IMAGE_BOOK_URL = process.env.NEXT_PUBLIC_IMAGE_BOOK_URL as string;
@@ -112,18 +108,15 @@ const NewBook: React.FC = () => {
                 };
 
                 // ยิง API
-                const [catRes, webRes] = await Promise.all([
-                    apiClient.get(`/category`, config),
-                    apiClient.get(`/get_website`, config)
+                await fetchSettings();
+                const [catRes] = await Promise.all([
+                    apiClient.get(`/category`, config)
                 ]);
 
                 // ถ้าผ่านจะมาทำงานตรงนี้
 
                 const cats = catRes.data?.data || [];
-                const webData = webRes.data?.data || {};
-
                 setCategory(cats);
-                setWebsite(webData);
 
                 if (cats.length > 0) {
                     const newCate = cats.filter((item: Category) => {

@@ -9,6 +9,7 @@ import React, { useEffect } from 'react';
 import Image from 'next/image';
 import NotificationList from './NotificationList';
 import { useSocket } from '@/providers/SocketProvider';
+import { QUERY_CONFIG } from '@/constants/query';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchRecentNotifications, fetchActiveTypes, fetchActiveCategories } from '@/services/api/miscApi';
 import { fetchPromotingGroups } from '@/services/api/campaignApi';
@@ -43,11 +44,12 @@ function Navbar() {
   const queryClient = useQueryClient();
   const { socket, isConnected } = useSocket();
   const { notification: api } = App.useApp();
-  const { data: notifications } = useQuery({
+  const { data: notifications = [] } = useQuery({
     queryKey: ['recentNotifications'],
-    queryFn: fetchRecentNotifications,
-    refetchInterval: 30000,
+    queryFn: () => fetchRecentNotifications('all'),
+    refetchOnWindowFocus: false,
     enabled: !!isLoggedIn && !!user, // Only fetch if logged in
+    staleTime: 30000,
   });
   
   const { data: promotingGroups } = useQuery({
@@ -67,7 +69,9 @@ function Navbar() {
     queryKey: ['cartItems'],
     queryFn: fetchCartItems,
     enabled: !!isLoggedIn,
-    staleTime: 1000 * 60, // 1 minute
+    staleTime: QUERY_CONFIG.CART_STALE_TIME,
+    gcTime: QUERY_CONFIG.CART_GC_TIME,
+    refetchOnWindowFocus: false,
   });
 
   const cartItemCount = React.useMemo(() => {
@@ -83,7 +87,7 @@ function Navbar() {
     gcTime: 2 * 60 * 60 * 1000, // 2 hours
   });
 
-  const unreadCount = notifications ? notifications.filter(n => n.readed === 'N').length : 0;
+  const unreadCount = notifications.filter((n) => n.readed === 'N').length;
 
   const { data: rankData } = useQuery({
     queryKey: ['navbarRankProfile'],

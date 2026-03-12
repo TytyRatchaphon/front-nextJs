@@ -32,14 +32,16 @@ export default function AchievementPageClient() {
   const { data, isLoading } = useQuery({
     queryKey: ['achievements'],
     queryFn: fetchAchievements,
-    refetchOnMount: 'always',
-    staleTime: 0,
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: detail, isLoading: detailLoading } = useQuery({
     queryKey: ['achievementDetail', selectedId],
     queryFn: () => fetchAchievementDetail(selectedId!),
     enabled: !!selectedId,
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   const summary = data?.summary;
@@ -201,7 +203,7 @@ export default function AchievementPageClient() {
                       className="w-12 h-12 rounded-full flex items-center justify-center shadow-sm flex-shrink-0"
                       style={{ backgroundColor: `${info.color}15`, color: info.color }}
                     >
-                      {info.icon ? React.cloneElement(info.icon as React.ReactElement, { size: 24 }) : <Target size={24} />}
+                      {info.icon ? React.cloneElement(info.icon as React.ReactElement<{ className?: string }>, { className: 'w-6 h-6' }) : <Target size={24} />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-gray-900 truncate group-hover:text-[#E33527] transition-colors">

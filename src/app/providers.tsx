@@ -23,8 +23,12 @@ export default function TanstackProvider({ children }: { children: React.ReactNo
 
   // Initial fetch for website settings
   React.useEffect(() => {
-
     useWebsiteStore.getState().fetchSettings();
+    try {
+      localStorage.removeItem('searchHistory');
+      localStorage.removeItem('search_history');
+    } catch {
+    }
   }, []);
 
   return (

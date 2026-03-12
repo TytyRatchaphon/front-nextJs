@@ -1,5 +1,6 @@
 import React from 'react';
-import Campaign, { fetchCampaigns } from '@/features/campaign/Campaign';
+import Campaign from '@/features/campaign/Campaign';
+import { fetchCampaigns } from '@/services/apiServices';
 
 export const revalidate = 60; // Cache for 60 seconds
 

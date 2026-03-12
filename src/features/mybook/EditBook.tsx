@@ -12,6 +12,7 @@ import UploadCropBook from "@/components/upload/UploadBook";
 import UploadCropBookBanner from "@/components/upload/UploadCropBookBanner";
 import apiClient from "@/services/apiClient";
 import GifLoader from '@/components/utility/GifLoader';
+import { useWebsiteStore } from '@/stores/websiteStore';
 
 // --- Constant Data ---
 const novelType = [
@@ -29,10 +30,6 @@ interface Category {
     id: number | string;
     name: string;
     order_by: number | string;
-}
-
-interface WebsiteData {
-    book_conditions: string;
 }
 
 interface BookFormValues {
@@ -71,12 +68,11 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
     const [imagePreviewBanner, setImagePreviewBanner] = useState<string | null>(null);
 
     const [category, setCategory] = useState<Category[]>([]);
-    const [website, setWebsite] = useState<WebsiteData | null>(null);
-
     const [category1, setCategory1] = useState<Category[]>([]);
     const [category2, setCategory2] = useState<Category[]>([]);
     const [acceptBookCon, setAcceptBookCon] = useState<boolean>(true); // Default true สำหรับหน้า Edit
     const [initialStatus, setInitialStatus] = useState<string>('');
+    const { settings: website, fetchSettings } = useWebsiteStore();
 
     // Configs
     const ACCESS_TOKEN = process.env.NEXT_PUBLIC_ACCESS_TOKEN || '';
@@ -100,17 +96,15 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
 
             try {
                 // Fetch 3 API พร้อมกัน
-                const [catRes, webRes, bookRes] = await Promise.all([
+                await fetchSettings();
+                const [catRes, bookRes] = await Promise.all([
                     apiClient.get(`/category`, config),
-                    apiClient.get(`/get_website`, config),
                     apiClient.get(`/user/mybook/${finalBookId}`, config)
                 ]);
 
                 // 1. จัดการ Category
                 const cats = catRes.data?.data || [];
-                const webData = webRes.data?.data || {};
                 setCategory(cats);
-                setWebsite(webData);
 
                 if (cats.length > 0) {
                     const newCate = cats.filter((item: Category) => {

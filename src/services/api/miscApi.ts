@@ -150,6 +150,8 @@ export interface NotificationData {
   NotiType: NotificationType;
 }
 
+export type NotificationTab = 'all' | 'system' | 'book' | 'comment';
+
 export interface RecentNotificationsResponse {
   code: number;
   status: string;
@@ -159,9 +161,11 @@ export interface RecentNotificationsResponse {
   };
 }
 
-export const fetchRecentNotifications = async (): Promise<NotificationData[]> => {
+export const fetchRecentNotifications = async (tab: NotificationTab = 'all'): Promise<NotificationData[]> => {
   try {
-    const response = await apiClient.get<RecentNotificationsResponse>('/user/notifications/recent/unread');
+    const response = await apiClient.get<RecentNotificationsResponse>('/user/notifications/recent/unread', {
+      params: { tab }
+    });
 
     if (response.data && response.data.data && Array.isArray(response.data.data.recent_notifications)) {
       return response.data.data.recent_notifications;
@@ -173,10 +177,10 @@ export const fetchRecentNotifications = async (): Promise<NotificationData[]> =>
   }
 };
 
-export const fetchAllNotifications = async (page: number = 1, limit: number = 20): Promise<{ notifications: NotificationData[], pagination?: any }> => {
+export const fetchAllNotifications = async (page: number = 1, limit: number = 20, tab: NotificationTab = 'all'): Promise<{ notifications: NotificationData[], pagination?: any }> => {
   try {
     const response = await apiClient.get('/user/notifications', {
-      params: { page, limit }
+      params: { page, limit, tab }
     });
 
     if (response.data && response.data.data) {
@@ -202,9 +206,11 @@ export const markNotificationAsRead = async (notificationId: number) => {
   }
 };
 
-export const markAllNotificationsAsRead = async () => {
+export const markAllNotificationsAsRead = async (tab: NotificationTab = 'all') => {
   try {
-    const response = await apiClient.patch('/user/notifications/read-all');
+    const response = await apiClient.patch('/user/notifications/read-all', null, {
+      params: { tab }
+    });
     return response.data;
   } catch {
     return null;

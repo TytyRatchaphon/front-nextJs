@@ -17,7 +17,7 @@ const bgColors = [
     { key: "dark", label: "มืด", bg: "bg-[#1a1a1a]", paper: "bg-[#1a1a1a]", text: "text-[#d1d5db]", border: "#333333", sliderColor: "#333333" },
 ];
 
-export function useReadingTheme(contentRef: React.RefObject<HTMLElement>) {
+export function useReadingTheme(contentRef: React.RefObject<HTMLElement | null>) {
     const [fontSize, setFontSize] = useState<number>(20);
     const [fontFamily, setFontFamily] = useState("sarabun");
     const [bgColor, setBgColor] = useState("sepia");

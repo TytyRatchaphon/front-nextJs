@@ -55,6 +55,10 @@ export const QUERY_CONFIG = {
   // Cache times
   CACHE_TIME_DEFAULT: 300_000,   // 5 minutes
   CACHE_TIME_LONG: 600_000,      // 10 minutes
+
+  // Cart
+  CART_STALE_TIME: 60_000,
+  CART_GC_TIME: 300_000,
 } as const;
 
 /**

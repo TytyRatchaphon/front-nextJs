@@ -6,6 +6,9 @@ import { useAuthStore } from '@/stores/authStore';
 import Cookies from 'js-cookie';
 import { parseJwtToken } from '@/utils/jwtParser';
 
+const isSessionIdUnknownError = (message: string | undefined) =>
+  typeof message === 'string' && message.toLowerCase().includes('session id unknown');
+
 interface SocketContextType {
   socket: Socket | null;
   isConnected: boolean;
@@ -65,13 +68,13 @@ export default function SocketProvider({
 
     // 2. Initialize Socket
     const socketInstance = io(socketUrl, {
-      transports: ['polling', 'websocket'], 
+      transports: ['websocket'], 
       reconnection: true,
-      reconnectionAttempts: Infinity, 
+      reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       timeout: 20000,
-      forceNew: true, // Ensure a fresh connection
+      forceNew: false,
       auth: (cb) => {
         // ⚡ Dynamic Auth: Fetch latest token on every connection/reconnection attempt
         let latestToken = useAuthStore.getState().token;
@@ -92,13 +95,15 @@ export default function SocketProvider({
 
     socketInstance.on('disconnect', (reason) => {
       setIsConnected(false);
-      if (reason === "io server disconnect") {
-        socketInstance.connect();
-      }
+      if (reason === "io server disconnect") socketInstance.connect();
     });
 
-    socketInstance.on('connect_error', () => {
-        // console.log('Socket connect error:', err.message);
+    socketInstance.on('connect_error', (err) => {
+        setIsConnected(false);
+        if (isSessionIdUnknownError(err?.message)) {
+          socketInstance.io.opts.reconnection = false;
+          socketInstance.disconnect();
+        }
     });
 
     // Handle force_refresh event
@@ -128,28 +133,28 @@ export default function SocketProvider({
     return () => {
       socketInstance.disconnect();
     };
-  }, [authToken, resolvedUserId, fullname, user]);
+  }, [authToken, resolvedUserId, fullname]);
 
   // Handle visibility separate from socket creation
   useEffect(() => {
       if (!socket) return;
 
-      // Periodic Heartbeat to handle idle disconnects
-      const heartbeatInterval = setInterval(() => {
-          if (!socket.connected) {
-               const resolvedUserId = user?.user_id || (user as any)?.id || (user as any)?.userId;
-               if (authToken && !resolvedUserId) return; // Don't reconnect if ID is missing
-
-               socket.connect();
-          } else {
-               // Optional: Log healthy heartbeat for debugging (user requested logs)
-          }
-      }, 15000); // Check every 15 seconds
-
-      return () => {
-          clearInterval(heartbeatInterval);
+      const onVisibilityChange = () => {
+        if (document.visibilityState === 'visible' && !socket.connected) {
+          const latestUser = useAuthStore.getState().user as any;
+          const latestToken = useAuthStore.getState().token || parseJwtToken(Cookies.get('token')) || null;
+          const latestUserId = latestUser?.user_id || latestUser?.id || latestUser?.userId;
+          if (latestToken && !latestUserId) return;
+          if ((socket.io.opts.reconnection ?? true) === false) return;
+          socket.connect();
+        }
       };
-  }, [socket, authToken, user]);
+
+      document.addEventListener('visibilitychange', onVisibilityChange);
+      return () => {
+          document.removeEventListener('visibilitychange', onVisibilityChange);
+      };
+  }, [socket]);
 
   // 🔧 Auto-heal: Recovery for missing user_id in stale localStorage data
   useEffect(() => {

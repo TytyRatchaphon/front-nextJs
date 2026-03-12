@@ -14,6 +14,7 @@ import GifLoader from '@/components/utility/GifLoader';
 import SuccessAnimation from '@/components/utility/SuccessAnimation';
 import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill';
+import FastTicketPill from '@/components/utility/FastTicketPill';
 import { CountdownTimer as CommonCountdownTimer } from "@/components/common/CountdownTimer";
 import { useWebsiteStore } from '@/stores/websiteStore';
 import "jwt-decode";
@@ -169,6 +170,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [showSuccess, setShowSuccess] = useState(false);
   const [payWith, setPayWith] = useState<'coin' | 'freecoin'>('coin');
+  const [fastPayWith, setFastPayWith] = useState<'coin' | 'fast_ticket'>('fast_ticket');
 
   // Fetch episodes when modal opens
   const queryResult = useQuery<{ groups: EpisodeGroup[] }>({
@@ -195,6 +197,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       setExpandedGroups(map);
     }
     setPayWith('coin');
+    setFastPayWith('fast_ticket');
     setIsModalOpen(true);
   };
 
@@ -280,6 +283,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   const [buyAllIds, setBuyAllIds] = useState<number[]>([]);
   const [buyAllTotal, setBuyAllTotal] = useState(0);
   const [buyAllFastTicketCount, setBuyAllFastTicketCount] = useState(0);
+  const [buyAllEpisodeMap, setBuyAllEpisodeMap] = useState<Record<number, any>>({});
 
   const handleBuyAllClick = async () => {
     if (buyLoading) return;
@@ -297,6 +301,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       const epsData: any = await fetchBookEpisodes(String(bookId));
       const groups = epsData?.groups ?? [];
       const selectableIds: number[] = [];
+      const epMap: Record<number, any> = {};
       let total = 0;
       let fastTicketCount = 0;
       for (const g of groups) {
@@ -304,9 +309,11 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
           const ep = g.list[index];
           if (isEpisodeSequentiallyUnlocked(ep, index, g.list)) {
             selectableIds.push(Number(ep.ep_id));
-            const { finalPrice } = resolveEpisodePrice(ep);
-            total += finalPrice;
-            if (isEpisodeFastTicket(ep)) fastTicketCount += 1;
+            epMap[Number(ep.ep_id)] = ep;
+            total += getEpisodePriceByMethod(ep, 'coin');
+            if (canEpisodePayWithFastTicket(ep)) {
+              fastTicketCount += Number(getEpisodePriceByMethod(ep, 'fast_ticket') || 0);
+            }
           }
         }
       }
@@ -319,6 +326,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       }
 
       setBuyAllIds(selectableIds);
+      setBuyAllEpisodeMap(epMap);
       setBuyAllTotal(total);
       setBuyAllFastTicketCount(fastTicketCount);
       setPayWith('coin'); // Default to coin
@@ -336,9 +344,11 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     setSelectedEpisodeIds([]);
   };
 
-  const toggleEpisode = (epId: number) => {
+  const toggleEpisode = (epId: number | string) => {
+    const normalizedId = Number(epId);
+    if (!Number.isFinite(normalizedId)) return;
     setSelectedEpisodeIds((prev) =>
-      prev.includes(epId) ? prev.filter((id) => id !== epId) : [...prev, epId]
+      prev.includes(normalizedId) ? prev.filter((id) => id !== normalizedId) : [...prev, normalizedId]
     );
   };
 
@@ -353,7 +363,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     // select all selectable episodes in group, or deselect if all already selected
     const selectable = group.list
       .filter((ep: any, index: number) => isEpisodeSequentiallyUnlocked(ep, index, group.list))
-      .map((ep: any) => ep.ep_id);
+      .map((ep: any) => Number(ep.ep_id));
     const allSelected = selectable.every((id: number) => selectedEpisodeIds.includes(id));
     if (allSelected) {
       setSelectedEpisodeIds((prev) => prev.filter((id) => !selectable.includes(id)));
@@ -403,9 +413,58 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     return { regularPrice, promoPrice, hasPromo, finalPrice, activePromo };
   };
 
-  const isEpisodeFastTicket = (episode: any) => Boolean(episode?.isFastTicket);
-  const isEpisodeFastLocked = (episode: any) => isEpisodeFastTicket(episode) && !Boolean(episode?.isFast_buyable) && !Boolean(episode?.isBuy);
-  const isEpisodeBaseSelectable = (episode: any) => Number(episode?.coin ?? 0) > 0 && !episode?.isBuy;
+  const getEarlyAccess = (episode: any) => {
+    const early = episode?.early_access || {};
+    const fastTicket = Boolean(early?.fast_ticket ?? episode?.isFastTicket);
+    const fastCoin = Boolean(early?.fast_coin);
+    const isBuyable = Boolean(early?.isFast_buyable ?? episode?.isFast_buyable);
+    const rawTicketPrice = Number(early?.fastTicketPrice);
+    const rawCoinPrice = Number(early?.fastCoinPrice ?? episode?.coin ?? 0);
+    return {
+      fastTicket,
+      fastCoin,
+      isBuyable,
+      fastTicketPrice: Number.isFinite(rawTicketPrice) && rawTicketPrice > 0 ? rawTicketPrice : null,
+      fastCoinPrice: Number.isFinite(rawCoinPrice) && rawCoinPrice >= 0 ? rawCoinPrice : Number(episode?.coin ?? 0),
+      isEarlyAccess: fastTicket || fastCoin,
+    };
+  };
+
+  const isEpisodeFastTicket = (episode: any) => getEarlyAccess(episode).isEarlyAccess;
+  const isEpisodeFastLocked = (episode: any) => {
+    const early = getEarlyAccess(episode);
+    return early.isEarlyAccess && !early.isBuyable && !Boolean(episode?.isBuy);
+  };
+  const canEpisodePayWithCoin = (_episode: any) => true;
+  const canEpisodePayWithFastTicket = (episode: any) => {
+    const early = getEarlyAccess(episode);
+    return early.isEarlyAccess && Boolean(early.fastTicket);
+  };
+  const canEpisodePayWithFreecoin = (episode: any) => {
+    const epUseFreecoin = episode?.use_freecoin;
+    const canUseFreecoin = epUseFreecoin !== undefined && epUseFreecoin !== null
+      ? Number(epUseFreecoin) === 1
+      : Number(book?.use_freecoin ?? 0) === 1;
+    return canUseFreecoin;
+  };
+  const getEpisodePriceByMethod = (episode: any, method: 'coin' | 'freecoin' | 'fast_ticket') => {
+    const early = getEarlyAccess(episode);
+    const { finalPrice } = resolveEpisodePrice(episode);
+    if (method === 'fast_ticket') {
+      if (early.fastTicket) return early.fastTicketPrice ?? 1;
+      return finalPrice;
+    }
+    if (method === 'coin' && early.isEarlyAccess) return early.fastCoinPrice;
+    if (method === 'freecoin' && early.isEarlyAccess) return early.fastCoinPrice;
+    return finalPrice;
+  };
+  const isEpisodeBaseSelectable = (episode: any) => {
+    if (episode?.isBuy) return false;
+    const hasNormalCoin = Number(episode?.coin ?? 0) > 0;
+    const early = getEarlyAccess(episode);
+    const hasEarlyPayMethod = early.isEarlyAccess && early.isBuyable && (early.fastTicket || early.fastCoin);
+    return hasNormalCoin || hasEarlyPayMethod;
+  };
   const isEpisodeSelectable = (episode: any) => isEpisodeBaseSelectable(episode) && !isEpisodeFastLocked(episode);
   const isPrevEpisodeUnlocking = (prevEpisode: any) => {
     if (!prevEpisode) return false;
@@ -421,21 +480,66 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   };
 
   const selectedSummary = useMemo(() => {
-    if (!episodesData?.groups) return { count: 0, total: 0, fastTicketCount: 0 };
-    let total = 0;
-    let fastTicketCount = 0;
-      for (const g of episodesData.groups) {
-      for (let index = 0; index < g.list.length; index += 1) {
-        const ep = g.list[index];
-        if (selectedEpisodeIds.includes(ep.ep_id) && isEpisodeSequentiallyUnlocked(ep, index, g.list)) {
-          const { finalPrice } = resolveEpisodePrice(ep);
-          total += finalPrice;
-          if (isEpisodeFastTicket(ep)) fastTicketCount += 1;
-        }
+    if (!episodesData?.groups) return { count: 0, total: 0, hasEarlyAccess: false, fastTicketCount: 0, fastTicketRequiredTotal: 0, earlyAccessCoinTotal: 0, baseCoinTotal: 0, coinTotal: 0, freecoinTotal: 0, fastTicketTotal: 0, canUseCoin: true, canUseFreecoin: false, canUseFastTicket: false };
+    const episodeMap = new Map<number, any>();
+    for (const g of episodesData.groups) {
+      for (const ep of g.list) {
+        episodeMap.set(Number(ep.ep_id), ep);
       }
     }
-    return { count: selectedEpisodeIds.length, total, fastTicketCount };
-  }, [selectedEpisodeIds, episodesData]);
+    const selectedEpisodes = selectedEpisodeIds
+      .map((id) => episodeMap.get(Number(id)))
+      .filter(Boolean) as any[];
+
+    if (selectedEpisodes.length === 0) {
+      return { count: 0, total: 0, hasEarlyAccess: false, fastTicketCount: 0, fastTicketRequiredTotal: 0, earlyAccessCoinTotal: 0, baseCoinTotal: 0, coinTotal: 0, freecoinTotal: 0, fastTicketTotal: 0, canUseCoin: true, canUseFreecoin: false, canUseFastTicket: false };
+    }
+
+    let coinTotal = 0;
+    let freecoinTotal = 0;
+    let fastTicketTotal = 0;
+    let earlyAccessCoinTotal = 0;
+    let baseCoinTotal = 0;
+    let fastTicketCount = 0;
+    let canUseCoin = true;
+    let canUseFreecoin = true;
+    let canUseFastTicket = true;
+    let fastTicketRequiredTotal = 0;
+    for (const ep of selectedEpisodes) {
+      const early = getEarlyAccess(ep);
+      const { finalPrice } = resolveEpisodePrice(ep);
+      coinTotal += getEpisodePriceByMethod(ep, 'coin');
+      freecoinTotal += getEpisodePriceByMethod(ep, 'freecoin');
+      fastTicketTotal += getEpisodePriceByMethod(ep, 'fast_ticket');
+      if (early.isEarlyAccess) earlyAccessCoinTotal += getEpisodePriceByMethod(ep, 'coin');
+      baseCoinTotal += finalPrice;
+      if (canEpisodePayWithFastTicket(ep)) {
+        fastTicketCount += 1;
+        fastTicketRequiredTotal += Number(getEpisodePriceByMethod(ep, 'fast_ticket') || 0);
+      }
+      canUseCoin = canUseCoin && canEpisodePayWithCoin(ep);
+      canUseFreecoin = canUseFreecoin && canEpisodePayWithFreecoin(ep);
+      canUseFastTicket = canUseFastTicket && canEpisodePayWithFastTicket(ep);
+    }
+    const totalByMethod = payWith === 'freecoin'
+      ? freecoinTotal + (fastPayWith === 'coin' ? earlyAccessCoinTotal : 0)
+      : baseCoinTotal + (fastPayWith === 'coin' ? earlyAccessCoinTotal : 0);
+    return {
+      count: selectedEpisodes.length,
+      total: totalByMethod,
+      hasEarlyAccess: fastTicketCount > 0 || earlyAccessCoinTotal > 0,
+      fastTicketCount,
+      fastTicketRequiredTotal,
+      earlyAccessCoinTotal,
+      baseCoinTotal,
+      coinTotal,
+      freecoinTotal,
+      fastTicketTotal,
+      canUseCoin,
+      canUseFreecoin,
+      canUseFastTicket,
+    };
+  }, [selectedEpisodeIds, episodesData, payWith, fastPayWith]);
 
   const allSelectableIds = useMemo(() => {
     if (!episodesData?.groups) return [] as number[];
@@ -451,6 +555,50 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
 
   const allSelected = allSelectableIds.length > 0 && allSelectableIds.every((id) => selectedEpisodeIds.includes(id));
 
+  const getEpisodeById = (epId: number) => {
+    if (episodesData?.groups) {
+      for (const g of episodesData.groups) {
+        const found = g.list.find((ep: any) => Number(ep.ep_id) === Number(epId));
+        if (found) return found;
+      }
+    }
+    return buyAllEpisodeMap[Number(epId)] || null;
+  };
+
+  const buildBuyEpsPayload = (epIds: number[], method: 'coin' | 'freecoin', earlyMethod: 'coin' | 'fast_ticket') => {
+    const payload: any = {
+      eps: epIds.map((id) => Number(id)),
+      payWith: method,
+    };
+
+    let hasEarly = false;
+    for (const id of epIds) {
+      const ep = getEpisodeById(id);
+      if (!ep) continue;
+      const early = getEarlyAccess(ep);
+      if (!early.isEarlyAccess) continue;
+      hasEarly = true;
+    }
+
+    if (hasEarly) {
+      if (earlyMethod === 'fast_ticket') {
+        payload.fastPayWith = ['ticket'];
+      } else {
+        payload.fastPayWith = ['coin'];
+      }
+    }
+
+    return payload;
+  };
+
+  const getTotalForEpisodeIds = (epIds: number[], method: 'coin' | 'freecoin' | 'fast_ticket') => {
+    return epIds.reduce((sum, id) => {
+      const ep = getEpisodeById(id);
+      if (!ep) return sum;
+      return sum + getEpisodePriceByMethod(ep, method);
+    }, 0);
+  };
+
   const toggleSelectAll = () => {
     if (allSelected) {
       setSelectedEpisodeIds((prev) => prev.filter((id) => !allSelectableIds.includes(id)));
@@ -464,15 +612,18 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   const { settings } = useWebsiteStore()
 
   useEffect(() => {
-    if (selectedSummary.fastTicketCount > 0 && payWith !== 'coin') {
-      setPayWith('coin');
+    if (selectedSummary.count === 0) return;
+    if (payWith === 'freecoin' && !selectedSummary.canUseFreecoin) {
+      if (selectedSummary.canUseCoin) setPayWith('coin');
+      return;
     }
-  }, [selectedSummary.fastTicketCount, payWith]);
+    if (fastPayWith === 'fast_ticket' && !selectedSummary.canUseFastTicket) {
+      setFastPayWith('coin');
+    }
+  }, [selectedSummary, payWith, fastPayWith]);
 
   useEffect(() => {
-    if (buyAllFastTicketCount > 0 && payWith !== 'coin') {
-      setPayWith('coin');
-    }
+    if (buyAllFastTicketCount > 0 && !selectedSummary.canUseFastTicket) setFastPayWith('coin');
   }, [buyAllFastTicketCount, payWith]);
 
   useEffect(() => {
@@ -495,6 +646,114 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     }
   }, [episodesData, selectedEpisodeIds]);
 
+  useEffect(() => {
+    if (buyAllIds.length === 0) return;
+    setBuyAllTotal(getTotalForEpisodeIds(buyAllIds, payWith));
+  }, [buyAllIds, payWith, episodesData]);
+
+  const renderMixedPriceSummary = (summary: {
+    fastTicketRequiredTotal: number;
+    earlyAccessCoinTotal: number;
+    baseCoinTotal: number;
+    canUseFreecoin: boolean;
+  }) => {
+    if (summary.fastTicketRequiredTotal <= 0) return null;
+
+    return (
+      <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-gray-700">
+        <div className="flex items-center gap-1 text-amber-700">
+          <span>{summary.fastTicketRequiredTotal}</span>
+          <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={14} height={14} unoptimized />
+        </div>
+        <span className="text-gray-400">/</span>
+        <div className="flex items-center gap-1 text-orange-600">
+          <span>{summary.earlyAccessCoinTotal}</span>
+          <Image src={settings?.coin || '/images/e-coin.png'} alt="coin" width={14} height={14} unoptimized />
+        </div>
+        {summary.baseCoinTotal > 0 && (
+          <>
+            <span className="text-gray-400">+</span>
+            <div className="flex items-center gap-1 text-red-600">
+              <span>{summary.baseCoinTotal}</span>
+              <Image src={settings?.coin || '/images/e-coin.png'} alt="coin" width={14} height={14} unoptimized />
+              {summary.canUseFreecoin && (
+                <Image src={settings?.freecoin || '/images/money-bag.png'} alt="freecoin" width={14} height={14} unoptimized />
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  const renderCompactEarlyAccessSummary = (summary: {
+    fastTicketRequiredTotal: number;
+    earlyAccessCoinTotal: number;
+    baseCoinTotal: number;
+    canUseFreecoin: boolean;
+  }) => {
+    if (summary.fastTicketRequiredTotal <= 0) return null;
+
+    return (
+      <div className="flex flex-wrap items-center justify-center gap-2 text-base font-semibold">
+        <div className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-amber-700">
+          <span>(</span>
+          <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={16} height={16} unoptimized />
+          <span>{summary.fastTicketRequiredTotal}</span>
+          <span className="text-gray-400">/</span>
+          <Image src={settings?.coin || '/images/e-coin.png'} alt="fast coin" width={16} height={16} unoptimized />
+          <span>{summary.earlyAccessCoinTotal}</span>
+          <span>)</span>
+        </div>
+        {summary.baseCoinTotal > 0 && (
+          <>
+            <span className="text-gray-400">+</span>
+            <div className="inline-flex items-center gap-1 text-orange-600">
+              <Image src={settings?.coin || '/images/e-coin.png'} alt="coin" width={16} height={16} unoptimized />
+              {summary.canUseFreecoin && (
+                <Image src={settings?.freecoin || '/images/money-bag.png'} alt="freecoin" width={16} height={16} unoptimized />
+              )}
+              <span>{summary.baseCoinTotal}</span>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  const renderConfirmSummary = () => {
+    if (!selectedSummary.hasEarlyAccess) {
+      return (
+        <div className="text-center flex justify-center items-center gap-2">
+          รวมยอด: <b className="text-red-600 text-xl">{selectedSummary.total}</b>
+          <Image src={payWith === 'freecoin' ? (settings?.freecoin || "/images/money-bag.png") : (settings?.coin || "/images/e-coin.png")} alt="currency" width={20} height={20} unoptimized />
+        </div>
+      );
+    }
+
+    const useFastTicket = fastPayWith === 'fast_ticket';
+    return (
+      <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-center">
+        <div className="text-xs font-medium text-gray-500 mb-2">สรุปราคา</div>
+        <div className="flex flex-wrap items-center justify-center gap-2 text-base font-semibold">
+          <div className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-orange-600 border border-orange-100">
+            <Image src={payWith === 'freecoin' ? (settings?.freecoin || '/images/money-bag.png') : (settings?.coin || '/images/e-coin.png')} alt="payment type" width={16} height={16} unoptimized />
+            <span>{selectedSummary.baseCoinTotal}</span>
+          </div>
+          {selectedSummary.baseCoinTotal > 0 && (
+            <>
+              <span className="text-gray-400">+</span>
+              <div className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-amber-700 border border-amber-100">
+                <Image src={useFastTicket ? (settings?.fast_ticket || '/images/fast_ticket.png') : (settings?.coin || '/images/e-coin.png')} alt="early method" width={16} height={16} unoptimized />
+                <span>{selectedSummary.fastTicketRequiredTotal}</span>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
 
   // Helper for Stepper
 
@@ -512,8 +771,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
               className="w-full"
             >
               {isLoggedIn ? (
-                <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2 justify-between w-full flex-wrap">
                    <AmountPill amount={Number(user?.coin || 0)} />
+                   <FastTicketPill amount={Number(user?.fast_ticket || 0)} className="bg-gray-50 !border-gray-200" />
                    {book.use_freecoin === 1 && (
                       <FreeCoinPill amount={Number(user?.freecoin || 0)} className="bg-gray-50 !border-gray-200" />
                    )}
@@ -631,16 +891,19 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                 title={null}
                 open={isModalOpen}
                 onCancel={closeModal}
+                zIndex={2000}
                 footer={
                   <div className="w-full">
                     <div className="flex items-center justify-between">
                       <Button onClick={closeModal} className="border border-red-200 text-red-600 bg-white !hover:bg-red-50">ยกเลิก</Button>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-wrap justify-end">
                         <div className="text-sm text-gray-700">เลือก {selectedSummary.count} ตอน</div>
-                        <div className="text-sm font-semibold text-red-600 flex items-center gap-2">
-                          รวม {selectedSummary.total} ฿
-                          <Image src={"/images/e-coin.png"} alt="currency" width={16} height={16} unoptimized />
-                        </div>
+                        {selectedSummary.fastTicketCount > 0 ? renderMixedPriceSummary(selectedSummary) : (
+                          <div className="text-sm font-semibold text-red-600 flex items-center gap-2">
+                            รวม {selectedSummary.total}
+                            <Image src={payWith === 'freecoin' ? (settings?.freecoin || '/images/money-bag.png') : (settings?.coin || '/images/e-coin.png')} alt="currency" width={16} height={16} unoptimized />
+                          </div>
+                        )}
                         <Button type="primary" danger disabled={selectedSummary.count === 0} onClick={() => {
                           if (!isLoggedIn) {
                             setIsModalOpen(false);
@@ -649,6 +912,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                             return;
                           }
                           setPayWith('coin');
+                          setFastPayWith(selectedSummary.hasEarlyAccess && selectedSummary.canUseFastTicket ? 'fast_ticket' : 'coin');
                           setManualBuyConfirmModalOpen(true);
                         }}>
                           ยืนยัน
@@ -658,6 +922,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                   </div>
                 }
                 width={760}
+                style={{ top: 24 }}
                 centered
               >
                 {isFetching ? (
@@ -670,27 +935,16 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                         <Checkbox checked={allSelected} indeterminate={!allSelected && selectedSummary.count > 0} onChange={toggleSelectAll} />
                         <div className="text-sm">เลือกตอนทั้งหมด ({allSelectableIds.length} ตอน)</div>
                       </div>
-                      <div className="flex items-center gap-3 text-sm text-gray-700">
+                      <div className="flex items-center gap-3 text-sm text-gray-700 flex-wrap justify-end">
                         <div>เลือก {selectedSummary.count} ตอน</div>
-                        {selectedSummary.fastTicketCount > 0 && (
-                          <div className="font-semibold text-amber-600 flex items-center gap-1">
-                            FastTicket {selectedSummary.fastTicketCount}
+                        {selectedSummary.fastTicketCount > 0 ? renderMixedPriceSummary(selectedSummary) : (
+                          <div className="font-semibold text-red-600 flex items-center gap-1">
+                            รวม {selectedSummary.total}
                             <div className="relative w-4 h-4 shrink-0">
-                              <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" fill className="object-contain" unoptimized />
+                              <Image src={payWith === 'freecoin' ? (settings?.freecoin || "/images/money-bag.png") : (settings?.coin || "/images/e-coin.png")} alt="currency" fill className="object-contain" unoptimized />
                             </div>
                           </div>
                         )}
-                        <div className="font-semibold text-red-600 flex items-center gap-1">
-                          รวม {selectedSummary.total}
-                          <div className="relative w-4 h-4 shrink-0">
-                            <Image src={settings?.coin || "/images/e-coin.png"} alt="Coin" fill className="object-contain" unoptimized />
-                          </div>
-                          {book.use_freecoin === 1 && selectedSummary.fastTicketCount === 0 && (
-                            <div className="relative w-4 h-4 shrink-0">
-                              <Image src={settings?.freecoin || "/images/money-bag.png"} alt="FreeCoin" fill className="object-contain" unoptimized />
-                            </div>
-                          )}
-                        </div>
                       </div>
                     </div>
 
@@ -701,7 +955,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                         const selectableIds = group.list
                           .filter((ep: any, index: number) => isEpisodeSequentiallyUnlocked(ep, index, group.list))
                           .map((ep: any) => ep.ep_id);
-                        const selectedCountInGroup = selectableIds.filter((id: number) => selectedEpisodeIds.includes(id)).length;
+                        const selectedCountInGroup = selectableIds.filter((id: number) => selectedEpisodeIds.includes(Number(id))).length;
                         const allSelectedInGroup = selectableIds.length > 0 && selectedCountInGroup === selectableIds.length;
 
                         return (
@@ -729,13 +983,16 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                             {isExpanded && (
                               <div className="divide-y">
                                 {group.list.map((episode: any, index: number) => {
+                                  const early = getEarlyAccess(episode);
+                                  const fastTicketDisplayPrice = early.fastTicketPrice ?? 1;
+                                  const canUseFreecoin = canEpisodePayWithFreecoin(episode);
                                   const sequentialUnlocked = isEpisodeSequentiallyUnlocked(episode, index, group.list);
-                                  const isFastEpisode = isEpisodeFastTicket(episode);
+                                  const isFastEpisode = early.isEarlyAccess;
                                   const fastLocked = isFastEpisode && !sequentialUnlocked && !episode?.isBuy;
                                   const fastBuyable = isFastEpisode && sequentialUnlocked && !episode?.isBuy;
-                                  const disabled = Number(episode.coin ?? 0) <= 0 || episode.isBuy || !sequentialUnlocked;
-                                  const checked = selectedEpisodeIds.includes(episode.ep_id);
-                                  const { regularPrice, promoPrice, hasPromo, activePromo } = resolveEpisodePrice(episode);
+                                  const disabled = !isEpisodeBaseSelectable(episode) || !sequentialUnlocked;
+                                  const checked = selectedEpisodeIds.includes(Number(episode.ep_id));
+                                  const { regularPrice, promoPrice, hasPromo, finalPrice, activePromo } = resolveEpisodePrice(episode);
                                   const rpEarn = Number(episode?.rp_campaign?.rp_earn ?? 0);
                                   const rpCampaignEnd = episode?.rp_campaign?.end_date
                                     ? Date.parse(episode.rp_campaign.end_date)
@@ -760,7 +1017,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                                           {fastLocked && !sequentialUnlocked && (
                                             <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600">
                                               <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={12} height={12} unoptimized />
-                                              ตอนล่วงหน้า (ยังซื้อไม่ได้)
+                                              ตอนล่วงหน้า (ซื้อตอนก่อนหน้า)
                                             </div>
                                           )}
                                           {fastLocked && sequentialUnlocked && (
@@ -769,12 +1026,11 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                                               ตอนล่วงหน้า (ปลดล็อคแล้ว)
                                             </div>
                                           )}
-                                          {fastBuyable && (
-                                            <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
-                                              <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={12} height={12} unoptimized />
-                                              ใช้ FastTicket + เหรียญ
-                                            </div>
-                                          )}
+                                              {fastBuyable && (
+                                                <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600">
+                                                  ตอนล่วงหน้า
+                                                </div>
+                                              )}
                                           <div className="text-xs text-gray-500">{episode.view} • {new Date(episode.publish_datetime).toLocaleDateString('th-TH')}</div>
                                         </div>
                                       </div>
@@ -809,22 +1065,50 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                                               </div>
                                             )}
                                             <div className="flex items-center gap-1.5 justify-end">
-                                              <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={16} height={16} unoptimized />
-                                              {isFastEpisode && (
-                                                <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={16} height={16} unoptimized />
-                                              )}
-                                              {book.use_freecoin === 1 && !isFastEpisode && (
-                                                <Image src={settings?.freecoin || "/images/money-bag.png"} alt="freecoin" width={16} height={16} unoptimized />
-                                              )}
-                                              {hasPromo ? (
-                                                <>
+                                              {fastBuyable ? (
+                                                <div className="flex items-center gap-2 justify-end text-xs font-medium">
+                                                  <div className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-amber-700">
+                                                    <span>(</span>
+                                                    {early.fastTicket && (
+                                                      <>
+                                                        <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={14} height={14} unoptimized />
+                                                        <span className="text-sm font-semibold">{fastTicketDisplayPrice}</span>
+                                                      </>
+                                                    )}
+                                                    {early.fastTicket && <span className="text-gray-400">/</span>}
+                                                    <Image src={settings?.coin || '/images/e-coin.png'} alt="fast coin" width={14} height={14} unoptimized />
+                                                    <span className="text-sm font-semibold">{early.fastCoinPrice}</span>
+                                                    <span>)</span>
+                                                  </div>
+                                                  <span className="text-gray-400">+</span>
+                                                  <div className="inline-flex items-center gap-1 text-orange-600">
+                                                    <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={14} height={14} unoptimized />
+                                                    {canUseFreecoin && (
+                                                      <Image src={settings?.freecoin || "/images/money-bag.png"} alt="freecoin" width={14} height={14} unoptimized />
+                                                    )}
+                                                    <span className="text-sm font-semibold">{finalPrice}</span>
+                                                    {hasPromo && (
+                                                      <span className="text-xs text-gray-400 line-through decoration-gray-300">{regularPrice}</span>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              ) : hasPromo ? (
+                                                <div className="inline-flex items-center gap-1.5 justify-end">
+                                                  {canUseFreecoin && (
+                                                    <Image src={settings?.freecoin || "/images/money-bag.png"} alt="freecoin" width={16} height={16} unoptimized />
+                                                  )}
+                                                  <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={16} height={16} unoptimized />
                                                   <span className="text-sm font-semibold text-rose-600">{promoPrice}</span>
                                                   <span className="text-xs text-gray-400 line-through decoration-gray-300">{regularPrice}</span>
-                                                </>
+                                                </div>
                                               ) : (
-                                                <span className="text-sm font-semibold text-orange-600">
-                                                  {regularPrice}
-                                                </span>
+                                                <div className="inline-flex items-center gap-1.5 justify-end">
+                                                  {canUseFreecoin && (
+                                                    <Image src={settings?.freecoin || "/images/money-bag.png"} alt="freecoin" width={16} height={16} unoptimized />
+                                                  )}
+                                                  <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={16} height={16} unoptimized />
+                                                  <span className="text-sm font-semibold text-orange-600">{regularPrice}</span>
+                                                </div>
                                               )}
                                             </div>
                                           </div>
@@ -851,6 +1135,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                 title="ยืนยันการซื้อ"
                 open={manualBuyConfirmModalOpen}
                 onCancel={() => setManualBuyConfirmModalOpen(false)}
+                zIndex={2100}
                 centered
                 footer={null}
                 width={400}
@@ -862,25 +1147,46 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                   <div className="text-center">
                     ตอนที่เลือก: <b>{selectedSummary.count} ตอน</b>
                   </div>
-                  <div className="text-center flex justify-center items-center gap-2">
-                    รวมยอด: <b className="text-red-600 text-xl">{selectedSummary.total}</b>
-                    <Image src={payWith === 'freecoin' ? (settings?.freecoin || "/images/money-bag.png") : (settings?.coin || "/images/e-coin.png")} alt="currency" width={20} height={20} unoptimized />
-                  </div>
+                  {renderConfirmSummary()}
 
-                  {selectedSummary.fastTicketCount > 0 && (
-                    <div className="text-center flex justify-center items-center gap-2 text-amber-700">
-                      ต้องใช้ FastTicket <b>{selectedSummary.fastTicketCount}</b>
-                      <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={18} height={18} unoptimized />
+                  {selectedSummary.hasEarlyAccess ? (
+                    <div className="space-y-3">
+                      <div>
+                        <div className="mb-2 text-center text-xs font-medium text-gray-500">ชำระราคาตอนปกติ</div>
+                          <div className="flex justify-center">
+                            <Radio.Group value={payWith} onChange={(e) => setPayWith(e.target.value)} buttonStyle="solid">
+                              <Radio.Button value="coin" disabled={!selectedSummary.canUseCoin}>
+                                <div className="flex items-center gap-1">เหรียญ <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={14} height={14} unoptimized /></div>
+                              </Radio.Button>
+                              <Radio.Button value="freecoin" disabled={!selectedSummary.canUseFreecoin}>
+                                <div className="flex items-center gap-1">ถุงเงิน <Image src={settings?.freecoin || "/images/money-bag.png"} alt="free" width={14} height={14} unoptimized /></div>
+                              </Radio.Button>
+                            </Radio.Group>
+                          </div>
+                      </div>
+
+                      <div>
+                        <div className="mb-2 text-center text-xs font-medium text-gray-500">ชำระส่วนตอนล่วงหน้า</div>
+                        <div className="flex justify-center">
+                          <Radio.Group value={fastPayWith} onChange={(e) => setFastPayWith(e.target.value)} buttonStyle="solid">
+                            <Radio.Button value="coin" disabled={!selectedSummary.canUseCoin}>
+                              <div className="flex items-center gap-1">เหรียญ <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={14} height={14} unoptimized /></div>
+                            </Radio.Button>
+                            <Radio.Button value="fast_ticket" disabled={!selectedSummary.canUseFastTicket}>
+                              <div className="flex items-center gap-1">FastTicket <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast" width={14} height={14} unoptimized /></div>
+                            </Radio.Button>
+                          </Radio.Group>
+                        </div>
+                      </div>
+
                     </div>
-                  )}
-
-                  {book.use_freecoin === 1 && selectedSummary.fastTicketCount === 0 && (
+                  ) : (selectedSummary.canUseCoin || selectedSummary.canUseFreecoin) && (
                     <div className="flex justify-center mt-2">
                       <Radio.Group value={payWith} onChange={(e) => setPayWith(e.target.value)} buttonStyle="solid">
-                        <Radio.Button value="coin">
+                        <Radio.Button value="coin" disabled={!selectedSummary.canUseCoin}>
                           <div className="flex items-center gap-1">เหรียญ <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={14} height={14} unoptimized /></div>
                         </Radio.Button>
-                        <Radio.Button value="freecoin">
+                        <Radio.Button value="freecoin" disabled={!selectedSummary.canUseFreecoin}>
                           <div className="flex items-center gap-1">ถุงเงิน <Image src={settings?.freecoin || "/images/money-bag.png"} alt="free" width={14} height={14} unoptimized /></div>
                         </Radio.Button>
                       </Radio.Group>
@@ -891,12 +1197,8 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                     <Button onClick={() => setManualBuyConfirmModalOpen(false)} className="w-1/2 !bg-white !text-red-600 hover:!border-red-600">ยกเลิก</Button>
                     <Button type="primary" danger loading={buyLoading} className="w-1/2 !bg-red-600" onClick={async () => {
                       try {
-                        if (selectedSummary.fastTicketCount > 0 && payWith === 'freecoin') {
-                          messageApi.error('ตอนล่วงหน้าต้องใช้ FastTicket + เหรียญ');
-                          return;
-                        }
                         setBuyLoading(true);
-                        const payload = { eps: selectedEpisodeIds.map((id) => Number(id)), payWith: payWith };
+                        const payload = buildBuyEpsPayload(selectedEpisodeIds, payWith, fastPayWith);
                         const res = await apiClient.post(`/buy/eps`, payload);
                         if (res?.data?.code === 200) {
 
@@ -946,6 +1248,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                   setBuyAllModalOpen(false);
                   setBuyAllFastTicketCount(0);
                 }}
+                zIndex={2100}
                 centered
                 footer={null}
                 width={400}
@@ -969,14 +1272,17 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                     </div>
                   )}
 
-                  {book.use_freecoin === 1 && buyAllFastTicketCount === 0 && (
+                  {(book.use_freecoin === 1 || buyAllFastTicketCount > 0) && (
                     <div className="flex justify-center mt-2">
                       <Radio.Group value={payWith} onChange={(e) => setPayWith(e.target.value)} buttonStyle="solid">
                         <Radio.Button value="coin">
                           <div className="flex items-center gap-1">เหรียญ <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={14} height={14} unoptimized /></div>
                         </Radio.Button>
-                        <Radio.Button value="freecoin">
+                        <Radio.Button value="freecoin" disabled={buyAllFastTicketCount > 0}>
                           <div className="flex items-center gap-1">ถุงเงิน <Image src={settings?.freecoin || "/images/money-bag.png"} alt="free" width={14} height={14} unoptimized /></div>
+                        </Radio.Button>
+                        <Radio.Button value="fast_ticket" disabled={buyAllFastTicketCount === 0}>
+                          <div className="flex items-center gap-1">FastTicket <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast" width={14} height={14} unoptimized /></div>
                         </Radio.Button>
                       </Radio.Group>
                     </div>
@@ -1004,7 +1310,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                           return;
                         }
                         setBuyLoading(true);
-                        const payload = { eps: buyAllIds, payWith: payWith };
+                        const payload = buildBuyEpsPayload(buyAllIds, payWith, fastPayWith);
                         const res = await apiClient.post(`/buy/eps`, payload);
                         if (res?.data?.code === 200) {
 
@@ -1067,6 +1373,19 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
             </>
           )}
 
+          <style>{`
+            @media (max-width: 768px) {
+              .book-select-modal .ant-modal {
+                max-width: calc(100vw - 16px) !important;
+                margin: 8px auto !important;
+              }
+
+              .book-select-modal .ant-modal-content {
+                padding-inline: 10px;
+              }
+            }
+          `}</style>
+
           {/* Divider */}
           <div className="hidden lg:block my-5 border-t border-gray-200" />
 
@@ -1080,7 +1399,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
         await queryClient.invalidateQueries({ queryKey: ["bookDetail", String(bookId ?? "")] });
       }} />}
 
-      <style jsx global>{`
+      <style>{`
           .book-select-modal .ant-checkbox-inner { border-color: #e11d48; transition: border-color .12s, background-color .12s; }
           /* Hover on wrapper or checkbox itself */
           .book-select-modal .ant-checkbox-wrapper:hover .ant-checkbox-inner,

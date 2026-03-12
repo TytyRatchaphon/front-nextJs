@@ -60,7 +60,8 @@ const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, 
     queryKey: ['writerProfile', token],
     queryFn: () => fetchWriterProfile(token ?? undefined),
     enabled: !!token, 
-    staleTime: 0, 
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   // Fetch writer status
@@ -68,7 +69,8 @@ const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, 
     queryKey: ['writerStatus', token],
     queryFn: () => checkWriterStatus(token),
     enabled: !!token,
-    staleTime: 0,
+    staleTime: 60000,
+    refetchOnWindowFocus: false,
   });
 
   // Fetch Bank List

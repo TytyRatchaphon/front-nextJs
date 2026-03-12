@@ -11,8 +11,8 @@ import {
   fetchCompletedAchievements,
   updateAchievementShowcase,
 } from "@/services/api/achievementApi";
-
-const MAX_SHOWCASE = 3;
+//0838773498
+const MAX_SHOWCASE = 6;
 
 const getAchievementId = (ach: any): number | null => {
   const raw = ach?.achievement_id ?? ach?.achievement?.id ?? ach?.id;
@@ -302,7 +302,7 @@ export default function ProfileAchievements() {
 
           <div className="mb-4">
             <p className="mb-2 text-xs font-semibold text-gray-500">SELECTED</p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-2 mb-4">
               {selectedSlots.map((ach: any, idx: number) => {
                 if (!ach) {
                   return (
@@ -407,7 +407,7 @@ export default function ProfileAchievements() {
               type="button"
               onClick={handleSaveShowcase}
               disabled={saveShowcaseMutation.isPending}
-              className="flex-1 rounded-xl bg-[#E33527] py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex-1 rounded-xl bg-[#E33527] py-2.5 text-sm font-semibold !text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saveShowcaseMutation.isPending ? "กำลังบันทึก..." : "บันทึก"}
             </button>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchRecentNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '@/services/apiServices';
-import { Tooltip, Button, Tag } from 'antd';
+import { fetchRecentNotifications, markNotificationAsRead, markAllNotificationsAsRead, NotificationTab } from '@/services/apiServices';
+import { Tooltip, Button, Tag, Tabs } from 'antd';
 import { BellOutlined, CheckOutlined, BookOutlined, MessageOutlined, InfoCircleOutlined, UserOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -46,11 +46,13 @@ const NotificationList: React.FC = () => {
     const queryClient = useQueryClient();
     const router = useRouter(); // Initialize router
     React.useState<Set<number>>(new Set());
+    const [activeTab, setActiveTab] = React.useState<NotificationTab>('all');
 
     const { data: notifications, isLoading } = useQuery({
-        queryKey: ['recentNotifications'],
-        queryFn: fetchRecentNotifications,
-        refetchInterval: 30000,
+        queryKey: ['recentNotifications', activeTab],
+        queryFn: () => fetchRecentNotifications(activeTab),
+        staleTime: 30000,
+        refetchOnWindowFocus: false,
     });
 
     const markReadMutation = useMutation({
@@ -64,7 +66,7 @@ const NotificationList: React.FC = () => {
     });
 
     const markAllReadMutation = useMutation({
-        mutationFn: markAllNotificationsAsRead,
+        mutationFn: (tab: NotificationTab) => markAllNotificationsAsRead(tab),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['recentNotifications'] });
         }
@@ -96,7 +98,7 @@ const NotificationList: React.FC = () => {
 
     const handleMarkAllRead = (e: React.MouseEvent) => {
         e.stopPropagation();
-        markAllReadMutation.mutate();
+        markAllReadMutation.mutate(activeTab);
     };
 
     const getIconByType = (type: string) => {
@@ -115,7 +117,7 @@ const NotificationList: React.FC = () => {
     const getTypeLabel = (type: string) => {
         switch (type) {
             case 'book_new': return { text: 'เรื่องใหม่', color: 'green' };
-            case 'book_update': return { text: 'ตอนใหม่', color: 'blue' };
+            case 'book_update': return { text: 'นิยาย', color: 'blue' };
             case 'system': return { text: 'ระบบ', color: 'red' };
             case 'comment_book_id':
             case 'comment_ep_id':
@@ -166,6 +168,20 @@ const NotificationList: React.FC = () => {
                             </Button>
                         </Tooltip>
                     )}
+                </div>
+
+                <div className="px-3 pt-2 bg-white border-b border-gray-100">
+                    <Tabs
+                        activeKey={activeTab}
+                        onChange={(key) => setActiveTab(key as NotificationTab)}
+                        size="small"
+                        items={[
+                            { key: 'all', label: 'ทั้งหมด' },
+                            { key: 'comment', label: 'ความคิดเห็น' },
+                            { key: 'system', label: 'ระบบ' },
+                            { key: 'book', label: 'นิยาย' },
+                        ]}
+                    />
                 </div>
 
                 {/* List */}

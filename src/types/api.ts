@@ -237,6 +237,13 @@ export interface Episode {
   freecoin: number;
   isFastTicket?: boolean;
   isFast_buyable?: boolean;
+  early_access?: {
+    fast_ticket?: boolean;
+    fast_coin?: boolean;
+    isFast_buyable?: boolean;
+    fastTicketPrice?: number;
+    fastCoinPrice?: number;
+  };
   publish_datetime: string;
   update_at: string;
   publish: string;

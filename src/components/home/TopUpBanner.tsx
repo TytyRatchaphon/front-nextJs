@@ -31,7 +31,7 @@ const TopUpBanner = () => {
     return (
         <div 
             onClick={handleClick}
-            className="w-full flex items-center gap-3 cursor-pointer group overflow-hidden relative"
+            className="w-full flex items-center gap-2 md:gap-3 cursor-pointer group overflow-hidden relative min-w-0"
         >
             <style dangerouslySetInnerHTML={{__html: `
                 @keyframes marquee {
@@ -44,8 +44,8 @@ const TopUpBanner = () => {
                 }
             `}} />
             
-            <div className="bg-[#fb8500] group-hover:bg-[#f3722c] text-white rounded-full py-1.5 px-4 flex items-center gap-2 shadow-sm transition-all flex-shrink-0 z-20 relative bg-opacity-100 mr-3">
-                 <div className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
+            <div className="bg-[#fb8500] group-hover:bg-[#f3722c] text-white rounded-full py-1.5 px-3 md:px-4 flex items-center gap-1.5 md:gap-2 shadow-sm transition-all flex-shrink-0 z-20 relative bg-opacity-100 mr-1 md:mr-3">
+                 <div className="w-5 h-5 md:w-6 md:h-6 bg-white/20 rounded-full flex items-center justify-center">
                      <Image 
                         src={coinIcon} 
                         width={16} 
@@ -56,15 +56,15 @@ const TopUpBanner = () => {
                         unoptimized
                      />
                  </div>
-                 <span className="font-bold text-base leading-none whitespace-nowrap">เติม Coin</span>
-            </div>
-            
-            <div className="h-6 flex-1 relative overflow-hidden mask-linear-fade flex items-center">
+                 <span className="font-bold text-sm md:text-base leading-none whitespace-nowrap">เติม Coin</span>
+             </div>
+             
+            <div className="h-7 md:h-6 flex-1 min-w-0 relative overflow-hidden mask-linear-fade flex items-center">
                  <div className="flex animate-marquee whitespace-nowrap">
-                    <span className="text-gray-600 font-medium text-sm md:text-base group-hover:text-black transition-colors pr-20">
+                    <span className="text-gray-600 font-medium text-xs sm:text-sm md:text-base leading-tight group-hover:text-black transition-colors pr-12 md:pr-20">
                         {displayText}
                     </span>
-                    <span className="text-gray-600 font-medium text-sm md:text-base group-hover:text-black transition-colors pr-20">
+                    <span className="text-gray-600 font-medium text-xs sm:text-sm md:text-base leading-tight group-hover:text-black transition-colors pr-12 md:pr-20">
                         {displayText}
                     </span>
                  </div>

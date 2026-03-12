@@ -13,6 +13,7 @@ import GifLoader from '@/components/utility/GifLoader';
 import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill';
 import StampPill from '@/components/utility/StampPill';
+import { QUERY_CONFIG } from '@/constants/query';
 
 
 const { Title, Text } = Typography;
@@ -27,8 +28,10 @@ export default function CartDetail() {
     const { data: cartStores, isLoading } = useQuery({
         queryKey: ['cartItems'],
         queryFn: fetchCartItems,
-        refetchOnWindowFocus: true,
-        staleTime: 0, // Always fresh for cart
+        staleTime: QUERY_CONFIG.CART_STALE_TIME,
+        gcTime: QUERY_CONFIG.CART_GC_TIME,
+        refetchOnWindowFocus: false,
+        refetchOnMount: 'always',
     });
 
     const cartSummary = React.useMemo(() => {

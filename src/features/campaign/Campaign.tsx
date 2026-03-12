@@ -11,38 +11,7 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/th';
 
 dayjs.locale('th');
-import { postCampaignClick } from '@/services/apiServices';
-
-export interface CampaignData {
-  cp_id: number;
-  name: string;
-  detail: string;
-  start_date: string;
-  end_date: string;
-  img_banner: string;
-  img_banner2: string;
-  img_shelf: string;
-  color_bg: string;
-  img_card: string[];
-  status: string;
-  ref_id: string;
-}
-
-export const fetchCampaigns = async (): Promise<CampaignData[]> => {
-  const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/campaigns`;
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch campaigns');
-  }
-
-  const result = await response.json();
-  if (result.code === 200 && result.data) {
-    return result.data;
-  }
-
-  throw new Error(result.message || 'Failed to load data');
-};
+import { postCampaignClick, fetchCampaigns, type CampaignData } from '@/services/apiServices';
 
 function CountdownTimer({ targetDate }: { targetDate: string }) {
   const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number } | null>(null);
@@ -166,7 +135,7 @@ function Campaign({ initialData }: { initialData?: CampaignData[] }) {
 
         {!isLoading && !isError && campaigns?.length === 0 && (
           <div className="text-center py-20 text-gray-400">
-            <div className="text-6xl mb-4">📭</div>
+            <div className="text-6xl mb-4">📭</div>//////
             <div className="text-xl">ไม่มีแคมเปญในขณะนี้</div>
           </div>
         )}

@@ -42,6 +42,7 @@ export const decodeAndMapUserFromToken = (token: string, baseUser: UserData): Us
     const freecoin = (freecoinRaw !== undefined && freecoinRaw !== null && !Number.isNaN(Number(freecoinRaw)))
       ? Number(freecoinRaw)
       : Number(baseUser.freecoin ?? 0);
+    const fast_ticket = getNumber('fast_ticket', Number(baseUser.fast_ticket ?? 0));
     const exp = getNumber('exp_point', Number(baseUser.exp ?? 0)); // Token key is exp_point based on JSON
     const current_rp = getNumber('current_rp', Number(baseUser.current_rp ?? 0));
     const total_rp = getNumber('total_rp', Number(baseUser.total_rp ?? 0));
@@ -80,7 +81,7 @@ export const decodeAndMapUserFromToken = (token: string, baseUser: UserData): Us
       frame: decodedToken.frame !== undefined ? decodedToken.frame : baseUser.frame,
       aka: decodedToken.aka !== undefined ? decodedToken.aka : baseUser.aka,
 
-      flower, heart, stamp, coupon, coin, freecoin, exp, current_rp, total_rp,
+      flower, heart, stamp, coupon, coin, freecoin, fast_ticket, exp, current_rp, total_rp,
     };
 
     return updatedUser;

@@ -21,6 +21,11 @@ const StyledComponentsRegistry = ({ children }: { children: React.ReactNode }) =
             colorLinkHover: '#e53935',
             colorLinkActive: '#e53935',
           },
+          components: {
+            Notification: {
+              zIndexPopup: 3000,
+            },
+          },
         }}
         warning={{
           strict: false,

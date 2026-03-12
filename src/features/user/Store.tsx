@@ -20,6 +20,7 @@ import { isValidPhoneNumber } from 'libphonenumber-js'
 import '@/utils/imageUtils';
 import { fetchCartItems } from '@/services/cartService';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { QUERY_CONFIG } from '@/constants/query';
 
 
 function Store() {
@@ -50,7 +51,9 @@ function Store() {
     queryKey: ['cartItems'],
     queryFn: fetchCartItems,
     enabled: !!token, 
-    staleTime: 1000 * 60,
+    staleTime: QUERY_CONFIG.CART_STALE_TIME,
+    gcTime: QUERY_CONFIG.CART_GC_TIME,
+    refetchOnWindowFocus: false,
   });
 
   const handleBuyClick = (pack: StorePack, quantity: number = 1) => {
