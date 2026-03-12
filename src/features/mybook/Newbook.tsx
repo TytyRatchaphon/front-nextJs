@@ -15,8 +15,8 @@ import GifLoader from '@/components/utility/GifLoader';
 // --- 1. Constant Data ---
 const novelType = [
     { label: 'นิยายแปล', value: 'tran', color: 'bg-rose-400' },
-    // { label: 'นิยายแต่ง', value: 'write', color: 'bg-indigo-400' },
-    // { label: 'แฟนฟิค', value: 'fanfic', color: 'bg-teal-400' },
+    { label: 'นิยายแต่ง', value: 'write', color: 'bg-indigo-400' },
+    { label: 'แฟนฟิค', value: 'fanfic', color: 'bg-teal-400' },
 ];
 
 // --- 2. Interfaces ---

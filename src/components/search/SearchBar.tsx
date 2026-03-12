@@ -644,33 +644,42 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
       {/* ช่องค้นหา */}
       <div className="bg-white rounded-xl p-4 sm:p-5 shadow-md mb-4">
         <p className="text-lg font-semibold mb-4">ค้นหา</p>
-        <div className="relative">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            <svg
-              stroke="currentColor"
-              fill="currentColor"
-              viewBox="0 0 16 16"
-              className="text-gray-500"
-              height="1em"
-              width="1em"
-            >
-              <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"></path>
-            </svg>
+        <div className="relative flex items-center gap-2">
+          <div className="relative flex-1 min-w-0">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <svg
+                stroke="currentColor"
+                fill="currentColor"
+                viewBox="0 0 16 16"
+                className="text-gray-500"
+                height="1em"
+                width="1em"
+              >
+                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"></path>
+              </svg>
+            </div>
+            <input
+              type="text"
+              placeholder="ค้นหาชื่อเรื่อง..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleSearchClick();
+                }
+              }}
+              className="block w-full rounded-md border border-gray-300 h-[40px] pl-10 pr-3 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+              onFocus={() => setShowHistory(true)}
+              onBlur={() => setTimeout(() => setShowHistory(false), 200)}
+            />
           </div>
-          <input
-            type="text"
-            placeholder="ค้นหาชื่อเรื่อง..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleSearchClick();
-              }
-            }}
-            className="block w-full rounded-md border border-gray-300 h-[40px] pl-10 pr-3 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-primary focus:border-primary text-sm"
-            onFocus={() => setShowHistory(true)}
-            onBlur={() => setTimeout(() => setShowHistory(false), 200)}
-          />
+          <button
+            type="button"
+            onClick={handleSearchClick}
+            className="sm:hidden h-[40px] px-4 rounded-md bg-red-500 hover:bg-red-600 !text-white font-semibold text-sm shrink-0"
+          >
+            ค้นหา
+          </button>
           
           {/* History & Suggestions Dropdown */}
           {showHistory && (
