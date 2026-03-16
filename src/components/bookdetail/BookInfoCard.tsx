@@ -37,6 +37,8 @@ type Book = {
   price?: number;
   remaining_paid_total?: number;
   remaining_paid_count?: number;
+  total_remaining_count?: number;
+  total_remaining_total?: number;
   chapters?: number;
   views?: number;
   reviews?: number;
@@ -171,8 +173,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [payWith, setPayWith] = useState<'coin' | 'freecoin'>('coin');
   const [fastPayWith, setFastPayWith] = useState<'coin' | 'fast_ticket'>('fast_ticket');
+  const [selectionModalMode, setSelectionModalMode] = useState<'all' | 'early'>('all');
 
-  // Fetch episodes when modal opens
+  // Fetch episodes when selection modal opens
   const queryResult = useQuery<{ groups: EpisodeGroup[] }>({
     queryKey: ["bookEpisodes", String(bookId ?? ""), token],
     queryFn: () => fetchBookEpisodes(String(bookId ?? "")),
@@ -182,12 +185,24 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   const episodesData = queryResult.data;
   const isFetching = queryResult.isFetching;
 
-  const openModal = () => {
+  const hasEarlyAccessEpisodes = useMemo(() => {
+    const fastTicketInfo = book.fastTicket;
+    if (!fastTicketInfo) return false;
+    const earlyCount = Number(fastTicketInfo.remaining_count ?? fastTicketInfo.ep_count ?? 0);
+    return Boolean(fastTicketInfo.book_enabled && fastTicketInfo.web_enabled && earlyCount > 0);
+  }, [book.fastTicket]);
+
+  const openModal = (mode: 'all' | 'early' = 'all') => {
     if (!isLoggedIn) {
       openLoginModal();
       return;
     }
+    if (mode === 'early' && !hasEarlyAccessEpisodes) {
+      messageApi.info('ไม่มีตอนล่วงหน้าให้เลือกซื้อ');
+      return;
+    }
     setSelectedEpisodeIds([]);
+    setSelectionModalMode(mode);
     // expand first group by default when opening
     if (episodesData?.groups && episodesData.groups.length > 0) {
       const firstId = String(episodesData.groups[0].group_id);
@@ -284,6 +299,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   const [buyAllTotal, setBuyAllTotal] = useState(0);
   const [buyAllFastTicketCount, setBuyAllFastTicketCount] = useState(0);
   const [buyAllEpisodeMap, setBuyAllEpisodeMap] = useState<Record<number, any>>({});
+  const [bulkPurchaseMode, setBulkPurchaseMode] = useState<'all' | 'early'>('all');
 
   const handleBuyAllClick = async () => {
     if (buyLoading) return;
@@ -303,17 +319,14 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       const selectableIds: number[] = [];
       const epMap: Record<number, any> = {};
       let total = 0;
-      let fastTicketCount = 0;
       for (const g of groups) {
         for (let index = 0; index < g.list.length; index += 1) {
           const ep = g.list[index];
-          if (isEpisodeSequentiallyUnlocked(ep, index, g.list)) {
+          const early = getEarlyAccess(ep);
+          if (isEpisodeSequentiallyUnlocked(ep, index, g.list) && !early.isEarlyAccess) {
             selectableIds.push(Number(ep.ep_id));
             epMap[Number(ep.ep_id)] = ep;
             total += getEpisodePriceByMethod(ep, 'coin');
-            if (canEpisodePayWithFastTicket(ep)) {
-              fastTicketCount += Number(getEpisodePriceByMethod(ep, 'fast_ticket') || 0);
-            }
           }
         }
       }
@@ -328,8 +341,10 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       setBuyAllIds(selectableIds);
       setBuyAllEpisodeMap(epMap);
       setBuyAllTotal(total);
-      setBuyAllFastTicketCount(fastTicketCount);
+      setBuyAllFastTicketCount(0);
+      setBulkPurchaseMode('all');
       setPayWith('coin'); // Default to coin
+      setFastPayWith('coin');
       setBuyAllModalOpen(true);
       setBuyLoading(false);
 
@@ -337,6 +352,10 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       messageApi.error('เกิดข้อผิดพลาด ขณะเตรียมการซื้อ');
       setBuyLoading(false);
     }
+  };
+
+  const handleBuyEarlyAccessClick = async () => {
+    openModal('early');
   };
 
   const closeModal = () => {
@@ -361,8 +380,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
 
   const toggleGroupSelect = (group: any) => {
     // select all selectable episodes in group, or deselect if all already selected
-    const selectable = group.list
-      .filter((ep: any, index: number) => isEpisodeSequentiallyUnlocked(ep, index, group.list))
+    const selectionList = getEpisodesForSelectionMode(group);
+    const selectable = selectionList
+      .filter((ep: any, index: number) => isEpisodeSequentiallyUnlocked(ep, index, selectionList))
       .map((ep: any) => Number(ep.ep_id));
     const allSelected = selectable.every((id: number) => selectedEpisodeIds.includes(id));
     if (allSelected) {
@@ -479,6 +499,11 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     return isPrevEpisodeUnlocking(prevEpisode);
   };
 
+  const getEpisodesForSelectionMode = (group: any) => {
+    if (selectionModalMode !== 'early') return group.list;
+    return group.list.filter((episode: any) => getEarlyAccess(episode).isEarlyAccess);
+  };
+
   const selectedSummary = useMemo(() => {
     if (!episodesData?.groups) return { count: 0, total: 0, hasEarlyAccess: false, fastTicketCount: 0, fastTicketRequiredTotal: 0, earlyAccessCoinTotal: 0, baseCoinTotal: 0, coinTotal: 0, freecoinTotal: 0, fastTicketTotal: 0, canUseCoin: true, canUseFreecoin: false, canUseFastTicket: false };
     const episodeMap = new Map<number, any>();
@@ -545,13 +570,14 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     if (!episodesData?.groups) return [] as number[];
     const ids: number[] = [];
     for (const g of episodesData.groups) {
-      for (let index = 0; index < g.list.length; index += 1) {
-        const ep = g.list[index];
-        if (isEpisodeSequentiallyUnlocked(ep, index, g.list)) ids.push(ep.ep_id);
+      const selectableList = getEpisodesForSelectionMode(g);
+      for (let index = 0; index < selectableList.length; index += 1) {
+        const ep = selectableList[index];
+        if (isEpisodeSequentiallyUnlocked(ep, index, selectableList)) ids.push(ep.ep_id);
       }
     }
     return ids;
-  }, [episodesData, selectedEpisodeIds]);
+  }, [episodesData, selectedEpisodeIds, selectionModalMode]);
 
   const allSelected = allSelectableIds.length > 0 && allSelectableIds.every((id) => selectedEpisodeIds.includes(id));
 
@@ -796,7 +822,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
 
           </div>
           <div className="px-5 pb-5 pt-3">
-          {isLoggedIn && Number(book.remaining_paid_count ?? 0) === 0 ? (
+          {isLoggedIn && Number(book.total_remaining_count ?? 0) === 0 && Number(book.total_remaining_total ?? 0) === 0 ? (
             <div className="mt-2 px-5 pb-5">
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm text-center">
                 <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-green-100">
@@ -806,6 +832,24 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                 </div>
                 <div className=" text-green-800 text-base">คุณเป็นเจ้าของนิยายเรื่องนี้ครบทุกตอนแล้ว</div>
               </div>
+            </div>
+          ) : isLoggedIn && Number(book.remaining_paid_count ?? 0) === 0 && Number(book.remaining_paid_total ?? 0) === 0 && hasEarlyAccessEpisodes ? (
+            <div className="mt-2 px-5 pb-5">
+              <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm text-center">
+                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-amber-100">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="text-amber-800 text-base">คุณเป็นเจ้าของนิยายตอนปัจจุบันครบแล้ว</div>
+                <div className="text-amber-600 text-sm">ยังมีตอนล่วงหน้าให้ซื้อเพิ่ม</div>
+              </div>
+              <button
+                onClick={handleBuyEarlyAccessClick}
+                className="w-full h-12 mt-4 rounded-2xl border-2 border-amber-500 text-amber-600 text-lg font-bold hover:bg-amber-50 transition-colors"
+              >
+                ซื้อตอนล่วงหน้า
+              </button>
             </div>
           ) : (
             <>
@@ -879,12 +923,22 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
               </div>
 
               <div className="text-center text-gray-500 text-xs mb-3">หรือ</div>
+              {hasEarlyAccessEpisodes && (
+                <button
+                  onClick={handleBuyEarlyAccessClick}
+                  className="w-full h-12 rounded-2xl border-2 border-amber-500 text-amber-600 text-lg font-bold hover:bg-amber-50 transition-colors mb-3"
+                >
+                  ซื้อตอนล่วงหน้า
+                </button>
+              )}
               <button
-                onClick={openModal}
+                onClick={() => openModal('all')}
                 className="w-full h-12 rounded-2xl border-2 border-red-600 text-red-600 text-lg font-bold hover:bg-red-50 transition-colors"
               >
                 เลือกตอนเอง
               </button>
+            </>
+          )}
 
               <Modal
                 wrapClassName="book-select-modal"
@@ -929,11 +983,16 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                   <GifLoader className="py-12" />
                 ) : (
                   <div>
+                    {selectionModalMode === 'early' && (
+                      <div className="mb-3 rounded-lg border border-amber-100 bg-amber-50 px-4 py-2 text-sm text-amber-700">
+                        เลือกซื้อเฉพาะตอนล่วงหน้า
+                      </div>
+                    )}
                     {/* Top select-all banner */}
                     <div className="bg-pink-50 border border-pink-100 rounded px-4 py-3 mb-4 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <Checkbox checked={allSelected} indeterminate={!allSelected && selectedSummary.count > 0} onChange={toggleSelectAll} />
-                        <div className="text-sm">เลือกตอนทั้งหมด ({allSelectableIds.length} ตอน)</div>
+                        <div className="text-sm">{selectionModalMode === 'early' ? 'เลือกตอนล่วงหน้าทั้งหมด' : 'เลือกตอนทั้งหมด'} ({allSelectableIds.length} ตอน)</div>
                       </div>
                       <div className="flex items-center gap-3 text-sm text-gray-700 flex-wrap justify-end">
                         <div>เลือก {selectedSummary.count} ตอน</div>
@@ -950,10 +1009,12 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
 
                     <div className="space-y-4 max-h-[60vh] overflow-auto">
                       {episodesData?.groups?.map((group: EpisodeGroup) => {
+                        const visibleEpisodes = getEpisodesForSelectionMode(group);
+                        if (visibleEpisodes.length === 0) return null;
                         const gid = String(group.group_id);
                         const isExpanded = expandedGroups[gid] ?? false;
-                        const selectableIds = group.list
-                          .filter((ep: any, index: number) => isEpisodeSequentiallyUnlocked(ep, index, group.list))
+                        const selectableIds = visibleEpisodes
+                          .filter((ep: any, index: number) => isEpisodeSequentiallyUnlocked(ep, index, visibleEpisodes))
                           .map((ep: any) => ep.ep_id);
                         const selectedCountInGroup = selectableIds.filter((id: number) => selectedEpisodeIds.includes(Number(id))).length;
                         const allSelectedInGroup = selectableIds.length > 0 && selectedCountInGroup === selectableIds.length;
@@ -976,17 +1037,17 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                                 </button>
                               </div>
                               <div className="flex items-center gap-3">
-                                <div className="text-sm text-gray-500">{group.list.length} ตอน</div>
+                                <div className="text-sm text-gray-500">{visibleEpisodes.length} ตอน</div>
                               </div>
                             </div>
 
                             {isExpanded && (
                               <div className="divide-y">
-                                {group.list.map((episode: any, index: number) => {
+                                {visibleEpisodes.map((episode: any, index: number) => {
                                   const early = getEarlyAccess(episode);
                                   const fastTicketDisplayPrice = early.fastTicketPrice ?? 1;
                                   const canUseFreecoin = canEpisodePayWithFreecoin(episode);
-                                  const sequentialUnlocked = isEpisodeSequentiallyUnlocked(episode, index, group.list);
+                                  const sequentialUnlocked = isEpisodeSequentiallyUnlocked(episode, index, visibleEpisodes);
                                   const isFastEpisode = early.isEarlyAccess;
                                   const fastLocked = isFastEpisode && !sequentialUnlocked && !episode?.isBuy;
                                   const fastBuyable = isFastEpisode && sequentialUnlocked && !episode?.isBuy;
@@ -1210,7 +1271,16 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                           if (res.data?.data?.rp_earned && res.data.data.rp_earned > 0) {
                             notification.success({
                               message: 'ยินดีด้วย!',
-                              description: `คุณได้รับ RP + ${res.data.data.rp_earned}`,
+                              description: (
+                                <div className="flex items-center gap-1">
+                                  <span>คุณได้รับ {res.data.data.rp_earned}</span>
+                                  {settings?.rank_point ? (
+                                    <Image src={settings.rank_point} alt="RP" width={16} height={16} unoptimized className="object-contain" />
+                                  ) : (
+                                    <span>RP</span>
+                                  )}
+                                </div>
+                              ),
                               placement: 'topRight',
                             });
                           }
@@ -1255,7 +1325,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
               >
                 <div className="flex flex-col gap-4 py-4">
                   <div className="text-base text-gray-800 text-center">
-                    คุณต้องการซื้อทั้งเรื่องหรือไม่?
+                    {bulkPurchaseMode === 'early' ? 'คุณต้องการซื้อเฉพาะตอนล่วงหน้าหรือไม่?' : 'คุณต้องการซื้อทั้งเรื่องหรือไม่?'}
                   </div>
                   <div className="text-center">
                     ตอนที่ต้องซื้อ: <b>{buyAllIds.length} ตอน</b>
@@ -1290,7 +1360,11 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
 
                   {/* หมายเหตุการซื้อ */}
                   <div className="bg-red-50 border border-red-100 p-3 rounded-xl text-xs text-gray-700 mt-3">
-                      {book.end === 'end' ? (
+                      {bulkPurchaseMode === 'early' ? (
+                          <p>
+                              <span className="font-bold text-red-700">ซื้อตอนล่วงหน้า:</span> ระบบจะคำนวณเฉพาะตอนล่วงหน้าที่สามารถซื้อได้ในขณะนี้เท่านั้น และไม่รวมตอนปกติอื่น ๆ
+                          </p>
+                      ) : book.end === 'end' ? (
                           <p>
                               <span className="font-bold text-red-700">กรณีซื้อทั้งเรื่องที่สถานะจบ :</span> คุณจะได้รับสิทธิ์ในการเข้าถึงเนื้อหา &quot;ทุกตอนที่ท่านยังไม่เคยทำการซื้อ&quot; ทั้งหมด โดยราคาจะคำนวนเฉพาะตอนที่ยังไม่เคยซื้อ
                           </p>
@@ -1323,7 +1397,16 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                           if (res.data?.data?.rp_earned && res.data.data.rp_earned > 0) {
                             notification.success({
                               message: 'ยินดีด้วย!',
-                              description: `คุณได้รับ RP + ${res.data.data.rp_earned}`,
+                              description: (
+                                <div className="flex items-center gap-1">
+                                  <span>คุณได้รับ {res.data.data.rp_earned}</span>
+                                  {settings?.rank_point ? (
+                                    <Image src={settings.rank_point} alt="RP" width={16} height={16} unoptimized className="object-contain" />
+                                  ) : (
+                                    <span>RP</span>
+                                  )}
+                                </div>
+                              ),
                               placement: 'topRight',
                             });
                           }
@@ -1370,8 +1453,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                   </div>
                 </div>
               </Modal>
-            </>
-          )}
+
 
           <style>{`
             @media (max-width: 768px) {

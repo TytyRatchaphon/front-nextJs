@@ -63,22 +63,20 @@ export function useReadingTheme(contentRef: React.RefObject<HTMLElement | null>)
 
     // Navbar Style Override
     useEffect(() => {
-        try {
-            const nav = document.getElementById("Navbar");
-            if (!nav) return;
+        const colorMap: Record<string, { bg: string; text: string; border: string }> = {
+            white: { bg: "#ffffff", text: "#000000", border: "#e5e7eb" },
+            sepia: { bg: "#fdfaee", text: "#000000", border: "#e6dbc4" },
+            dark: { bg: "#1c1c1e", text: "#ffffff", border: "#333333" },
+        };
 
-            const colorMap: Record<string, { bg: string; text: string; border: string }> = {
-                white: { bg: "#ffffff", text: "#000000", border: "#e5e7eb" },
-                sepia: { bg: "#fdfaee", text: "#000000", border: "#e6dbc4" },
-                dark: { bg: "#1c1c1e", text: "#ffffff", border: "#333333" },
-            };
+        const colors = colorMap[bgColor] ?? colorMap.white;
+        const currentBg = bgColors.find(b => b.key === bgColor) || bgColors[0];
+        const styleId = "navbar-theme-override";
+        let observer: MutationObserver | null = null;
+        let frameId: number | null = null;
+        let cancelled = false;
 
-            const colors = colorMap[bgColor] ?? colorMap.white;
-            const currentBg = bgColors.find(b => b.key === bgColor) || bgColors[0];
-
-            const styleId = "navbar-theme-override";
-            let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
-            const css = `#GlobalNavbarWrapper, #Navbar { position: relative !important; }
+        const css = `#GlobalNavbarWrapper, #Navbar { position: relative !important; }
         #Navbar { background-color: ${colors.bg} !important; color: ${colors.text} !important; border-bottom-color: ${colors.border} !important; }
         #Navbar > div, #Navbar a, #Navbar button, #Navbar .text-gray-800, #Navbar svg, #Navbar span { color: ${colors.text} !important; border-color: ${colors.border} !important; }
         #Navbar a:hover, #Navbar button:hover, #Navbar .group:hover > a { color: #dc2626 !important; }
@@ -101,20 +99,50 @@ export function useReadingTheme(contentRef: React.RefObject<HTMLElement | null>)
         .prose, .prose * { font-family: ${fontFamilies.find(f => f.key === fontFamily)?.family || "var(--font-sarabun), sans-serif"} !important; }
       `;
 
+        const applyStyles = () => {
+            if (cancelled) return false;
+            const nav = document.getElementById("Navbar");
+            const navbarWrapper = document.getElementById("GlobalNavbarWrapper");
+            if (!nav || !navbarWrapper) return false;
+
+            let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
             if (!styleEl) {
                 styleEl = document.createElement("style");
                 styleEl.id = styleId;
-                styleEl.innerHTML = css;
                 document.head.appendChild(styleEl);
-            } else {
-                styleEl.innerHTML = css;
             }
+            styleEl.innerHTML = css;
+            return true;
+        };
 
-            return () => {
-                const s = document.getElementById(styleId);
-                if (s) s.remove();
-            };
-        } catch { }
+        const tryApply = () => {
+            if (applyStyles()) {
+                observer?.disconnect();
+                observer = null;
+                if (frameId) cancelAnimationFrame(frameId);
+                frameId = null;
+                return;
+            }
+            frameId = requestAnimationFrame(tryApply);
+        };
+
+        tryApply();
+
+        observer = new MutationObserver(() => {
+            if (applyStyles()) {
+                observer?.disconnect();
+                observer = null;
+            }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+
+        return () => {
+            cancelled = true;
+            if (frameId) cancelAnimationFrame(frameId);
+            observer?.disconnect();
+            const s = document.getElementById(styleId);
+            if (s) s.remove();
+        };
     }, [bgColor, fontFamily]);
 
     // Auto Scroll Logic

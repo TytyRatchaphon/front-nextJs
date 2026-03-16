@@ -34,3 +34,35 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Production Build Notes
+
+Use Node `22` for production builds.
+
+Recommended pre-build steps:
+
+```bash
+node -v
+npm ci
+npm run build
+```
+
+CI/CD cache checklist:
+
+- Cache `~/.npm`
+- Cache `.next/cache`
+- Do not cache `.next/standalone`
+- Do not cache `.next/static`
+- Do not cache `node_modules` if using `npm ci`
+
+Suggested cache keys:
+
+- npm cache: lockfile hash (`package-lock.json`)
+- Next cache: lockfile hash + source hash for `src/**`, `next.config.ts`, `tsconfig.json`
+
+Typical restore order:
+
+1. Restore `~/.npm`
+2. Restore `.next/cache`
+3. Run `npm ci`
+4. Run `npm run build`

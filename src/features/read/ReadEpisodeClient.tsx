@@ -1,5 +1,6 @@
 import React from "react";
 import ReadEpisodePage from "./page.client.internal";
+import ReadPageFonts from "@/components/fonts/ReadPageFonts";
 
 type Props = {
   bookId: string;
@@ -7,5 +8,10 @@ type Props = {
 };
 
 export default function ReadEpisodeClient({ bookId, episodeId }: Props) {
-  return <ReadEpisodePage bookId={bookId} episodeId={episodeId} />;
+  return (
+    <>
+      <ReadPageFonts />
+      <ReadEpisodePage bookId={bookId} episodeId={episodeId} />
+    </>
+  );
 }

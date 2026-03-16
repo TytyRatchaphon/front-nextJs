@@ -53,10 +53,8 @@ export default function SocketProvider({
 
     const currentUserId = currentUser?.user_id || (currentUser as any)?.id || (currentUser as any)?.userId;
     
-    // 1. If we have a token (Logged in) but User ID is missing, wait (Race condition protection).
-    // Note: If !token (Guest), we proceed to connect as guest.
-    if (token && !currentUserId) {
-    // console.log("⏳ Socket waiting for user_id resolution...");
+    // 1. If no token (Guest) or waiting for user ID resolution, do not connect socket.
+    if (!token || !currentUserId) {
         setSocket(null); // Ensure we don't hold onto a stale socket
         return;
     }

@@ -4,6 +4,8 @@ import PackCampaign from '@/features/campaign/PackCampaign';
 import { fetchPackCampaignDetail } from '@/services/apiServices';
 import { Metadata } from 'next';
 
+export const revalidate = 60;
+
 type Props = {
     params: Promise<{ id: string }>;
 };

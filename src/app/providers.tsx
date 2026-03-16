@@ -4,10 +4,15 @@ import '@ant-design/v5-patch-for-react-19';
 
 import React, { useState } from 'react';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 import { useWebsiteStore } from '@/stores/websiteStore'; // Direct import
 import BlockedUserModal from '@/components/auth/BlockedUserModal';
+
+const ReactQueryDevtoolsLazy = React.lazy(() =>
+  import('@tanstack/react-query-devtools').then((d) => ({
+    default: d.ReactQueryDevtools,
+  }))
+);
 
 export default function TanstackProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -34,7 +39,11 @@ export default function TanstackProvider({ children }: { children: React.ReactNo
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      <ReactQueryDevtools initialIsOpen={false} />
+      {process.env.NODE_ENV === 'development' && (
+        <React.Suspense fallback={null}>
+          <ReactQueryDevtoolsLazy initialIsOpen={false} />
+        </React.Suspense>
+      )}
       <BlockedUserModal />
     </QueryClientProvider>
   );

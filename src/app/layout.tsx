@@ -6,7 +6,7 @@ import 'swiper/css/navigation';
 import 'antd/dist/reset.css';
 import "./globals.css";
 import TanstackProvider from "./providers";
-import { Bai_Jamjuree, Sarabun, Prompt, Kanit, IBM_Plex_Sans_Thai, Mitr, Mali, Trirong, Maitree, Taviraj, Kodchasan, Chakra_Petch } from "next/font/google";
+import { Bai_Jamjuree } from "next/font/google";
 import Navbar from "@/components/navbar/navbar";
 import FooterWrapper from "@/components/home/FooterWrapper";
 // import StyledComponentsRegistry from './AntdRegistry';
@@ -17,84 +17,6 @@ const baiJamjuree = Bai_Jamjuree({
   weight: ["500"],
   subsets: ["thai", "latin"],
   variable: "--font-bai-jamjuree",
-  display: "swap",
-});
-
-const sarabun = Sarabun({
-  weight: ["300", "400", "500", "700"],
-  subsets: ["thai", "latin"],
-  variable: "--font-sarabun",
-  display: "swap",
-});
-
-const prompt = Prompt({
-  weight: ["300", "400", "500", "700"],
-  subsets: ["thai", "latin"],
-  variable: "--font-prompt",
-  display: "swap",
-});
-
-const kanit = Kanit({
-  weight: ["300", "400", "500", "700"],
-  subsets: ["thai", "latin"],
-  variable: "--font-kanit",
-  display: "swap",
-});
-
-const ibmPlexSansThai = IBM_Plex_Sans_Thai({
-  weight: ["300", "400", "500", "700"],
-  subsets: ["thai", "latin"],
-  variable: "--font-ibm-plex-sans-thai",
-  display: "swap",
-});
-
-const mitr = Mitr({
-  weight: ["300", "400", "500"],
-  subsets: ["thai", "latin"],
-  variable: "--font-mitr",
-  display: "swap",
-});
-
-const mali = Mali({
-  weight: ["300", "400", "500", "700"],
-  subsets: ["thai", "latin"],
-  variable: "--font-mali",
-  display: "swap",
-});
-
-const trirong = Trirong({
-  weight: ["300", "400", "500", "700"],
-  subsets: ["thai", "latin"],
-  variable: "--font-trirong",
-  display: "swap",
-});
-
-const maitree = Maitree({
-  weight: ["300", "400", "500", "700"],
-  subsets: ["thai", "latin"],
-  variable: "--font-maitree",
-  display: "swap",
-});
-
-const taviraj = Taviraj({
-  weight: ["300", "400", "500", "700"],
-  subsets: ["thai", "latin"],
-  variable: "--font-taviraj",
-  display: "swap",
-});
-
-const kodchasan = Kodchasan({
-  weight: ["300", "400", "500", "700"],
-  subsets: ["thai", "latin"],
-  variable: "--font-kodchasan",
-  display: "swap",
-});
-
-// Chakra Petch
-const chakraPetch = Chakra_Petch({
-  weight: ["300", "400", "500", "700"],
-  subsets: ["thai", "latin"],
-  variable: "--font-chakra-petch",
   display: "swap",
 });
 
@@ -124,15 +46,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${baiJamjuree.variable} ${sarabun.variable} ${prompt.variable} ${kanit.variable} ${ibmPlexSansThai.variable} ${mitr.variable} ${mali.variable} ${trirong.variable} ${maitree.variable} ${taviraj.variable} ${kodchasan.variable} ${chakraPetch.variable} font-bai-jamjuree font-medium`}>
+    <html lang="en" className={`${baiJamjuree.variable} font-bai-jamjuree font-medium`}>
       <Script src="https://t.contentsquare.net/uxa/c765809e7d7ef.js" strategy="afterInteractive" />
       
       {/* Google Ads Tag */}
       <Script
         src="https://www.googletagmanager.com/gtag/js?id=AW-16724162319"
-        strategy="afterInteractive"
+        strategy="lazyOnload"
       />
-      <Script id="google-ads-tag" strategy="afterInteractive">
+      <Script id="google-ads-tag" strategy="lazyOnload">
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
@@ -141,7 +63,7 @@ export default function RootLayout({
         `}
       </Script>
       {/* Facebook Pixel */}
-      <Script id="facebook-pixel" strategy="afterInteractive">
+      <Script id="facebook-pixel" strategy="lazyOnload">
         {`
           !function(f,b,e,v,n,t,s)
           {if(f.fbq)return;n=f.fbq=function(){n.callMethod?

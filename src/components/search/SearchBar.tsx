@@ -741,7 +741,7 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
                 </>
               )}
              </div>
-          )}
+           )}
         </div>
       </div>
 

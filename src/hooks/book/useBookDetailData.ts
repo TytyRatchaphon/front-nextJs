@@ -105,6 +105,8 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
                 flowers: bookDetail.flower,
                 remaining_paid_total: purchaseDetails?.remaining_paid_total ?? (bookDetail as any).remaining_paid_total ?? (bookDetail as any).remaining_paid?.total,
                 remaining_paid_count: purchaseDetails?.remaining_paid_count ?? (bookDetail as any).remaining_paid_count ?? (bookDetail as any).remaining_paid?.count,
+                total_remaining_count: purchaseDetails?.total_remaining_count ?? (bookDetail as any).total_remaining_count ?? (bookDetail as any).total_remaining?.count,
+                total_remaining_total: purchaseDetails?.total_remaining_total ?? (bookDetail as any).total_remaining_total ?? (bookDetail as any).total_remaining?.total,
                 price: (bookDetail as any).price ?? 2299,
                 promotion: (purchaseDetails?.discount_full_book || (bookDetail as any).discount_full_book) ? {
                     id: (purchaseDetails?.discount_full_book?.dfb_id || (bookDetail as any).discount_full_book.dfb_id),

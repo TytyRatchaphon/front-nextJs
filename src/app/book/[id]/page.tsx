@@ -3,6 +3,8 @@ import type { Metadata, ResolvingMetadata } from 'next'
 import { fetchBookDetail, resolveBookId } from "@/services/apiServices";
 import { redirect } from 'next/navigation';
 
+export const revalidate = 60;
+
 type Props = {
   params: { id: string } | Promise<{ id: string }>
 }

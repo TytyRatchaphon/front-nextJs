@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { Alert, Button, Popover, Modal, Slider, Switch, Select, ConfigProvider, message, App, Input } from "antd";
+import { Alert, Button, Popover, Modal, Slider, Switch, Select, ConfigProvider, message, App, Input, Space } from "antd";
 import parse from "html-react-parser";
 import { BackToTopButton } from "@/components/utility/BackToTopButton";
 import Link from "next/link";
@@ -26,6 +26,7 @@ import { useReadingTheme } from "@/hooks/reader/useReadingTheme";
 import { useEpisodeNavigation } from "@/hooks/reader/useEpisodeNavigation";
 import { useLogger } from "@/hooks/useLogger";
 import { CheckCircleOutlined } from "@ant-design/icons";
+import { buildReadBuyPayload, getReadConfirmButtonLabel, getReadEpisodePurchaseState, getRegularEpisodePrices, type ReadFastPayMethod, type ReadPayMethod } from "./purchaseUtils";
 
 type Props = {
   bookId: string;
@@ -215,6 +216,11 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   const bookmarkedParagraphIndexes = useMemo(
     () => new Set(bookmarks.map((b) => b.paragraph_index).filter((n) => Number.isFinite(n) && n > 0)),
     [bookmarks]
+  );
+
+  const purchaseState = useMemo(
+    () => getReadEpisodePurchaseState(episode as any, (bookDetail as any)?.use_freecoin),
+    [episode, bookDetail]
   );
 
   const scrollToParagraph = (paragraphIndex: number) => {
@@ -470,8 +476,8 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
 
   // Confirm Modal State
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmMethod, setConfirmMethod] = useState<"coin" | "freecoin" | null>(null);
-  const [confirmFastMethod, setConfirmFastMethod] = useState<"coin" | "fast_ticket">("fast_ticket");
+  const [confirmMethod, setConfirmMethod] = useState<ReadPayMethod | null>(null);
+  const [confirmFastMethod, setConfirmFastMethod] = useState<ReadFastPayMethod>("fast_ticket");
   const [confirmAmount, setConfirmAmount] = useState<number | null>(null);
   const [buyLoading, setBuyLoading] = useState(false);
   const [cancelHover, setCancelHover] = useState(false);
@@ -562,36 +568,14 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   };
 
   // --- 5. Actions ---
-  const openConfirm = (method: "coin" | "freecoin", amount?: number | null) => {
-    const ep = episode as any;
-    const early = ep?.early_access || {};
-    const canFastTicket = Boolean(early?.fast_ticket ?? ep?.isFastTicket);
+  const openConfirm = (method: ReadPayMethod, amount?: number | null) => {
     setConfirmMethod(method);
-    setConfirmFastMethod(canFastTicket ? 'fast_ticket' : 'coin');
+    setConfirmFastMethod(purchaseState.canFastTicket ? 'fast_ticket' : 'coin');
     setConfirmAmount(typeof amount === 'number' ? amount : null);
     setConfirmOpen(true);
   };
 
-  const getRegularEpisodePrices = (ep: any) => {
-    const discountPrice = ep?.Discount?.discount_price;
-    if (discountPrice !== null && discountPrice !== undefined && !Number.isNaN(Number(discountPrice))) {
-      const discounted = Number(discountPrice);
-      return { coinPrice: discounted, freecoinPrice: discounted, hasDiscount: true };
-    }
-
-    if (ep?.coin_discount !== null && ep?.coin_discount !== undefined && !Number.isNaN(Number(ep.coin_discount))) {
-      const discounted = Number(ep.coin_discount);
-      return { coinPrice: discounted, freecoinPrice: discounted, hasDiscount: true };
-    }
-
-    return {
-      coinPrice: Number(ep?.coin ?? 0),
-      freecoinPrice: Number(ep?.freecoin ?? 0),
-      hasDiscount: false,
-    };
-  };
-
-  const handleBuy = async (method: "coin" | "freecoin", earlyMethod: "coin" | "fast_ticket" = "coin") => {
+  const handleBuy = async (method: ReadPayMethod, earlyMethod: ReadFastPayMethod = "coin") => {
     if (!isLoggedIn) {
       openLoginModal();
       return;
@@ -600,14 +584,8 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     try {
       setBuyLoading(true);
       const ep = episode as any;
-      const early = ep?.early_access || {};
-      const isEarlyAccess = Boolean(early?.fast_ticket || early?.fast_coin || ep?.isFastTicket);
-      const canFastTicket = Boolean(early?.fast_ticket ?? ep?.isFastTicket);
-      const canFastCoin = isEarlyAccess;
-      const isFastBuyable = isEarlyAccess && Boolean(early?.isFast_buyable ?? ep?.isFast_buyable);
-      const isFastLocked = isEarlyAccess && !isFastBuyable;
 
-      if (isFastLocked) {
+      if (purchaseState.isFastLocked) {
         notification.error({
           message: 'ตอนนี้ยังไม่เปิดให้ซื้อ',
           description: 'ตอนล่วงหน้ายังไม่สามารถซื้อได้ในตอนนี้',
@@ -616,7 +594,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
         return;
       }
 
-      if (isEarlyAccess && method === 'freecoin') {
+      if (purchaseState.isEarlyAccess && method === 'freecoin') {
         notification.error({
           message: 'ไม่รองรับการซื้อด้วยถุงเงิน',
           description: 'ตอนล่วงหน้าไม่รองรับการซื้อด้วยถุงเงิน',
@@ -629,12 +607,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
       const { coinPrice, freecoinPrice: freeCoinPrice } = getRegularEpisodePrices(ep);
       const priceToDeduct = method === 'coin' ? coinPrice : freeCoinPrice;
 
-      const payload: any = { eps: [Number(epId)], payWith: method };
-      if (isEarlyAccess) {
-        payload.payWith = method;
-        if (earlyMethod === 'fast_ticket' && canFastTicket) payload.fastPayWith = ['ticket'];
-        else if (canFastCoin) payload.fastPayWith = ['coin'];
-      }
+      const payload = buildReadBuyPayload(epId, method, earlyMethod, purchaseState);
       const res = await apiClient.post(`/buy/eps`, payload);
 
       if (res?.data?.code === 200) {
@@ -652,7 +625,16 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
         if (res.data?.data?.rp_earned && res.data.data.rp_earned > 0) {
           notification.success({
             message: 'ยินดีด้วย!',
-            description: `คุณได้รับ RP + ${res.data.data.rp_earned}`,
+            description: (
+              <div className="flex items-center gap-1">
+                <span>คุณได้รับ {res.data.data.rp_earned}</span>
+                {settings?.rank_point ? (
+                  <Image src={settings.rank_point} alt="RP" width={16} height={16} unoptimized className="object-contain" />
+                ) : (
+                  <span>RP</span>
+                )}
+              </div>
+            ),
             placement: 'topRight',
           });
         }
@@ -712,45 +694,29 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   // --- 6. Render Helpers ---
   function PurchaseFallback() {
     const ep = episode as any;
-    const early = ep?.early_access || {};
-    const isFastTicketEpisode = Boolean(early?.fast_ticket || early?.fast_coin || ep?.isFastTicket);
-    const canFastTicket = Boolean(early?.fast_ticket ?? ep?.isFastTicket);
-    const canFastCoin = isFastTicketEpisode;
-    const isFastBuyable = isFastTicketEpisode && Boolean(early?.isFast_buyable ?? ep?.isFast_buyable);
-    const isFastLocked = isFastTicketEpisode && !isFastBuyable;
-    const fastTicketPrice = Number.isFinite(Number(early?.fastTicketPrice)) && Number(early?.fastTicketPrice) > 0
-      ? Number(early.fastTicketPrice)
-      : 1;
-    const bookUseFreecoin = (bookDetail as any)?.use_freecoin;
-    const epUseFreecoin = ep?.use_freecoin;
-    const canUseFreecoin = epUseFreecoin !== undefined && epUseFreecoin !== null
-      ? Number(epUseFreecoin) === 1
-      : (bookUseFreecoin !== undefined && bookUseFreecoin !== null ? Number(bookUseFreecoin) === 1 : true);
     const { coinPrice, freecoinPrice, hasDiscount } = getRegularEpisodePrices(ep);
-    const fastCoinPrice = Number.isFinite(Number(early?.fastCoinPrice)) && Number(early?.fastCoinPrice) >= 0
-      ? Number(early.fastCoinPrice)
-      : Number(coinPrice ?? 0);
+    const { isEarlyAccess, canFastTicket, canFastCoin, isFastLocked, fastTicketPrice, fastCoinPrice, canUseFreecoin } = purchaseState;
     const baseRegularPrice = Number(coinPrice ?? 0);
 
     return (
       <div className="text-center py-12">
         <Image src={settings?.img_buyep || '/images/unlock.png'} alt="No Content" width={100} height={100} unoptimized className="justify-center mx-auto" />
         <p className="text-sm text-gray-500 mb-4">ตอนนี้ยังไม่มีเนื้อหา หากต้องการอ่าน กรุณาซื้อ</p>
-        {isFastTicketEpisode && (
+        {isEarlyAccess && (
           <div className={`mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${isFastLocked ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-700'}`}>
             <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={16} height={16} unoptimized />
             {isFastLocked ? 'ตอนล่วงหน้า ยังไม่เปิดให้ซื้อ' : canFastTicket && canFastCoin ? 'ตอนล่วงหน้า เลือกจ่าย FastTicket / เหรียญ' : canFastTicket ? 'ตอนล่วงหน้า จ่ายด้วย FastTicket' : 'ตอนล่วงหน้า จ่ายด้วยเหรียญ'}
           </div>
         )}
         <div className="flex items-center justify-center gap-3">
-          {canUseFreecoin && !isFastTicketEpisode && (
+          {canUseFreecoin && !isEarlyAccess && (
             <button onClick={() => openConfirm("freecoin", freecoinPrice)} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg">
               <Image src={settings?.freecoin || '/images/money-bag.png'} alt="Coin Icon" width={20} height={20} unoptimized />
               ซื้อด้วยถุงเงิน {freecoinPrice ? `(${freecoinPrice})` : ""}
             </button>
           )}
-          <button onClick={() => openConfirm("coin", coinPrice)} disabled={isFastLocked || (isFastTicketEpisode && !canFastCoin)} className={`flex items-center gap-2 px-4 py-2 ${(canUseFreecoin && !isFastTicketEpisode) ? 'bg-yellow-400' : 'bg-red-600'} text-white rounded-lg disabled:opacity-60 disabled:cursor-not-allowed`}>
-            {isFastTicketEpisode ? (
+          <button onClick={() => openConfirm("coin", coinPrice)} disabled={isFastLocked || (isEarlyAccess && !canFastCoin)} className={`flex items-center gap-2 px-4 py-2 ${(canUseFreecoin && !isEarlyAccess) ? 'bg-yellow-400' : 'bg-red-600'} text-white rounded-lg disabled:opacity-60 disabled:cursor-not-allowed`}>
+            {isEarlyAccess ? (
               <div className="flex items-center gap-2 text-white font-medium">
                 {canFastTicket && (
                   <div className="inline-flex items-center gap-1">
@@ -802,14 +768,10 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
 
   const renderReadConfirmSummary = () => {
     const ep = episode as any;
-    const early = ep?.early_access || {};
-    const isFastTicketEpisode = Boolean(early?.fast_ticket || early?.fast_coin || ep?.isFastTicket);
-    const canFastTicket = Boolean(early?.fast_ticket ?? ep?.isFastTicket);
     const { coinPrice, freecoinPrice } = getRegularEpisodePrices(ep);
-    const fastTicketPrice = Number.isFinite(Number(early?.fastTicketPrice)) && Number(early?.fastTicketPrice) > 0 ? Number(early.fastTicketPrice) : 1;
-    const fastCoinPrice = Number.isFinite(Number(early?.fastCoinPrice)) && Number(early?.fastCoinPrice) >= 0 ? Number(early.fastCoinPrice) : Number(coinPrice ?? 0);
+    const { isEarlyAccess, fastTicketPrice, fastCoinPrice } = purchaseState;
 
-    if (isFastTicketEpisode) {
+    if (isEarlyAccess) {
       const regularPaymentIcon = confirmMethod === 'freecoin'
         ? (settings?.freecoin || '/images/money-bag.png')
         : (settings?.coin || '/images/e-coin.png');
@@ -1267,21 +1229,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
         zIndex={2000}
         footer={[
           <Button key="cancel" onClick={() => setConfirmOpen(false)} disabled={buyLoading} className="transition-colors" onMouseEnter={() => setCancelHover(true)} onMouseLeave={() => setCancelHover(false)} style={{ borderColor: cancelHover ? '#dc2626' : 'transparent', color: cancelHover ? '#dc2626' : undefined }}>ยกเลิก</Button>,
-          <Button key="confirm" type="primary" danger loading={buyLoading} onClick={() => { if (confirmMethod) handleBuy(confirmMethod, confirmFastMethod); }}>{(() => {
-            const ep = episode as any;
-            const early = ep?.early_access || {};
-            const isFastTicketEpisode = Boolean(early?.fast_ticket || early?.fast_coin || ep?.isFastTicket);
-            const canFastTicket = Boolean(early?.fast_ticket ?? ep?.isFastTicket);
-            const canFastCoin = isFastTicketEpisode;
-            const fastTicketPrice = Number.isFinite(Number(early?.fastTicketPrice)) && Number(early?.fastTicketPrice) > 0
-              ? Number(early.fastTicketPrice)
-              : 1;
-            if (confirmMethod === 'coin' && isFastTicketEpisode) {
-              if (canFastTicket && canFastCoin) return confirmFastMethod === 'fast_ticket' ? `ยืนยันซื้อด้วย ${fastTicketPrice} FastTicket` : 'ยืนยันซื้อด้วยเหรียญ';
-              if (canFastTicket) return `ยืนยันซื้อด้วย ${fastTicketPrice} FastTicket`;
-            }
-            return confirmMethod === 'coin' ? 'ยืนยันซื้อด้วยเหรียญ' : 'ยืนยันซื้อด้วยถุงเงิน';
-          })()}</Button>,
+          <Button key="confirm" type="primary" danger loading={buyLoading} onClick={() => { if (confirmMethod) handleBuy(confirmMethod, confirmFastMethod); }}>{getReadConfirmButtonLabel(confirmMethod, confirmFastMethod, purchaseState)}</Button>,
         ]}
       >
         <div className="space-y-2 text-center">
@@ -1289,41 +1237,34 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
           {renderReadConfirmSummary()}
           {(() => {
               const ep = episode as any;
-              const early = ep?.early_access || {};
-              const isFastTicketEpisode = Boolean(early?.fast_ticket || early?.fast_coin || ep?.isFastTicket);
-              const canFastTicket = Boolean(early?.fast_ticket ?? ep?.isFastTicket);
-              const bookUseFreecoin = (bookDetail as any)?.use_freecoin;
-              const epUseFreecoin = ep?.use_freecoin;
-              const canUseFreecoin = epUseFreecoin !== undefined && epUseFreecoin !== null
-                ? Number(epUseFreecoin) === 1
-                : (bookUseFreecoin !== undefined && bookUseFreecoin !== null ? Number(bookUseFreecoin) === 1 : true);
-              if (!isFastTicketEpisode) return null;
+              if (!purchaseState.isEarlyAccess) return null;
+              const regularPrices = getRegularEpisodePrices(ep);
               return (
                 <div className="space-y-3 pt-2">
                   <div>
                     <div className="mb-2 text-center text-xs font-medium text-gray-500">ชำระส่วนตอนล่วงหน้า</div>
                     <div className="flex justify-center">
-                      <Button.Group>
+                      <Space.Compact>
                         <Button type={confirmFastMethod === 'coin' ? 'primary' : 'default'} onClick={() => setConfirmFastMethod('coin')}>
                           เหรียญ <Image src={settings?.coin || '/images/e-coin.png'} alt="coin" width={14} height={14} unoptimized />
                         </Button>
-                        <Button type={confirmFastMethod === 'fast_ticket' ? 'primary' : 'default'} onClick={() => setConfirmFastMethod('fast_ticket')} disabled={!canFastTicket}>
+                        <Button type={confirmFastMethod === 'fast_ticket' ? 'primary' : 'default'} onClick={() => setConfirmFastMethod('fast_ticket')} disabled={!purchaseState.canFastTicket}>
                           FastTicket <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={14} height={14} unoptimized />
                         </Button>
-                      </Button.Group>
+                      </Space.Compact>
                     </div>
                   </div>
                   <div>
                     <div className="mb-2 text-center text-xs font-medium text-gray-500">ชำระราคาตอนปกติ</div>
                     <div className="flex justify-center">
-                      <Button.Group>
-                        <Button type={confirmMethod === 'coin' ? 'primary' : 'default'} onClick={() => { setConfirmMethod('coin'); setConfirmAmount(getRegularEpisodePrices(ep).coinPrice); }}>
+                      <Space.Compact>
+                        <Button type={confirmMethod === 'coin' ? 'primary' : 'default'} onClick={() => { setConfirmMethod('coin'); setConfirmAmount(regularPrices.coinPrice); }}>
                           เหรียญ <Image src={settings?.coin || '/images/e-coin.png'} alt="coin" width={14} height={14} unoptimized />
                         </Button>
-                        <Button type={confirmMethod === 'freecoin' ? 'primary' : 'default'} onClick={() => { setConfirmMethod('freecoin'); setConfirmAmount(getRegularEpisodePrices(ep).freecoinPrice); }} disabled={!canUseFreecoin}>
+                        <Button type={confirmMethod === 'freecoin' ? 'primary' : 'default'} onClick={() => { setConfirmMethod('freecoin'); setConfirmAmount(regularPrices.freecoinPrice); }} disabled={!purchaseState.canUseFreecoin}>
                           ถุงเงิน <Image src={settings?.freecoin || '/images/money-bag.png'} alt="freecoin" width={14} height={14} unoptimized />
                         </Button>
-                      </Button.Group>
+                      </Space.Compact>
                     </div>
                   </div>
                 </div>

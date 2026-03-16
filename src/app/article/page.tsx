@@ -1,6 +1,8 @@
 import React from 'react';
 import Article from "@/features/article/Article";
 
+export const revalidate = 120;
+
 export default function ArticlePage() {
   return (
     <div className="min-h-screen bg-white flex justify-center w-full">

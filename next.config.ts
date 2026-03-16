@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  output: 'standalone',
   allowedDevOrigins: ['192.168.220.172'],
   experimental: {
     optimizePackageImports: [
