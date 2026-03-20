@@ -21,6 +21,9 @@ export default function TanstackProvider({ children }: { children: React.ReactNo
         defaultOptions: {
           queries: {
             staleTime: 60 * 1000,
+            retry: 1,
+            retryDelay: 3000,
+            gcTime: 5 * 60 * 1000,
           },
         },
       })

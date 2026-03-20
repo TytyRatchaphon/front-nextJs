@@ -1,6 +1,7 @@
 
 import apiClient from "../apiClient";
 import type { BookTrans } from "@/types/api";
+import { parseJwtToken } from "@/utils/jwtParser";
 
 export interface Slide {
   banner_id: number;
@@ -63,9 +64,11 @@ export interface BookUpdate {
   }[];
 }
 
-export const fetchHomeData = async (): Promise<HomeDataResponse | null> => {
+export const fetchHomeData = async (token?: string | null): Promise<HomeDataResponse | null> => {
   try {
-    const response = await apiClient.get<HomeDataResponse>("/getAllBookHome");
+    const cleanedToken = parseJwtToken(token);
+    const config = cleanedToken ? { headers: { Authorization: cleanedToken } } : undefined;
+    const response = await apiClient.get<HomeDataResponse>("/getAllBookHome", config);
     return response.data;
   } catch {
     return null;

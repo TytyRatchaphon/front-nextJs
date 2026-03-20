@@ -3,7 +3,7 @@
 import '@/components/home/Banner';
 import React, { useEffect, useState } from 'react'
 import Image from 'next/image'
-import { Tabs, Spin, Modal, notification, Input } from 'antd'
+import { Tabs, Spin, Modal, notification, Input, Image as AntdImage } from 'antd'
 import { CheckCircleOutlined } from '@ant-design/icons'
 import { fetchStoreData, updateUserAddress } from '@/services/apiServices';
 import { useAuthStore } from '@/stores/authStore'
@@ -21,12 +21,19 @@ import '@/utils/imageUtils';
 import { fetchCartItems } from '@/services/cartService';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { QUERY_CONFIG } from '@/constants/query';
+import StampPill from '@/components/utility/StampPill';
+import RPPill from '@/components/utility/RPPill';
+import { imageLoader } from '@/utils/imageUtils';
+import UserRankShowcase from '@/features/user/components/UserRankShowcase';
 
 
 function Store() {
   const { user, updateToken, token } = useAuthStore(); // Added token
   const [storeData, setStoreData] = useState<StoreCategory[]>([])
   const [loading, setLoading] = useState(true)
+  const [bannerError, setBannerError] = useState(false)
+  const [avatarError, setAvatarError] = useState(false)
+  const [activeStoreTab, setActiveStoreTab] = useState<string>('all')
 
   const balance = {
     coin: user?.coin ?? 0,
@@ -34,7 +41,8 @@ function Store() {
     heart: user?.heart ?? 0,
     stamp: user?.stamp ?? 0,
     exp_point: user?.exp ?? 0,
-    free_coin: user?.freecoin ?? 0
+    free_coin: user?.freecoin ?? 0,
+    rp: user?.current_rp ?? 0
   }
 
   const [selectedPack, setSelectedPack] = useState<StorePack | null>(null)
@@ -271,6 +279,11 @@ function Store() {
     loadData()
   }, [])
 
+  useEffect(() => {
+    // Clear previous load error when changing tabs so each banner can attempt loading.
+    setBannerError(false)
+  }, [activeStoreTab, storeData])
+
   // Generate Tab Items
   const tabItems = storeData.map((category) => ({
     key: String(category.store_id),
@@ -319,13 +332,126 @@ function Store() {
 
   const finalItems = [allTabItem, ...tabItems];
   const { settings } = useWebsiteStore();
+  const selectedStoreCategory =
+    activeStoreTab === 'all'
+      ? null
+      : storeData.find((category) => String(category.store_id) === activeStoreTab) ?? null;
+  const selectedStoreBannerRaw = selectedStoreCategory?.banner
+    || storeData.find((category) => Boolean(category.banner))?.banner
+    || null;
+  const selectedStoreBanner = (() => {
+    if (!selectedStoreBannerRaw || selectedStoreBannerRaw === 'null' || selectedStoreBannerRaw === 'undefined') {
+      return null;
+    }
+    if (
+      selectedStoreBannerRaw.startsWith('http')
+      || selectedStoreBannerRaw.startsWith('data:')
+      || selectedStoreBannerRaw.startsWith('/')
+    ) {
+      return selectedStoreBannerRaw.replace('http:', 'https:');
+    }
+    return `https://img.enjoybook.co/${selectedStoreBannerRaw}`;
+  })();
+  const storePromoSrc = !bannerError && selectedStoreBanner
+    ? imageLoader({ src: selectedStoreBanner, width: 1400 })
+    : '/images/storeBanner.png';
+  const rawAvatar = user?.img ?? (user as any)?.profileImage ?? '';
+  const avatarSrc = (() => {
+    if (!rawAvatar || rawAvatar === 'null' || rawAvatar === 'undefined') {
+      return '/images/default-avatar.png';
+    }
+    if (rawAvatar.startsWith('http') || rawAvatar.startsWith('data:') || rawAvatar.startsWith('/')) {
+      return rawAvatar.replace('http:', 'https:');
+    }
+    if (rawAvatar.startsWith('img/')) {
+      return `https://img.enjoybook.co/${rawAvatar}`;
+    }
+    return `https://img.enjoybook.co/img/profile/${rawAvatar}`;
+  })();
   return (
     <div className="pb-20">
       {contextHolder}
+      <div className="max-w-[1128px] mx-auto px-4 mt-6">
+        <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+          <div className="relative min-h-[148px] overflow-hidden rounded-[30px] border border-[#f0d9d4] bg-[linear-gradient(135deg,_#ffffff,_#fff9f7_55%,_#fff1ed)] shadow-[0_20px_42px_-34px_rgba(239,68,68,0.22)]">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,234,228,0.95),_transparent_35%),radial-gradient(circle_at_right,_rgba(255,243,239,0.9),_transparent_30%)]" />
+            <div className="absolute -right-10 top-2 h-24 w-24 rounded-full bg-[#ffe5de] blur-3xl" />
+            <div className="absolute bottom-0 left-16 h-16 w-16 rounded-full bg-[#fff0ea] blur-2xl" />
+
+            <div className="relative z-10 flex h-full flex-col justify-center gap-3.5 p-3.5 md:p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-stone-200 bg-white/90 px-2 py-1 shadow-sm">
+                  <div className="relative h-7 w-7 overflow-hidden rounded-full border border-stone-200 bg-stone-100">
+                    <Image
+                      src={avatarError ? '/images/default-avatar.png' : avatarSrc}
+                      alt={user?.fullname || 'Enjoybook user'}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                      onError={() => setAvatarError(true)}
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-stone-500">Store</p>
+                    <p className="truncate text-[11px] font-semibold text-stone-800 md:text-xs">
+                      {user?.fullname || 'Enjoybook Member'}
+                    </p>
+                  </div>
+                </div>
+
+                <Link
+                  href="/wallet/history"
+                  className="inline-flex items-center gap-2 self-start rounded-full border border-stone-200 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-700 transition hover:border-stone-300 hover:bg-stone-50 hover:text-stone-950 md:text-xs"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 7v5l3 3" />
+                  </svg>
+                  <span>ประวัติการชำระ</span>
+                </Link>
+              </div>
+
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                <AmountPill
+                  amount={balance.coin}
+                  icon={settings?.coin || '/images/e-coin.png'}
+                />
+                <FreeCoinPill amount={balance.free_coin} />
+                <StampPill amount={balance.stamp} />
+                <RPPill amount={balance.rp} />
+              </div>
+            </div>
+          </div>
+
+          <UserRankShowcase variant="compact" className="lg:self-start" />
+        </div>
+
+        <div className="mt-4 relative overflow-hidden rounded-[30px] border border-stone-200 bg-white shadow-sm">
+          <div className="relative h-[176px] sm:h-[204px] lg:h-[256px]">
+            <AntdImage
+              src={storePromoSrc}
+              alt="Store promotion banner"
+              width="100%"
+              height="100%"
+              style={{ objectFit: 'cover' }}
+              preview={false}
+              className="!absolute !inset-0"
+              onError={() => setBannerError(true)}
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-stone-950/45 via-stone-950/10 to-transparent" />
+
+            <div className="relative z-10 flex h-full items-start justify-between p-4">
+              <div className="rounded-full bg-white/88 px-3 py-1 text-[11px] font-semibold text-stone-900 backdrop-blur-sm">
+                Store Banner
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       {/* <StoreBanner /> */}
 
       {/* Payment summary row */}
-      <div className="max-w-[1128px] mx-auto px-4 mt-6">
+      <div className="hidden max-w-[1128px] mx-auto px-4 mt-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
             {/* Main coin pill */}
@@ -336,16 +462,9 @@ function Store() {
             {/* Free Coin Pill */}
             <FreeCoinPill amount={balance.free_coin} />
 
-            {/* Small badges pills */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="flex items-center gap-4 bg-white border border-gray-200 px-3 py-1 rounded-full whitespace-nowrap">
-                {/* Stamp */}
-                <div className="flex items-center gap-1">
-                  <Image src={settings?.bigstamp || '/images/ejb-stamp.png'} alt="Stamp" width={20} height={20} unoptimized />
-                  <span className="text-xs text-gray-700 font-medium">{balance.stamp.toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
+            <StampPill amount={balance.stamp} />
+
+            <RPPill amount={balance.rp} />
           </div>
           <Link href="/wallet/history">
             <div className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer ml-auto hover:text-red-600 transition-colors">
@@ -365,7 +484,8 @@ function Store() {
           <GifLoader className="h-64" width={150} height={150} />
         ) : (
           <Tabs
-            defaultActiveKey="all"
+            activeKey={activeStoreTab}
+            onChange={(tabKey) => setActiveStoreTab(tabKey)}
             items={finalItems}
             className="font-primary custom-tabs-red"
           />
@@ -519,7 +639,7 @@ function Store() {
                 <div className="inline-block relative">
                     <span className="text-gray-400 text-sm font-medium block mb-1">ยอดรวมทั้งหมด</span>
                     <div className="flex items-center justify-center gap-2.5">
-                        {['coin', 'heart', 'flower', 'stamp', 'exp', 'freecoin'].includes(selectedPack?.type_use || '') && (
+                        {['coin', 'heart', 'flower', 'stamp', 'exp', 'freecoin', 'rp'].includes(selectedPack?.type_use || '') && (
                         <div className="relative">
                             <Image
                                 src={
@@ -528,7 +648,8 @@ function Store() {
                                     selectedPack?.type_use === 'flower' ? (settings?.flower || "/images/flower.png") :
                                         selectedPack?.type_use === 'stamp' ? (settings?.stamp || "/images/stamp.png") :
                                         selectedPack?.type_use === 'exp' ? (settings?.exp || "/images/exp.png") :
-                                            (settings?.freecoin || "/images/freecoin.png")
+                                            selectedPack?.type_use === 'rp' ? (settings?.rp || "/images/rp.png") :
+                                                (settings?.freecoin || "/images/freecoin.png")
                                 }
                                 width={36}
                                 height={36}
@@ -541,7 +662,7 @@ function Store() {
                         <span className="text-3xl font-bold font-primary text-gray-800 tracking-tight">
                             {((selectedPack?.price || 0) * selectedQty).toLocaleString()}
                         </span>
-                        {!['coin', 'heart', 'flower', 'stamp', 'exp', 'freecoin'].includes(selectedPack?.type_use || '') &&
+                        {!['coin', 'heart', 'flower', 'stamp', 'exp', 'freecoin', 'rp'].includes(selectedPack?.type_use || '') &&
                            <span className="text-lg text-gray-500 font-medium self-end mb-1">{selectedPack?.type_use}</span>
                         }
                     </div>

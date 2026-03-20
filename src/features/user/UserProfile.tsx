@@ -224,9 +224,9 @@ function UserProfileContent({ userId }: { userId: string }) {
                                     </div>
                                     
                                     <div className="flex items-center gap-1.5 bg-red-100/50 px-3 py-1.5 rounded-xl border border-red-200/50">
-                                        {settings?.rank_point && (
+                                        {settings?.rp && (
                                             <Image
-                                                src={settings.rank_point}
+                                                src={settings.rp}
                                                 alt="RP"
                                                 width={18}
                                                 height={18}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, type MouseEvent as ReactMouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Alert, Button, Popover, Modal, Slider, Switch, Select, ConfigProvider, message, App, Input, Space } from "antd";
@@ -222,6 +222,39 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     () => getReadEpisodePurchaseState(episode as any, (bookDetail as any)?.use_freecoin),
     [episode, bookDetail]
   );
+
+  const readerToggleIgnoreSelector = [
+    "a",
+    "button",
+    "input",
+    "textarea",
+    "select",
+    "label",
+    "[role='button']",
+    "[data-reader-ignore-toggle='true']",
+    ".ant-popover",
+    ".ant-popover-content",
+    ".ant-modal",
+    ".ant-modal-wrap",
+  ].join(",");
+
+  const shouldIgnoreReaderToggle = (target: EventTarget | null) => {
+    if (!(target instanceof Element)) return false;
+    return Boolean(target.closest(readerToggleIgnoreSelector));
+  };
+
+  const handleReaderSurfaceClick = (event: ReactMouseEvent<HTMLElement>) => {
+    if (shouldIgnoreReaderToggle(event.target)) return;
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim().length > 0) return;
+
+    if (!isFocused) {
+      setIsFocused(true);
+      return;
+    }
+
+    setShowNav((prev) => !prev);
+  };
 
   const scrollToParagraph = (paragraphIndex: number) => {
     const root = innerContentRef.current;
@@ -628,8 +661,8 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
             description: (
               <div className="flex items-center gap-1">
                 <span>คุณได้รับ {res.data.data.rp_earned}</span>
-                {settings?.rank_point ? (
-                  <Image src={settings.rank_point} alt="RP" width={16} height={16} unoptimized className="object-contain" />
+                {settings?.rp ? (
+                  <Image src={settings.rp} alt="RP" width={16} height={16} unoptimized className="object-contain" />
                 ) : (
                   <span>RP</span>
                 )}
@@ -958,9 +991,14 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
 
       <main className={`${currentBg?.bg} min-h-screen pb-20`}>
         <div className="min-h-[500px] p-4 flex flex-col items-center">
-          <div className={`min-h-[1000px] rounded-md w-full lg:max-w-[1000px] ${currentBg?.paper || currentBg?.bg} ${currentBg?.text} shadow-lg relative flex flex-col`}>
+          <div
+            className={`min-h-[1000px] rounded-md w-full lg:max-w-[1000px] ${currentBg?.paper || currentBg?.bg} ${currentBg?.text} shadow-lg relative flex flex-col ${showNav ? "reader-nav-visible" : "reader-nav-hidden"}`}
+            onClick={handleReaderSurfaceClick}
+          >
             {/* Header */}
-            <div className={`transition-all duration-300 w-full sticky top-0 z-[120] ${currentBg?.paper || currentBg?.bg}`}
+            <div
+              className={`transition-all duration-300 w-full sticky top-0 z-[120] ${currentBg?.paper || currentBg?.bg}`}
+              data-reader-ignore-toggle="true"
               style={{
                 position: 'sticky',
                 top: 0,
@@ -1128,10 +1166,6 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
               ref={contentRef}
               className="episode-content-wrapper relative mt-5 select-none leading-loose lg:px-11 px-6 text-wrap whitespace-normal overflow-hidden main-read cursor-pointer"
               style={{ userSelect: "none", WebkitUserSelect: "none", MozUserSelect: "none", msUserSelect: "none" }}
-              onClick={() => {
-                if (!isFocused) { setIsFocused(true); return; }
-                setShowNav(!showNav);
-              }}
             >
               <div
                 ref={innerContentRef}
@@ -1187,7 +1221,9 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
 
             {/* Sticky Navigation Footer */}
             {(showNav) && (
-              <div className={`w-full cursor-pointer border-t grid grid-cols-2 items-center sticky bottom-0 z-[999] transition-all duration-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] ${currentBg?.paper || currentBg?.bg}`}
+              <div
+                className={`w-full cursor-pointer border-t grid grid-cols-2 items-center sticky bottom-0 z-[999] transition-all duration-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] ${currentBg?.paper || currentBg?.bg}`}
+                data-reader-ignore-toggle="true"
                 style={{ borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)" }}>
                 <div className={`group w-full p-4 flex flex-row gap-2 items-center justify-center border-r hover:bg-black/5 transition-all ${!prevEpId ? "opacity-30 cursor-not-allowed" : "cursor-pointer active:scale-[0.98]"}`}
                   style={{ borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)" }}
@@ -1213,7 +1249,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
 
             {/* Comment Section */}
             {episodeId && (
-              <div className="px-4 pb-8">
+              <div className="px-4 pb-8" data-reader-ignore-toggle="true">
                 <EpisodeCommentSection episodeId={episodeId} theme={currentBg} />
               </div>
             )}
@@ -1304,9 +1340,30 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
           border-radius: 6px;
         }
         .paragraph-tracked-current {
-          background: rgba(107, 114, 128, 0.14);
-          border-radius: 6px;
-          transition: background-color 0.2s ease;
+          position: relative;
+          background: transparent;
+          border-radius: 0;
+        }
+        .paragraph-tracked-current::before {
+          content: ">";
+          position: absolute;
+          left: -14px;
+          top: 0.05em;
+          font-weight: 700;
+          font-size: 0.95em;
+          line-height: 1;
+          pointer-events: none;
+          opacity: 1;
+          transition: opacity 0.18s ease;
+        }
+        .reader-nav-hidden .paragraph-tracked-current::before {
+          opacity: 0;
+        }
+        .reader-theme-light .paragraph-tracked-current::before {
+          color: rgba(148, 163, 184, 0.92);
+        }
+        .reader-theme-dark .paragraph-tracked-current::before {
+          color: rgba(203, 213, 225, 0.88);
         }
         .reader-theme-light .paragraph-bookmarked {
           background: rgba(59, 130, 246, 0.08);

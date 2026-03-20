@@ -390,31 +390,31 @@ function History() {
 
   // Ensure current page indices stay within valid range when data or pageSize changes
   React.useEffect(() => {
-    const paymentsTotal = paymentsQuery.data?.data?.total ?? paymentsQuery.data?.data?.pagination?.total ?? paymentsQuery.data?.total ?? (paymentsQuery as any).previousData?.data?.total ?? payments.length
+    const paymentsTotal = paymentsQuery.data?.data?.total ?? paymentsQuery.data?.data?.pagination?.total ?? paymentsQuery.data?.total ?? (paymentsQuery as any).previousData?.data?.total ?? (paymentsQuery as any).previousData?.data?.pagination?.total ?? payments.length
     const maxPaymentsPage = Math.max(1, paymentsQuery.data?.data?.totalPages ?? Math.ceil((paymentsTotal ?? 0) / pageSize))
     if (!paymentsQuery.isFetching && paymentsPage > maxPaymentsPage) setPaymentsPage(maxPaymentsPage)
 
-    const useCoinsTotal = useCoinQuery.data?.data?.total ?? useCoinQuery.data?.data?.pagination?.total ?? useCoinQuery.data?.total ?? (useCoinQuery as any).previousData?.data?.total ?? useCoins.length
+    const useCoinsTotal = useCoinQuery.data?.data?.total ?? useCoinQuery.data?.data?.pagination?.total ?? useCoinQuery.data?.total ?? (useCoinQuery as any).previousData?.data?.total ?? (useCoinQuery as any).previousData?.data?.pagination?.total ?? useCoins.length
     const maxUseCoinsPage = Math.max(1, useCoinQuery.data?.data?.totalPages ?? Math.ceil((useCoinsTotal ?? 0) / pageSize))
     if (!useCoinQuery.isFetching && useCoinsPage > maxUseCoinsPage) setUseCoinsPage(maxUseCoinsPage)
 
-    const redeemTotal = redeemQuery.data?.data?.total ?? redeemQuery.data?.data?.pagination?.total ?? redeemQuery.data?.total ?? (redeemQuery as any).previousData?.data?.total ?? redeems.length
+    const redeemTotal = redeemQuery.data?.data?.total ?? redeemQuery.data?.data?.pagination?.total ?? redeemQuery.data?.total ?? (redeemQuery as any).previousData?.data?.total ?? (redeemQuery as any).previousData?.data?.pagination?.total ?? redeems.length
     const maxRedeemPage = Math.max(1, redeemQuery.data?.data?.totalPages ?? Math.ceil((redeemTotal ?? 0) / pageSize))
     if (!redeemQuery.isFetching && redeemPage > maxRedeemPage) setRedeemPage(maxRedeemPage)
 
-    const gachaTotal = gachaQuery.data?.data?.total ?? gachaQuery.data?.data?.pagination?.total ?? gachaQuery.data?.total ?? (gachaQuery as any).previousData?.data?.total ?? gachas.length
+    const gachaTotal = gachaQuery.data?.data?.total ?? gachaQuery.data?.data?.pagination?.total ?? gachaQuery.data?.total ?? (gachaQuery as any).previousData?.data?.total ?? (gachaQuery as any).previousData?.data?.pagination?.total ?? gachas.length
     const maxGachaPage = Math.max(1, gachaQuery.data?.data?.totalPages ?? Math.ceil((gachaTotal ?? 0) / pageSize))
     if (!gachaQuery.isFetching && gachaPage > maxGachaPage) setGachaPage(maxGachaPage)
 
-    const getMoreTotal = getMoreQuery.data?.data?.total ?? getMoreQuery.data?.data?.pagination?.total ?? getMoreQuery.data?.total ?? (getMoreQuery as any).previousData?.data?.total ?? getMores.length
+    const getMoreTotal = getMoreQuery.data?.data?.total ?? getMoreQuery.data?.data?.pagination?.total ?? getMoreQuery.data?.total ?? (getMoreQuery as any).previousData?.data?.total ?? (getMoreQuery as any).previousData?.data?.pagination?.total ?? getMores.length
     const maxGetMorePage = Math.max(1, getMoreQuery.data?.data?.totalPages ?? Math.ceil((getMoreTotal ?? 0) / pageSize))
     if (!getMoreQuery.isFetching && getmorePage > maxGetMorePage) setGetmorePage(maxGetMorePage)
 
-    const giftTotal = giftQuery.data?.data?.total ?? giftQuery.data?.data?.pagination?.total ?? giftQuery.data?.total ?? (giftQuery as any).previousData?.data?.total ?? gifts.length
+    const giftTotal = giftQuery.data?.data?.total ?? giftQuery.data?.data?.pagination?.total ?? giftQuery.data?.total ?? (giftQuery as any).previousData?.data?.total ?? (giftQuery as any).previousData?.data?.pagination?.total ?? gifts.length
     const maxGiftPage = Math.max(1, giftQuery.data?.data?.totalPages ?? Math.ceil((giftTotal ?? 0) / pageSize))
     if (!giftQuery.isFetching && giftPage > maxGiftPage) setGiftPage(maxGiftPage)
 
-    const storeTotal = storeHistoryQuery.data?.data?.total ?? storeHistoryQuery.data?.data?.pagination?.total ?? storeHistoryQuery.data?.total ?? (storeHistoryQuery as any).previousData?.data?.total ?? storeHistories.length
+    const storeTotal = storeHistoryQuery.data?.data?.total ?? storeHistoryQuery.data?.data?.pagination?.total ?? storeHistoryQuery.data?.total ?? (storeHistoryQuery as any).previousData?.data?.total ?? (storeHistoryQuery as any).previousData?.data?.pagination?.total ?? storeHistories.length
     const maxStorePage = Math.max(1, storeHistoryQuery.data?.data?.totalPages ?? Math.ceil((storeTotal ?? 0) / pageSize))
     if (!storeHistoryQuery.isFetching && storeHistoryPage > maxStorePage) setStoreHistoryPage(maxStorePage)
   }, [
@@ -558,14 +558,16 @@ function History() {
                               exp: settings?.exp || '/images/exp.png',
                               fast_ticket: settings?.fast_ticket || '/images/fast_ticket.png',
                               stamp: settings?.stamp || '/images/stamp.png',
+                              current_rp: settings?.rp || settings?.exp || '/images/e-coin.png',
+                              rp: settings?.rp || settings?.exp || '/images/e-coin.png',
                             }
                             const src = map[curLower];
-                            const unitName = currency;
 
                             if (src) {
                                 return (
                                     <div key={idx} className="flex items-center justify-end gap-1">
-                                        <span className="text-gray-700 font-medium">{Number(amount).toLocaleString()} {unitName}</span>
+                                        <span className="text-gray-700 font-medium">{Number(amount).toLocaleString()}</span>
+                                        <Image unoptimized src={src} alt={currency} width={16} height={16} />
                                     </div>
                                 )
                             }
@@ -638,6 +640,8 @@ function History() {
               exp: settings?.exp || '/images/exp.png',
               fast_ticket: settings?.fast_ticket || '/images/fast_ticket.png',
               stamp: settings?.stamp || '/images/stamp.png',
+              current_rp: settings?.rp || settings?.exp || '/images/e-coin.png',
+              rp: settings?.rp || settings?.exp || '/images/e-coin.png',
             }
             const src = map[cur] ?? '/images/e-coin.png'
             return (
@@ -664,6 +668,7 @@ function History() {
     settings?.freecoin,
     settings?.heart,
     settings?.stamp,
+    settings?.rp,
   ])
 
   return (
@@ -770,15 +775,25 @@ function History() {
                         expandRowByClick: true,
                         expandedRowRender: (record: any) => {
                             if (!record.items || record.items.length === 0) return null;
+                            const srcMap: Record<string, string> = {
+                              coin: settings?.coin || '/images/e-coin.png',
+                              coupon: settings?.coupon || '/images/gacha.png',
+                              freecoin: settings?.freecoin || '/images/money-bag.png',
+                              flower: settings?.flower || '/images/flower.png',
+                              heart: settings?.heart || '/images/heart.png',
+                              exp: settings?.exp || '/images/exp.png',
+                              fast_ticket: settings?.fast_ticket || '/images/fast_ticket.png',
+                              stamp: settings?.stamp || '/images/stamp.png',
+                              current_rp: settings?.rp || settings?.exp || '/images/e-coin.png',
+                              rp: settings?.rp || settings?.exp || '/images/e-coin.png',
+                            };
                             return (
                                 <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
                                     <h4 className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">รายละเอียดสินค้าในรายการนี้</h4>
                                     <div className="flex flex-col gap-2">
                                         {record.items.map((item: any, i: number) => {
-                                             const currency = item.currency_cached || '';
-                                             const src = currency === 'coin' ? (settings?.coin || '/images/e-coin.png') :
-                                                         currency === 'freecoin' ? (settings?.freecoin || '/images/money-bag.png') :
-                                                         currency === 'stamp' ? (settings?.stamp || '/images/stamp.png') : null;
+                                             const currency = (item.currency_cached || '').toLowerCase();
+                                             const src = srcMap[currency] || null;
 
                                              return (
                                                 <div key={i} className="flex items-center justify-between text-sm py-2 border-b border-gray-100 last:border-0">
@@ -888,7 +903,8 @@ function History() {
                     }}
                     // give table a little spacing to match screenshot look
                     style={{ borderRadius: 8, border: '1px solid #e5e7eb' }}
-                  /></div>
+                  />
+                </div>
               )}
             </div>
           </Card>
@@ -898,4 +914,4 @@ function History() {
   )
 }
 
-export default History
+export default History;

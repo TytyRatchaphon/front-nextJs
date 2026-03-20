@@ -410,201 +410,211 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
 
   const FilterContent = ({ isInDrawer = false }: { isInDrawer?: boolean }) => (
     <div
-      className={`bg-white rounded-xl p-5 shadow-md ${isInDrawer ? "h-full flex flex-col" : "h-full overflow-y-auto"
+      className={`bg-white ${isInDrawer ? "h-[85vh] flex flex-col rounded-t-3xl" : "h-full overflow-y-auto rounded-xl shadow-md p-5"
         }`}
     >
-      <div className={isInDrawer ? "flex-1 overflow-y-auto" : ""}>
-        <div className="mb-5">
-          <div className="flex justify-between items-center mb-2">
-            <p className="text-sm font-medium">ตัวกรอง</p>
+      {/* Mobile Handle */}
+      {isInDrawer && (
+        <div className="w-full h-12 flex justify-center items-center cursor-grab" onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
+          <div className="w-12 h-1.5 bg-gray-200 rounded-full" />
+        </div>
+      )}
+
+      <div className={`flex-1 overflow-y-auto ${isInDrawer ? "px-5" : ""}`}>
+        <div className="mb-6">
+          <div className="flex justify-between items-end mb-4">
+            <div>
+              <p className="text-2xl font-bold text-gray-800">ตัวกรอง</p>
+              <p className="text-xs text-gray-400 font-medium">ค้นหาสิ่งที่ใช่สำหรับคุณ</p>
+            </div>
             <button
               onClick={clearAllFilters}
-              className="text-red-500 text-sm hover:text-red-600"
+              className="text-red-500 text-sm font-semibold hover:bg-red-50 px-3 py-1 rounded-lg transition-colors"
             >
-              ล้าง
+              ล้างทั้งหมด
             </button>
           </div>
 
           {allFilters.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
+            <div className="flex flex-wrap gap-2 mb-4 animate-in fade-in duration-300">
               {allFilters.map((filter, index) => (
                 <div
                   key={`${filter.type}-${filter.value}-${index}`}
-                  className="flex items-center gap-1 bg-red-50 text-red-600 text-xs px-3 py-1 rounded-full"
+                  className="flex items-center gap-1.5 bg-red-50 text-red-600 text-[11px] font-bold px-3 py-1.5 rounded-full border border-red-100 shadow-sm"
                 >
                   <span>{filter.label}</span>
                   <button
                     onClick={() => removeFilter(filter.type, filter.value)}
-                    className="hover:bg-red-100 rounded-full p-0.5"
+                    className="hover:bg-red-200 bg-red-100 rounded-full p-0.5 transition-colors"
                   >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 14 14"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path d="M10.5 3.5L3.5 10.5M3.5 3.5L10.5 10.5" />
-                    </svg>
+                    <CloseOutlined style={{ fontSize: '8px' }} />
                   </button>
                 </div>
               ))}
             </div>
           )}
-          <hr className="border-t border-gray-300 mb-3" />
         </div>
 
-        {/* หมวดหมู่ */}
-        <div className="mb-5">
-          <p className="font-medium mb-2">หมวดหมู่</p>
-          <div className="flex flex-col gap-2 text-sm max-h-48 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-            {isLoadingCategories ? (
-              <GifLoader width={80} height={80} className="py-4" />
-            ) : categories.length > 0 ? (
-              categories.map((item, index) => {
-                const cateId = item.id;
-                const cateName = item.name;
-                return (
-                  <label
-                    key={cateId || index}
-                    className="flex items-center gap-2 cursor-pointer hover:text-red-500"
-                  >
-                    <input
-                      type="checkbox"
-                      className="accent-red-500 cursor-pointer w-4 h-4"
-                      checked={selectedFilters.categories.includes(cateId)}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        handleCategoryChange(cateId, cateName);
-                      }}
-                    />
-                    <span className="select-none">{cateName}</span>
-                  </label>
-                );
-              })
-            ) : (
-              <p className="text-gray-400 text-center py-2">ไม่มีหมวดหมู่</p>
-            )}
-          </div>
-        </div>
+        {/* Section Wrapper Helper */}
+        {(() => {
+          const SectionHeader = ({ title }: { title: string }) => (
+            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-3 ml-1">{title}</p>
+          );
 
-        {/* ประเภทเนื้อหา */}
-        <div className="mb-5">
-          <p className="font-medium mb-2">ประเภทเนื้อหา</p>
-          <div className="flex flex-col gap-2 text-sm">
-            {[
-              { value: "novel", label: "นิยายรายตอน" },
-              { value: "novel_pack", label: "นิยายมัดแพ็ค" },
-            ].map((item) => (
-              <label
-                key={item.value}
-                className="flex items-center gap-2 cursor-pointer hover:text-red-500"
-              >
-                <input
-                  type="checkbox"
-                  className="accent-red-500 cursor-pointer w-4 h-4"
-                  checked={selectedFilters.content_type?.includes(item.value)}
-                  onChange={() => handleContentTypeChange(item.value)}
-                />
-                <span className="select-none">{item.label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
+          const PillContainer = ({ children }: { children: React.ReactNode }) => (
+            <div className="flex flex-wrap gap-2 mb-8">
+              {children}
+            </div>
+          );
 
-        {/* รูปแบบ */}
-        <div className="mb-5">
-          <p className="font-medium mb-2">รูปแบบ</p>
-          <div className="flex flex-col gap-2 text-sm">
-            {[
-              { value: "tran", label: "นิยายแปล" },
-              { value: "chat", label: "นิยายแต่ง" },
-              { value: "fan", label: "แฟนฟิค" },
-              { value: "redroom", label: "เรดรูม" },
-            ].map((item) => (
-              <label
-                key={item.value}
-                className="flex items-center gap-2 cursor-pointer hover:text-red-500"
-              >
-                <input
-                  type="checkbox"
-                  className="accent-red-500 cursor-pointer w-4 h-4"
-                  checked={selectedFilters.types.includes(item.value)}
-                  onChange={() => handleTypeChange(item.value)}
-                />
-                <span className="select-none">{item.label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
+          return (
+            <>
+              {/* หมวดหมู่ */}
+              <div className="mb-2">
+                <SectionHeader title="หมวดหมู่" />
+                <div className="flex flex-wrap gap-2 mb-8 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                  {isLoadingCategories ? (
+                    <div className="w-full flex justify-center py-4">
+                        <GifLoader width={60} height={60} />
+                    </div>
+                  ) : categories.length > 0 ? (
+                    categories.map((item, index) => {
+                      const cateId = item.id;
+                      const cateName = item.name;
+                      const isSelected = selectedFilters.categories.includes(cateId);
+                      return (
+                        <button
+                          key={cateId || index}
+                          type="button"
+                          onClick={() => handleCategoryChange(cateId, cateName)}
+                          className={`px-4 py-2 rounded-xl text-xs font-medium transition-all duration-200 border shadow-sm ${
+                            isSelected 
+                            ? "bg-red-500 border-red-500 !text-white shadow-red-100 scale-105" 
+                            : "bg-white border-gray-100 text-gray-600 hover:border-red-200 hover:text-red-500"
+                          }`}
+                        >
+                          {cateName}
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <p className="text-gray-300 italic text-xs w-full text-center">ไม่มีข้อมูลหมวดหมู่</p>
+                  )}
+                </div>
+              </div>
 
-        {/* สถานะการเขียน */}
-        {/* <div className="mb-5">
-          <p className="font-medium mb-2">สถานะการเขียน</p>
-          <div className="flex flex-col gap-2 text-sm">
-            {[
-              { value: "publish", label: "สำเร็จแล้ว" },
-              { value: "draft", label: "ยังไม่เสร็จ" },
-            ].map((item) => (
-              <label
-                key={item.value}
-                className="flex items-center gap-2 cursor-pointer hover:text-red-500"
-              >
-                <input
-                  type="checkbox"
-                  className="accent-red-500 cursor-pointer w-4 h-4"
-                  checked={selectedFilters.status.includes(item.value)}
-                  onChange={() => handleStatusChange(item.value)}
-                />
-                <span className="select-none">{item.label}</span>
-              </label>
-            ))}
-          </div>
-        </div> */}
+              {/* ประเภทเนื้อหา */}
+              <div className="mb-2">
+                <SectionHeader title="ประเภทเนื้อหา" />
+                <PillContainer>
+                  {[
+                    { value: "novel", label: "นิยายรายตอน" },
+                    { value: "novel_pack", label: "นิยายมัดแพ็ค" },
+                  ].map((item) => {
+                    const isSelected = selectedFilters.content_type?.includes(item.value);
+                    return (
+                      <button
+                        key={item.value}
+                        type="button"
+                        onClick={() => handleContentTypeChange(item.value)}
+                        className={`px-4 py-2 rounded-xl text-xs font-medium transition-all duration-200 border shadow-sm ${
+                          isSelected 
+                          ? "bg-red-500 border-red-500 !text-white shadow-red-100 scale-105" 
+                          : "bg-white border-gray-100 text-gray-600 hover:border-red-200 hover:text-red-500"
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </PillContainer>
+              </div>
 
-        {/* สถานะเรื่อง */}
-        <div className="mb-5">
-          <p className="font-medium mb-2">สถานะเรื่อง</p>
-          <div className="flex flex-col gap-2 text-sm">
-            {[
-              { value: "all", label: "ทั้งหมด" },
-              { value: "end", label: "จบแล้ว" },
-              { value: "notend", label: "ยังไม่จบ" },
-            ].map((item) => (
-              <label
-                key={item.value}
-                className="flex items-center gap-2 cursor-pointer hover:text-red-500"
-              >
-                <input
-                  type="radio"
-                  name="endStatus"
-                  className="accent-red-500 cursor-pointer w-4 h-4"
-                  checked={selectedFilters.end === item.value}
-                  onChange={() => handleEndChange(item.value)}
-                />
-                <span className="select-none">{item.label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
+              {/* รูปแบบ */}
+              <div className="mb-2">
+                <SectionHeader title="รูปแบบ" />
+                <PillContainer>
+                  {[
+                    { value: "tran", label: "นิยายแปล" },
+                    { value: "chat", label: "นิยายแต่ง" },
+                    { value: "fan", label: "แฟนฟิค" },
+                    { value: "redroom", label: "เรดรูม" },
+                  ].map((item) => {
+                    const isSelected = selectedFilters.types.includes(item.value);
+                    return (
+                      <button
+                        key={item.value}
+                        type="button"
+                        onClick={() => handleTypeChange(item.value)}
+                        className={`px-4 py-2 rounded-xl text-xs font-medium transition-all duration-200 border shadow-sm ${
+                          isSelected 
+                          ? "bg-red-500 border-red-500 !text-white shadow-red-100 scale-105" 
+                          : "bg-white border-gray-100 text-gray-600 hover:border-red-200 hover:text-red-500"
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </PillContainer>
+              </div>
+
+              {/* สถานะเรื่อง */}
+              <div className="mb-2">
+                <SectionHeader title="สถานะเรื่อง" />
+                <PillContainer>
+                  {[
+                    { value: "all", label: "ทั้งหมด" },
+                    { value: "end", label: "จบแล้ว" },
+                    { value: "notend", label: "ยังไม่จบ" },
+                  ].map((item) => {
+                    const isSelected = selectedFilters.end === item.value;
+                    return (
+                      <button
+                        key={item.value}
+                        type="button"
+                        onClick={() => handleEndChange(item.value)}
+                        className={`px-4 py-2 rounded-xl text-xs font-medium transition-all duration-200 border shadow-sm ${
+                          isSelected 
+                          ? "bg-red-500 border-red-500 !text-white shadow-red-100 scale-105" 
+                          : "bg-white border-gray-100 text-gray-600 hover:border-red-200 hover:text-red-500"
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </PillContainer>
+              </div>
+            </>
+          );
+        })()}
       </div>
 
-      <div
-        className={
-          isInDrawer
-            ? "sticky bottom-0 bg-white pt-3 pb-3 px-1 border-t"
-            : "mt-5"
-        }
-      >
+      <div className={`p-5 bg-white border-t border-gray-50 flex gap-3 ${isInDrawer ? "sticky bottom-0 rounded-b-3xl" : "mt-4"}`}>
         <button
           onClick={handleSearchClick}
-          className={`w-full bg-red-500 rounded-md hover:bg-red-600 !text-white font-semibold ${isInDrawer ? "py-4 text-base" : "py-2 text-sm"
-            }`}
+          className="flex-1 bg-red-500 !text-white font-bold py-4 rounded-2xl shadow-lg shadow-red-100 hover:bg-red-600 active:scale-95 transition-all text-base"
         >
-          ดูผลลัพธ์
+          ดูรายการผลลัพธ์
         </button>
       </div>
+
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #e5e7eb;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #d1d5db;
+        }
+      `}</style>
     </div>
   );
 
@@ -635,6 +645,7 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   handleSearchClick();
+                  e.currentTarget.blur();
                 }
               }}
               className="block w-full rounded-md border border-gray-300 h-[40px] pl-10 pr-3 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-primary focus:border-primary text-sm"
@@ -743,6 +754,40 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
              </div>
            )}
         </div>
+
+        {/* Popular Keywords Pills */}
+        {popularSearches.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2 items-center">
+            <span className="text-xs text-gray-400 font-medium whitespace-nowrap uppercase tracking-wider">ยอดนิยม:</span>
+            <div className="flex flex-wrap gap-1.5 overflow-hidden">
+              {popularSearches.map((item, index) => (
+                <button
+                  key={`popular-${index}`}
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery(item.normalized_keyword);
+                    if (onSearch) {
+                      onSearch({
+                        query: item.normalized_keyword,
+                        categories: selectedFilters.categories,
+                        types: selectedFilters.types,
+                        content_type: selectedFilters.content_type || [],
+                        status: selectedFilters.status,
+                        end: selectedFilters.end,
+                        sortBy,
+                        order,
+                      });
+                    }
+                    addToHistory(item.normalized_keyword);
+                  }}
+                  className="px-3 py-1.5 text-xs bg-gray-50 border border-gray-100 text-gray-600 rounded-full hover:bg-red-50 hover:text-red-500 hover:border-red-100 hover:shadow-sm transition-all duration-200 whitespace-nowrap"
+                >
+                  {item.normalized_keyword}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* แถบตัวกรองและ Sort สำหรับมือถือ */}
@@ -788,32 +833,19 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
 
       {/* Drawer สำหรับมือถือ */}
       <Drawer
-        title={
-          <div className="flex flex-col items-center w-full">
-            <div
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-              className="w-full flex justify-center py-2 cursor-grab active:cursor-grabbing touch-none"
-              style={{ marginTop: "-10px", marginBottom: "5px" }}
-            >
-              <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
-            </div>
-            <span>ตัวกรอง</span>
-          </div>
-        }
         placement="bottom"
         onClose={onClose}
         open={open}
         height="90vh"
+        title={null}
         closeIcon={null}
         styles={{
           body: {
             padding: 0,
-            touchAction: "pan-y",
+            overflow: "hidden",
           },
           header: {
-            padding: "10px 16px",
+            display: "none",
           },
         }}
       >

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchBookReviewsNew, deleteUserReview } from '@/services/api/commentApi';
+import ImageWithFallback from '@/components/ui/ImageWithFallback';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Rate, Select, App } from 'antd';
@@ -192,7 +193,7 @@ export default function BookReviewsTab({ bookId, book }: BookReviewsTabProps) {
                         className="relative flex-shrink-0"
                       >
                         <div className="relative w-10 h-10 rounded-full overflow-hidden">
-                          <Image src={userAvatar} alt={userName} fill className="object-cover" unoptimized />
+                          <ImageWithFallback src={userAvatar} alt={userName} fill className="object-cover" unoptimized />
                         </div>
                         {userFrame && (
                           <div className="absolute -inset-1">

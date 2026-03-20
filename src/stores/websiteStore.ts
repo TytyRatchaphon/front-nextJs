@@ -28,7 +28,7 @@ const PERSISTED_SETTINGS_KEYS: Array<keyof WebsiteSettingsData> = [
   'coupon',
   'exp',
   'fast_ticket',
-  'rank_point',
+  'rp',
   'line_link',
   'fb_link',
   'ig_link',

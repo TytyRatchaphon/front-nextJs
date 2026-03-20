@@ -20,11 +20,25 @@ const baiJamjuree = Bai_Jamjuree({
   display: "swap",
 });
 
+import { unstable_cache } from 'next/cache';
 import { fetchWebsiteSettings } from "@/services/api/userApi";
 
+const getCachedSettings = unstable_cache(
+  async () => {
+    try {
+      const res = await fetchWebsiteSettings();
+      return res?.data;
+    } catch (e) {
+       console.error("Error fetching cached website settings:", e);
+       return null;
+    }
+  },
+  ['website-settings'],
+  { revalidate: 300 } // cache 5 minutes
+);
+
 export async function generateMetadata(): Promise<Metadata> {
-  const settingsResponse = await fetchWebsiteSettings();
-  const settings = settingsResponse?.data;
+  const settings = await getCachedSettings();
 
   return {
     title: settings?.seo_title || "Enjoybook",

@@ -89,6 +89,7 @@ export interface WalletState {
     freecoin: number;
     stamp: number;
     coupon: number;
+    current_rp?: number;
 }
 
 export interface CheckoutSummaryResponse {

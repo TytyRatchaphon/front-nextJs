@@ -2,6 +2,7 @@ import BookDetailClient from "../../../components/bookdetail/BookDetailClient";
 import type { Metadata, ResolvingMetadata } from 'next'
 import { fetchBookDetail, resolveBookId } from "@/services/apiServices";
 import { redirect } from 'next/navigation';
+import { unstable_cache } from 'next/cache';
 
 export const revalidate = 60;
 
@@ -20,6 +21,18 @@ function stripHtml(html: string) {
     .trim();
 }
 
+const getCachedBookDetail = (id: string) => unstable_cache(
+  async () => fetchBookDetail(id),
+  [`book-detail-${id}`],
+  { revalidate: 60 }
+)();
+
+export const getCachedResolvedId = (id: string) => unstable_cache(
+  async () => resolveBookId(id),
+  [`resolve-book-${id}`],
+  { revalidate: 3600 }
+)();
+
 export async function generateMetadata(
   { params }: Props,
   parent: ResolvingMetadata
@@ -28,7 +41,7 @@ export async function generateMetadata(
   const { id } = await params
 
   try {
-    const book = await fetchBookDetail(id);
+    const book = await getCachedBookDetail(id);
     const cleanDescription = stripHtml(book.des);
 
     const previousImages = (await parent).openGraph?.images || []
@@ -66,7 +79,7 @@ export default async function BookDetailPage({ params }: Props) {
   if (isNaN(Number(bookId))) {
     let resolvedBookId: number | null = null;
     try {
-      const resolved = await resolveBookId(bookId);
+      const resolved = await getCachedResolvedId(bookId);
       if (resolved?.data?.book_id) {
         resolvedBookId = resolved.data.book_id;
       }

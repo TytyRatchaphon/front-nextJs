@@ -16,6 +16,7 @@ export interface ApiResponse<T = any> {
 //สร้าง  BaseUrl ไว้ส่วนกลางจะได้ไม่ต้องเขียนใหม่
 const apiClient = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+    timeout: 15000,
     headers: {
         "Content-Type": "application/json",
     },
@@ -26,7 +27,9 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use( 
     async (config) => {
         // Log method/url and request body (headers may be augmented below)
-
+        if (typeof window === 'undefined') {
+            (config as any).metadata = { startTime: new Date() };
+        }
 
         // เช็คว่าอยู่ใน browser environment
         if (typeof window !== 'undefined') {
@@ -56,10 +59,24 @@ apiClient.interceptors.request.use(
 // Response Interceptor - จัดการ error แบบรวม
 apiClient.interceptors.response.use(
     (response) => {
+        if (typeof window === 'undefined') {
+            const config = response.config as any;
+            if (config.metadata?.startTime) {
+                const duration = new Date().getTime() - config.metadata.startTime.getTime();
+                console.log(`[SSR Fetch API] ${config.method?.toUpperCase()} ${config.url} - ${duration}ms`);
+            }
+        }
         // อนุญาตให้ response ทุกแบบผ่าน ไม่ว่าจะเป็น success, successwarning, หรือ warning
         return response;
     },
     (error) => {
+        if (typeof window === 'undefined') {
+            const config = error.config as any;
+            if (config?.metadata?.startTime) {
+                const duration = new Date().getTime() - config.metadata.startTime.getTime();
+                console.error(`[SSR Fetch API ERROR] ${config?.method?.toUpperCase()} ${config?.url} - ${duration}ms - ${error.message}`);
+            }
+        }
         // Handle Duplicate Login (400 + specific message)
 
         if (error.response?.status === 400 && error.response?.data?.message === "มีการเข้าสู่ระบบจากอุปกรณ์อื่น") {

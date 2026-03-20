@@ -68,10 +68,10 @@ export default function SocketProvider({
     const socketInstance = io(socketUrl, {
       transports: ['websocket'], 
       reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      timeout: 20000,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 30000,
+      timeout: 10000,
       forceNew: false,
       auth: (cb) => {
         // ⚡ Dynamic Auth: Fetch latest token on every connection/reconnection attempt

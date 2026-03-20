@@ -3,6 +3,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchPinnedReviews } from '@/services/api/commentApi';
+import ImageWithFallback from '@/components/ui/ImageWithFallback';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Rate } from 'antd';
@@ -173,7 +174,7 @@ export default function AllReview() {
                   <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center gap-2">
                       <div className="relative w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
-                        <Image src={userAvatar} alt={userName} fill className="object-cover" />
+                        <ImageWithFallback src={userAvatar} alt={userName} fill className="object-cover" />
                       </div>
                       <span className="text-sm font-semibold text-gray-800 line-clamp-1">{userName}</span>
                     </div>

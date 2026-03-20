@@ -118,7 +118,7 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
       <div className="mt-auto w-full">
         <div className="flex flex-col items-center gap-2 w-full">
           <div className="text-red-600 font-semibold whitespace-nowrap flex items-center gap-1 text-sm sm:text-base mb-1">
-            {['coin', 'heart', 'flower', 'stamp', 'exp', 'freecoin'].includes(pack.type_use) ? (
+            {['coin', 'heart', 'flower', 'stamp', 'exp', 'freecoin', 'rp'].includes(pack.type_use) ? (
               <>
                 <Image
                   src={
@@ -127,7 +127,8 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
                         pack.type_use === 'flower' ? (settings?.flower || "/images/flower.png") :
                           pack.type_use === 'stamp' ? (settings?.stamp || "/images/stamp.png") :
                             pack.type_use === 'exp' ? (settings?.exp || "/images/exp.png") :
-                              (settings?.freecoin || "/images/freecoin.png")
+                              pack.type_use === 'rp' ? (settings?.rp || "/images/rp.png") :
+                                (settings?.freecoin || "/images/freecoin.png")
                   }
                   width={20}
                   height={20}

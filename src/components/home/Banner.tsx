@@ -72,7 +72,7 @@ function Banner({ slides = [] }: BannerProps) {
                 speed={600}
                 parallax={true}
                 slidesPerView={1}
-                autoHeight={true} 
+                autoHeight={false}
                 breakpoints={{
                   320: {
                     slidesPerView: 1,
@@ -112,8 +112,11 @@ function Banner({ slides = [] }: BannerProps) {
                     ? slide.img
                     : `https://img.enjoybook.co/img/banner/${slide.img}`;
                   return (
-                    <SwiperSlide key={`${slide.banner_id}-${index}`} className="w-full lg:!w-auto overflow-hidden">
-                      <div className="relative w-full max-w-[680px] cursor-pointer mx-auto" onClick={() => {
+                    <SwiperSlide
+                      key={`${slide.banner_id}-${index}`}
+                      className="!h-auto w-full overflow-hidden lg:!w-[680px]"
+                    >
+                      <div className="relative mx-auto w-full max-w-[680px] cursor-pointer lg:w-[680px]" onClick={() => {
                         postBannerClick(slide.banner_id);
                         if (slide.type_link === 'novel') {
                           window.location.href = `/book/${slide.ref_id}`;
@@ -131,18 +134,18 @@ function Banner({ slides = [] }: BannerProps) {
                           window.location.href = `/campaign-discount`;
                         }
                       }} data-swiper-parallax="-1%">
+                        <div className="relative aspect-[680/296] w-full overflow-hidden rounded-lg bg-stone-100">
                         <Image
                           src={imageUrl}
                           alt={slide.name}
-                          width={680}
-                          height={310}
+                          fill
                           sizes="(max-width: 680px) 100vw, 680px"
-                          style={{ width: '100%', height: 'auto' }}
-                          className="object-contain rounded-lg"
+                          className="object-cover"
                           priority
                           unoptimized
                           quality={100}
                         />
+                        </div>
                       </div>
                     </SwiperSlide>
                   )
@@ -166,13 +169,15 @@ function Banner({ slides = [] }: BannerProps) {
               </>
 
             ) : (
-              <Image
-                src="/images/hero-banner.png"
-                alt="GET APP NOW Banner"
-                className="w-full h-full object-contain"
-                width={976}
-                height={446}
-              />
+              <div className="relative mx-auto aspect-[680/296] w-full max-w-[680px] overflow-hidden rounded-lg bg-stone-100">
+                <Image
+                  src="/images/hero-banner.png"
+                  alt="GET APP NOW Banner"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 680px) 100vw, 680px"
+                />
+              </div>
             )}
             {isLoggedIn && (
               <div className="mt-4 w-full max-w-[680px] mx-auto px-4 md:px-0 flex justify-start">

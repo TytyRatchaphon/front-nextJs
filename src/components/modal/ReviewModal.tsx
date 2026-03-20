@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import ImageWithFallback from '@/components/ui/ImageWithFallback';
 import { Modal, Rate, Input, App } from 'antd';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/th';
@@ -22,11 +24,53 @@ interface ReviewModalProps {
   currentUserId?: number;
   onEdit?: (review: any) => void;
   onDelete?: (review: any) => void;
+  onReviewUpdate?: (reviewId: string | number, updates: Record<string, any>) => void;
 }
 
-export default function ReviewModal({ isOpen, onClose, review, currentUserId, onEdit, onDelete }: ReviewModalProps) {
+const getReviewId = (item: any): string => String(item?.review_id ?? item?.id ?? '');
+
+const patchReviewInQueryData = (
+  data: any,
+  targetId: string,
+  updater: (current: any) => any, 
+) => {
+  if (!data) return data;
+
+  if (Array.isArray(data)) {
+    let changed = false;
+    const next = data.map((item) => {
+      if (getReviewId(item) === targetId) {
+        changed = true;
+        return updater(item);
+      }
+      return item;
+    });
+    return changed ? next : data;
+  }
+
+  if (Array.isArray(data.reviews)) {
+    let changed = false;
+    const nextReviews = data.reviews.map((item: any) => {
+      if (getReviewId(item) === targetId) {
+        changed = true;
+        return updater(item);
+      }
+      return item;
+    });
+    return changed ? { ...data, reviews: nextReviews } : data;
+  }
+
+  if (data.review && getReviewId(data.review) === targetId) {
+    return { ...data, review: updater(data.review) };
+  }
+
+  return data;
+};
+
+export default function ReviewModal({ isOpen, onClose, review, currentUserId, onEdit, onDelete, onReviewUpdate }: ReviewModalProps) {
   const REVIEW_MODAL_Z_INDEX = 3000;
   const REVIEW_NOTIFICATION_Z_INDEX = 3200;
+  const queryClient = useQueryClient();
 
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -38,6 +82,20 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
 
   const { notification, modal } = App.useApp();
   const { user } = useAuthStore();
+
+  const syncReviewUpdate = (reviewId: string | number, updates: Record<string, any>) => {
+    const targetId = String(reviewId);
+    queryClient.setQueriesData(
+      {
+        predicate: (query) => {
+          const root = Array.isArray(query.queryKey) ? String(query.queryKey[0]) : '';
+          return root === 'allPinnedReviews' || root === 'pinnedReviews' || root === 'bookReviewsNew';
+        },
+      },
+      (oldData: any) => patchReviewInQueryData(oldData, targetId, (current) => ({ ...current, ...updates })),
+    );
+    onReviewUpdate?.(reviewId, updates);
+  };
 
   useEffect(() => {
     if (isOpen && review) {
@@ -54,7 +112,12 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
     setIsLoadingComments(true);
     try {
       const res = await fetchReviewComments(reviewId);
-      setComments(res.comments || []);
+      const nextComments = Array.isArray(res.comments) ? res.comments : [];
+      setComments(nextComments);
+      syncReviewUpdate(reviewId, {
+        comment_count: nextComments.length,
+        comments: nextComments.length,
+      });
     } catch {
       setComments([]);
     } finally {
@@ -70,8 +133,15 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
     try {
       const reviewId = review.review_id || review.id;
       await likeReview(reviewId);
-      setLiked(!liked);
-      setLikeCount(prev => liked ? prev - 1 : prev + 1);
+      const nextLiked = !liked;
+      const nextLikeCount = Math.max(0, likeCount + (liked ? -1 : 1));
+      setLiked(nextLiked);
+      setLikeCount(nextLikeCount);
+      syncReviewUpdate(reviewId, {
+        is_liked: nextLiked,
+        like_count: nextLikeCount,
+        likes: nextLikeCount,
+      });
     } catch {
       notification.error({ message: 'เกิดข้อผิดพลาด', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
     }
@@ -82,7 +152,12 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
     try {
       const reviewId = review.review_id || review.id;
       await shareReview(reviewId);
-      setShareCount(prev => prev + 1);
+      const nextShareCount = shareCount + 1;
+      setShareCount(nextShareCount);
+      syncReviewUpdate(reviewId, {
+        share_count: nextShareCount,
+        shares: nextShareCount,
+      });
       // Copy link to clipboard
       const url = `${window.location.origin}/review/${reviewId}`;
       await navigator.clipboard.writeText(url);
@@ -125,7 +200,12 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
       setIsSubmitting(true);
       const reviewId = review.review_id || review.id;
       await postReviewComment(reviewId, commentText.trim());
+      const nextCommentCount = comments.length + 1;
       setCommentText('');
+      syncReviewUpdate(reviewId, {
+        comment_count: nextCommentCount,
+        comments: nextCommentCount,
+      });
       notification.success({ message: 'แสดงความคิดเห็นสำเร็จ', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
       loadComments(); // Reload comments
     } catch (error: any) {
@@ -163,7 +243,7 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-3">
             <div className="relative w-10 h-10 rounded-full overflow-hidden">
-              <Image src={userAvatar} alt={userName} fill className="object-cover" />
+              <ImageWithFallback src={userAvatar} alt={userName} fill className="object-cover" />
             </div>
             <div>
               <div className="text-base font-bold text-gray-800">{userName}</div>
@@ -222,6 +302,10 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
             <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
             <span>{likeCount > 0 ? likeCount : ''} ถูกใจ</span>
           </button>
+          <div className="flex items-center gap-1.5 text-gray-500 text-sm font-medium">
+            <MessageCircle size={18} />
+            <span>{comments.length > 0 ? comments.length : ''} ความคิดเห็น</span>
+          </div>
           <button
             onClick={handleShare}
             className="flex items-center gap-1.5 text-gray-500 hover:text-blue-500 transition-colors text-sm font-medium"
@@ -229,10 +313,6 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
             <Share2 size={18} />
             <span>{shareCount > 0 ? shareCount : ''} แชร์</span>
           </button>
-          <div className="flex items-center gap-1.5 text-gray-500 text-sm font-medium">
-            <MessageCircle size={18} />
-            <span>{comments.length > 0 ? comments.length : ''} ความคิดเห็น</span>
-          </div>
         </div>
 
         {/* Book Info footer */}
@@ -263,7 +343,7 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
           {currentUserId && (
             <div className="flex gap-2 mb-4">
               <div className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
-                <Image src={user?.img || '/images/default-avatar.png'} alt="You" fill className="object-cover" />
+                <ImageWithFallback src={user?.img || '/images/default-avatar.png'} alt="You" fill className="object-cover" />
               </div>
               <div className="flex-1 flex gap-2">
                 <Input
@@ -306,7 +386,7 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
                 return (
                   <div key={commentId} className="flex gap-2 group">
                     <div className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
-                      <Image src={comment.user?.img || '/images/default-avatar.png'} alt={comment.user?.fullname || ''} fill className="object-cover" />
+                      <ImageWithFallback src={comment.user?.img || '/images/default-avatar.png'} alt={comment.user?.fullname || ''} fill className="object-cover" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="bg-gray-50 rounded-xl px-3 py-2">

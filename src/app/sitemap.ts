@@ -3,6 +3,8 @@ import { fetchBookTrans, fetchLatestArticles, fetchBookCategoryAll, fetchThreads
 
 const BASE_URL = 'https://enjoybook.co';
 
+export const revalidate = 3600; // Cache sitemap for 1 hour to prevent N+1 query flooding
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const staticRoutes = [
         '',

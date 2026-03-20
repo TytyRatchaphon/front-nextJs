@@ -1,24 +1,23 @@
 "use client";
 
-import React from 'react';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation, FreeMode } from 'swiper/modules';
-import Link from 'next/link';
-import Image from 'next/image';
-import { Rate } from 'antd';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-import 'dayjs/locale/th';
-import ReviewModal from '@/components/modal/ReviewModal';
-import SpoilerCardWrapper from '@/components/ui/SpoilerCardWrapper';
+import React from "react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, FreeMode } from "swiper/modules";
+import Link from "next/link";
+import { Rate } from "antd";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import "dayjs/locale/th";
+import ReviewModal from "@/components/modal/ReviewModal";
+import SpoilerCardWrapper from "@/components/ui/SpoilerCardWrapper";
+import ImageWithFallback from "@/components/ui/ImageWithFallback";
+
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/free-mode";
 
 dayjs.extend(relativeTime);
-dayjs.locale('th');
-
-// Import Swiper styles
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/free-mode';
+dayjs.locale("th");
 
 interface PinnedReviewsSwiperProps {
   reviews: any[];
@@ -37,145 +36,199 @@ export default function PinnedReviewsSwiper({ reviews }: PinnedReviewsSwiperProp
   };
 
   const breakpoints = {
-    320: { slidesPerView: 'auto' as const, spaceBetween: 10 },
-    640: { slidesPerView: 'auto' as const, spaceBetween: 15 },
-    768: { slidesPerView: 'auto' as const, spaceBetween: 20 },
-    1024: { slidesPerView: 'auto' as const, spaceBetween: 20 },
-    1280: { slidesPerView: 'auto' as const, spaceBetween: 20 },
-    1536: { slidesPerView: 'auto' as const, spaceBetween: 20 },
+    320: { slidesPerView: "auto" as const, spaceBetween: 12 },
+    640: { slidesPerView: "auto" as const, spaceBetween: 14 },
+    768: { slidesPerView: "auto" as const, spaceBetween: 16 },
+    1024: { slidesPerView: "auto" as const, spaceBetween: 18 },
+    1280: { slidesPerView: "auto" as const, spaceBetween: 20 },
+    1536: { slidesPerView: "auto" as const, spaceBetween: 20 },
   };
 
   if (!reviews || reviews.length === 0) return null;
 
+  const normalizeImageSrc = (
+    src: string | null | undefined,
+    fallback: string,
+    cdnPath?: string,
+  ) => {
+    if (!src || src === "null" || src === "undefined") return fallback;
+    if (src.startsWith("http") || src.startsWith("data:")) return src.replace("http:", "https:");
+    if (src.startsWith("/")) return src;
+    if (src.startsWith("img/")) return `https://img.enjoybook.co/${src}`;
+    return cdnPath ? `${cdnPath}${src}` : src;
+  };
+
   return (
-    <div className="w-full bg-[#FFE5E5] py-8 mt-6">
-      <div className="max-w-[1440px] w-full mx-auto px-4 lg:px-[156px] relative group/swiper">
-      <div className="flex items-center gap-3 mb-4">
-         <div>
-            <h2 className="text-2xl font-bold text-[#E33527] m-0">ปักหมุดรีวิวจากนักอ่าน</h2>
-         </div>
-         <Link href="/all-review" className="ml-auto text-[#E33527] hover:text-red-700 text-sm font-medium flex items-center gap-1">
-            ดูทั้งหมด
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-         </Link>
-      </div>
+    <section className="mt-6 w-full bg-[radial-gradient(circle_at_top,_#fff5f4_0%,_#ffecec_45%,_#ffe7e7_100%)] py-7 sm:py-9">
+      <div className="group/swiper relative mx-auto w-full max-w-[1440px] px-4 lg:px-[156px]">
+        <div className="mb-4 flex flex-col gap-3 sm:mb-5 md:flex-row md:items-end">
+          <div className="min-w-0 max-w-[14rem] sm:max-w-none">
+            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#b85b50]">Reader Reviews</p>
+            <h2 className="mt-1 text-[clamp(2rem,8vw,30px)] font-bold leading-[1.02] text-[#d93324]">
+              ปักหมุดรีวิวจากนักอ่าน
+            </h2>
+          </div>
+          <div className="flex items-center gap-2 self-end md:ml-auto">
+            <span className="rounded-full border border-[#f1bdb7] bg-white/85 px-3 py-1 text-xs font-semibold text-[#cc3f2f]">
+              {reviews.length} รีวิว
+            </span>
+            <Link
+              href="/all-review"
+              className="inline-flex items-center gap-1 rounded-full border border-[#f0c5c0] bg-white px-3 py-1.5 text-sm font-semibold text-[#cc3f2f] transition-colors hover:bg-[#fff7f6]"
+            >
+              ดูทั้งหมด
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </Link>
+          </div>
+        </div>
 
-      {/* Navigation Buttons */}
-      <button 
-        ref={prevRef}
-        className="arrow-left absolute left-2 lg:left-[130px] top-1/2 -translate-y-1/2 z-20 bg-white/90 p-2 rounded-full shadow-lg opacity-0 group-hover/swiper:opacity-100 transition-all duration-300 hover:bg-white disabled:opacity-0 disabled:cursor-not-allowed"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-gray-700">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-        </svg>
-      </button>
-      <button 
-        ref={nextRef}
-        className="arrow-right absolute right-2 lg:right-[130px] top-1/2 -translate-y-1/2 z-20 bg-white/90 p-2 rounded-full shadow-lg opacity-0 group-hover/swiper:opacity-100 transition-all duration-300 hover:bg-white disabled:opacity-0 disabled:cursor-not-allowed"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-gray-700">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-        </svg>
-      </button>
+        <button
+          ref={prevRef}
+          aria-label="ดูรีวิวก่อนหน้า"
+          className="arrow-left absolute left-2 top-1/2 z-20 hidden -translate-y-1/2 rounded-full border border-[#f0c8c3] bg-white/95 p-2.5 text-[#b45d52] shadow-md opacity-0 transition-all duration-300 hover:bg-white group-hover/swiper:opacity-100 md:flex lg:left-[132px]"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor" className="h-4 w-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
+        </button>
+        <button
+          ref={nextRef}
+          aria-label="ดูรีวิวถัดไป"
+          className="arrow-right absolute right-2 top-1/2 z-20 hidden -translate-y-1/2 rounded-full border border-[#f0c8c3] bg-white/95 p-2.5 text-[#b45d52] shadow-md opacity-0 transition-all duration-300 hover:bg-white group-hover/swiper:opacity-100 md:flex lg:right-[132px]"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.2} stroke="currentColor" className="h-4 w-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
+        </button>
 
-      <Swiper
-        centeredSlides={false}
-        speed={500}
-        breakpoints={breakpoints}
-        modules={[Navigation, FreeMode]}
-        className="z-0 pb-4"
-        navigation={{
-          prevEl: prevRef.current,
-          nextEl: nextRef.current,
-        }}
-        onBeforeInit={(swiper) => {
-          // @ts-expect-error -- Swiper navigation refs are assigned imperatively.
-          swiper.params.navigation.prevEl = prevRef.current;
-          // @ts-expect-error -- Swiper navigation refs are assigned imperatively.
-          swiper.params.navigation.nextEl = nextRef.current;
-        }}
-        freeMode={true}
-      >
-        {reviews.map((review) => {
-          const userAvatar = review.user?.img || '/images/default-avatar.png';
-          const userName = review.user?.fullname || 'Unknown';
-          const bookCover = review.book?.img || review.book?.img_full || '/images/default-cover.png';
-          const bookTitle = review.book?.name || 'Unknown Book';
-          const bookTag = review.book?.tag?.[0] || 'นิยาย';
-          const writerName = review.book?.writer_name || 'Unknown Writer';
-          const timeAgo = dayjs(review.created_at).fromNow();
-          
-          let cleanContent = review.content || '';
-          if (cleanContent.startsWith('<p>')) {
-             cleanContent = cleanContent.replace(/<[^>]+>/g, '');
-          }
-          const isSpoilerCard = Boolean(review.is_spoiler);
-          cleanContent = cleanContent.replace(/\[\/?\s*SPOILER\s*\]/gi, '');
+        <Swiper
+          centeredSlides={false}
+          speed={500}
+          breakpoints={breakpoints}
+          modules={[Navigation, FreeMode]}
+          className="z-0 !overflow-visible pb-3"
+          navigation={{
+            prevEl: prevRef.current,
+            nextEl: nextRef.current,
+          }}
+          onBeforeInit={(swiper) => {
+            // @ts-expect-error -- Swiper navigation refs are assigned imperatively.
+            swiper.params.navigation.prevEl = prevRef.current;
+            // @ts-expect-error -- Swiper navigation refs are assigned imperatively.
+            swiper.params.navigation.nextEl = nextRef.current;
+          }}
+          freeMode={{ enabled: true, momentumBounce: false }}
+        >
+          {reviews.map((review) => {
+            const userAvatar = normalizeImageSrc(
+              review.user?.img,
+              "/images/default-avatar.png",
+              "https://img.enjoybook.co/img/profile/",
+            );
+            const userName = review.user?.fullname || "Unknown";
+            const bookCover = normalizeImageSrc(
+              review.book?.img || review.book?.img_full,
+              "/images/ejb.png",
+              "https://img.enjoybook.co/img/book/",
+            );
+            const bookTitle = review.book?.name || "Unknown Book";
+            const bookTag = review.book?.tag?.[0] || "นิยาย";
+            const writerName = review.book?.writer_name || "Unknown Writer";
+            const timeAgo = dayjs(review.created_at).fromNow();
+            const episodeRead = Number(review.ep_read || 0);
 
-          const cardContent = (
-            <>
-              {/* Header: User & Time */}
-              <div className="flex justify-between items-center mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="relative w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
-                    <Image src={userAvatar} alt={userName} fill className="object-cover" />
+            let cleanContent = String(review.content || "");
+            cleanContent = cleanContent.replace(/<[^>]+>/g, "");
+            cleanContent = cleanContent.replace(/\[\/?\s*SPOILER\s*\]/gi, "").trim();
+
+            const isSpoilerCard = Boolean(review.is_spoiler);
+
+            const cardContent = (
+              <>
+                <div className="mb-3 flex items-start justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-[#f1d2ce] bg-white">
+                      <ImageWithFallback
+                        src={userAvatar}
+                        fallbackSrc="/images/default-avatar.png"
+                        alt={userName}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </div>
+                    <span className="line-clamp-1 text-sm font-semibold text-[#2f2f35]">{userName}</span>
                   </div>
-                  <span className="text-sm font-semibold text-gray-800 line-clamp-1">{userName}</span>
+                  <span className="whitespace-nowrap text-[11px] font-medium text-[#9b8c8a]">{timeAgo}</span>
                 </div>
-                <span className="text-xs text-gray-400 whitespace-nowrap">{timeAgo}</span>
-              </div>
 
-              {/* Rating & Episode */}
-              <div className="flex items-center gap-2 mb-2">
-                <Rate disabled defaultValue={review.rating} allowHalf className="text-sm text-yellow-500" />
-                <span className="text-xs text-gray-500">อ่านถึง #{review.ep_read || 0}</span>
-              </div>
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <Rate
+                    disabled
+                    defaultValue={review.rating}
+                    allowHalf
+                    className="text-[15px] text-amber-500 [&_.ant-rate-star]:!me-[2px]"
+                  />
+                  <span className="rounded-full bg-[#fff1ef] px-2.5 py-1 text-[11px] font-semibold text-[#b3554a]">
+                    {episodeRead > 0 ? `อ่านถึง #${episodeRead}` : "รีวิวจากนักอ่าน"}
+                  </span>
+                </div>
 
-              {/* Content */}
-              <div className="text-sm text-gray-700 line-clamp-3 mb-4 flex-1 break-words">
-                {cleanContent}
-                <span className="text-[#E33527] font-medium inline lg:hidden ml-1 whitespace-nowrap">... อ่านเพิ่มเติม</span>
-              </div>
+                <div className="mb-4 flex-1 break-words text-[14px] leading-6 text-[#4d4b52] line-clamp-3">
+                  {cleanContent || "รีวิวนี้ยังไม่มีข้อความเพิ่มเติม"}
+                </div>
 
-              {/* Book Info footer */}
-              <Link 
-                href={`/book/${review.book?.book_id}`} 
-                onClick={(e) => e.stopPropagation()}
-                className="flex gap-3 bg-gray-50/50 rounded-lg p-2 border border-gray-100 hover:bg-gray-50 transition-colors mt-auto"
+                <Link
+                  href={`/book/${review.book?.book_id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="mt-auto flex items-center gap-3 rounded-xl border border-[#f0d9d6] bg-white/75 p-2.5 transition-colors hover:bg-white"
+                >
+                  <div className="relative h-14 w-10 shrink-0 overflow-hidden rounded-md">
+                    <ImageWithFallback
+                      src={bookCover}
+                      fallbackSrc="/images/ejb.png"
+                      alt={bookTitle}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                  </div>
+                  <div className="min-w-0 overflow-hidden">
+                    <h4 className="truncate text-sm font-bold text-[#22222a]">{bookTitle}</h4>
+                    <span className="mb-0.5 block truncate text-xs font-semibold text-[#d63d2a]">{bookTag}</span>
+                    <span className="block truncate text-xs text-[#7f7d86]">{writerName}</span>
+                  </div>
+                </Link>
+              </>
+            );
+
+            return (
+              <SwiperSlide
+                key={review.review_id || `${review.user?.user_id}-${review.created_at}`}
+                className="!w-[min(82vw,300px)] sm:!w-[300px] md:!w-[338px] xl:!w-[350px]"
               >
-                <div className="relative w-10 h-14 rounded overflow-hidden flex-shrink-0">
-                  <Image src={bookCover} alt={bookTitle} fill className="object-cover" unoptimized />
-                </div>
-                <div className="flex flex-col justify-center overflow-hidden">
-                  <h4 className="text-sm font-bold text-gray-900 truncate">{bookTitle}</h4>
-                  <span className="text-xs text-[#E33527] font-medium truncate mb-0.5">{bookTag}</span>
-                  <span className="text-xs text-gray-500 truncate">{writerName}</span>
-                </div>
-              </Link>
-            </>
-          );
-
-          return (
-            <SwiperSlide key={review.review_id} className="!w-[300px] md:!w-[350px]">
-              <SpoilerCardWrapper 
-                isSpoiler={isSpoilerCard}
-                onClick={() => handleReviewClick(review)}
-              >
-                {cardContent}
-              </SpoilerCardWrapper>
-            </SwiperSlide>
-          )
-        })}
-      </Swiper>
+                <SpoilerCardWrapper
+                  isSpoiler={isSpoilerCard}
+                  onClick={() => handleReviewClick(review)}
+                  variant="home"
+                  revealTitle="รีวิวนี้มีสปอยล์"
+                  revealSubtitle="แตะเพื่อเปิดอ่าน"
+                >
+                  {cardContent}
+                </SpoilerCardWrapper>
+              </SwiperSlide>
+            );
+          })}
+        </Swiper>
       </div>
 
-      <ReviewModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        review={selectedReview} 
+      <ReviewModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        review={selectedReview}
       />
-    </div>
+    </section>
   );
 }

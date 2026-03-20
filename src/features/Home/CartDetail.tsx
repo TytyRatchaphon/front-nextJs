@@ -14,6 +14,7 @@ import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill';
 import StampPill from '@/components/utility/StampPill';
 import { QUERY_CONFIG } from '@/constants/query';
+import RPPill from '@/components/utility/RPPill';
 
 
 const { Title, Text } = Typography;
@@ -61,7 +62,8 @@ export default function CartDetail() {
         const currencyMap: Record<string, string> = {
             coin: 'เหรียญ',
             freecoin: 'ถุงเงิน',
-            stamp: 'แสตมป์'
+            stamp: 'แสตมป์',
+            rp: 'RP'
         };
 
         summary.currency_list = Object.entries(totals).map(([type, amount]) => ({
@@ -231,6 +233,7 @@ export default function CartDetail() {
                                 type === 'coin' ? (settings?.coin || "/images/e-coin.png") :
                                 type === 'stamp' ? (settings?.stamp || "/images/stamp.png") :
                                 type === 'freecoin' ? (settings?.freecoin || "/images/money-bag.png") :
+                                type === 'rp' ? (settings?.rp || "/images/rp.png") :
                                 "/images/e-coin.png"
                             }
                             width={16}
@@ -274,6 +277,7 @@ export default function CartDetail() {
                                 type === 'coin' ? (settings?.coin || "/images/e-coin.png") :
                                 type === 'stamp' ? (settings?.stamp || "/images/stamp.png") :
                                 type === 'freecoin' ? (settings?.freecoin || "/images/money-bag.png") :
+                                type === 'rp' ? (settings?.rp || "/images/rp.png") :
                                 "/images/e-coin.png"
                             }
                             width={16}
@@ -428,12 +432,13 @@ export default function CartDetail() {
                                                                                 <div className="flex items-center gap-1 text-xs text-gray-500">
                                                                                     <span>ต่อชิ้น:</span>
                                                                                     <AntImage 
-                                                                                        src={
-                                                                                            type === 'coin' ? (settings?.coin || "/images/e-coin.png") :
-                                                                                            type === 'stamp' ? (settings?.stamp || "/images/stamp.png") :
-                                                                                            type === 'freecoin' ? (settings?.freecoin || "/images/money-bag.png") :
-                                                                                            "/images/e-coin.png"
-                                                                                        }
+                             src={
+                                type === 'coin' ? (settings?.coin || "/images/e-coin.png") :
+                                type === 'stamp' ? (settings?.stamp || "/images/stamp.png") :
+                                type === 'freecoin' ? (settings?.freecoin || "/images/money-bag.png") :
+                                type === 'rp' ? (settings?.rp || "/images/rp.png") :
+                                "/images/e-coin.png"
+                            }
                                                                                         width={12}
                                                                                         height={12}
                                                                                         preview={false}
@@ -442,12 +447,13 @@ export default function CartDetail() {
                                                                                 </div>
                                                                                 <div className="flex items-center gap-1">
                                                                                     <AntImage 
-                                                                                        src={
-                                                                                            type === 'coin' ? (settings?.coin || "/images/e-coin.png") :
-                                                                                            type === 'stamp' ? (settings?.stamp || "/images/stamp.png") :
-                                                                                            type === 'freecoin' ? (settings?.freecoin || "/images/money-bag.png") :
-                                                                                            "/images/e-coin.png"
-                                                                                        }
+                             src={
+                                type === 'coin' ? (settings?.coin || "/images/e-coin.png") :
+                                type === 'stamp' ? (settings?.stamp || "/images/stamp.png") :
+                                type === 'freecoin' ? (settings?.freecoin || "/images/money-bag.png") :
+                                type === 'rp' ? (settings?.rp || "/images/rp.png") :
+                                "/images/e-coin.png"
+                            }
                                                                                         width={16}
                                                                                         height={16}
                                                                                         preview={false}
@@ -516,6 +522,10 @@ export default function CartDetail() {
                                 <Text className="text-gray-500">แสตมป์</Text>
                                 <StampPill amount={user?.stamp || 0} />
                             </div>
+                            <div className="flex justify-between items-center">
+                                <Text className="text-gray-500">RP</Text>
+                                <RPPill amount={user?.current_rp || 0} />
+                            </div>
                         </div>
                     </div>
 
@@ -526,7 +536,7 @@ export default function CartDetail() {
                         <div className="space-y-4 mb-6">
                             <div className="flex justify-between text-gray-600">
                                 <Text>สินค้าทั้งหมด</Text>
-                                <Text>{cartSummary?.total_items || 0} ชิ้น</Text>
+                                <Text>{cartSummary?.total_items || 0} รายการ</Text>
                             </div>
                            
                             <div className="h-[1px] bg-gray-100 my-2"></div>
@@ -542,6 +552,7 @@ export default function CartDetail() {
                                                         curr.type === 'coin' ? (settings?.coin || "/images/e-coin.png") :
                                                         curr.type === 'stamp' ? (settings?.stamp || "/images/stamp.png") :
                                                         curr.type === 'freecoin' ? (settings?.freecoin || "/images/money-bag.png") :
+                                                        curr.type === 'rp' ? (settings?.rp || "/images/rp.png") :
                                                         "/images/e-coin.png"
                                                     }
                                                     width={24}

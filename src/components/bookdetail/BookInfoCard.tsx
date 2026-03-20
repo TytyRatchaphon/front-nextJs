@@ -844,12 +844,14 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                 <div className="text-amber-800 text-base">คุณเป็นเจ้าของนิยายตอนปัจจุบันครบแล้ว</div>
                 <div className="text-amber-600 text-sm">ยังมีตอนล่วงหน้าให้ซื้อเพิ่ม</div>
               </div>
-              <button
-                onClick={handleBuyEarlyAccessClick}
-                className="w-full h-12 mt-4 rounded-2xl border-2 border-amber-500 text-amber-600 text-lg font-bold hover:bg-amber-50 transition-colors"
-              >
-                ซื้อตอนล่วงหน้า
-              </button>
+              <div className="pt-4">
+                <button
+                  onClick={handleBuyEarlyAccessClick}
+                  className="block w-full h-12 rounded-2xl border-2 border-amber-500 text-amber-600 text-lg font-bold hover:bg-amber-50 transition-colors"
+                >
+                  ซื้อตอนล่วงหน้า
+                </button>
+              </div>
             </div>
           ) : (
             <>
@@ -923,7 +925,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
               </div>
 
               <div className="text-center text-gray-500 text-xs mb-3">หรือ</div>
-              {hasEarlyAccessEpisodes && (
+              {hasEarlyAccessEpisodes && Number(book.remaining_paid_count ?? 0) === 0 && Number(book.remaining_paid_total ?? 0) === 0 && (
                 <button
                   onClick={handleBuyEarlyAccessClick}
                   className="w-full h-12 rounded-2xl border-2 border-amber-500 text-amber-600 text-lg font-bold hover:bg-amber-50 transition-colors mb-3"
@@ -1102,9 +1104,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                                               <div className="flex items-center gap-1.5">
                                                 <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700">
                                                   +{rpEarn}
-                                                  {settings?.rank_point ? (
+                                                  {settings?.rp ? (
                                                     <Image
-                                                      src={settings.rank_point}
+                                                      src={settings.rp}
                                                       alt="rank point"
                                                       width={12}
                                                       height={12}
@@ -1274,8 +1276,8 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                               description: (
                                 <div className="flex items-center gap-1">
                                   <span>คุณได้รับ {res.data.data.rp_earned}</span>
-                                  {settings?.rank_point ? (
-                                    <Image src={settings.rank_point} alt="RP" width={16} height={16} unoptimized className="object-contain" />
+                                  {settings?.rp ? (
+                                    <Image src={settings.rp} alt="RP" width={16} height={16} unoptimized className="object-contain" />
                                   ) : (
                                     <span>RP</span>
                                   )}
@@ -1364,14 +1366,23 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                           <p>
                               <span className="font-bold text-red-700">ซื้อตอนล่วงหน้า:</span> ระบบจะคำนวณเฉพาะตอนล่วงหน้าที่สามารถซื้อได้ในขณะนี้เท่านั้น และไม่รวมตอนปกติอื่น ๆ
                           </p>
-                      ) : book.end === 'end' ? (
-                          <p>
-                              <span className="font-bold text-red-700">กรณีซื้อทั้งเรื่องที่สถานะจบ :</span> คุณจะได้รับสิทธิ์ในการเข้าถึงเนื้อหา &quot;ทุกตอนที่ท่านยังไม่เคยทำการซื้อ&quot; ทั้งหมด โดยราคาจะคำนวนเฉพาะตอนที่ยังไม่เคยซื้อ
-                          </p>
                       ) : (
-                          <p>
-                              <span className="font-bold text-red-700">สำหรับผลงานที่ยังไม่จบ:</span> คุณจะได้รับสิทธิ์ในการเข้าถึงเนื้อหา &quot;ทุกตอนที่ท่านยังไม่เคยทำการซื้อ&quot; ราคาที่แสดงจะเป็นการคำนวณยอดรวมเฉพาะ &quot;ตอนที่อัปเดตล่าสุด ณ วันที่ทำรายการซื้อ&quot; เท่านั้น (ไม่รวมถึงตอนที่จะอัปเดตเพิ่มในอนาคต)
-                          </p>
+                        <>
+                          {book.end === 'end' ? (
+                              <p className="mb-1">
+                                  <span className="font-bold text-red-700">กรณีซื้อทั้งเรื่องที่สถานะจบ :</span> คุณจะได้รับสิทธิ์ในการเข้าถึงเนื้อหา &quot;ทุกตอนที่ท่านยังไม่เคยทำการซื้อ&quot; ทั้งหมด โดยราคาจะคำนวนเฉพาะตอนที่ยังไม่เคยซื้อ
+                              </p>
+                          ) : (
+                              <p className="mb-1">
+                                  <span className="font-bold text-red-700">สำหรับผลงานที่ยังไม่จบ:</span> คุณจะได้รับสิทธิ์ในการเข้าถึงเนื้อหา &quot;ทุกตอนที่ท่านยังไม่เคยทำการซื้อ&quot; ราคาที่แสดงจะเป็นการคำนวณยอดรวมเฉพาะ &quot;ตอนที่อัปเดตล่าสุด ณ วันที่ทำรายการซื้อ&quot; เท่านั้น (ไม่รวมถึงตอนที่จะอัปเดตเพิ่มในอนาคต)
+                              </p>
+                          )}
+                          {hasEarlyAccessEpisodes && (
+                            <p className="mt-1 text-amber-700 font-bold">
+                              * เหมาทั้งเรื่อง ไม่ได้รวมตอนล่วงหน้า
+                            </p>
+                          )}
+                        </>
                       )}
                   </div>
 
@@ -1400,8 +1411,8 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                               description: (
                                 <div className="flex items-center gap-1">
                                   <span>คุณได้รับ {res.data.data.rp_earned}</span>
-                                  {settings?.rank_point ? (
-                                    <Image src={settings.rank_point} alt="RP" width={16} height={16} unoptimized className="object-contain" />
+                                  {settings?.rp ? (
+                                    <Image src={settings.rp} alt="RP" width={16} height={16} unoptimized className="object-contain" />
                                   ) : (
                                     <span>RP</span>
                                   )}

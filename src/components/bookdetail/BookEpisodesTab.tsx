@@ -163,9 +163,9 @@ export const BookEpisodesTab = ({ episodesData, bookId, bookDetail, settings, is
                                                                     <div className="flex items-center gap-1.5">
                                                                         <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700 whitespace-nowrap">
                                                                             <span>{`+${rpEarn}`}</span>
-                                                                            {settings?.rank_point ? (
+                                                                            {settings?.rp ? (
                                                                                 <Image
-                                                                                    src={settings.rank_point}
+                                                                                    src={settings.rp}
                                                                                     alt="rank point"
                                                                                     width={12}
                                                                                     height={12}

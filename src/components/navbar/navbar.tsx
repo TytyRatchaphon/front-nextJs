@@ -4,8 +4,8 @@ import NovelMenu from './NovelMenu';
 import CartPopover from './CartPopover';
 import { Popover, App, Drawer } from 'antd';
 import LoginButtonHeader from './LoginButtonHeader';
-import { ChevronRight } from 'lucide-react';
-import React, { useEffect } from 'react';
+import { ChevronRight, Menu, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import NotificationList from './NotificationList';
 import { useSocket } from '@/providers/SocketProvider';
@@ -37,6 +37,7 @@ function Navbar() {
   const [isMobileNovelOpen, setIsMobileNovelOpen] = React.useState(false);
   const [openMobileCategoryId, setOpenMobileCategoryId] = React.useState<string | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
+  const [isCartOpen, setIsCartOpen] = React.useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = React.useState(false);
   const { settings } = useWebsiteStore();
 
@@ -100,7 +101,7 @@ function Navbar() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const rpValue = Number(user?.current_rp ?? user?.total_rp ?? rankData?.total_rp ?? 0);
+  const rpValue = Number(user?.current_rp ?? rankData?.total_rp ?? 0);
 
   useEffect(() => {
     if (!socket || !isLoggedIn) return;
@@ -265,7 +266,7 @@ function Navbar() {
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-gray-100">
-              <Image src={settings?.rank_point || "https://image.enjoybook.co/enjoybook.image/web/20260225154739zflt.png"} alt="RP" width={14} height={14} className="object-contain" unoptimized />
+              <Image src={settings?.rp || "https://image.enjoybook.co/enjoybook.image/web/20260225154739zflt.png"} alt="RP" width={14} height={14} className="object-contain" unoptimized />
               <span className="text-xs font-bold text-gray-700">{rpValue.toLocaleString()}</span>
             </div>
             <span className="text-[10px] text-red-500 font-semibold group-hover:text-red-600 whitespace-nowrap flex items-center gap-0.5">
@@ -461,9 +462,11 @@ function Navbar() {
             </Link>
             {isLoggedIn && (
               <Popover
-                content={<CartPopover />}
+                content={<CartPopover onClose={() => setIsCartOpen(false)} />}
                 trigger="click"
                 placement="bottom"
+                open={isCartOpen}
+                onOpenChange={setIsCartOpen}
                 arrow={false}
                 zIndex={2000}
                 styles={{ body: { padding: 0 } }}
@@ -549,110 +552,103 @@ function Navbar() {
       <div className="bg-[#DC0020] h-[40px] w-full flex items-center justify-between px-4 lg:hidden text-white shadow-md relative">
         <Link href="/" className="font-bold text-lg select-none !text-white !underline-offset-none">หน้าหลัก</Link>
         <button
-          className="text-white focus:outline-none"
+          className="text-white focus:outline-none transition-all duration-200 active:scale-95 z-[1002]"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 12H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M3 6H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M3 18H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          {isMobileMenuOpen ? (
+            <X width={24} height={24} />
+          ) : (
+            <Menu width={24} height={24} />
+          )}
         </button>
 
+        {/* Mobile Menu Overlay */}
+        {isMobileMenuOpen && (
+          <div 
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[999]"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+
         <div
-          className={`absolute top-[40px] left-0 w-full bg-white shadow-lg flex flex-col text-gray-800 z-[1001] border-t border-gray-200 transition-all duration-300 ease-in-out overflow-y-auto ${isMobileMenuOpen ? 'max-h-[calc(100vh-100px)] opacity-100' : 'max-h-0 opacity-0'
+          className={`absolute top-[40px] left-0 w-full bg-white shadow-xl flex flex-col items-center text-gray-800 z-[1001] border-t border-gray-100 transition-all duration-300 ease-in-out overflow-y-auto ${
+              isMobileMenuOpen ? 'max-h-[calc(100vh-60px)] opacity-100' : 'max-h-0 opacity-0 pointer-events-none'
             }`}
         >
-          <Link href="/" className="px-4 py-3 hover:bg-red-50 border-b border-gray-100 font-primary" onClick={() => setIsMobileMenuOpen(false)}>หน้าหลัก</Link>
-
-
-
-
-
-
-          {/* Novel Mobile Menu Wrapper */}
-          <div className="border-b border-gray-100">
-            <div
-              className="px-4 py-3 hover:bg-red-50 font-primary flex justify-between items-center cursor-pointer text-gray-800"
-              onClick={() => setIsMobileNovelOpen(!isMobileNovelOpen)}
-            >
-              <span>นิยาย</span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className={`transition-transform duration-200 ${isMobileNovelOpen ? 'rotate-180' : ''}`}
+          <div className="w-full flex flex-col">
+            {/* Main Menu Row (Matching Image) */}
+            <div className="flex items-center justify-center gap-6 py-6 px-4 border-b border-gray-50 flex-wrap">
+              <Link 
+                href="/" 
+                className="hover:text-red-500 transition-colors" 
+                onClick={() => setIsMobileMenuOpen(false)}
               >
-                <polyline points="6 9 12 15 18 9"></polyline>
-              </svg>
+                <span className="font-primary text-[16px] text-[#2D3748]">หน้าหลัก</span>
+              </Link>
+
+              <div
+                className="flex items-center gap-1 cursor-pointer hover:text-red-500 transition-colors"
+                onClick={() => setIsMobileNovelOpen(!isMobileNovelOpen)}
+              >
+                <span className="font-primary text-[16px] text-[#2D3748]">นิยาย</span>
+                <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-300 text-gray-400 ${isMobileNovelOpen ? 'rotate-90' : ''}`} />
+              </div>
+
+              <Link 
+                href="/ranking" 
+                className="hover:text-red-500 transition-colors" 
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <span className="font-primary text-[16px] text-[#2D3748]">จัดอันดับ</span>
+              </Link>
+              
+              <Link 
+                href="/article" 
+                className="hover:text-red-500 transition-colors" 
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <span className="font-primary text-[16px] text-[#2D3748]">บทความ</span>
+              </Link>
             </div>
 
-            {/* Sub-menu */}
-            <div className={`overflow-hidden transition-all duration-300 ease-in-out bg-gray-50 ${isMobileNovelOpen ? 'max-h-[1500px] opacity-100' : 'max-h-0 opacity-0'}`}>
-              {activeTypes?.map((type) => (
-                <div key={type.type} className="border-b border-gray-100 last:border-b-0">
-                  <div
-                    className="px-6 py-3 text-sm font-semibold text-gray-700 bg-gray-100/50 flex justify-between items-center cursor-pointer hover:bg-gray-200/50 transition-colors"
-                    onClick={() => setOpenMobileCategoryId(openMobileCategoryId === type.type ? null : type.type)}
-                  >
-                    <span>{type.label}</span>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className={`transition-transform duration-200 text-gray-500 ${openMobileCategoryId === type.type ? 'rotate-180' : ''}`}
+            {/* Sub-menu - Only shows when Novel is clicked */}
+            <div className={`w-full overflow-hidden transition-all duration-300 ease-in-out bg-white ${isMobileNovelOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
+              <div className="flex flex-col">
+                {activeTypes?.map((type) => (
+                  <div key={type.type} className="w-full border-b border-gray-50/50">
+                    <div
+                      className="w-full py-3 px-6 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors"
+                      onClick={() => setOpenMobileCategoryId(openMobileCategoryId === type.type ? null : type.type)}
                     >
-                      <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                  </div>
+                      <span className="font-primary text-[13px] font-bold text-gray-400 uppercase tracking-widest">{type.label}</span>
+                      <ChevronRight className={`w-3 h-3 transition-transform duration-200 text-gray-300 ${openMobileCategoryId === type.type ? 'rotate-90' : ''}`} />
+                    </div>
 
-                  <div className={`grid grid-cols-2 gap-2 px-6 overflow-hidden transition-all duration-300 ease-in-out ${openMobileCategoryId === type.type ? 'max-h-[1000px] py-2 pb-4 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
-                    {openMobileCategoryId === type.type && mobileCategories?.length > 0 ? (
-                      mobileCategories.map((cat) => (
-                        <Link
-                          key={cat.id}
-                          href={`/cat/list?type=${type.type}&categoryId=${cat.id}&tab=bestseller&limit=10&page=1`}
-                          className="text-[13px] text-gray-600 hover:text-red-600 truncate py-1"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          {cat.name}
-                        </Link>
-                      ))
-                    ) : (
-                       openMobileCategoryId === type.type && (
-                         <div className="col-span-2 text-center text-gray-400 py-2 text-xs">
-                           กำลังโหลด...
-                         </div>
-                       )
-                    )}
+                    <div className={`grid grid-cols-2 gap-x-6 gap-y-2 px-8 overflow-hidden transition-all duration-300 ease-in-out ${openMobileCategoryId === type.type ? 'max-h-[1000px] py-4 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
+                      {openMobileCategoryId === type.type && mobileCategories?.length > 0 ? (
+                        mobileCategories.map((cat) => (
+                          <Link
+                            key={cat.id}
+                            href={`/cat/list?type=${type.type}&categoryId=${cat.id}&tab=bestseller&limit=10&page=1`}
+                            className="text-[14px] text-gray-400 hover:text-red-500 py-1 font-primary transition-colors"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                            {cat.name}
+                          </Link>
+                        ))
+                      ) : (
+                         openMobileCategoryId === type.type && (
+                           <div className="w-full text-center text-gray-300 py-2 text-xs">
+                             กำลังโหลด...
+                           </div>
+                         )
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
-
-          <Link href="/ranking" className="px-4 py-3 hover:bg-red-50 border-b border-gray-100 font-primary" onClick={() => setIsMobileMenuOpen(false)}>จัดอันดับ</Link>
-          <Link href="/article" className="px-4 py-3 hover:bg-red-50 border-b border-gray-100 font-primary" onClick={() => setIsMobileMenuOpen(false)}>บทความ</Link>
-          {/* <Link href="/campaign" className="px-4 py-3 hover:bg-red-50 border-b border-gray-100 font-primary" onClick={() => setIsMobileMenuOpen(false)}>แคมเปญ</Link> */}
-
-          {promotingGroups?.map((group) => (
-            <Link key={group.id} href={`/promotion/${group.id}`} className="px-4 py-3 hover:bg-red-50 border-b border-gray-100 font-primary" onClick={() => setIsMobileMenuOpen(false)}>
-              {group.name}
-            </Link>
-          ))}
-          {/* <Link href="/reel" className="px-4 py-3 hover:bg-red-50 border-b border-gray-100 font-primary" onClick={() => setIsMobileMenuOpen(false)}>Reel</Link> */}
         </div>
       </div>
       </div>
@@ -724,7 +720,7 @@ function Navbar() {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-gray-100">
-                    <Image src={settings?.rank_point || ''} alt="RP" width={14} height={14} className="object-contain" unoptimized />
+                    <Image src={settings?.rp || ''} alt="RP" width={14} height={14} className="object-contain" unoptimized />
                     <span className="text-xs font-bold text-gray-700">{rpValue.toLocaleString()}</span>
                   </div>
                   <span className="text-[10px] text-red-500 font-semibold group-hover:text-red-600 whitespace-nowrap flex items-center gap-0.5">

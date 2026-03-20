@@ -649,6 +649,7 @@ export interface StorePack {
 export interface StoreCategory {
   store_id: number;
   name: string;
+  banner?: string | null;
   start_date: string;
   end_date: string | null;
   order_by: number;

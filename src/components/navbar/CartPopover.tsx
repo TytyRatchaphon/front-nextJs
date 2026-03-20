@@ -12,7 +12,11 @@ import { CheckCircleOutlined } from '@ant-design/icons';
 import { QUERY_CONFIG } from '@/constants/query';
 
 
-const CartPopover: React.FC = () => {
+interface CartPopoverProps {
+    onClose?: () => void;
+}
+
+const CartPopover: React.FC<CartPopoverProps> = ({ onClose }) => {
     const { settings } = useWebsiteStore();
     const queryClient = useQueryClient();
     const { notification } = App.useApp();
@@ -190,6 +194,7 @@ const CartPopover: React.FC = () => {
                                                             type === 'coin' ? (settings?.coin || "/images/e-coin.png") :
                                                             type === 'stamp' ? (settings?.stamp || "/images/stamp.png") :
                                                             type === 'freecoin' ? (settings?.freecoin || "/images/money-bag.png") :
+                                                            type === 'rp' ? (settings?.rp || "/images/rp.png") :
                                                             "/images/e-coin.png"
                                                         }
                                                         width={16}
@@ -222,6 +227,7 @@ const CartPopover: React.FC = () => {
                                             type === 'coin' ? (settings?.coin || "/images/e-coin.png") :
                                             type === 'stamp' ? (settings?.stamp || "/images/stamp.png") :
                                             type === 'freecoin' ? (settings?.freecoin || "/images/money-bag.png") :
+                                            type === 'rp' ? (settings?.rp || "/images/rp.png") :
                                             "/images/e-coin.png"
                                         }
                                         width={18}
@@ -235,7 +241,7 @@ const CartPopover: React.FC = () => {
                         </div>
                     </div>
                 )}
-                <Link href="/cart">
+                <Link href="/cart" onClick={onClose}>
                     <Button type="primary" danger block size="large" className="rounded-lg font-bold">
                         ดูตะกร้าสินค้าทั้งหมด
                     </Button>
