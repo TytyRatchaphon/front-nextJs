@@ -1,27 +1,16 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { Skeleton, Collapse } from 'antd';
-import { fetchFaqs, FaqItem } from '@/services/apiServices';
+import React from 'react';
+import { Collapse } from 'antd';
+import type { FaqItem } from '@/services/apiServices';
 import { PlusOutlined, MinusOutlined } from '@ant-design/icons';
 
-export default function FaqContent() {
-    const [faqs, setFaqs] = useState<FaqItem[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+interface FaqContentProps {
+    initialFaqs?: FaqItem[];
+}
 
-    useEffect(() => {
-        const loadFaqs = async () => {
-            try {
-                const data = await fetchFaqs();
-                setFaqs(data);
-            } catch (error) {
-                console.error("Failed to load FAQs", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        loadFaqs();
-    }, []);
+export default function FaqContent({ initialFaqs = [] }: FaqContentProps) {
+    const faqs = initialFaqs;
 
     return (
         <div className="min-h-screen bg-[#FDFDFD] font-primary">
@@ -43,11 +32,7 @@ export default function FaqContent() {
             {/* Content Section */}
             <div className="container mx-auto px-4 -mt-12 md:-mt-20 pb-20 relative z-20">
                 <div className="max-w-4xl mx-auto">
-                    {isLoading ? (
-                        <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-                           <Skeleton active paragraph={{ rows: 6 }} />
-                        </div>
-                    ) : faqs.length > 0 ? (
+                    {faqs.length > 0 ? (
                         <div className="space-y-4">
                             <Collapse
                                 accordion

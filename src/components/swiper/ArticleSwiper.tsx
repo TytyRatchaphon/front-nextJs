@@ -66,7 +66,6 @@ export default function ArticleSwiper({ items, title, icon, link }: ArticleSwipe
                alt={title || 'icon'} 
                fill
                className="object-cover"
-               unoptimized
              />
           </div>
         )}

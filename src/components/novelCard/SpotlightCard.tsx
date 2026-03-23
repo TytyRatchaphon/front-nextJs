@@ -3,7 +3,6 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookTrans } from '@/types/api';
-import '@/utils/imageUtils';
 
 interface SpotlightCardProps {
   book: BookTrans;
@@ -27,7 +26,6 @@ export default function SpotlightCard({ book }: SpotlightCardProps) {
             alt={book.name}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
-            unoptimized
           />
            {/* Fallback for status/ribbon if needed */}
            {(book.status === 'end') && (

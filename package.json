@@ -9,7 +9,7 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start ",
-    "deploy": "next build && next export",
+    "deploy": "next build --turbopack",
     "lint": "eslint",
     "test": "vitest",
     "test:run": "vitest run"

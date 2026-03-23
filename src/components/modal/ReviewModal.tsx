@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import ImageWithFallback from '@/components/ui/ImageWithFallback';
+import React, { useEffect, useState } from 'react';
 import { Modal, Rate, Input, App } from 'antd';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -13,6 +12,7 @@ import parse from 'html-react-parser';
 import { Edit2, Trash2, Heart, Share2, MessageCircle, Flag, Send } from 'lucide-react';
 import { likeReview, shareReview, postReviewComment, fetchReviewComments, reportReviewOrComment } from '@/services/api/commentApi';
 import { useAuthStore } from '@/stores/authStore';
+import ProfileAvatarLink, { extractFrameSrc, normalizeProfileAssetSrc } from '@/components/ui/ProfileAvatarLink';
 
 dayjs.extend(relativeTime);
 dayjs.locale('th');
@@ -32,7 +32,7 @@ const getReviewId = (item: any): string => String(item?.review_id ?? item?.id ??
 const patchReviewInQueryData = (
   data: any,
   targetId: string,
-  updater: (current: any) => any, 
+  updater: (current: any) => any,
 ) => {
   if (!data) return data;
 
@@ -67,7 +67,15 @@ const patchReviewInQueryData = (
   return data;
 };
 
-export default function ReviewModal({ isOpen, onClose, review, currentUserId, onEdit, onDelete, onReviewUpdate }: ReviewModalProps) {
+export default function ReviewModal({
+  isOpen,
+  onClose,
+  review,
+  currentUserId,
+  onEdit,
+  onDelete,
+  onReviewUpdate,
+}: ReviewModalProps) {
   const REVIEW_MODAL_Z_INDEX = 3000;
   const REVIEW_NOTIFICATION_Z_INDEX = 3200;
   const queryClient = useQueryClient();
@@ -102,7 +110,7 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
       setLiked(review.is_liked || false);
       setLikeCount(review.like_count || review.likes || 0);
       setShareCount(review.share_count || review.shares || 0);
-      loadComments();
+      void loadComments();
     }
   }, [isOpen, review]);
 
@@ -158,7 +166,6 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
         share_count: nextShareCount,
         shares: nextShareCount,
       });
-      // Copy link to clipboard
       const url = `${window.location.origin}/review/${reviewId}`;
       await navigator.clipboard.writeText(url);
       notification.success({ message: 'คัดลอกลิงก์แล้ว', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
@@ -172,6 +179,7 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
       notification.warning({ message: 'กรุณาเข้าสู่ระบบเพื่อรายงาน', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
       return;
     }
+
     modal.confirm({
       zIndex: REVIEW_MODAL_Z_INDEX + 10,
       title: 'ยืนยันการรายงาน',
@@ -186,7 +194,7 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
         } catch (error: any) {
           notification.error({ message: error?.response?.data?.message || 'เกิดข้อผิดพลาดในการรายงาน', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
         }
-      }
+      },
     });
   };
 
@@ -207,7 +215,7 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
         comments: nextCommentCount,
       });
       notification.success({ message: 'แสดงความคิดเห็นสำเร็จ', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
-      loadComments(); // Reload comments
+      await loadComments();
     } catch (error: any) {
       notification.error({ message: error?.response?.data?.message || 'เกิดข้อผิดพลาด', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
     } finally {
@@ -218,7 +226,8 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
   if (!review) return null;
 
   const isOwner = user?.user_id && user.user_id === review.user?.user_id;
-  const userAvatar = review.user?.img || '/images/default-avatar.png';
+  const userAvatar = normalizeProfileAssetSrc(review.user?.img || '/images/default-avatar.png');
+  const userFrame = extractFrameSrc(review.user);
   const userName = review.user?.fullname || 'Unknown';
   const timeAgo = dayjs(review.created_at).fromNow();
   const bookCover = review.book?.img || review.book?.img_full || '/images/default-cover.png';
@@ -236,33 +245,40 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
       width={600}
       zIndex={REVIEW_MODAL_Z_INDEX}
       className="font-primary"
-      closeIcon={<span className="text-gray-400 hover:text-red-500 transition-colors">✕</span>}
+      closeIcon={<span className="text-gray-400 hover:text-red-500 transition-colors">x</span>}
     >
       <div className="p-2 sm:p-4">
-        {/* Header: User & Time */}
-        <div className="flex justify-between items-center mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="relative w-10 h-10 rounded-full overflow-hidden">
-              <ImageWithFallback src={userAvatar} alt={userName} fill className="object-cover" />
-            </div>
+            <ProfileAvatarLink
+              userId={review.user?.user_id}
+              name={userName}
+              avatarSrc={userAvatar}
+              frameSrc={userFrame}
+              sizeClassName="h-10 w-10"
+              frameScaleClassName="-inset-1"
+            />
             <div>
-              <div className="text-base font-bold text-gray-800">{userName}</div>
+              <Link href={`/profile/${review.user?.user_id}`} className="text-base font-bold text-gray-800 hover:text-[#E33527]">
+                {userName}
+              </Link>
               <div className="text-sm text-gray-400">{timeAgo}</div>
             </div>
           </div>
+
           <div className="flex items-center gap-2">
             {isOwner ? (
               <>
                 <button
                   onClick={() => onEdit?.(review)}
-                  className="flex items-center gap-1.5 text-gray-500 hover:text-[#E33527] px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors text-sm"
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-500 transition-colors hover:bg-red-50 hover:text-[#E33527]"
                 >
                   <Edit2 size={14} />
                   <span>แก้ไข</span>
                 </button>
                 <button
                   onClick={() => onDelete?.(review)}
-                  className="flex items-center gap-1.5 text-gray-500 hover:text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors text-sm"
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600"
                 >
                   <Trash2 size={14} />
                   <span>ลบ</span>
@@ -271,7 +287,7 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
             ) : currentUserId ? (
               <button
                 onClick={() => handleReport('review', reviewId)}
-                className="flex items-center gap-1.5 text-gray-400 hover:text-orange-500 px-3 py-1.5 rounded-lg hover:bg-orange-50 transition-colors text-sm"
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-400 transition-colors hover:bg-orange-50 hover:text-orange-500"
               >
                 <Flag size={14} />
                 <span>รายงาน</span>
@@ -280,75 +296,74 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
           </div>
         </div>
 
-        {/* Rating & Episode */}
-        <div className="flex items-center gap-2 mb-4">
+        <div className="mb-4 flex items-center gap-2">
           <Rate disabled defaultValue={review.rating} allowHalf className="text-base text-yellow-500" />
-          <span className="text-sm text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-sm text-gray-500">
             อ่านถึงตอนที่ {review.ep_read || 0}
           </span>
         </div>
 
-        {/* Content */}
-        <div className="text-base text-gray-700 leading-relaxed mb-4 bg-gray-50 p-4 rounded-xl border border-gray-100 min-h-[100px] whitespace-pre-wrap word-break">
+        <div className="mb-4 min-h-[100px] whitespace-pre-wrap rounded-xl border border-gray-100 bg-gray-50 p-4 text-base leading-relaxed text-gray-700">
           {parse((review.content || '').replace(/\[\/?\s*SPOILER\s*\]/gi, ''))}
         </div>
 
-        {/* Action Buttons: Like, Share, Comment count */}
-        <div className="flex items-center gap-6 mb-4 py-2 border-t border-b border-gray-100">
+        <div className="mb-4 flex items-center gap-6 border-y border-gray-100 py-2">
           <button
             onClick={handleLike}
-            className={`flex items-center gap-1.5 transition-colors text-sm font-medium ${liked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'}`}
+            className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${liked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'}`}
           >
             <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
             <span>{likeCount > 0 ? likeCount : ''} ถูกใจ</span>
           </button>
-          <div className="flex items-center gap-1.5 text-gray-500 text-sm font-medium">
+          <div className="flex items-center gap-1.5 text-sm font-medium text-gray-500">
             <MessageCircle size={18} />
             <span>{comments.length > 0 ? comments.length : ''} ความคิดเห็น</span>
           </div>
           <button
             onClick={handleShare}
-            className="flex items-center gap-1.5 text-gray-500 hover:text-blue-500 transition-colors text-sm font-medium"
+            className="flex items-center gap-1.5 text-sm font-medium text-gray-500 transition-colors hover:text-blue-500"
           >
             <Share2 size={18} />
             <span>{shareCount > 0 ? shareCount : ''} แชร์</span>
           </button>
         </div>
 
-        {/* Book Info footer */}
         <div className="mb-4">
-          <h3 className="text-sm font-bold text-gray-500 mb-2">รีวิวจากเรื่อง</h3>
-          <Link href={`/book/${review.book?.book_id}`} className="flex gap-4 bg-white rounded-xl p-3 border border-gray-100 hover:border-red-200 hover:bg-red-50/30 transition-all group">
-            <div className="relative w-14 h-20 rounded-md overflow-hidden flex-shrink-0 shadow-sm group-hover:shadow-md transition-shadow">
+          <h3 className="mb-2 text-sm font-bold text-gray-500">รีวิวจากเรื่อง</h3>
+          <Link href={`/book/${review.book?.book_id}`} className="group flex gap-4 rounded-xl border border-gray-100 bg-white p-3 transition-all hover:border-red-200 hover:bg-red-50/30">
+            <div className="relative h-20 w-14 flex-shrink-0 overflow-hidden rounded-md shadow-sm transition-shadow group-hover:shadow-md">
               <Image src={bookCover} alt={bookTitle} fill className="object-cover" unoptimized />
             </div>
-            <div className="flex flex-col justify-center overflow-hidden flex-1">
-              <h4 className="text-base font-bold text-gray-900 line-clamp-2 mb-1 group-hover:text-red-600 transition-colors">{bookTitle}</h4>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs text-[#E33527] font-medium bg-red-50 px-2 py-0.5 rounded">{bookTag}</span>
+            <div className="flex flex-1 flex-col justify-center overflow-hidden">
+              <h4 className="mb-1 line-clamp-2 text-base font-bold text-gray-900 transition-colors group-hover:text-red-600">{bookTitle}</h4>
+              <div className="mb-1 flex items-center gap-2">
+                <span className="rounded bg-red-50 px-2 py-0.5 text-xs font-medium text-[#E33527]">{bookTag}</span>
               </div>
-              <p className="text-sm text-gray-500 truncate mt-auto">เขียนโดย: {writerName}</p>
+              <p className="mt-auto truncate text-sm text-gray-500">เขียนโดย: {writerName}</p>
             </div>
           </Link>
         </div>
 
-        {/* Comments Section */}
         <div className="border-t border-gray-100 pt-4">
-          <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-gray-700">
             <MessageCircle size={16} />
             ความคิดเห็น {comments.length > 0 && `(${comments.length})`}
           </h3>
 
-          {/* Comment Input */}
           {currentUserId && (
-            <div className="flex gap-2 mb-4">
-              <div className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
-                <ImageWithFallback src={user?.img || '/images/default-avatar.png'} alt="You" fill className="object-cover" />
-              </div>
-              <div className="flex-1 flex gap-2">
+            <div className="mb-4 flex gap-2">
+              <ProfileAvatarLink
+                userId={user?.user_id}
+                name={user?.fullname || 'You'}
+                avatarSrc={user?.img || '/images/default-avatar.png'}
+                frameSrc={extractFrameSrc(user)}
+                sizeClassName="h-8 w-8"
+                frameScaleClassName="-inset-1"
+              />
+              <div className="flex flex-1 gap-2">
                 <Input
                   value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
+                  onChange={(event) => setCommentText(event.target.value)}
                   placeholder="เขียนความคิดเห็น..."
                   className="rounded-full border-gray-200 hover:border-red-300 focus:border-red-400"
                   onPressEnter={handleSubmitComment}
@@ -356,7 +371,7 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
                 <button
                   onClick={handleSubmitComment}
                   disabled={isSubmitting || !commentText.trim()}
-                  className="flex items-center justify-center w-8 h-8 rounded-full bg-[#E33527] hover:bg-red-700 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                  className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#E33527] text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Send size={14} />
                 </button>
@@ -364,43 +379,52 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
             </div>
           )}
 
-          {/* Comments List */}
           {isLoadingComments ? (
             <div className="space-y-3">
-              {[...Array(2)].map((_, i) => (
-                <div key={i} className="flex gap-2 animate-pulse">
-                  <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0"></div>
+              {[...Array(2)].map((_, index) => (
+                <div key={index} className="flex animate-pulse gap-2">
+                  <div className="h-8 w-8 flex-shrink-0 rounded-full bg-gray-200" />
                   <div className="flex-1 space-y-1">
-                    <div className="h-3 bg-gray-200 rounded w-20"></div>
-                    <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-3 w-20 rounded bg-gray-200" />
+                    <div className="h-3 w-3/4 rounded bg-gray-200" />
                   </div>
                 </div>
               ))}
             </div>
           ) : comments.length > 0 ? (
-            <div className="space-y-3 max-h-[250px] overflow-y-auto pr-1">
-              {comments.map((comment: any, idx: number) => {
-                const commentId = comment.comment_id || comment.id || idx;
+            <div className="max-h-[250px] space-y-3 overflow-y-auto pr-1">
+              {comments.map((comment: any, index: number) => {
+                const commentId = comment.comment_id || comment.id || index;
                 const commentUserId = comment.user?.user_id || comment.user_id;
                 const isCommentOwner = currentUserId && currentUserId === commentUserId;
+                const commentUserName = comment.user?.fullname || 'ผู้ใช้งาน';
+
                 return (
-                  <div key={commentId} className="flex gap-2 group">
-                    <div className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
-                      <ImageWithFallback src={comment.user?.img || '/images/default-avatar.png'} alt={comment.user?.fullname || ''} fill className="object-cover" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="bg-gray-50 rounded-xl px-3 py-2">
+                  <div key={commentId} className="group flex gap-2">
+                    <ProfileAvatarLink
+                      userId={commentUserId}
+                      name={commentUserName}
+                      avatarSrc={comment.user?.img || '/images/default-avatar.png'}
+                      frameSrc={extractFrameSrc(comment.user)}
+                      sizeClassName="h-8 w-8"
+                      frameScaleClassName="-inset-1"
+                    />
+
+                    <div className="min-w-0 flex-1">
+                      <div className="rounded-xl bg-gray-50 px-3 py-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-gray-800">{comment.user?.fullname || 'ผู้ใช้งาน'}</span>
+                          <Link href={`/profile/${commentUserId}`} className="text-sm font-semibold text-gray-800 hover:text-[#E33527]">
+                            {commentUserName}
+                          </Link>
                           <span className="text-xs text-gray-400">{dayjs(comment.created_at).fromNow()}</span>
                         </div>
-                        <p className="text-sm text-gray-700 mt-0.5 break-words">{comment.content}</p>
+                        <p className="mt-0.5 break-words text-sm text-gray-700">{comment.content}</p>
                       </div>
-                      {/* Report comment */}
+
                       {!isCommentOwner && currentUserId && (
                         <button
                           onClick={() => handleReport('comment', commentId)}
-                          className="text-xs text-gray-400 hover:text-orange-500 mt-1 ml-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="ml-3 mt-1 text-xs text-gray-400 opacity-0 transition-opacity hover:text-orange-500 group-hover:opacity-100"
                         >
                           รายงาน
                         </button>
@@ -411,7 +435,7 @@ export default function ReviewModal({ isOpen, onClose, review, currentUserId, on
               })}
             </div>
           ) : (
-            <p className="text-sm text-gray-400 text-center py-4">ยังไม่มีความคิดเห็น</p>
+            <p className="py-4 text-center text-sm text-gray-400">ยังไม่มีความคิดเห็น</p>
           )}
         </div>
       </div>

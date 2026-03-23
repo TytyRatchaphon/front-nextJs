@@ -185,7 +185,6 @@ export default function CheckoutContent() {
     });
 
     useEffect(() => {
-        // Force fresh checkout snapshot every time this page is entered.
         queryClient.invalidateQueries({ queryKey: ['checkoutItems'] });
         queryClient.invalidateQueries({ queryKey: ['checkoutAddress'] });
         queryClient.invalidateQueries({ queryKey: ['checkoutSummary'] });
@@ -228,7 +227,7 @@ export default function CheckoutContent() {
                     {checkoutItemsData?.items?.map((item: any, idx: number) => (
                         <div key={idx} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex gap-4 items-center group transition-all hover:border-red-100 hover:shadow-md" style={{ animationDelay: `${idx * 100}ms` }}>
                             <div className="relative w-20 h-24 flex-shrink-0 rounded-lg overflow-hidden border border-gray-100 shadow-inner">
-                                <Image src={item.img} alt={item.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" unoptimized />
+                                <Image src={item.img} alt={item.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
                             </div>
                             <div className="flex-1 min-w-0">
                                 <Text strong className="text-base block truncate text-gray-800">{item.name}</Text>

@@ -66,7 +66,6 @@ export default function ExclusiveSwiper({ items, title, icon, link }: ExclusiveS
               alt={title || 'icon'}
               fill
               className="object-cover"
-              unoptimized
             />
           </div>
         )}

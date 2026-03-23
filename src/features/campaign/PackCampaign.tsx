@@ -13,7 +13,6 @@ import { CloseOutlined, CheckCircleFilled, CloseCircleFilled, ArrowLeftOutlined 
 import th_TH from 'antd/locale/th_TH';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { useUIStore } from '@/stores/uiStore';
-import '@/utils/imageUtils';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
 interface PackCampaignProps {
@@ -126,7 +125,6 @@ function PackCampaign({ data }: PackCampaignProps) {
                 <div className="w-full max-w-[1240px] mx-auto relative px-0 md:pt-6">
                     {data.banner_img ? (
                         <Image
-                            unoptimized
                             src={data.banner_img}
                             alt={data.name}
                             width={1180}
@@ -325,7 +323,7 @@ function PackCampaign({ data }: PackCampaignProps) {
 
                             <div className="bg-gray-50 p-3 rounded-lg flex items-center gap-3 text-left mb-6">
                                 <div className="relative w-12 h-16 flex-shrink-0">
-                                    <Image  src={selectedOption.img} alt="" fill className="object-cover rounded" unoptimized />
+                                    <Image src={selectedOption.img} alt="" fill className="object-cover rounded" />
                                 </div>
                                 <div>
                                     <div className="text-sm font-bold line-clamp-1">{selectedOption.name}</div>
@@ -352,7 +350,7 @@ function PackCampaign({ data }: PackCampaignProps) {
 
                             <div className="bg-gray-50 p-3 rounded-lg flex items-center gap-3 text-left mb-6">
                                 <div className="relative w-12 h-16 flex-shrink-0">
-                                    <Image unoptimized src={selectedOption.img} alt="" fill className="object-cover rounded" />
+                                    <Image src={selectedOption.img} alt="" fill className="object-cover rounded" />
                                 </div>
                                 <div>
                                     <div className="text-sm font-bold line-clamp-1">{selectedOption.name}</div>

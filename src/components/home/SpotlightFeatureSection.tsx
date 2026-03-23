@@ -81,7 +81,6 @@ export default function SpotlightFeatureSection({
                 ? "grayscale-0 scale-100"
                 : "scale-100 opacity-70 saturate-[.72] brightness-110 contrast-90 group-hover:opacity-100 group-hover:saturate-100 group-hover:brightness-100 group-hover:contrast-100 group-hover:scale-105"
             }`}
-            unoptimized
           />
         </div>
       </button>
@@ -108,7 +107,6 @@ export default function SpotlightFeatureSection({
               alt={item?.name || "Editor note"}
               fill
               className="object-cover object-center transition duration-300 group-hover:scale-[1.03]"
-              unoptimized
             />
           </div>
         </Link>
@@ -194,7 +192,6 @@ export default function SpotlightFeatureSection({
                       alt={selectedSpotlight.name}
                       fill
                       className="object-cover"
-                      unoptimized
                     />
                   </div>
                 </Link>

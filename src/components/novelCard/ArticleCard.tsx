@@ -4,7 +4,6 @@ import Link from 'next/link';
 import parse from 'html-react-parser';
 import { Clock, Eye } from 'lucide-react';
 import { ArticleItem } from '@/types/api';
-import '@/utils/imageUtils';
 
 interface ArticleCardProps {
   article: ArticleItem;
@@ -28,7 +27,6 @@ function ArticleCard({ article }: ArticleCardProps) {
         {/* Image Container */}
         <div className="w-full h-[140px] relative rounded-lg overflow-hidden flex-shrink-0">
           <Image
-            unoptimized
             src={article.img}
             alt={typeof article.name === 'string' ? article.name.replace(/<[^>]*>?/gm, '') : 'Article'}
             fill

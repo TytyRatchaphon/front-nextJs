@@ -50,7 +50,6 @@ function Banner({ slides = [] }: BannerProps) {
                           fill
                           className="object-cover"
                           priority
-                          unoptimized
                         />
                       </div>
                     </SwiperSlide>

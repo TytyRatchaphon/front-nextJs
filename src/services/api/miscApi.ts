@@ -1,6 +1,7 @@
 
 import apiClient from "../apiClient";
 import type { CategoryDetail, CategoryAllResponse, CategoryBookListResponse } from "@/types/api";
+import { cachedRequest } from "../requestCache";
 
 // --- Activity Logging ---
 
@@ -129,16 +130,18 @@ export const fetchActiveCategories = async (type: string = 'all'): Promise<Activ
 export interface NotificationType {
   noti_type_id: number;
   category: string;
-  type: string;
+  type: 'book_new' | 'book_update' | 'system' | 'comment_book_id' | 'comment_ep_id' | 'comment_sub_book_id' | 'comment_sub_ep_id';
   title: string;
   subtitle: string;
-  message: string;
-  image: string | null;
-  url: string | null;
+  message?: string;
+  image?: string;
+  url?: string;
+  status: string;
+  scheduled_at?: string;
   book_id?: number;
   ep_id?: number;
   comment_id?: number;
-  create_at?: string;
+  create_at: string;
 }
 
 export interface NotificationData {
@@ -146,7 +149,8 @@ export interface NotificationData {
   user_id: number;
   noti_type_id: number;
   create_at: string;
-  readed: string;
+  update_at: string;
+  readed: 'Y' | 'N';
   NotiType: NotificationType;
 }
 
@@ -217,6 +221,17 @@ export const markAllNotificationsAsRead = async (tab: NotificationTab = 'all') =
   }
 };
 
+export const deleteNotifications = async (ids: number[]) => {
+  try {
+    const response = await apiClient.delete('/user/notifications', {
+      data: { ids }
+    });
+    return response.data;
+  } catch {
+    return null;
+  }
+};
+
 export const postCommentNotification = async (commentId: string | number) => {
   try {
     const response = await apiClient.post(`/user/notifications/comments/${commentId}`, {});
@@ -263,8 +278,14 @@ export interface FaqItem {
 
 export const fetchFaqs = async (): Promise<FaqItem[]> => {
     try {
-        const response = await apiClient.get<{ code: number; data: FaqItem[] }>('/faq');
-        return response.data?.data || [];
+        return await cachedRequest<FaqItem[]>(
+          'faq:list',
+          async () => {
+            const response = await apiClient.get<{ code: number; data: FaqItem[] }>('/faq');
+            return response.data?.data || [];
+          },
+          { ttlMs: 10 * 60 * 1000 }
+        );
     } catch {
         return [];
     }

@@ -15,7 +15,6 @@ import { useUIStore } from "@/stores/uiStore";
 import { FacebookShareButton, TwitterShareButton, LineShareButton } from "react-share";
 import { TagSwiper } from "@/components/swiper/ImageSlider";
 import { useWebsiteStore } from '@/stores/websiteStore';
-import '@/utils/imageUtils';
 
 interface BookDetailHeaderProps {
   book: {
@@ -272,7 +271,6 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
               objectPosition: "center",
             }}
             priority
-            unoptimized
           />
         </div>
         {/* Overlay gradient for better readability */}
@@ -361,7 +359,6 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
                         width={24}
                         height={24}
                         className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover border border-gray-100"
-                        unoptimized
                         onError={(e) => { (e.target as HTMLImageElement).src = '/images/default-avatar.png'; }}
                       />
                     )}
@@ -697,7 +694,7 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
                   {/* Collection Cover */}
                   <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0 relative">
                     {col.cover_image ? (
-                      <NextImage src={col.cover_image} alt={col.name} fill className="object-cover" unoptimized />
+                      <NextImage src={col.cover_image} alt={col.name} fill className="object-cover" />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

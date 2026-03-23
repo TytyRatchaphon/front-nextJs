@@ -9,7 +9,7 @@ import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import AddToCartSvg from '@/components/utility/AddToCartSvg';
 import { addToCart, fetchCartItems } from '@/services/cartService';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import '@/utils/imageUtils';
+import { resolveStoreImageSrc } from '@/utils/imageUtils';
 
 
 interface StoreCardProps {
@@ -29,7 +29,8 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
     queryKey: ['cartItems'],
     queryFn: fetchCartItems,
     enabled: !!token, // Only fetch if logged in
-    staleTime: 1000 * 60, // 1 min cache
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   const qtyInCart = React.useMemo(() => {
@@ -101,11 +102,10 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
     <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col items-center text-center h-full hover:shadow-md transition-shadow">
       <div className="w-24 h-24 sm:w-28 sm:h-28 mb-3 relative flex-shrink-0">
         <Image
-          src={pack.img || '/images/ejb.png'}
+          src={resolveStoreImageSrc(pack.img, '/images/ejb.png')}
           alt={pack.name}
           fill
           className="object-contain"
-          unoptimized
         />
       </div>
       <h3 className="font-medium text-base sm:text-lg mb-1 line-clamp-1" title={pack.name}>

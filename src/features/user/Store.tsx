@@ -17,13 +17,11 @@ import FreeCoinPill from '@/components/utility/FreeCoinPill'
 import dayjs from 'dayjs'
 import { isValidPhoneNumber } from 'libphonenumber-js'
 
-import '@/utils/imageUtils';
 import { fetchCartItems } from '@/services/cartService';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { QUERY_CONFIG } from '@/constants/query';
 import StampPill from '@/components/utility/StampPill';
 import RPPill from '@/components/utility/RPPill';
-import { imageLoader } from '@/utils/imageUtils';
+import { imageLoader, resolveStoreImageSrc } from '@/utils/imageUtils';
 import UserRankShowcase from '@/features/user/components/UserRankShowcase';
 
 
@@ -59,9 +57,8 @@ function Store() {
     queryKey: ['cartItems'],
     queryFn: fetchCartItems,
     enabled: !!token, 
-    staleTime: QUERY_CONFIG.CART_STALE_TIME,
-    gcTime: QUERY_CONFIG.CART_GC_TIME,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   const handleBuyClick = (pack: StorePack, quantity: number = 1) => {
@@ -355,6 +352,18 @@ function Store() {
   const storePromoSrc = !bannerError && selectedStoreBanner
     ? imageLoader({ src: selectedStoreBanner, width: 1400 })
     : '/images/storeBanner.png';
+  const normalizeStoreAsset = (src: string | null | undefined, fallback: string) => {
+    if (!src || src === 'null' || src === 'undefined') {
+      return fallback;
+    }
+    if (src.startsWith('http') || src.startsWith('data:') || src.startsWith('/')) {
+      return src.replace('http:', 'https:');
+    }
+    if (src.startsWith('img/')) {
+      return `https://img.enjoybook.co/${src}`;
+    }
+    return `https://img.enjoybook.co/${src}`;
+  };
   const rawAvatar = user?.img ?? (user as any)?.profileImage ?? '';
   const avatarSrc = (() => {
     if (!rawAvatar || rawAvatar === 'null' || rawAvatar === 'undefined') {
@@ -368,6 +377,7 @@ function Store() {
     }
     return `https://img.enjoybook.co/img/profile/${rawAvatar}`;
   })();
+  const selectedPackImageSrc = resolveStoreImageSrc(selectedPack?.img || null, '/images/ejb.png');
   return (
     <div className="pb-20">
       {contextHolder}
@@ -387,7 +397,6 @@ function Store() {
                       alt={user?.fullname || 'Enjoybook user'}
                       fill
                       className="object-cover"
-                      unoptimized
                       onError={() => setAvatarError(true)}
                     />
                   </div>
@@ -532,10 +541,9 @@ function Store() {
                <div className="absolute top-0 right-0 w-16 h-16 bg-red-50 rounded-bl-full -mr-8 -mt-8 z-0"></div>
                <div className="relative w-24 h-24 flex-shrink-0 z-10 bg-gray-50 rounded-xl overflow-hidden border border-gray-100">
                 <Image
-                  src={selectedPack?.img || '/images/ejb.png'}
+                  src={selectedPackImageSrc}
                   alt={selectedPack?.name || 'Pack'}
                   fill
-                  unoptimized
                   className="object-contain p-1"
                 />
               </div>

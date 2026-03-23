@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { Eye, Heart, List } from 'lucide-react';
 import BookSwiper from './BookSwiper';
-import '@/utils/imageUtils';
+import { resolveBookImageSrc, resolveSettingsImageSrc } from '@/utils/imageUtils';
 
 interface TopRankingProps {
   rankingGroup: any;
@@ -14,11 +14,7 @@ interface TopRankingProps {
 
 
 const getImageUrl = (img?: string) => {
-  return img
-    ? (typeof img === 'string' && img.startsWith('https')
-      ? img
-      : `https://img.enjoybook.co/img/book/tn/${img}`)
-    : "/images/ejb.png";
+  return resolveBookImageSrc(img, "/images/ejb.png");
 };
 
 const formatViewCount = (width: number) => {
@@ -60,12 +56,11 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
           {/* Podium Image Base */}
           <div className="absolute bottom-[-50px] z-10 w-[360px]">
             <Image
-              src={settings?.chartpng || '/images/podium.png'}
+              src={resolveSettingsImageSrc(settings?.chartpng, '/images/podium.png')}
               alt="Podium"
               width={360}
               height={200}
               className="w-full h-auto object-contain"
-              unoptimized
             />
           </div>
 
@@ -79,7 +74,6 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
                     alt={rankingList[1].name}
                     fill
                     className="object-cover"
-                    unoptimized
                   />
                 ) : <div className="w-full h-full bg-gray-200" />}
               </div>
@@ -106,7 +100,7 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
             <Link href={rankingList[0] ? `/book/${rankingList[0].book_id}` : '#'} className="relative flex flex-col items-center transform transition-all duration-300 ease-in-out hover:scale-110">
               {/* Crown Icon */}
               <div className="mb-1 animate-bounce-slow">
-                <Image src="/images/crown.png" alt="Crown" width={30} height={30} className="w-8 h-8 object-contain" unoptimized />
+                <Image src="/images/crown.png" alt="Crown" width={30} height={30} className="w-8 h-8 object-contain" />
               </div>
               <div className="relative w-[120px] h-[180px] rounded-lg overflow-hidden border-4 border-[#f3ad3d] shadow-xl">
                 {rankingList[0] ? (
@@ -115,7 +109,6 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
                     alt={rankingList[0].name}
                     fill
                     className="object-cover"
-                    unoptimized
                   />
                 ) : <div className="w-full h-full bg-gray-200" />}
               </div>
@@ -147,7 +140,6 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
                     alt={rankingList[2].name}
                     fill
                     className="object-cover"
-                    unoptimized
                   />
                 ) : <div className="w-full h-full bg-gray-200" />}
               </div>
@@ -179,12 +171,11 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
           {/* Podium Image Base */}
           <div className="absolute bottom-[-140px] z-10 w-[574px]">
             <Image
-              src={settings?.chartpng || '/images/podium.png'}
+              src={resolveSettingsImageSrc(settings?.chartpng, '/images/podium.png')}
               alt="Podium"
               width={574}
               height={342}
               className="w-full h-auto object-contain"
-              unoptimized
             />
           </div>
 
@@ -199,7 +190,6 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
                     alt={rankingList[1].name}
                     fill
                     className="object-cover"
-                    unoptimized
                   />
                 ) : <div className="w-full h-full bg-gray-200" />}
               </div>
@@ -226,7 +216,7 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
             <Link href={rankingList[0] ? `/book/${rankingList[0].book_id}` : '#'} className="relative flex flex-col items-center transform transition-all duration-300 ease-in-out hover:scale-110">
               {/* Crown Icon */}
               <div className="mb-2 animate-bounce-slow">
-                <Image src="/images/crown.png" alt="Crown" width={40} height={40} className="w-10 h-10 object-contain" unoptimized />
+                <Image src="/images/crown.png" alt="Crown" width={40} height={40} className="w-10 h-10 object-contain" />
               </div>
               <div className="relative w-[150px] h-[220px] rounded-lg overflow-hidden border-4 border-[#f3ad3d] shadow-xl">
                 {rankingList[0] ? (
@@ -235,7 +225,6 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
                     alt={rankingList[0].name}
                     fill
                     className="object-cover"
-                    unoptimized
                   />
                 ) : <div className="w-full h-full bg-gray-200" />}
               </div>
@@ -267,7 +256,6 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
                     alt={rankingList[2].name}
                     fill
                     className="object-cover"
-                    unoptimized
                   />
                 ) : <div className="w-full h-full bg-gray-200" />}
               </div>
@@ -309,7 +297,6 @@ export default function TopRanking({ rankingGroup }: TopRankingProps) {
                   alt={item.name}
                   fill
                   className="object-cover hover:scale-105 transition-transform duration-300"
-                  unoptimized
                 />
                 {/* Rank Badge */}
                 <div className="absolute bottom-1 right-1 w-[30px] h-[30px] transform rotate-45 rounded-lg bg-[#E60000] shadow-md border-2 border-white flex items-center justify-center z-10">

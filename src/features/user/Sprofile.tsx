@@ -35,6 +35,10 @@ const { Option } = Select;
 //   return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
 // }
 
+const isDataUrl = (src: string | null | undefined): boolean => {
+  return typeof src === 'string' && src.startsWith('data:');
+};
+
 // --- Component 1: User Info Form ---
 const UserInfoForm = () => {
   const [form] = Form.useForm();
@@ -458,7 +462,7 @@ const ProfilePictureTab = ({ onProfileFileChange }: ProfilePictureTabProps) => {
                   width={280}
                   height={280}
                   onError={(e) => { (e.target as HTMLImageElement).src = '/images/default-avatar.png'; }}
-                  unoptimized
+                  unoptimized={isDataUrl(previewImage)}
                 />
               </div>
 
@@ -774,7 +778,7 @@ const UserInfoTab = () => {
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               onError={() => setBgPreview("/images/ejb-bg.png")}
-              unoptimized
+              unoptimized={isDataUrl(bgPreview)}
             />
           </div>
 

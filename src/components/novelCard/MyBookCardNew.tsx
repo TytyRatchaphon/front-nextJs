@@ -83,7 +83,6 @@ const MyBookCardNew: React.FC<MyBookCardNewProps> = ({ book }) => {
           alt={book.name || 'Book Cover'}
           fill
           className="object-cover"
-          unoptimized
         />
       </div>
 

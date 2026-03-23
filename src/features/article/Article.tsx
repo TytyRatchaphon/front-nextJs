@@ -5,7 +5,13 @@ import parse from 'html-react-parser';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
-import { fetchPopularArticles, fetchLatestArticles, LatestArticle } from '@/services/apiServices';
+import {
+  fetchPopularArticles,
+  fetchLatestArticles,
+  LatestArticle,
+  PopularArticle,
+  ArticlePagination,
+} from '@/services/apiServices';
 
 // Helper to format date to Thai string "19 พ.ค. 2025"
 const formatDate = (dateString: string) => {
@@ -27,17 +33,30 @@ const ArticleLoader = ({ src, width, quality }: { src: string; width?: number; q
   return `${src}?w=${width ?? ''}&q=${quality ?? 75}`
 }
 
-export default function Article() {
+interface ArticleProps {
+  initialPopularArticles?: PopularArticle[];
+  initialLatestData?: {
+    list: LatestArticle[];
+    pagination: ArticlePagination;
+  };
+}
+
+export default function Article({ initialPopularArticles = [], initialLatestData }: ArticleProps) {
   const [page, setPage] = React.useState(1);
 
   const { data: popularArticles = [], isLoading: isLoadingPopular } = useQuery({
     queryKey: ['popularArticles'],
     queryFn: fetchPopularArticles,
+    initialData: initialPopularArticles,
+    staleTime: 2 * 60 * 1000,
   });
 
   const { data: latestData, isLoading: isLoadingLatest } = useQuery({
     queryKey: ['latestArticles', page],
     queryFn: () => fetchLatestArticles(page, 8),
+    initialData: page === 1 ? initialLatestData : undefined,
+    placeholderData: (previousData) => previousData,
+    staleTime: 60 * 1000,
   });
 
   const latestArticles: LatestArticle[] = latestData?.list || [];

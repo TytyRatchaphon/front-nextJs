@@ -100,7 +100,6 @@ function Campaign({ initialData }: { initialData?: CampaignData[] }) {
                     alt={campaign.name}
                     fill
                     className="object-cover"
-                    unoptimized
                   />
                 </div>
 

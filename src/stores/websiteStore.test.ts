@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock the API call
 const mockFetchWebsiteSettings = vi.fn()
-vi.mock('@/services/apiServices', () => ({
+vi.mock('@/services/api/userApi', () => ({
   fetchWebsiteSettings: (...args: any[]) => mockFetchWebsiteSettings(...args),
 }))
 
@@ -10,7 +10,7 @@ vi.mock('@/types/errors', () => ({
   getErrorMessage: (err: any) => err?.message || 'Unknown error',
 }))
 
-import { useWebsiteStore } from '@/stores/websiteStore'
+import { useWebsiteStore, WEBSITE_SETTINGS_CACHE_TTL_MS } from '@/stores/websiteStore'
 
 const mockSettings = {
   percent: '30',
@@ -91,9 +91,10 @@ describe('websiteStore', () => {
   // fetchSettings - cache
   // -------------------------------------------------------------------
   it('uses cache when data is fresh (< 5 min)', async () => {
+    const now = Date.now()
     useWebsiteStore.setState({
       settings: mockSettings as any,
-      lastFetched: Date.now(), // Just fetched
+      lastFetched: now - (WEBSITE_SETTINGS_CACHE_TTL_MS - 1000),
     })
 
     await useWebsiteStore.getState().fetchSettings()
@@ -103,9 +104,10 @@ describe('websiteStore', () => {
   })
 
   it('refetches when cache is stale (> 5 min)', async () => {
+    const now = Date.now()
     useWebsiteStore.setState({
       settings: mockSettings as any,
-      lastFetched: Date.now() - 400000, // 6+ minutes ago
+      lastFetched: now - (WEBSITE_SETTINGS_CACHE_TTL_MS + 1000),
     })
 
     mockFetchWebsiteSettings.mockResolvedValueOnce({

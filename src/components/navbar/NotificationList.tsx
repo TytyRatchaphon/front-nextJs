@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchRecentNotifications, markNotificationAsRead, markAllNotificationsAsRead, NotificationTab } from '@/services/apiServices';
+import { fetchAllNotifications, markNotificationAsRead, markAllNotificationsAsRead, NotificationTab } from '@/services/apiServices';
 import { Tooltip, Button, Tag, Tabs } from 'antd';
 import { BellOutlined, CheckOutlined, BookOutlined, MessageOutlined, InfoCircleOutlined, UserOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -47,20 +47,34 @@ const NotificationList: React.FC = () => {
     const router = useRouter(); // Initialize router
     React.useState<Set<number>>(new Set());
     const [activeTab, setActiveTab] = React.useState<NotificationTab>('all');
+    const panelClassName = 'w-[85vw] max-w-[380px] min-w-[320px] sm:w-[420px] md:w-[480px] flex flex-col bg-white rounded-xl overflow-hidden font-bai-jamjuree shadow-2xl border border-gray-100 ring-1 ring-black/5';
 
-    const { data: notifications, isLoading } = useQuery({
-        queryKey: ['recentNotifications', activeTab],
-        queryFn: () => fetchRecentNotifications(activeTab),
+    const { data: notificationResponse, isLoading } = useQuery({
+        queryKey: ['navbarNotifications'],
+        queryFn: () => fetchAllNotifications(1, 5, 'all'),
         staleTime: 30000,
         refetchOnWindowFocus: false,
     });
+    const notifications = notificationResponse?.notifications ?? [];
+    const filteredNotifications = React.useMemo(() => {
+        if (activeTab === 'all') return notifications;
+        return notifications.filter((item: any) => {
+            const type = item?.NotiType?.type;
+            if (activeTab === 'comment') {
+                return ['comment_book_id', 'comment_ep_id', 'comment_sub_book_id', 'comment_sub_ep_id'].includes(type);
+            }
+            if (activeTab === 'system') return type === 'system';
+            if (activeTab === 'book') return ['book_new', 'book_update'].includes(type);
+            return true;
+        });
+    }, [activeTab, notifications]);
 
     const markReadMutation = useMutation({
         mutationFn: markNotificationAsRead,
         onSuccess: () => {
             // Wait a bit for animation to likely finish before refetching implies removal
             setTimeout(() => {
-                queryClient.invalidateQueries({ queryKey: ['recentNotifications'] });
+                queryClient.invalidateQueries({ queryKey: ['navbarNotifications'] });
             }, 300);
         }
     });
@@ -68,7 +82,7 @@ const NotificationList: React.FC = () => {
     const markAllReadMutation = useMutation({
         mutationFn: (tab: NotificationTab) => markAllNotificationsAsRead(tab),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['recentNotifications'] });
+            queryClient.invalidateQueries({ queryKey: ['navbarNotifications'] });
         }
     });
 
@@ -129,8 +143,19 @@ const NotificationList: React.FC = () => {
 
     if (isLoading) {
         return (
-            <div className="w-full max-w-[350px] h-[300px] flex justify-center items-center">
-                <GifLoader width={100} height={100} />
+            <div className={panelClassName}>
+                <div className="px-5 py-4 border-b border-gray-100 bg-white">
+                    <div className="h-7 w-32 rounded-md bg-gray-100 animate-pulse" />
+                </div>
+                <div className="px-3 pt-2 bg-white border-b border-gray-100">
+                    <div className="h-10 rounded-lg bg-gray-100 animate-pulse" />
+                </div>
+                <div className="h-[300px] flex justify-center items-center bg-white">
+                    <GifLoader width={100} height={100} />
+                </div>
+                <div className="p-3 bg-gray-50 border-t border-gray-200">
+                    <div className="h-4 w-28 mx-auto rounded bg-gray-100 animate-pulse" />
+                </div>
             </div>
         );
     }
@@ -143,7 +168,7 @@ const NotificationList: React.FC = () => {
             .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #e5e7eb; border-radius: 20px; }
             .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #d1d5db; }
         `}</style>
-            <div className="w-[85vw] max-w-[380px] sm:w-[420px] md:w-[480px] flex flex-col bg-white rounded-xl overflow-hidden font-bai-jamjuree shadow-2xl border border-gray-100 ring-1 ring-black/5">
+            <div className={panelClassName}>
                 {/* Header */}
                 <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-20 shadow-sm">
                     <div className="flex items-center gap-2">
@@ -185,7 +210,7 @@ const NotificationList: React.FC = () => {
                 </div>
 
                 {/* List */}
-                {!notifications || notifications.length === 0 ? (
+                {!filteredNotifications || filteredNotifications.length === 0 ? (
                     <div className="w-full h-[300px] flex flex-col justify-center items-center gap-3 text-gray-400">
                         <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mb-2">
                             <BellOutlined className="text-xl opacity-30" />
@@ -194,7 +219,7 @@ const NotificationList: React.FC = () => {
                     </div>
                 ) : (
                     <div className="max-h-[70vh] sm:max-h-[500px] overflow-y-auto custom-scrollbar bg-slate-50">
-                        {notifications.map((item: any) => {
+                        {filteredNotifications.map((item: any) => {
                             const typeInfo = getTypeLabel(item.NotiType.type);
 
                             return (
@@ -256,9 +281,14 @@ const NotificationList: React.FC = () => {
 
                                             {/* Titles */}
                                             <div>
-                                                <h4 className={`text-sm leading-snug mb-0.5 ${item.readed === 'N' ? 'font-bold text-gray-900' : 'font-medium text-gray-600'}`}>
-                                                    {item.NotiType.title}
-                                                </h4>
+                                                <div className="flex items-start gap-2">
+                                                    {item.readed === 'N' ? (
+                                                        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#E31C3D]" />
+                                                    ) : null}
+                                                    <h4 className={`text-sm leading-snug mb-0.5 ${item.readed === 'N' ? 'font-bold text-gray-900' : 'font-medium text-gray-600'}`}>
+                                                        {item.NotiType.title}
+                                                    </h4>
+                                                </div>
                                                 <p className="text-xs text-gray-500 m-0 line-clamp-2">
                                                     {item.NotiType.subtitle}
                                                 </p>

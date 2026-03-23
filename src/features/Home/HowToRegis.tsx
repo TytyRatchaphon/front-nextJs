@@ -1,10 +1,7 @@
 import React from 'react'
 import Image from 'next/image'
-import '@/utils/imageUtils';
-
 
 function HowToRegis() {
-
   return (
     <div className="w-full flex justify-center py-10 px-4">
       <div className="max-w-[1000px] w-full flex flex-col gap-8 text-black">
@@ -39,7 +36,7 @@ function HowToRegis() {
           <h3 className="text-lg lg:text-xl font-bold underline decoration-1 underline-offset-4">การสมัครบัญชีผู้ใช้งานเพื่อเข้าสู่ระบบ</h3>
 
           {/* Image Placeholder */}
-          <Image src="https://img.enjoybook.co/img/smn/EJB2024n7oIzU7Ieuu1piG0MOlV1206104512.png" alt="สมัครสมาชิก" width={600} height={600} unoptimized />
+          <Image src="https://img.enjoybook.co/img/smn/EJB2024n7oIzU7Ieuu1piG0MOlV1206104512.png" alt="สมัครสมาชิก" width={600} height={600} />
 
 
           <p className="text-base lg:text-lg leading-relaxed">
@@ -54,7 +51,7 @@ function HowToRegis() {
           <h3 className="text-lg lg:text-xl font-bold underline decoration-1 underline-offset-4">การเข้าสู่ระบบ</h3>
 
           {/* Image Placeholder */}
-          <Image src="https://img.enjoybook.co/img/smn/EJB2024XXv30m1is6JTXrp6BMHm1206104651.png" alt="สมัครสมาชิก" width={600} height={600} unoptimized />
+          <Image src="https://img.enjoybook.co/img/smn/EJB2024XXv30m1is6JTXrp6BMHm1206104651.png" alt="สมัครสมาชิก" width={600} height={600} />
 
           <p className="text-base lg:text-lg leading-relaxed">
             ผู้ใช้สามารถเข้าสู่ระบบได้โดยใช้อีเมล หรือชื่อผู้ใช้
@@ -70,7 +67,7 @@ function HowToRegis() {
           <h3 className="text-lg lg:text-xl font-bold underline decoration-1 underline-offset-4">กรณี &apos; ลืมรหัสผ่าน &apos;</h3>
 
           {/* Image Placeholder */}
-          <Image src="https://img.enjoybook.co/img/smn/EJB2024Ib4xAYUoyEy2bTBAG1ki1206104903.png" alt="Forgot Password" width={600} height={600} unoptimized />
+          <Image src="https://img.enjoybook.co/img/smn/EJB2024Ib4xAYUoyEy2bTBAG1ki1206104903.png" alt="Forgot Password" width={600} height={600} />
 
           <p className="text-base lg:text-lg leading-relaxed">
             ในหน้าต่างเข้าสู่ระบบ สามารถกดปุ่ม &apos;ลืมรหัสผ่าน&apos; ที่อยู่ด้านล่างได้

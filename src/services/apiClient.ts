@@ -5,6 +5,26 @@ import Cookies from "js-cookie";
 import { useAuthStore } from "@/stores/authStore";
 import { parseJwtToken } from "@/utils/jwtParser";
 
+let cachedDeviceId: string | null = null;
+let deviceIdRequest: Promise<string | null> | null = null;
+
+const resolveDeviceId = async (): Promise<string | null> => {
+    if (cachedDeviceId) return cachedDeviceId;
+    if (deviceIdRequest) return deviceIdRequest;
+
+    deviceIdRequest = getDeviceId()
+        .then((deviceId) => {
+            cachedDeviceId = deviceId || null;
+            return cachedDeviceId;
+        })
+        .catch(() => null)
+        .finally(() => {
+            deviceIdRequest = null;
+        });
+
+    return deviceIdRequest;
+};
+
 // API Response Interface
 export interface ApiResponse<T = any> {
     code: number;
@@ -34,13 +54,9 @@ apiClient.interceptors.request.use(
         // เช็คว่าอยู่ใน browser environment
         if (typeof window !== 'undefined') {
             // Add device ID header
-            try {
-                const deviceId = await getDeviceId();
-                if (deviceId) {
-                    config.headers['x-device-id'] = deviceId;
-                }
-            } catch (error) {
-                console.error('Error getting device ID:', error);
+            const deviceId = await resolveDeviceId();
+            if (deviceId) {
+                config.headers['x-device-id'] = deviceId;
             }
 
             const stateToken = useAuthStore.getState().token;

@@ -2,6 +2,7 @@
 import apiClient from "../apiClient";
 import type { WebsiteSettingsResponse } from "@/types/api";
 import Cookies from 'js-cookie';
+import { cachedRequest } from "../requestCache";
 
 // --- Writer Registration & Check ---
 
@@ -288,10 +289,17 @@ export const refreshToken = async (tokenOverride?: string) => {
 
 export const fetchWebsiteSettings = async (): Promise<WebsiteSettingsResponse | null> => {
   try {
-    const response = await apiClient.get<WebsiteSettingsResponse>("/get_website");
-    if (response.data) {
-    }
-    return response.data;
+    return await cachedRequest<WebsiteSettingsResponse | null>(
+      'website-settings',
+      async () => {
+        const response = await apiClient.get<WebsiteSettingsResponse>("/get_website");
+        return response.data || null;
+      },
+      {
+        ttlMs: 5 * 60 * 1000,
+        shouldCache: (value) => value !== null,
+      }
+    );
   } catch (error) {
     console.error("fetchWebsiteSettings error:", error);
     return null;

@@ -21,6 +21,14 @@ import { MoreVertical, Edit2, Trash2, Heart, Share2, MessageCircle } from 'lucid
 dayjs.extend(relativeTime);
 dayjs.locale('th');
 
+const normalizeReviewImageSrc = (src: string | null | undefined, fallback: string) => {
+  if (!src || src === 'null' || src === 'undefined') return fallback;
+  if (src.startsWith('http') || src.startsWith('data:')) return src.replace('http:', 'https:');
+  if (src.startsWith('/')) return src;
+  if (src.startsWith('img/')) return `https://img.enjoybook.co/${src}`;
+  return `https://img.enjoybook.co/${src}`;
+};
+
 interface BookReviewsTabProps {
   bookId: string | number;
   book?: any;
@@ -170,7 +178,7 @@ export default function BookReviewsTab({ bookId, book }: BookReviewsTabProps) {
         {reviews.length > 0 && (
           <div className="space-y-3 px-2">
             {reviews.map((review: any) => {
-              const userAvatar = review.user?.img || '/images/default-avatar.png';
+              const userAvatar = normalizeReviewImageSrc(review.user?.img, '/images/default-avatar.png');
               const userName = review.user?.fullname || 'Unknown';
               const userFrame = review.user?.frame;
               const timeAgo = dayjs(review.created_at).fromNow();
@@ -193,7 +201,7 @@ export default function BookReviewsTab({ bookId, book }: BookReviewsTabProps) {
                         className="relative flex-shrink-0"
                       >
                         <div className="relative w-10 h-10 rounded-full overflow-hidden">
-                          <ImageWithFallback src={userAvatar} alt={userName} fill className="object-cover" unoptimized />
+                          <ImageWithFallback src={userAvatar} alt={userName} fill className="object-cover" />
                         </div>
                         {userFrame && (
                           <div className="absolute -inset-1">

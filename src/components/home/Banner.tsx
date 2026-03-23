@@ -10,11 +10,11 @@ import 'swiper/css/navigation';
 import 'swiper/css/parallax';
 import { Slide, postBannerClick } from '@/services/apiServices';
 import { useWebsiteStore } from '@/stores/websiteStore';
+import { resolveBannerImageSrc, resolveSettingsImageSrc } from '@/utils/imageUtils';
 
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import TopUpBanner from '@/components/home/TopUpBanner';
-import '@/utils/imageUtils';
 
 interface BannerProps {
   slides?: Slide[];
@@ -108,9 +108,7 @@ function Banner({ slides = [] }: BannerProps) {
                 className="w-full rounded-2xl overflow-hidden"
               >
                 {displaySlides.map((slide, index) => {
-                  const imageUrl = slide.img.startsWith('http')
-                    ? slide.img
-                    : `https://img.enjoybook.co/img/banner/${slide.img}`;
+                  const imageUrl = resolveBannerImageSrc(slide.img, '/images/hero-banner.png');
                   return (
                     <SwiperSlide
                       key={`${slide.banner_id}-${index}`}
@@ -142,7 +140,6 @@ function Banner({ slides = [] }: BannerProps) {
                           sizes="(max-width: 680px) 100vw, 680px"
                           className="object-cover"
                           priority
-                          unoptimized
                           quality={100}
                         />
                         </div>
@@ -205,7 +202,7 @@ function AllNovelBanner() {
         <div className="w-full flex justify-center items-center mt-4 mb-6">
           <div className="w-full h-[120px] sm:h-[160px] lg:h-auto lg:aspect-[1116/207] relative rounded-xl overflow-hidden">
             <Image
-              src={settings.allNovelBanner}
+              src={resolveSettingsImageSrc(settings.allNovelBanner, '/images/hero-banner.png')}
               alt="All Novel Banner"
               className="w-full h-full object-cover lg:object-contain"
               width={1116}

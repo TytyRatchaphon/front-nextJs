@@ -13,6 +13,8 @@ interface BookGroupsProps {
 }
 
 export default function BookGroups({ groupBookHome }: BookGroupsProps) {
+  const rewardInitialNow = Date.now();
+
   return (
     <div className="w-full mb-8">
       {groupBookHome
@@ -50,7 +52,6 @@ export default function BookGroups({ groupBookHome }: BookGroupsProps) {
                     width={1200}
                     height={300}
                     className="h-auto w-full object-cover"
-                    unoptimized
                   />
                 </div>
               </div>
@@ -108,6 +109,9 @@ export default function BookGroups({ groupBookHome }: BookGroupsProps) {
                   items={group.list || []}
                   icon={group.img}
                   link={group.link || undefined}
+                  startDate={group.start_date}
+                  endDate={group.end_date}
+                  initialNow={rewardInitialNow}
                 />
               </div>
             );

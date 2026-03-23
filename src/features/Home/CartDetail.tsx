@@ -13,7 +13,6 @@ import GifLoader from '@/components/utility/GifLoader';
 import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill';
 import StampPill from '@/components/utility/StampPill';
-import { QUERY_CONFIG } from '@/constants/query';
 import RPPill from '@/components/utility/RPPill';
 
 
@@ -29,9 +28,8 @@ export default function CartDetail() {
     const { data: cartStores, isLoading } = useQuery({
         queryKey: ['cartItems'],
         queryFn: fetchCartItems,
-        staleTime: QUERY_CONFIG.CART_STALE_TIME,
-        gcTime: QUERY_CONFIG.CART_GC_TIME,
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: true,
+        refetchOnReconnect: true,
         refetchOnMount: 'always',
     });
 

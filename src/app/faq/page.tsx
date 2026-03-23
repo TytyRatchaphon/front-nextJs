@@ -1,10 +1,13 @@
 import React from 'react';
 import FaqContent from '@/features/faq/FaqContent';
+import { fetchFaqs } from '@/services/apiServices';
 
 export const revalidate = 3600;
 
-export default function FaqPage() {
+export default async function FaqPage() {
+    const initialFaqs = await fetchFaqs();
+
     return (
-        <FaqContent />
+        <FaqContent initialFaqs={initialFaqs} />
     );
 }

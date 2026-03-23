@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from "@tanstack/react-query";
-import apiClient from '@/services/apiClient';
+import { fetchBookEpisodes } from '@/services/apiServices';
 
 export function useEpisodeNavigation(bookId: string, episodeId: string, episode: any) {
     // Fetch Raw Group Data
@@ -9,17 +9,10 @@ export function useEpisodeNavigation(bookId: string, episodeId: string, episode:
         error: episodesError,
         isLoading: isListLoading
     } = useQuery({
-        queryKey: ["bookEpisodesRaw", bookId],
-        queryFn: async () => {
-            try {
-                const res = await apiClient.get(`/bookgroup/${bookId}`);
-                return res.data?.code === 200 ? res.data.data : null;
-            } catch {
-                return null; // Return null on error
-            }
-        },
+        queryKey: ["bookEpisodes", bookId],
+        queryFn: () => fetchBookEpisodes(bookId),
         enabled: !!bookId,
-        staleTime: 10 * 60 * 1000,
+        staleTime: 5 * 60 * 1000,
     });
 
     // Derive Flat List

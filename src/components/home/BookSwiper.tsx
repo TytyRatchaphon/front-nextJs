@@ -61,7 +61,6 @@ export default function BookSwiper({ books, title, icon, link }: BookSwiperProps
               alt={title || 'icon'}
               fill
               className="object-cover"
-              unoptimized
             />
           </div>
         )}

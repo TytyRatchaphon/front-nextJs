@@ -9,7 +9,6 @@ import { fetchArticleDetail } from '@/services/apiServices';
 import type { ArticleResponse } from '@/types/api';
 import GifLoader from '@/components/utility/GifLoader';
 import { useLogger } from '@/hooks/useLogger';
-import '@/utils/imageUtils';
 
 
 // Helper for date formatting
@@ -25,33 +24,59 @@ const formatDate = (dateString: string) => {
   }).format(date);
 };
 
-export default function ArticleDetail({ id }: { id: string }) {
-  const [data, setData] = useState<ArticleResponse['data'] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default function ArticleDetail({ id, initialData = null }: { id: string; initialData?: ArticleResponse | null }) {
+  const [data, setData] = useState<ArticleResponse['data'] | null>(() => initialData?.data ?? null);
+  const [loading, setLoading] = useState(() => !initialData);
+  const [error, setError] = useState<string | null>(() => {
+    if (!initialData) return null;
+    return initialData.code === 200 ? null : 'Article not found';
+  });
   const { log } = useLogger();
 
   useEffect(() => {
+    let isCancelled = false;
+
+    if (!id) {
+      return () => {
+        isCancelled = true;
+      };
+    }
+
+    const initialDetailId = initialData?.data?.result?.[0]?.id;
+    if (initialData?.code === 200 && initialDetailId && String(initialDetailId) === String(id)) {
+      return () => {
+        isCancelled = true;
+      };
+    }
+
     const fetchData = async () => {
       try {
+        setError(null);
         setLoading(true);
         const result = await fetchArticleDetail(id);
-        if (result && result.code === 200) {
+        if (isCancelled) return;
+        if (result && result.code === 200 && result.data) {
           setData(result.data);
         } else {
+          setData(null);
           setError('ไม่พบข้อมูลบทความ');
         }
       } catch {
+        if (isCancelled) return;
+        setData(null);
         setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
       } finally {
+        if (isCancelled) return;
         setLoading(false);
       }
     };
 
-    if (id) {
-      fetchData();
-    }
-  }, [id]);
+    fetchData();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [id, initialData]);
 
   useEffect(() => {
     if (data?.result?.[0]) {
@@ -149,7 +174,6 @@ export default function ArticleDetail({ id }: { id: string }) {
                         alt={detail.title}
                         fill
                         className="object-contain"
-                        unoptimized
                         priority
                     />
                 </div>
@@ -197,7 +221,6 @@ export default function ArticleDetail({ id }: { id: string }) {
                                         alt={`Action Button ${num}`}
                                         fill
                                         className="object-contain" // Changed to contain to avoid cropping if aspect ratio mismatches
-                                        unoptimized
                                      />
                                 </div>
                             </Link>
@@ -239,7 +262,6 @@ export default function ArticleDetail({ id }: { id: string }) {
                                             alt={item.name.replace(/<[^>]+>/g, '')} // Strip HTML from name if needed, though usually name is plain text or needs parsing
                                             fill
                                             className="object-cover group-hover:scale-105 transition-transform duration-300"
-                                            unoptimized
                                         />
                                     </div>
                                     <div className="flex-1 min-w-0">

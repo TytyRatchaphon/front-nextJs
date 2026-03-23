@@ -43,7 +43,6 @@ const RecommendCard = ({ data }: RecommendCardProps) => {
             alt={data.book.name}
             fill
             className="object-cover"
-            unoptimized
           />
           {/* Gradient Overlay for text readability if it's over image */}
           <div className="absolute bottom-0 left-0 w-full h-2/3 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent opacity-90 pointer-events-none" />

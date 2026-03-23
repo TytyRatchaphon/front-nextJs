@@ -13,9 +13,10 @@ import { DeleteOutlined } from '@ant-design/icons';
 
 interface ThreadDetailProps {
   topicId: string | number;
+  initialThread?: Awaited<ReturnType<typeof fetchThreadDetail>> | null;
 }
 
-export default function ThreadDetail({ topicId }: ThreadDetailProps) {
+export default function ThreadDetail({ topicId, initialThread = null }: ThreadDetailProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [messageApi, contextHolder] = message.useMessage();
@@ -46,6 +47,8 @@ export default function ThreadDetail({ topicId }: ThreadDetailProps) {
     queryKey: ['threadDetail', topicId],
     queryFn: () => fetchThreadDetail(topicId),
     enabled: !!topicId,
+    initialData: initialThread ?? undefined,
+    staleTime: 60 * 1000,
   });
 
   const deleteThreadMutation = useMutation({

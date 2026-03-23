@@ -74,7 +74,6 @@ export default function RecommendSwiper({ items, title, icon, link }: RecommendS
                alt={title || 'icon'} 
                fill
                className="object-cover"
-               unoptimized
              />
           </div>
         )}

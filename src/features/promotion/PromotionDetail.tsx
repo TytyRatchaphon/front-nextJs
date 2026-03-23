@@ -71,7 +71,6 @@ const PromotionBlockTypeB = ({ block }: { block: PromotingBlock }) => {
                         alt={book.name}
                         fill
                         className="object-cover"
-                        unoptimized
                       />
                       <div className="absolute top-0 left-0 bg-red-600 text-white px-3 py-1 rounded-br-lg font-bold shadow-md">
                         แนะนำสำหรับคุณ
@@ -164,7 +163,6 @@ const PromotionBlockTypeC = ({ block }: { block: PromotingBlock }) => {
                       alt={book.name}
                       fill
                       className="object-cover"
-                      unoptimized
                    />
                 </div>
 
@@ -275,7 +273,6 @@ function PromotionDetail() {
             fill
             sizes="100vw"
             className="object-fill"
-            unoptimized
           />
         </div>
       )}
@@ -298,7 +295,6 @@ function PromotionDetail() {
                   fill
                   sizes="100vw"
                   className="object-fill"
-                  unoptimized
                 />
               </div>
             )}

@@ -12,7 +12,7 @@ import 'swiper/css/free-mode';
 import { useQuery } from "@tanstack/react-query";
 import { fetchCategoryRankingBooks, CategoryRankingBookItem } from "@/services/apiServices";
 import GifLoader from '@/components/utility/GifLoader';
-import '@/utils/imageUtils';
+import { resolveBookImageSrc } from '@/utils/imageUtils';
 
 interface RankingCategoryRightProps {
   categoryId?: number;
@@ -106,12 +106,10 @@ export default function RankingCategoryRight({ categoryId, categoryName }: Ranki
               {/* Book Cover */}
               <div className="relative w-[70px] h-[105px] flex-shrink-0 shadow-md rounded-md overflow-hidden">
                 <Image
-                  src={book.img}
+                  src={resolveBookImageSrc(book.img, '/images/ejb.png')}
                   alt={book.name}
                   fill
                   className="object-cover"
-                  unoptimized
-                  
                 />
               </div>
 

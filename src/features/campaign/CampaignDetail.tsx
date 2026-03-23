@@ -9,7 +9,6 @@ import { fetchCampaignDetail } from '@/services/apiServices';
 import type { CampaignDetailData } from '@/types/api';
 import parse from 'html-react-parser';
 import CardBook from '@/components/novelCard/CardBook';
-import '@/utils/imageUtils';
 
 // Helper to format date if needed, though mostly using banners
 const formatDate = (dateString: string) => {
@@ -78,7 +77,6 @@ export default function CampaignDetail({ id }: { id: string }) {
           {data.img_banner2 && (
             <div className="w-full relative px-0">
               <Image
-                unoptimized
                 src={data.img_banner2}
                 alt="Secondary Banner"
                 width={0}
@@ -107,7 +105,6 @@ export default function CampaignDetail({ id }: { id: string }) {
                 imgUrl && imgUrl !== "null" && (
                   <div key={index} className="relative w-full rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 group">
                     <Image
-                      unoptimized
                       src={imgUrl}
                       alt={`Promotion Card ${index + 1}`}
                       width={0}

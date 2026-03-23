@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { NovelCardItem } from "@/types/api";
+import { resolveBookImageSrc } from '@/utils/imageUtils';
 
 type TagType = "new" | "bestseller" | "completed" | null;
 
@@ -60,7 +61,6 @@ const NovelTag = ({ type }: { type: TagType }) => {
                 alt="new"
                 width={50}
                 height={50}
-                unoptimized
              />
         </div>
       );
@@ -74,7 +74,6 @@ const NovelTag = ({ type }: { type: TagType }) => {
                 alt="bestseller"
                 width={46}
                 height={54}
-                unoptimized
              />
         </div>
       );
@@ -97,7 +96,6 @@ const NovelTag = ({ type }: { type: TagType }) => {
         style={{
           color: "transparent",
         }}
-        unoptimized
       />
     </div>
   );
@@ -131,7 +129,7 @@ export default function NovelCard({ novel, tag = null }: NovelCardProps) {
               fill
               sizes="168px"
               className="rounded-lg object-cover"
-              src={novel.img}
+              src={resolveBookImageSrc(novel.img, '/images/ejb.png')}
             />
           </div>
         </div>

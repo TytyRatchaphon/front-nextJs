@@ -9,9 +9,8 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import NotificationList from './NotificationList';
 import { useSocket } from '@/providers/SocketProvider';
-import { QUERY_CONFIG } from '@/constants/query';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchRecentNotifications, fetchActiveTypes, fetchActiveCategories } from '@/services/api/miscApi';
+import { fetchAllNotifications, fetchActiveTypes, fetchActiveCategories } from '@/services/api/miscApi';
 import { fetchPromotingGroups } from '@/services/api/campaignApi';
 import { fetchRankProfile } from '@/services/api/userApi';
 import { fetchCartItems } from '@/services/cartService';
@@ -25,6 +24,7 @@ import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill';
 import SmartAppBanner from '@/components/utility/SmartAppBanner';
 import CartSvg from '@/components/utility/CartSvg';
+import { resolveSettingsImageSrc } from '@/utils/imageUtils';
 
 
 
@@ -45,13 +45,15 @@ function Navbar() {
   const queryClient = useQueryClient();
   const { socket, isConnected } = useSocket();
   const { notification: api } = App.useApp();
-  const { data: notifications = [] } = useQuery({
-    queryKey: ['recentNotifications'],
-    queryFn: () => fetchRecentNotifications('all'),
+  const { data: notificationResponse } = useQuery({
+    queryKey: ['navbarNotifications'],
+    queryFn: () => fetchAllNotifications(1, 5, 'all'),
     refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
     enabled: !!isLoggedIn && !!user, // Only fetch if logged in
     staleTime: 30000,
   });
+  const notifications = notificationResponse?.notifications ?? [];
   
   const { data: promotingGroups } = useQuery({
     queryKey: ['promotingGroups'],
@@ -70,9 +72,8 @@ function Navbar() {
     queryKey: ['cartItems'],
     queryFn: fetchCartItems,
     enabled: !!isLoggedIn,
-    staleTime: QUERY_CONFIG.CART_STALE_TIME,
-    gcTime: QUERY_CONFIG.CART_GC_TIME,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   const cartItemCount = React.useMemo(() => {
@@ -120,7 +121,7 @@ function Navbar() {
 
     const handleNewNotification = (data: any) => {
       // Force refresh notification query
-      queryClient.invalidateQueries({ queryKey: ['recentNotifications'] });
+      queryClient.invalidateQueries({ queryKey: ['navbarNotifications'] });
 
       api.info({
         message: data.title || 'การแจ้งเตือนใหม่',
@@ -136,11 +137,11 @@ function Navbar() {
     };
 
     const handleReadNotification = () => {
-      queryClient.invalidateQueries({ queryKey: ['recentNotifications'] });
+      queryClient.invalidateQueries({ queryKey: ['navbarNotifications'] });
     };
 
     const handleReadAllNotification = () => {
-      queryClient.invalidateQueries({ queryKey: ['recentNotifications'] });
+      queryClient.invalidateQueries({ queryKey: ['navbarNotifications'] });
     };
 
     // Re-join room on reconnection
@@ -416,7 +417,7 @@ function Navbar() {
           {/* Logo */}
           <div className="flex flex-row items-center justify-center">
             <Link className="w-10 lg:w-12 md:ms-[10px]" href="/">
-              <Image className="w-full h-auto" src={settings?.logo || '/images/default-avatar.png'} unoptimized alt="Logo" width={48} height={48} style={{ color: "transparent" }} />
+              <Image className="w-full h-auto" src={resolveSettingsImageSrc(settings?.logo, '/images/default-avatar.png')} unoptimized alt="Logo" width={48} height={48} style={{ color: "transparent" }} />
             </Link>
           </div>
           {/* Center Menu */}

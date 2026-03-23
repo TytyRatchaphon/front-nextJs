@@ -11,6 +11,7 @@ import "dayjs/locale/th";
 import ReviewModal from "@/components/modal/ReviewModal";
 import SpoilerCardWrapper from "@/components/ui/SpoilerCardWrapper";
 import ImageWithFallback from "@/components/ui/ImageWithFallback";
+import ProfileAvatarLink, { extractFrameSrc, normalizeProfileAssetSrc } from "@/components/ui/ProfileAvatarLink";
 
 import "swiper/css";
 import "swiper/css/navigation";
@@ -45,18 +46,6 @@ export default function PinnedReviewsSwiper({ reviews }: PinnedReviewsSwiperProp
   };
 
   if (!reviews || reviews.length === 0) return null;
-
-  const normalizeImageSrc = (
-    src: string | null | undefined,
-    fallback: string,
-    cdnPath?: string,
-  ) => {
-    if (!src || src === "null" || src === "undefined") return fallback;
-    if (src.startsWith("http") || src.startsWith("data:")) return src.replace("http:", "https:");
-    if (src.startsWith("/")) return src;
-    if (src.startsWith("img/")) return `https://img.enjoybook.co/${src}`;
-    return cdnPath ? `${cdnPath}${src}` : src;
-  };
 
   return (
     <section className="mt-6 w-full bg-[radial-gradient(circle_at_top,_#fff5f4_0%,_#ffecec_45%,_#ffe7e7_100%)] py-7 sm:py-9">
@@ -122,13 +111,14 @@ export default function PinnedReviewsSwiper({ reviews }: PinnedReviewsSwiperProp
           freeMode={{ enabled: true, momentumBounce: false }}
         >
           {reviews.map((review) => {
-            const userAvatar = normalizeImageSrc(
+            const userAvatar = normalizeProfileAssetSrc(
               review.user?.img,
               "/images/default-avatar.png",
               "https://img.enjoybook.co/img/profile/",
             );
+            const userFrame = extractFrameSrc(review.user);
             const userName = review.user?.fullname || "Unknown";
-            const bookCover = normalizeImageSrc(
+            const bookCover = normalizeProfileAssetSrc(
               review.book?.img || review.book?.img_full,
               "/images/ejb.png",
               "https://img.enjoybook.co/img/book/",
@@ -147,20 +137,25 @@ export default function PinnedReviewsSwiper({ reviews }: PinnedReviewsSwiperProp
 
             const cardContent = (
               <>
-                <div className="mb-3 flex items-start justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-2.5">
-                    <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full border border-[#f1d2ce] bg-white">
-                      <ImageWithFallback
-                        src={userAvatar}
-                        fallbackSrc="/images/default-avatar.png"
-                        alt={userName}
-                        fill
-                        className="object-cover"
-                        unoptimized
+                  <div className="mb-3 flex items-start justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <ProfileAvatarLink
+                        userId={review.user?.user_id}
+                        name={userName}
+                        avatarSrc={userAvatar}
+                        frameSrc={userFrame}
+                        sizeClassName="h-8 w-8"
+                        frameScaleClassName="-inset-1"
+                        stopPropagation
                       />
+                      <Link
+                        href={`/profile/${review.user?.user_id}`}
+                        onClick={(event) => event.stopPropagation()}
+                        className="line-clamp-1 text-sm font-semibold text-[#2f2f35] hover:text-[#d93324]"
+                      >
+                        {userName}
+                      </Link>
                     </div>
-                    <span className="line-clamp-1 text-sm font-semibold text-[#2f2f35]">{userName}</span>
-                  </div>
                   <span className="whitespace-nowrap text-[11px] font-medium text-[#9b8c8a]">{timeAgo}</span>
                 </div>
 
@@ -192,7 +187,6 @@ export default function PinnedReviewsSwiper({ reviews }: PinnedReviewsSwiperProp
                       alt={bookTitle}
                       fill
                       className="object-cover"
-                      unoptimized
                     />
                   </div>
                   <div className="min-w-0 overflow-hidden">

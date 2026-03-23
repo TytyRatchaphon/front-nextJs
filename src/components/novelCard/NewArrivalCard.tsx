@@ -3,7 +3,6 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookTrans } from '@/types/api';
-import '@/utils/imageUtils';
 
 interface NewArrivalCardProps {
   book: BookTrans;
@@ -29,10 +28,8 @@ export default function NewArrivalCard({ book }: NewArrivalCardProps) {
             width={35}
             height={35}
             className="absolute top-0 right-0 z-10 w-9 h-auto object-contain"
-            unoptimized
           />
           <Image
-            unoptimized
             src={book.img.startsWith('http') ? book.img : `https://img.enjoybook.co/img/book/${book.img}`}
             alt={book.name}
             fill

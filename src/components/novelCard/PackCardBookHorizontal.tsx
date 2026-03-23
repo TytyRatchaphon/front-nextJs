@@ -3,7 +3,6 @@ import Image from 'next/image';
 import React from 'react'
 import { UniversalBook } from '../../types/api';
 import SaleGroupSVG from './SaleGroupSvg';
-import '@/utils/imageUtils';
 
 
 
@@ -62,7 +61,6 @@ function PackCardBookHorizontal({ book, onClick, action, className = "" }: PackC
                         className="w-full h-full object-cover rounded-lg relative z-0"
                         fill
                         loading="lazy"
-                        unoptimized
                         onError={() => {
                             setImgError(true);
                         }}
@@ -73,7 +71,6 @@ function PackCardBookHorizontal({ book, onClick, action, className = "" }: PackC
                         alt={book.name ?? ''}
                         className="w-full h-full object-cover rounded-lg relative z-0"
                         fill
-                        unoptimized
                     />
                 )}
 
@@ -86,7 +83,6 @@ function PackCardBookHorizontal({ book, onClick, action, className = "" }: PackC
                             width={120}
                             height={30}
                             className="w-full h-[30px] object-contain align-bottom"
-                            unoptimized
                         />
                         <div className="absolute bottom-[1px] left-0 right-0 text-center text-white text-[9px] font-bold drop-shadow-md">
                             ลดราคา <span className="text-[#FFD700] text-xs mx-0.5">{book.discount_ep_count}</span> ตอน
@@ -152,7 +148,6 @@ function PackCardBookHorizontal({ book, onClick, action, className = "" }: PackC
                                         width={leftBadge.width}
                                         height={leftBadge.height}
                                         className="object-contain drop-shadow-md"
-                                        unoptimized
                                     />
                                 </div>
                             ))}
@@ -164,7 +159,6 @@ function PackCardBookHorizontal({ book, onClick, action, className = "" }: PackC
                                         width={rightBadge.width}
                                         height={rightBadge.height}
                                         className="object-contain drop-shadow-md"
-                                        unoptimized
                                     />
                                 </div>
                             ))}

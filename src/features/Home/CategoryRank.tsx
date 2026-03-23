@@ -14,7 +14,7 @@ import { fetchCategoryRankingBooks, CategoryRankingBookItem, fetchBookCategoryAl
 import "@/types/api";
 import { Select } from 'antd';
 import GifLoader from '@/components/utility/GifLoader';
-import '@/utils/imageUtils';
+import { resolveBookImageSrc } from '@/utils/imageUtils';
 
 interface CategoryRankProps {
     categoryId?: string | number;
@@ -139,11 +139,10 @@ export default function CategoryRank({ categoryId }: CategoryRankProps) {
                                     {/* Book Cover */}
                                     <div className="relative w-[70px] h-[105px] md:w-[100px] md:h-[150px] flex-shrink-0 shadow-md rounded-lg overflow-hidden">
                                         <Image
-                                            src={book.img}
+                                            src={resolveBookImageSrc(book.img, '/images/ejb.png')}
                                             alt={book.name}
                                             fill
                                             className="object-cover transition-transform group-hover:scale-105"
-                                            unoptimized
                                         />
                                     </div>
 

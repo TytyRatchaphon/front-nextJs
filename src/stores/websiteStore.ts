@@ -14,6 +14,8 @@ interface WebsiteStore {
   fetchPromise: Promise<void> | null;
 }
 
+export const WEBSITE_SETTINGS_CACHE_TTL_MS = 5 * 60 * 1000;
+
 // Keep localStorage payload small.
 // Add new keys here if a future feature needs them to be available before fetch completes.
 const PERSISTED_SETTINGS_KEYS: Array<keyof WebsiteSettingsData> = [
@@ -75,7 +77,7 @@ export const useWebsiteStore = create<WebsiteStore>()(
         const now = Date.now();
 
         // 1. Check cache freshness
-        if (!force && (settings && now - lastFetched < 60000)) {
+        if (!force && (settings && now - lastFetched < WEBSITE_SETTINGS_CACHE_TTL_MS)) {
           return;
         }
 

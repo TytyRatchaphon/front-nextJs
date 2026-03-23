@@ -6,7 +6,6 @@ import { postBookClick } from '@/services/apiServices';
 import FlashSaleSVG from './FlashSaleSvg';
 import SaleGroupSVG from './SaleGroupSvg';
 import { UniversalBook } from '../../types/api';
-import '@/utils/imageUtils';
 
 
 
@@ -79,7 +78,6 @@ function CardBook({ book }: CardBookProps) {
                 width={168}
                 height={237}
                 loading="lazy"
-                unoptimized
                 onError={() => {
                   setImgError(true);
                 }}
@@ -91,7 +89,6 @@ function CardBook({ book }: CardBookProps) {
                 className="w-full h-[237px] object-cover rounded-t-lg relative z-0"
                 width={168}
                 height={237}
-                unoptimized
               />
             )}
 
@@ -108,7 +105,6 @@ function CardBook({ book }: CardBookProps) {
                   width={120}
                   height={30}
                   className="w-full h-[40px] object-contain align-bottom"
-                  unoptimized
                 />
                 <div className="absolute bottom-[1px] left-0 right-0 text-center text-white text-[11px] font-bold drop-shadow-md">
                   ลดราคา <span className="text-[#FFD700] text-xs mx-0.5">{book.discount_ep_count}</span> ตอน
@@ -180,7 +176,6 @@ function CardBook({ book }: CardBookProps) {
                       width={leftBadge.width}
                       height={leftBadge.height}
                       className="object-contain drop-shadow-md"
-                      unoptimized
                     />
                   </div>
                 ))}
@@ -192,7 +187,6 @@ function CardBook({ book }: CardBookProps) {
                       width={rightBadge.width}
                       height={rightBadge.height}
                       className="object-contain drop-shadow-md"
-                      unoptimized
                     />
                   </div>
                 ))}

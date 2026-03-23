@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { CloseOutlined } from '@ant-design/icons';
 import { useWebsiteStore } from '@/stores/websiteStore';
+import { resolveSettingsImageSrc } from '@/utils/imageUtils';
 
 const SmartAppBanner = () => {
     const { settings } = useWebsiteStore();
@@ -67,11 +68,10 @@ const SmartAppBanner = () => {
                 
                 <div className="relative w-10 h-10 bg-white rounded-lg shadow-sm overflow-hidden flex-shrink-0">
                      <Image 
-                        src={settings?.logo || '/images/default-avatar.png'} 
+                        src={resolveSettingsImageSrc(settings?.logo, '/images/default-avatar.png')} 
                         alt="App Icon"
                         fill
                         className="object-contain p-1"
-                        unoptimized
                         onError={(e) => { (e.target as HTMLImageElement).src = '/images/default-avatar.png'; }}
                      />
                 </div>

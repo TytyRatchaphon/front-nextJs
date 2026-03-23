@@ -99,7 +99,6 @@ function MyCardBook({ book }: CardBookProps) {
               width={168}
               height={237}
               loading="lazy"
-              unoptimized
               onError={() => {
                 setImgError(true);
               }}

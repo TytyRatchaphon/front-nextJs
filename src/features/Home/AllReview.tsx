@@ -3,7 +3,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchPinnedReviews } from '@/services/api/commentApi';
-import ImageWithFallback from '@/components/ui/ImageWithFallback';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Rate } from 'antd';
@@ -14,6 +13,7 @@ import ReviewModal from '@/components/modal/ReviewModal';
 import WriteReviewModal from '@/components/modal/WriteReviewModal';
 import EditReviewModal from '@/components/modal/EditReviewModal';
 import SpoilerCardWrapper from '@/components/ui/SpoilerCardWrapper';
+import ProfileAvatarLink, { extractFrameSrc, normalizeProfileAssetSrc } from '@/components/ui/ProfileAvatarLink';
 import { useAuthStore } from '@/stores/authStore';
 import { Dropdown, App } from 'antd';
 import { deleteUserReview } from '@/services/api/commentApi';
@@ -153,9 +153,18 @@ export default function AllReview() {
         {!isLoading && !error && reviews.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {reviews.map((review: any) => {
-              const userAvatar = review.user?.img || '/images/default-avatar.png';
+              const userAvatar = normalizeProfileAssetSrc(
+                review.user?.img,
+                '/images/default-avatar.png',
+                'https://img.enjoybook.co/img/profile/',
+              );
+              const userFrame = extractFrameSrc(review.user);
               const userName = review.user?.fullname || 'Unknown';
-              const bookCover = review.book?.img || review.book?.img_full || '/images/default-cover.png';
+              const bookCover = normalizeProfileAssetSrc(
+                review.book?.img || review.book?.img_full,
+                '/images/default-cover.png',
+                'https://img.enjoybook.co/img/book/',
+              );
               const bookTitle = review.book?.name || 'Unknown Book';
               const bookTag = review.book?.tag?.[0] || 'นิยาย';
               const writerName = review.book?.writer_name || 'Unknown Writer';
@@ -173,10 +182,22 @@ export default function AllReview() {
                   {/* Header: User & Time */}
                   <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center gap-2">
-                      <div className="relative w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
-                        <ImageWithFallback src={userAvatar} alt={userName} fill className="object-cover" />
-                      </div>
-                      <span className="text-sm font-semibold text-gray-800 line-clamp-1">{userName}</span>
+                      <ProfileAvatarLink
+                        userId={review.user?.user_id}
+                        name={userName}
+                        avatarSrc={userAvatar}
+                        frameSrc={userFrame}
+                        sizeClassName="h-6 w-6"
+                        frameScaleClassName="-inset-1"
+                        stopPropagation
+                      />
+                      <Link
+                        href={`/profile/${review.user?.user_id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-sm font-semibold text-gray-800 line-clamp-1 hover:text-[#E33527]"
+                      >
+                        {userName}
+                      </Link>
                     </div>
                     <div className="flex items-center gap-2">
                        <span className="text-xs text-gray-400 whitespace-nowrap">{timeAgo}</span>
@@ -254,7 +275,7 @@ export default function AllReview() {
                     className="flex gap-3 bg-gray-50/50 rounded-lg p-2 border border-gray-100 hover:bg-[#FFE5E5]/30 transition-colors mt-auto"
                   >
                     <div className="relative w-10 h-14 rounded overflow-hidden flex-shrink-0">
-                      <Image src={bookCover} alt={bookTitle} fill className="object-cover" unoptimized />
+                      <Image src={bookCover} alt={bookTitle} fill className="object-cover" />
                     </div>
                     <div className="flex flex-col justify-center overflow-hidden">
                       <h4 className="text-sm font-bold text-gray-900 truncate">{bookTitle}</h4>

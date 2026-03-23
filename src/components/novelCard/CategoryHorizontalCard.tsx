@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Eye, List } from "lucide-react";
 import { CategoryBook } from "@/types/api";
 import { TagSwiper } from "@/components/swiper/ImageSlider";
-import "@/utils/imageUtils";
 
 interface CategoryHorizontalCardProps {
   book: CategoryBook;
@@ -34,7 +33,6 @@ const CategoryHorizontalCard: React.FC<CategoryHorizontalCardProps> = ({ book })
           alt={book.name}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"
-          unoptimized
         />
         {book.isNew && (
           <div className="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-bl-md z-10">

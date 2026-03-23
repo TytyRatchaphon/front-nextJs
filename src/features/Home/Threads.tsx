@@ -30,7 +30,13 @@ const getTypeInfo = (typeId: number) => {
   return ThreadTypes.find(t => t.id === typeId) || ThreadTypes[1];
 };
 
-export default function Threads() {
+type InitialThreadResponse = Awaited<ReturnType<typeof fetchThreads>>;
+
+interface ThreadsProps {
+  initialThreadResponse?: InitialThreadResponse;
+}
+
+export default function Threads({ initialThreadResponse }: ThreadsProps) {
   const [activeType, setActiveType] = useState(0);
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState('newest');
@@ -69,6 +75,8 @@ export default function Threads() {
       type: activeType === 0 ? undefined : activeType, 
       sort 
     }),
+    initialData: activeType === 0 && page === 1 && sort === 'newest' ? (initialThreadResponse ?? undefined) : undefined,
+    staleTime: 60 * 1000,
   });
 
   const createThreadMutation = useMutation({

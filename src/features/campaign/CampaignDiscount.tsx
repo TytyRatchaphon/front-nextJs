@@ -39,7 +39,6 @@ export default function CampaignDiscount() {
                                     fill
                                     priority
                                     className="object-cover"
-                                    unoptimized
                                 />
                             </Link>
 

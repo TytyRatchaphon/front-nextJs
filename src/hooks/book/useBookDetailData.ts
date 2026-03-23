@@ -15,7 +15,7 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
         isError: isErrorDetail,
         error: errorDetail,
     } = useQuery({
-        queryKey: ["bookDetail", bookId, token],
+        queryKey: ["bookDetail", bookId],
         queryFn: async () => {
             const data = await fetchBookDetail(bookId);
             return data;
@@ -35,7 +35,7 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
 
     // Episodes
     const { data: episodesData, isLoading: isLoadingEpisodes, isError: isErrorEpisodes } = useQuery({
-        queryKey: ["bookEpisodes", bookId, token],
+        queryKey: ["bookEpisodes", bookId],
         queryFn: () => fetchBookEpisodes(bookId),
         enabled: !!bookId && isReady,
         staleTime: 5 * 60 * 1000,

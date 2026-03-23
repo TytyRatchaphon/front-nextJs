@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { notification, Modal } from 'antd';
 import { redeemCode, refreshToken } from '@/services/apiServices'
 import { useWebsiteStore } from '@/stores/websiteStore';
+import { resolveSettingsImageSrc } from '@/utils/imageUtils';
 
 function Redeem() {
     const [code, setCode] = useState('')
@@ -106,12 +107,11 @@ function Redeem() {
             {/* Background Section */}
             <div className='relative w-full h-[400px]'>
                 <Image
-                    src={settings?.redeembg || '/images/redeembg.png'}
+                    src={resolveSettingsImageSrc(settings?.redeembg, '/images/redeembg.png')}
                     alt="Redeem Background"
                     fill
                     className='object-cover'
                     priority
-                    unoptimized
                 />
             </div>
 
@@ -121,11 +121,10 @@ function Redeem() {
                     {/* Header with Logo */}
                     <div className='flex items-center justify-center gap-2 mb-6'>
                         <Image
-                            src={settings?.logo || '/images/logo.png'}
+                            src={resolveSettingsImageSrc(settings?.logo, '/images/logo.png')}
                             alt="Logo"
                             width={24}
                             height={24}
-                            unoptimized
                         />
                         <span className='text-gray-800 font-primary font-medium'>Enjoybook Coin</span>
                     </div>

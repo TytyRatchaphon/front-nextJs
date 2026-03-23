@@ -2,6 +2,7 @@
 import apiClient from "../apiClient";
 import type { BookTrans } from "@/types/api";
 import { parseJwtToken } from "@/utils/jwtParser";
+import { cachedRequest } from "../requestCache";
 
 export interface Slide {
   banner_id: number;
@@ -77,8 +78,14 @@ export const fetchHomeData = async (token?: string | null): Promise<HomeDataResp
 
 export const fetchBookUpdates = async (): Promise<BookUpdate[]> => {
   try {
-    const response = await apiClient.get<{ data: BookUpdate[] }>("/getBookUpdate");
-    return Array.isArray(response.data?.data) ? response.data.data : [];
+    return await cachedRequest<BookUpdate[]>(
+      'home:book-updates',
+      async () => {
+        const response = await apiClient.get<{ data: BookUpdate[] }>("/getBookUpdate");
+        return Array.isArray(response.data?.data) ? response.data.data : [];
+      },
+      { ttlMs: 5 * 60 * 1000 }
+    );
   } catch {
     return [];
   }

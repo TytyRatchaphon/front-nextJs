@@ -1,13 +1,13 @@
 "use client"
 
 import React, { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { CommentData, CommentEpData } from "@/types/api";
 import { postReply, deleteBookReview, reportBookReview, postCommentReply, deleteBookComment, reportBookComment, deleteBookReviewReply, reportBookReviewReply, deleteBookCommentReply, reportBookCommentReply, postReviewReplyNotification, postEpisodeReply, deleteEpisodeComment, reportEpisodeComment, deleteEpisodeReply, reportEpisodeReply, postCommentReplyNotification } from "@/services/apiServices";
 import { Button, Input, notification, Popover, Modal } from "antd";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
+import ProfileAvatarLink from "@/components/ui/ProfileAvatarLink";
 
 interface CommentItemProps {
     review: CommentData | CommentEpData;
@@ -18,39 +18,12 @@ interface CommentItemProps {
     theme?: { bg: string; text: string; key: string };
 }
 
-// Helper Component for safe avatar loading
-const SafeAvatar = ({ src, alt, className, theme, isReply = false }: { src?: string | null, alt: string, className?: string, theme?: any, isReply?: boolean }) => {
-    void theme;
-    const [hasError, setHasError] = useState(false);
-
-
-    if (!src || hasError) {
-        // Fallback Image
-        return (
-            <Image
-                src="/images/default-avatar.png"
-                alt={alt || "Default User"}
-                fill={!isReply}
-                width={isReply ? 20 : undefined}
-                height={isReply ? 20 : undefined}
-                className={className}
-                unoptimized
-            />
-        );
-    }
-
-    return (
-        <Image
-            src={src}
-            alt={alt}
-            fill={!isReply}
-            width={isReply ? 20 : undefined}
-            height={isReply ? 20 : undefined}
-            className={className}
-            unoptimized
-            onError={() => setHasError(true)} // Add unoptimized to reduce issues with external images if needed, but loader handles it mostly.
-        />
-    );
+const normalizeRemoteImageSrc = (src?: string | null, fallback = "/images/default-avatar.png") => {
+    if (!src || src === "null" || src === "undefined") return fallback;
+    if (src.startsWith("http") || src.startsWith("data:")) return src.replace("http:", "https:");
+    if (src.startsWith("/")) return src;
+    if (src.startsWith("img/")) return `https://img.enjoybook.co/${src}`;
+    return `https://img.enjoybook.co/${src}`;
 };
 
 export default function CommentItem({
@@ -76,6 +49,7 @@ export default function CommentItem({
 
     // Prioritize frame_img (flat), then frame (string), then frame.img (object)
     const userFrame = fImg || (typeof fProp === 'string' ? fProp : fProp?.img) || null;
+    const normalizedUserFrame = normalizeRemoteImageSrc(userFrame, "");
 
     // Debug Log (Remove in production)
     // 
@@ -279,27 +253,16 @@ export default function CommentItem({
                 <div className="flex-shrink-0">
                     <div className="relative w-10 h-10 sm:w-12 sm:h-12">
                         {/* Base Avatar */}
-                        <Link href={`/profile/${review.user_id}`} className={`block relative w-full h-full rounded-full overflow-hidden border ${theme?.key === 'black' ? 'bg-[#1f1f1f] border-[#333]' : theme?.key === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-gray-100 border-gray-200'}`}>
-                            <SafeAvatar 
-                                src={userAvatar} 
-                                alt={review.user?.fullname || "User"} 
-                                className="object-cover"
-                                theme={theme}
-                            />
-                        </Link>
-
-                        {/* Frame Overlay (if exists) */}
-                        {userFrame && (
-                            <div className="absolute -top-[15%] -left-[15%] w-[130%] h-[130%] pointer-events-none z-10">
-                                <Image
-                                    src={typeof userFrame === 'string' ? userFrame.trim() : userFrame}
-                                    alt="User Frame"
-                                    fill
-                                    className="object-contain"
-                                    loader={({ src, width, quality }) => `${src}?w=${width ?? ''}&q=${quality ?? 75}`}
-                                />
-                            </div>
-                        )}
+                        <ProfileAvatarLink
+                            userId={review.user_id}
+                            name={review.user?.fullname || "User"}
+                            avatarSrc={userAvatar}
+                            frameSrc={normalizedUserFrame}
+                            sizeClassName="w-10 h-10 sm:w-12 sm:h-12"
+                            frameScaleClassName="-top-[15%] -left-[15%] w-[130%] h-[130%]"
+                            imageClassName="object-cover"
+                            className={theme?.key === 'black' ? 'bg-[#1f1f1f]' : theme?.key === 'dark' ? 'bg-gray-800' : 'bg-gray-100'}
+                        />
                     </div>
                 </div>
 
@@ -385,15 +348,16 @@ export default function CommentItem({
                                     <div className="flex items-center justify-between mb-2">
                                         <div className="flex items-center gap-2">
                                             {/* Small Avatar for Replier */}
-                                            <Link href={`/profile/${reply.user_id}`} className={`block w-5 h-5 rounded-full overflow-hidden shrink-0 ${theme?.key === 'black' ? 'bg-[#333]' : theme?.key === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}`}>
-                                                <SafeAvatar 
-                                                    src={reply.user?.img} 
-                                                    alt="Replier" 
-                                                    className="object-cover w-full h-full"
-                                                    isReply={true}
-                                                    theme={theme}
-                                                />
-                                            </Link>
+                                            <ProfileAvatarLink
+                                                userId={reply.user_id}
+                                                name={reply.user?.fullname || "Replier"}
+                                                avatarSrc={reply.user?.img}
+                                                frameSrc={normalizeRemoteImageSrc(reply.user?.frame_img || (typeof reply.user?.frame === 'string' ? reply.user?.frame : reply.user?.frame?.img) || null, "")}
+                                                sizeClassName="w-5 h-5"
+                                                frameScaleClassName="-inset-1"
+                                                imageClassName="object-cover"
+                                                className={theme?.key === 'black' ? 'bg-[#333]' : theme?.key === 'dark' ? 'bg-gray-700' : 'bg-gray-200'}
+                                            />
                                             <Link href={`/profile/${reply.user_id}`}>
                                                 <span className={`text-xs sm:text-sm font-bold hover:underline ${theme ? theme.text : 'text-gray-800'}`}>
                                                     {reply.user?.fullname || "Admin"}

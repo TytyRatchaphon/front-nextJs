@@ -1,10 +1,17 @@
 import React from 'react'
 import Threads from '@/features/Home/Threads'
+import { fetchThreads } from '@/services/apiServices';
 
 export const revalidate = 60;
-function page() {
+async function page() {
+  const initialThreadResponse = await fetchThreads({
+    page: 1,
+    limit: 9,
+    sort: 'newest',
+  });
+
   return (
-    <Threads />
+    <Threads initialThreadResponse={initialThreadResponse} />
   )
 }
 

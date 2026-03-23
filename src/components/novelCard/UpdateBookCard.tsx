@@ -67,7 +67,6 @@ const UpdateBookCard = ({ book }: UpdateBookCardProps) => {
                   src={data.cover} 
                   alt={data.title} 
                   fill 
-                  unoptimized
                   className="object-cover"
                   onError={(e) => {
                     // Fallback logic could go here, but for now we rely on the src

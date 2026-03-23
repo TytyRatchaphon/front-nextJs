@@ -2,6 +2,7 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import 'lucide-react';
+import { resolveBookImageSrc } from '@/utils/imageUtils';
 
 interface ContinueHomeCardBookProps {
   book: any;
@@ -10,7 +11,7 @@ interface ContinueHomeCardBookProps {
 const ContinueHomeCardBook = ({ book }: ContinueHomeCardBookProps) => {
   const title = book.name || book.title || 'Unknown Title';
   const author = book.writer_name || book.author || 'Unknown Author';
-  const cover = book.img_full || book.img || book.cover || '/images/default-book.png';
+  const cover = resolveBookImageSrc(book.img_full || book.img || book.cover, '/images/default-book.png');
   const lastEp = book.last_read_ep_name || book.last_read_ep || 'Chapter ?';
   
   return (
@@ -23,7 +24,6 @@ const ContinueHomeCardBook = ({ book }: ContinueHomeCardBookProps) => {
                 alt={title}
                 fill
                 className="object-cover"
-                unoptimized
              />
          </div>
 

@@ -9,7 +9,6 @@ import GifLoader from '@/components/utility/GifLoader';
 import { CartItem } from '@/interfaces/cart.interface';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { CheckCircleOutlined } from '@ant-design/icons';
-import { QUERY_CONFIG } from '@/constants/query';
 
 
 interface CartPopoverProps {
@@ -24,9 +23,8 @@ const CartPopover: React.FC<CartPopoverProps> = ({ onClose }) => {
     const { data: cartStores, isLoading } = useQuery({
         queryKey: ['cartItems'],
         queryFn: fetchCartItems,
-        staleTime: QUERY_CONFIG.CART_STALE_TIME,
-        gcTime: QUERY_CONFIG.CART_GC_TIME,
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: true,
+        refetchOnReconnect: true,
     });
 
     const updateMutation = useMutation({
