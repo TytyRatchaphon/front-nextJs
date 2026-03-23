@@ -131,7 +131,7 @@ export default function RecommendSwiper({ items, title, icon, link }: RecommendS
         autoHeight={true}
         freeMode={true}
       >
-        {items && items.length > 0 ? (
+        {Array.isArray(items) && items.length > 0 ? (
           items.filter(item => item.book).map((item, index) => (
             <SwiperSlide key={item.rec_id || index} className="!w-auto">
               <RecommendCard data={item} />

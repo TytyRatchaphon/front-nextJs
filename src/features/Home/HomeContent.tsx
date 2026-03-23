@@ -97,8 +97,9 @@ export default function HomeContent({ initialData, initialBookUpdates, initialRa
                 {(() => {
                   const spotlightBooks = homeData?.data?.groupBookHome?.find((group: any) => group.name === 'spotlight' || group.type === 'spotlight')?.list || homeData?.data?.spotlight || [];
 
-                  return spotlightBooks.length > 0 ? (
-                    spotlightBooks.slice(0, 6).map((book: any, i: number) => (
+                  const displaySpotlight = Array.isArray(spotlightBooks) ? spotlightBooks : [];
+                  return displaySpotlight.length > 0 ? (
+                    displaySpotlight.slice(0, 6).map((book: any, i: number) => (
                       <SpotlightCard key={book.book_id || i} book={book} />
                     ))
                   ) : (
@@ -127,8 +128,9 @@ export default function HomeContent({ initialData, initialBookUpdates, initialRa
                 {(() => {
                   const newArrivalBooks = homeData?.data?.groupBookHome?.find((group: any) => group.name === 'มาใหม่' || group.type === 'new')?.list || [];
 
-                  return newArrivalBooks.length > 0 ? (
-                    newArrivalBooks.slice(0, 5).map((book: any, i: number) => (
+                  const displayNewArrivals = Array.isArray(newArrivalBooks) ? newArrivalBooks : [];
+                  return displayNewArrivals.length > 0 ? (
+                    displayNewArrivals.slice(0, 5).map((book: any, i: number) => (
                       <NewArrivalCard key={book.book_id || i} book={book} />
                     ))
                   ) : (
@@ -173,7 +175,7 @@ export default function HomeContent({ initialData, initialBookUpdates, initialRa
             <h2 className="font-bold text-2xl mb-4 text-black">นิยายอัพเดตล่าสุด</h2>
             <div className="w-full h-[1px] bg-gray-200 mb-6"></div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {bookUpdates?.map((book) => (
+              {Array.isArray(bookUpdates) && bookUpdates.map((book) => (
                 <UpdateBookCard
                   key={book.book_id}
                   book={{

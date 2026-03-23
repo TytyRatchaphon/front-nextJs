@@ -120,7 +120,7 @@ export default function BookSwiper({ books, title, icon, link }: BookSwiperProps
         autoHeight={true}
         freeMode={true}
       >
-        {books && books.length > 0 ? (
+        {Array.isArray(books) && books.length > 0 ? (
           books.map((book, index) => (
             <SwiperSlide key={book.book_id || book.id || index} className="!w-auto">
               <CardBook book={book} />

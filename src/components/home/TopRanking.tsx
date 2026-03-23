@@ -34,7 +34,7 @@ const formatViewCount = (width: number) => {
 export default function TopRanking({ rankingGroup }: TopRankingProps) {
 
   const { settings } = useWebsiteStore();
-  const rankingList = rankingGroup?.list || [];
+  const rankingList = Array.isArray(rankingGroup?.list) ? rankingGroup.list : [];
 
   return (
     <div className="w-full max-w-[1240px] mx-auto px-4 mt-4 mb-4">

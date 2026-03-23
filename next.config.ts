@@ -6,6 +6,7 @@ const bundleAnalyzer = withBundleAnalyzer({
 });
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   /* config options here */
   images: {
     qualities: [100, 70, 70, 70, 70, 70, 70, 75],

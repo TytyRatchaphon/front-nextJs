@@ -123,7 +123,7 @@ export default function ExclusiveSwiper({ items, title, icon, link }: ExclusiveS
         autoHeight={true}
         freeMode={true}
       >
-        {items && items.length > 0 ? (
+        {Array.isArray(items) && items.length > 0 ? (
           items.map((item, index) => (
             <SwiperSlide key={item.exc_id || index} className="!w-auto">
               <CardBook book={item.book} />

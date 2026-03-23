@@ -38,11 +38,13 @@ const DailyPromoPopup: React.FC = () => {
     const initPopup = async () => {
       try {
         const homeData = await fetchHomeData();
-        if (homeData?.data?.popup && homeData.data.popup.length > 0) {
+        if (homeData?.data?.popup && Array.isArray(homeData.data.popup) && homeData.data.popup.length > 0) {
           const mappedItems = homeData.data.popup.map((item: PopupItem) => {
             let link = '#';
             if (item.type_link === 'novel') {
               link = item.ref_id ? `/book/${item.ref_id}` : `/book/${item.popup_id}`;
+            } else if (item.type_link === 'link') {
+              link = String(item.ref_id);
             } else if (item.txt && (item.txt.startsWith('http') || item.txt.startsWith('/'))) {
               link = item.txt;
             }

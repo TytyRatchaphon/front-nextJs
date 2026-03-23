@@ -123,7 +123,7 @@ export default function ArticleSwiper({ items, title, icon, link }: ArticleSwipe
         autoHeight={true}
         freeMode={true}
       >
-        {items && items.length > 0 ? (
+        {Array.isArray(items) && items.length > 0 ? (
           items.map((item, index) => (
             <SwiperSlide key={item.id || index} className="!w-auto">
               <ArticleCard article={item} />
