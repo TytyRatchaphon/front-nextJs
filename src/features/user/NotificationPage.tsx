@@ -27,6 +27,7 @@ import GifLoader from "@/components/utility/GifLoader";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
+import { navigateSafely } from "@/utils/navigationUtils";
 
 dayjs.extend(relativeTime);
 dayjs.locale("th");
@@ -144,8 +145,10 @@ const NotificationPage: React.FC = () => {
     }
 
     if (item.NotiType.url) {
-      window.location.href = item.NotiType.url;
-      return;
+      const didNavigate = navigateSafely(item.NotiType.url);
+      if (didNavigate) {
+        return;
+      }
     }
 
     const { type, book_id, ep_id } = item.NotiType;

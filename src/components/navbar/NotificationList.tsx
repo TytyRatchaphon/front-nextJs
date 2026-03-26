@@ -13,6 +13,7 @@ import GifLoader from '@/components/utility/GifLoader';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { navigateSafely } from '@/utils/navigationUtils';
 
 // Define Interface based on User's DB Schema
 interface NotificationType {
@@ -100,18 +101,21 @@ const NotificationList: React.FC<{ onClose?: () => void; mode?: 'popover' | 'dra
 
         // Navigation Logic
         if (item.NotiType.url) {
-            window.location.href = item.NotiType.url;
-        } else {
-            // Fallback navigation based on type if URL is missing
-            const { type, book_id, ep_id } = item.NotiType;
-
-            if (type === 'system') {
-                router.push('/user/notification');
-            } else if (type === 'book_new' || type === 'book_update' || type === 'comment_book_id') {
-                if (book_id) window.location.href = `/book/${book_id}`;
-            } else if (type === 'comment_ep_id' || type === 'comment_sub_ep_id') {
-                if (book_id && ep_id) window.location.href = `/read/${book_id}/${ep_id}`;
+            const didNavigate = navigateSafely(item.NotiType.url);
+            if (didNavigate) {
+                return;
             }
+        }
+
+        // Fallback navigation based on type if URL is missing or unsafe
+        const { type, book_id, ep_id } = item.NotiType;
+
+        if (type === 'system') {
+            router.push('/user/notification');
+        } else if (type === 'book_new' || type === 'book_update' || type === 'comment_book_id') {
+            if (book_id) router.push(`/book/${book_id}`);
+        } else if (type === 'comment_ep_id' || type === 'comment_sub_ep_id') {
+            if (book_id && ep_id) router.push(`/read/${book_id}/${ep_id}`);
         }
     };
 

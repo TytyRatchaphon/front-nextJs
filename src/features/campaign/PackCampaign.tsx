@@ -14,6 +14,7 @@ import th_TH from 'antd/locale/th_TH';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { useUIStore } from '@/stores/uiStore';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { buildCoinEnjoyTopupUrl, navigateSafely } from '@/utils/navigationUtils';
 
 interface PackCampaignProps {
     data: PackCampaignDetail | null;
@@ -336,7 +337,7 @@ function PackCampaign({ data }: PackCampaignProps) {
                             </div>
 
                             <div className="flex flex-col gap-3">
-                                <Button type="primary" danger size="large" block className="bg-[#E60000] h-10" onClick={() => window.location.href = `/book/${selectedOption.book_id}`}>อ่านต่อเลย</Button>
+                                <Button type="primary" danger size="large" block className="bg-[#E60000] h-10" onClick={() => navigateSafely(`/book/${selectedOption.book_id}`)}>อ่านต่อเลย</Button>
                                 <Button size="large" block className="h-10 hover:!text-red-500 hover:!border-red-500 transition-colors" onClick={() => { setIsConfirmModalOpen(false); setPurchaseStatus('idle'); }}>เลือกซื้อต่อ</Button>
                             </div>
                         </div>
@@ -370,9 +371,8 @@ function PackCampaign({ data }: PackCampaignProps) {
                                     block
                                     className="bg-[#E60000] h-10"
                                     onClick={() => {
-                                        const targetUrl = "https://coinenjoy.enjoybook.co";
-                                        const finalUrl = token ? `${targetUrl}?tk=${token}` : targetUrl;
-                                        window.location.href = finalUrl;
+                                        const topupUrl = buildCoinEnjoyTopupUrl(token);
+                                        navigateSafely(topupUrl, { allowExternal: true });
                                     }}
                                 >
                                     เติมเหรียญ

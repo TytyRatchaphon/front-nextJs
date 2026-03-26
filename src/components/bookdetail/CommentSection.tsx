@@ -20,43 +20,30 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
   const [error, setError] = useState<string | null>(null);
 
   // Auth
-  const { token } = useAuthStore() as any;
+  const { token, user } = useAuthStore();
   const { openLoginModal } = useUIStore();
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (token) {
-      try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(
-          atob(base64)
-            .split('')
-            .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-            .join('')
-        );
-        const decoded = JSON.parse(jsonPayload);
-        const uid = decoded.user_id || decoded.id || decoded.sub || decoded.userId;
-        setCurrentUserId(Number(uid));
-      } catch {
-      }
-    }
-  }, [token]);
+  const currentUserId = user?.user_id ? Number(user.user_id) : null;
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
   const [commentTypeSegment, setCommentTypeSegment] = useState<"ep" | "story">("ep");
 
   // Form State
   const [newComment, setNewComment] = useState("");
-  const [rating, setRating] = useState(mode === "comment" ? 5 : 0);
   const [sortOrder, setSortOrder] = useState("newest");
 
   const isAllCommentsMode = mode === "comment_ep";
   const effectiveMode: "comment" | "comment_ep" =
     isAllCommentsMode && commentTypeSegment === "story" ? "comment" : mode;
+  const effectivePageSize = isAllCommentsMode
+    ? commentTypeSegment === "story"
+      ? 20
+      : 10
+    : 10;
+  const plainNewComment = newComment.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, "").trim();
+  const hasImageInNewComment = /<img[\s\S]*?>/i.test(newComment);
+  const canSubmitComment = plainNewComment.length > 0 || hasImageInNewComment;
 
   // Sticker State
   const [stickers, setStickers] = useState<StickerSet[]>([]);
@@ -74,14 +61,15 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
       let data;
 
       if (effectiveMode === "comment") {
-        data = await fetchBookReviews(bookId, currentPage, pageSize, sortOrder);
+        data = await fetchBookReviews(bookId, currentPage, effectivePageSize, sortOrder);
       } else {
         // For fetchBookComments, check if it supports sort param usage. 
         // apiServices definition: fetchBookComments(bookId, page, limit, sort)
-        data = await fetchBookComments(bookId, currentPage, pageSize, sortOrder);
+        data = await fetchBookComments(bookId, currentPage, effectivePageSize, sortOrder);
       }
 
       if (data && data.comments) {
+        setError(null);
         setComments(data.comments);
         // Assuming data.pagination or similar provides total. 
         // In apiServices: fetchBookReviews returns { comments, pagination }.
@@ -96,7 +84,7 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
           // Assuming API returns total. If not, pagination might break.
           // Let's try to infer or keep previous total if available? No, set to 0 or comments length if minimal?
           // Some legacy responses might fallback.
-          if (currentPage === 1 && data.comments.length < pageSize) {
+          if (currentPage === 1 && data.comments.length < effectivePageSize) {
             setTotalItems(data.comments.length);
           }
         }
@@ -109,7 +97,7 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
     } finally {
       setLoading(false);
     }
-  }, [effectiveMode, bookId, currentPage, pageSize, sortOrder]);
+  }, [effectiveMode, bookId, currentPage, effectivePageSize, sortOrder]);
 
   useEffect(() => {
     if (bookId) loadReviews();
@@ -117,9 +105,7 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
 
   useEffect(() => {
     if (!isAllCommentsMode) return;
-    const nextPageSize = commentTypeSegment === "story" ? 20 : 10;
     setCurrentPage(1);
-    setPageSize(nextPageSize);
     setSortOrder("newest");
   }, [commentTypeSegment, isAllCommentsMode]);
 
@@ -258,7 +244,7 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
     const hasImages = !!editor?.querySelector('img');
     const isContentEmpty = !plainText && !hasImages;
 
-    // Require content even if rating is provided
+    // Require actual content (text or sticker image)
     if (isContentEmpty) {
       api.warning({
         message: 'แจ้งเตือน',
@@ -299,7 +285,6 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
         editorRef.current.innerHTML = "";
       }
       setNewComment("");
-      setRating(effectiveMode === "comment" ? 5 : 0);
 
       // Reload data 
       setCurrentPage(1);
@@ -320,9 +305,8 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
 
   // No Client-Side Sorting/Pagination needed anymore as we fetch from server
 
-  const onPageChange = (page: number, size: number) => {
+  const onPageChange = (page: number) => {
     setCurrentPage(page);
-    setPageSize(size);
   };
 
   const handleDeleteSuccess = () => {
@@ -435,7 +419,7 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
                 type="primary"
                 size="large"
                 onClick={handleSubmit}
-                disabled={!newComment && rating === 0}
+                disabled={!canSubmitComment}
                 className="!bg-red-600 hover:!bg-red-700 h-10 px-8 text-sm font-semibold rounded-lg"
               >
                 ส่งความคิดเห็น
@@ -471,7 +455,7 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
               <Pagination
                 current={currentPage}
                 total={totalItems}
-                pageSize={pageSize}
+                pageSize={effectivePageSize}
                 onChange={onPageChange}
                 showSizeChanger={false}
               />

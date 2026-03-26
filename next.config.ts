@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
   images: {
     loader: 'custom',
     loaderFile: './src/utils/next-image-loader.ts',
-    qualities: [100, 70, 70, 70, 70, 70, 70, 75],
+    qualities: [100, 70, 70, 70, 70, 70, 70, 75, 80],
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60 * 60 * 24 * 30,
     remotePatterns: [

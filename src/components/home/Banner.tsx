@@ -11,6 +11,7 @@ import 'swiper/css/parallax';
 import { Slide, postBannerClick } from '@/services/apiServices';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { resolveBannerImageSrc, resolveSettingsImageSrc } from '@/utils/imageUtils';
+import { navigateSafely } from '@/utils/navigationUtils';
 
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
@@ -118,19 +119,19 @@ function Banner({ slides = [], showTopUpBanner = true }: BannerProps) {
                       <div className="relative mx-auto w-full max-w-[680px] cursor-pointer lg:w-[680px]" onClick={() => {
                         postBannerClick(slide.banner_id);
                         if (slide.type_link === 'novel') {
-                          window.location.href = `/book/${slide.ref_id}`;
+                          navigateSafely(`/book/${slide.ref_id}`);
                         } else if (slide.type_link === 'link') {
-                          window.location.href = slide.ref_id;
+                          navigateSafely(slide.ref_id, { allowExternal: true });
                         } else if (slide.type_link === 'campaign') {
-                          window.location.href = `/campaign/${slide.ref_id}`;
+                          navigateSafely(`/campaign/${slide.ref_id}`);
                         } else if (slide.type_link === 'article') {
-                          window.location.href = `/article/${slide.ref_id}`;
+                          navigateSafely(`/article/${slide.ref_id}`);
                         } else if (slide.type_link === 'store') {
-                          window.location.href = `/store`;
+                          navigateSafely(`/store`);
                         } else if (slide.type_link === 'pack_campaign') {
-                          window.location.href = `/pack-campaign/${slide.ref_id}`;
+                          navigateSafely(`/pack-campaign/${slide.ref_id}`);
                         } else if (slide.type_link === `campaign-discount`) {
-                          window.location.href = `/campaign-discount`;
+                          navigateSafely(`/campaign-discount`);
                         }
                       }} data-swiper-parallax="-1%">
                         <div className="relative aspect-[680/296] w-full overflow-hidden rounded-lg bg-stone-100">

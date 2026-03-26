@@ -7,6 +7,7 @@ import { postThreadReply, reportThreadComment, reportThreadReply, deleteThreadRe
 import { Button, Input, notification, Popover } from "antd";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
+import { sanitizeUserGeneratedHtml } from "@/utils/sanitizeHtml";
 
 interface ThreadCommentItemProps {
   review: CommentThreadData;
@@ -44,6 +45,10 @@ export default function ThreadCommentItem({
     hour: "2-digit",
     minute: "2-digit"
   });
+  const safeReviewComment = React.useMemo(
+    () => sanitizeUserGeneratedHtml(review.comment),
+    [review.comment]
+  );
 
 
   const handleReplySubmit = async () => {
@@ -222,7 +227,7 @@ export default function ThreadCommentItem({
           {/* Comment Text */}
           <div 
             className="text-sm text-gray-800 leading-relaxed break-words mb-3 [&>p]:mb-2 [&>p:last-child]:mb-0 [&_img]:max-w-full [&_img]:h-auto [&_img]:inline-block [&_img]:align-middle"
-            dangerouslySetInnerHTML={{ __html: review.comment }}
+            dangerouslySetInnerHTML={{ __html: safeReviewComment }}
           />
 
            {/* Actions: Reply Button */}
@@ -283,6 +288,7 @@ export default function ThreadCommentItem({
 
 function ReplyItem({ reply, api, currentUserId, onReload }: { reply: any, api: any, currentUserId?: any, onReload?: () => void }) {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const safeReplyComment = sanitizeUserGeneratedHtml(reply.comment);
 
   const handleReportReply = async () => {
       setIsPopoverOpen(false);
@@ -388,7 +394,7 @@ function ReplyItem({ reply, api, currentUserId, onReload }: { reply: any, api: a
         </div>
         <div 
             className="text-xs sm:text-sm text-gray-700 leading-relaxed prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: reply.comment }}
+            dangerouslySetInnerHTML={{ __html: safeReplyComment }}
         />
     </div>
   );

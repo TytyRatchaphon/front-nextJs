@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import Image from 'next/image';
+import { buildCoinEnjoyTopupUrl, navigateSafely } from '@/utils/navigationUtils';
 
 const TopUpBanner = () => {
     const { token, isLoggedIn } = useAuthStore();
@@ -23,7 +24,8 @@ const TopUpBanner = () => {
             openLoginModal();
             return;
         }
-        window.location.href = `https://coinenjoy.enjoybook.co/?tk=${token}`;
+        const topupUrl = buildCoinEnjoyTopupUrl(token);
+        navigateSafely(topupUrl, { allowExternal: true });
     };
 
  // seconds

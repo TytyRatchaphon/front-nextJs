@@ -7,6 +7,7 @@ import { CollectionCommentData, postCollectionReply, deleteCollectionComment, de
 import { Button, Input, Modal, App, Popover } from "antd";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
+import { sanitizeUserGeneratedHtml } from "@/utils/sanitizeHtml";
 
 interface CollectionCommentItemProps {
     comment: CollectionCommentData;
@@ -71,6 +72,10 @@ export default function CollectionCommentItem({
         month: "long",
         day: "numeric",
     });
+    const safeCommentHtml = React.useMemo(
+        () => sanitizeUserGeneratedHtml(comment.comment),
+        [comment.comment]
+    );
 
     const handleReplySubmit = async () => {
         if (!token) {
@@ -250,7 +255,7 @@ export default function CollectionCommentItem({
                     {/* Comment Text */}
                     <div
                         className="text-sm leading-relaxed break-words mb-3 text-gray-800 [&>p]:mb-2 [&>p:last-child]:mb-0 [&_img]:max-w-full [&_img]:h-auto [&_img]:inline-block [&_img]:align-middle"
-                        dangerouslySetInnerHTML={{ __html: comment.comment }}
+                        dangerouslySetInnerHTML={{ __html: safeCommentHtml }}
                     />
 
                     {/* Actions: Reply Button */}
@@ -292,7 +297,9 @@ export default function CollectionCommentItem({
                     {/* Replies */}
                     {comment.replies && comment.replies.length > 0 && (
                         <div className="space-y-3 mt-3 border-l-2 border-gray-100 pl-4 ml-2">
-                            {comment.replies.map((reply, replyIndex) => (
+                            {comment.replies.map((reply, replyIndex) => {
+                                const safeReplyComment = sanitizeUserGeneratedHtml(reply.comment);
+                                return (
                                 <div key={reply.id || replyIndex} className="rounded-lg p-3 sm:p-4 border relative group/reply bg-gray-50 border-gray-100">
                                     <div className="flex items-center justify-between mb-2">
                                         <div className="flex items-center gap-2">
@@ -380,10 +387,10 @@ export default function CollectionCommentItem({
                                     {/* Reply content sends HTML */}
                                     <div
                                         className="text-xs sm:text-sm leading-relaxed prose prose-sm max-w-none text-gray-700"
-                                        dangerouslySetInnerHTML={{ __html: reply.comment }}
+                                        dangerouslySetInnerHTML={{ __html: safeReplyComment }}
                                     />
                                 </div>
-                            ))}
+                            )})}
                         </div>
                     )}
                 </div>

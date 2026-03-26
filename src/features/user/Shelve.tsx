@@ -28,6 +28,14 @@ type ShelvePayload = {
   } | null;
 };
 
+const freshShelveQueryOptions = {
+  staleTime: 0,
+  gcTime: 0,
+  refetchOnMount: 'always' as const,
+  refetchOnReconnect: 'always' as const,
+  refetchOnWindowFocus: true,
+};
+
 function ShelvePinButton({
   pinned,
   loading,
@@ -84,9 +92,18 @@ function Shelve() {
   const [pageContinue, setPageContinue] = useState(1);
   const [pageBuy, setPageBuy] = useState(1);
 
+  useEffect(() => {
+    return () => {
+      queryClient.removeQueries({ queryKey: ['userShelve'] });
+      queryClient.removeQueries({ queryKey: ['userShelveContinue'] });
+      queryClient.removeQueries({ queryKey: ['userShelveBuy'] });
+    };
+  }, [queryClient]);
+
   const { data: shelveData, isLoading, isError, refetch: refetchShelve } = useQuery({
     queryKey: ['userShelve', pageShelve],
     queryFn: () => fetchUserShelve(20, pageShelve),
+    ...freshShelveQueryOptions,
   });
 
   const books: BookData[] = shelveData?.books ?? [];
@@ -110,6 +127,7 @@ function Shelve() {
     queryKey: ['userShelveContinue', userId, pageContinue],
     queryFn: () => fetchUserShelveContinue(20, pageContinue),
     enabled: !!userId,
+    ...freshShelveQueryOptions,
   });
 
   const continueBooks: BookData[] = continueData?.books ?? [];
@@ -124,6 +142,7 @@ function Shelve() {
     queryKey: ['userShelveBuy', userId, pageBuy],
     queryFn: () => fetchUserShelveBuy(20, pageBuy),
     enabled: !!userId,
+    ...freshShelveQueryOptions,
   });
 
   const buyBooks: BookData[] = buyData?.books ?? [];

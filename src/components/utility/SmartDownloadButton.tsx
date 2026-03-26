@@ -10,6 +10,7 @@ import {
     normalizeAppStoreUrl,
     normalizePlayStoreUrl,
 } from '@/utils/storeLinkUtils';
+import { openSafeExternalInNewTab } from '@/utils/navigationUtils';
 
 interface SmartDownloadButtonProps {
     className?: string;
@@ -38,19 +39,30 @@ const SmartDownloadButton: React.FC<SmartDownloadButtonProps> = ({ className, la
         const androidLink = normalizePlayStoreUrl(settings?.play_store, DEFAULT_PLAY_STORE_URL);
 
         if (os === 'ios') {
-            window.open(iosLink, '_blank');
+            openSafeExternalInNewTab(iosLink);
         } else if (os === 'android') {
-            window.open(androidLink, '_blank');
+            openSafeExternalInNewTab(androidLink);
         } else {
             // Fallback for Desktop: Open both or just Play Store?
             // User request implies just "Download App", usually Play Store is a safe default for web
-            window.open(androidLink, '_blank');
+            openSafeExternalInNewTab(androidLink);
         }
     };
 
     if (children) {
         return (
-            <div onClick={handleClick} className={`cursor-pointer ${className}`} role="button" tabIndex={0}>
+            <div
+                onClick={handleClick}
+                className={`cursor-pointer ${className}`}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        handleClick();
+                    }
+                }}
+            >
                 {children}
             </div>
         );

@@ -8,6 +8,7 @@ import { Button, Input, notification, Popover, Modal } from "antd";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
 import ProfileAvatarLink from "@/components/ui/ProfileAvatarLink";
+import { sanitizeUserGeneratedHtml } from "@/utils/sanitizeHtml";
 
 interface CommentItemProps {
     review: CommentData | CommentEpData;
@@ -61,6 +62,10 @@ export default function CommentItem({
         month: "long",
         day: "numeric",
     });
+    const safeReviewComment = React.useMemo(
+        () => sanitizeUserGeneratedHtml(review.comment),
+        [review.comment]
+    );
 
     // Type Guards
     const isReview = (item: CommentData | CommentEpData): item is CommentData => {
@@ -301,7 +306,7 @@ export default function CommentItem({
                     {/* Comment Text */}
                     <div
                         className={`text-sm leading-relaxed break-words mb-3 [&>p]:mb-2 [&>p:last-child]:mb-0 [&_img]:max-w-full [&_img]:h-auto [&_img]:inline-block [&_img]:align-middle ${theme ? theme.text : 'text-gray-800'}`}
-                        dangerouslySetInnerHTML={{ __html: review.comment }}
+                        dangerouslySetInnerHTML={{ __html: safeReviewComment }}
                     />
 
                     {/* Actions: Reply Button */}
@@ -343,7 +348,9 @@ export default function CommentItem({
                     {/* Admin Reply (comment_sub_data) */}
                     {review.comment_sub_data && review.comment_sub_data.length > 0 && (
                         <div className="space-y-3 mt-3">
-                            {review.comment_sub_data.map((reply, replyIndex) => (
+                            {review.comment_sub_data.map((reply, replyIndex) => {
+                                const safeReplyComment = sanitizeUserGeneratedHtml(reply.comment);
+                                return (
                                 <div key={reply.comment_sub_book_id || reply.comment_sub_ep_id || replyIndex} className={`rounded-lg p-3 sm:p-4 border relative group/reply ${theme?.key === 'black' ? 'bg-[#1f1f1f]/50 border-[#333]' : theme?.key === 'dark' ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-100'}`}>
                                     <div className="flex items-center justify-between mb-2">
                                         <div className="flex items-center gap-2">
@@ -444,10 +451,10 @@ export default function CommentItem({
                                     {/* Reply content sends HTML */}
                                     <div
                                         className={`text-xs sm:text-sm leading-relaxed prose prose-sm max-w-none ${theme ? theme.text : 'text-gray-700'}`}
-                                        dangerouslySetInnerHTML={{ __html: reply.comment }}
+                                        dangerouslySetInnerHTML={{ __html: safeReplyComment }}
                                     />
                                 </div>
-                            ))}
+                            )})}
                         </div>
                     )}
                 </div>

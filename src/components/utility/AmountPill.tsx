@@ -8,6 +8,7 @@ import { Tooltip } from 'antd';
 import { useAuthStore } from '@/stores/authStore';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import '@/utils/imageUtils';
+import { buildCoinEnjoyTopupUrl, navigateSafely } from '@/utils/navigationUtils';
 
 interface AmountPillProps {
     amount: number;
@@ -31,7 +32,8 @@ function AmountPill({ amount, icon, onAddClick, className = "" }: AmountPillProp
         if (onAddClick) {
             onAddClick();
         } else if (token) {
-            window.location.href = `https://coinenjoy.enjoybook.co/?tk=${token}`;
+            const topupUrl = buildCoinEnjoyTopupUrl(token);
+            navigateSafely(topupUrl, { allowExternal: true });
         }
     };
 
