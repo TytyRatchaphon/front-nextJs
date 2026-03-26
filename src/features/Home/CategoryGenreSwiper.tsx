@@ -11,7 +11,8 @@ export default function CategoryGenreSwiper() {
   const searchParams = useSearchParams();
   const currentType = searchParams.get('type') || 'all';
   const currentCategoryId = searchParams.get('categoryId') || 'all';
-  const currentTab = searchParams.get('tab') || 'new';
+  const currentTab = searchParams.get('tab') || 'bestseller';
+  const currentPeriod = searchParams.get('period') || ((currentTab === 'bestseller' || currentTab === 'topchart') ? '30' : '');
 
   const [isExpanded, setIsExpanded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -36,7 +37,19 @@ export default function CategoryGenreSwiper() {
   }, [allGenres.length]);
 
   const handleChange = (value: string) => {
-    router.push(`/cat/list?type=${currentType}&categoryId=${value}&tab=${currentTab}&limit=10&page=1`);
+    const params = new URLSearchParams({
+      type: currentType,
+      categoryId: value,
+      tab: currentTab,
+      limit: '10',
+      page: '1',
+    });
+
+    if (currentTab === 'bestseller' || currentTab === 'topchart') {
+      params.set('period', currentPeriod || '30');
+    }
+
+    router.push(`/cat/list?${params.toString()}`);
   };
 
   if (!genres.length && currentType !== 'all') return null;

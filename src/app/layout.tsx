@@ -61,7 +61,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${baiJamjuree.variable} font-bai-jamjuree font-medium`}>
-      <Script src="https://t.contentsquare.net/uxa/c765809e7d7ef.js" strategy="afterInteractive" />
+      <Script src="https://t.contentsquare.net/uxa/c765809e7d7ef.js" strategy="lazyOnload" />
       
       {/* Google Ads Tag */}
       <Script
@@ -96,7 +96,6 @@ export default function RootLayout({
         className={`flex flex-col w-full min-h-[100vh] font-bai-jamjuree font-medium`}>
         {/* Facebook Pixel NoScript */}
         <noscript>
-          {/* eslint-disable-next-line @next/next/no-img-element -- noscript tracking pixel requires a native img tag */}
           <img
             height="1"
             width="1"

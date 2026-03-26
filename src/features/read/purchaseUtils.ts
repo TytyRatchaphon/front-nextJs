@@ -5,12 +5,19 @@ type PurchaseEpisode = {
   coin?: number | null;
   freecoin?: number | null;
   coin_discount?: number | null;
+  discount_price?: number | null;
+  discount_end_date?: string | null;
   isFastTicket?: boolean | null;
   isFast_buyable?: boolean | null;
   use_freecoin?: number | null;
   Discount?: {
     discount_price?: number | null;
+    end_date?: string | null;
   } | null;
+  promotions?: Array<{
+    discount_price?: number | null;
+    end_date?: string | null;
+  }> | null;
   early_access?: {
     fast_ticket?: boolean | null;
     fast_coin?: boolean | null;
@@ -20,22 +27,75 @@ type PurchaseEpisode = {
   } | null;
 };
 
+const parsePrice = (value: unknown): number | undefined => {
+  if (value === null || value === undefined) return undefined;
+  const n = Number(value);
+  return Number.isNaN(n) ? undefined : n;
+};
+
+const resolveDiscount = (episode: PurchaseEpisode) => {
+  const discountObjectPrice = parsePrice(episode?.Discount?.discount_price);
+  if (discountObjectPrice !== undefined) {
+    return { discountPrice: discountObjectPrice, discountEndDate: episode?.Discount?.end_date ?? null };
+  }
+
+  const firstPromotion = Array.isArray(episode?.promotions) ? episode.promotions[0] : null;
+  const promotionPrice = parsePrice(firstPromotion?.discount_price);
+  if (promotionPrice !== undefined) {
+    return { discountPrice: promotionPrice, discountEndDate: firstPromotion?.end_date ?? null };
+  }
+
+  const directDiscount = parsePrice(episode?.discount_price);
+  if (directDiscount !== undefined) {
+    return { discountPrice: directDiscount, discountEndDate: episode?.discount_end_date ?? null };
+  }
+
+  return { discountPrice: undefined, discountEndDate: null as string | null };
+};
+
 export const getRegularEpisodePrices = (episode: PurchaseEpisode) => {
-  const discountPrice = episode?.Discount?.discount_price;
-  if (discountPrice !== null && discountPrice !== undefined && !Number.isNaN(Number(discountPrice))) {
-    const discounted = Number(discountPrice);
-    return { coinPrice: discounted, freecoinPrice: discounted, hasDiscount: true };
+  const originalCoinPrice = Number(episode?.coin ?? 0);
+  const originalFreecoinPrice = Number(episode?.freecoin ?? originalCoinPrice);
+  const { discountPrice, discountEndDate } = resolveDiscount(episode);
+  if (
+    discountPrice !== undefined &&
+    Number.isFinite(discountPrice) &&
+    discountPrice >= 0 &&
+    discountPrice < originalCoinPrice
+  ) {
+    const isDiscountFree = discountPrice === 0 && originalCoinPrice > 0;
+    return {
+      coinPrice: discountPrice,
+      freecoinPrice: discountPrice,
+      hasDiscount: true,
+      discountEndDate,
+      originalCoinPrice,
+      isDiscountFree,
+    };
   }
 
   if (episode?.coin_discount !== null && episode?.coin_discount !== undefined && !Number.isNaN(Number(episode.coin_discount))) {
     const discounted = Number(episode.coin_discount);
-    return { coinPrice: discounted, freecoinPrice: discounted, hasDiscount: true };
+    if (discounted >= 0 && discounted < originalCoinPrice) {
+      const isDiscountFree = discounted === 0 && originalCoinPrice > 0;
+      return {
+        coinPrice: discounted,
+        freecoinPrice: discounted,
+        hasDiscount: true,
+        discountEndDate: null,
+        originalCoinPrice,
+        isDiscountFree,
+      };
+    }
   }
 
   return {
-    coinPrice: Number(episode?.coin ?? 0),
-    freecoinPrice: Number(episode?.freecoin ?? 0),
+    coinPrice: originalCoinPrice,
+    freecoinPrice: originalFreecoinPrice,
     hasDiscount: false,
+    discountEndDate: null,
+    originalCoinPrice,
+    isDiscountFree: false,
   };
 };
 
@@ -50,7 +110,7 @@ export const getReadEpisodePurchaseState = (episode: PurchaseEpisode | null | un
   const fastTicketPrice = Number.isFinite(Number(early?.fastTicketPrice)) && Number(early?.fastTicketPrice) > 0
     ? Number(early.fastTicketPrice)
     : 1;
-  const { coinPrice, freecoinPrice, hasDiscount } = getRegularEpisodePrices(ep);
+  const { coinPrice, freecoinPrice, hasDiscount, discountEndDate, isDiscountFree } = getRegularEpisodePrices(ep);
   const fastCoinPrice = Number.isFinite(Number(early?.fastCoinPrice)) && Number(early?.fastCoinPrice) >= 0
     ? Number(early.fastCoinPrice)
     : Number(coinPrice ?? 0);
@@ -69,6 +129,8 @@ export const getReadEpisodePurchaseState = (episode: PurchaseEpisode | null | un
     coinPrice,
     freecoinPrice,
     hasDiscount,
+    discountEndDate,
+    isDiscountFree,
     canUseFreecoin,
   };
 };

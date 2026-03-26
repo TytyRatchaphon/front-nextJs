@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo, type MouseEvent as ReactMouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { Alert, Button, Popover, Modal, Slider, Switch, Select, ConfigProvider, message, App, Input, Space } from "antd";
+import { Alert, Button, Popover, Modal, Slider, Switch, Select, ConfigProvider, App, Input, Space } from "antd";
 import parse from "html-react-parser";
 import { BackToTopButton } from "@/components/utility/BackToTopButton";
 import Link from "next/link";
@@ -13,7 +13,7 @@ import Image from "next/image";
 import { modifiedHtml, addParagraphIndexes } from "@/utils/htmlUtils";
 import { decryptContent } from "@/utils/securityUtils";
 import { useWebsiteStore } from '@/stores/websiteStore';
-import { fetchBookDetail } from "@/services/apiServices";
+import { fetchBookDetail, fetchHasPaymentHistory } from "@/services/apiServices";
 import apiClient from '@/services/apiClient';
 import { useAuthStore, AuthState } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
@@ -24,6 +24,7 @@ import { useContentProtection } from "@/hooks/reader/useContentProtection";
 import { useReadingProgress } from "@/hooks/reader/useReadingProgress";
 import { useReadingTheme } from "@/hooks/reader/useReadingTheme";
 import { useEpisodeNavigation } from "@/hooks/reader/useEpisodeNavigation";
+import { useReadFreeQuota } from "@/hooks/reader/useReadFreeQuota";
 import { useLogger } from "@/hooks/useLogger";
 import { CheckCircleOutlined } from "@ant-design/icons";
 import { buildReadBuyPayload, getReadConfirmButtonLabel, getReadEpisodePurchaseState, getRegularEpisodePrices, type ReadFastPayMethod, type ReadPayMethod } from "./purchaseUtils";
@@ -79,7 +80,6 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   const openLoginModal = useUIStore((s: any) => s.openLoginModal);
   const updateToken = useAuthStore((s: AuthState) => s.updateToken);
   const queryClient = useQueryClient();
-  const [, messageContextHolder] = message.useMessage();
   const { notification } = App.useApp();
   const [isBookmarkPopoverOpen, setIsBookmarkPopoverOpen] = useState(false);
   const [bookmarkModalOpen, setBookmarkModalOpen] = useState(false);
@@ -222,6 +222,29 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     () => getReadEpisodePurchaseState(episode as any, (bookDetail as any)?.use_freecoin),
     [episode, bookDetail]
   );
+
+  const formatFreeUntil = (endDate?: string | null) => {
+    if (!endDate) return null;
+    const parsed = new Date(endDate);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed.toLocaleString('th-TH', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const getEpisodeFreeMeta = (ep: any) => {
+    const prices = getRegularEpisodePrices(ep as any);
+    const isDiscountFree = Boolean(prices.isDiscountFree) && !Boolean(ep?.isBuy);
+    return {
+      isDiscountFree,
+      freeUntilLabel: isDiscountFree ? formatFreeUntil(prices.discountEndDate) : null,
+      displayCoinPrice: Number(prices.coinPrice ?? ep?.coin ?? 0),
+    };
+  };
 
   const readerToggleIgnoreSelector = [
     "a",
@@ -478,6 +501,45 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   const bookmarkIconStroke = currentBg?.key === 'dark' ? '#DFDFEC' : '#4B5563';
 
   const { episodesData, displayTitle, prevEpId, nextEpId } = useEpisodeNavigation(bookId, episodeId, episode);
+  const currentEpisodeMeta = useMemo(() => {
+    const groups = episodesData?.groups;
+    if (!Array.isArray(groups)) return null;
+    for (const group of groups) {
+      const list = Array.isArray(group?.list) ? group.list : [];
+      const found = list.find((ep: any) => String(ep?.ep_id ?? ep?.epID) === String(episodeId));
+      if (found) return found;
+    }
+    return null;
+  }, [episodesData, episodeId]);
+
+  const isCurrentEpisodeOwned = Boolean((currentEpisodeMeta as any)?.isBuy ?? (episode as any)?.isBuy);
+  const canTrackFreeReadQuota = Boolean(episode && renderedEpisodeHtml);
+  const freeReadQuota = useReadFreeQuota({
+    bookId,
+    episodeId,
+    isLoggedIn,
+    userId: user?.user_id,
+    canTrack: canTrackFreeReadQuota,
+    isEpisodeOwned: isCurrentEpisodeOwned,
+  });
+
+  const hasReachedMemberFreeLimit =
+    isLoggedIn &&
+    freeReadQuota.limit > 0 &&
+    freeReadQuota.currentCount >= freeReadQuota.limit;
+  const isQuotaHardBlocked = freeReadQuota.isBlocked && freeReadQuota.reason === "guest-limit";
+
+  const shouldCheckPaymentHistory =
+    hasReachedMemberFreeLimit &&
+    Boolean(user?.user_id) &&
+    !freeReadQuota.hasShownTopupPrompt;
+
+  const { data: hasPaymentHistory } = useQuery({
+    queryKey: ["hasPaymentHistory", user?.user_id],
+    queryFn: fetchHasPaymentHistory,
+    enabled: shouldCheckPaymentHistory,
+    staleTime: 5 * 60 * 1000,
+  });
 
   // --- 2.5 Activity Logging ---
   const { log } = useLogger();
@@ -514,6 +576,8 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   const [confirmAmount, setConfirmAmount] = useState<number | null>(null);
   const [buyLoading, setBuyLoading] = useState(false);
   const [cancelHover, setCancelHover] = useState(false);
+  const [quotaLoginModalOpen, setQuotaLoginModalOpen] = useState(false);
+  const [firstTopupModalOpen, setFirstTopupModalOpen] = useState(false);
 
   // --- 4. Effects ---
   useEffect(() => {
@@ -526,6 +590,33 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
       }
     } catch { }
   }, [router]);
+
+  useEffect(() => {
+    if (isQuotaHardBlocked && !isLoggedIn) {
+      setQuotaLoginModalOpen(true);
+    }
+  }, [isQuotaHardBlocked, isLoggedIn]);
+
+  useEffect(() => {
+    if (!isLoggedIn && quotaLoginModalOpen) {
+      return;
+    }
+    if (isLoggedIn && quotaLoginModalOpen) {
+      setQuotaLoginModalOpen(false);
+    }
+  }, [isLoggedIn, quotaLoginModalOpen]);
+
+  useEffect(() => {
+    if (hasReachedMemberFreeLimit && hasPaymentHistory === false && !freeReadQuota.hasShownTopupPrompt) {
+      setFirstTopupModalOpen(true);
+      freeReadQuota.markTopupPromptShown();
+    }
+  }, [
+    hasReachedMemberFreeLimit,
+    freeReadQuota.hasShownTopupPrompt,
+    freeReadQuota.markTopupPromptShown,
+    hasPaymentHistory,
+  ]);
 
   // Effect to Auto-Expand Group containing current episode
   useEffect(() => {
@@ -727,9 +818,58 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   // --- 6. Render Helpers ---
   function PurchaseFallback() {
     const ep = episode as any;
+
+    if (isQuotaHardBlocked) {
+      const isGuestLimit = true;
+      return (
+        <div className="text-center py-12">
+          <Image src={settings?.img_buyep || '/images/unlock.png'} alt="Free quota reached" width={100} height={100} unoptimized className="justify-center mx-auto" />
+          <p className="mt-2 text-base font-semibold text-gray-700">
+            {isGuestLimit ? 'สิ้นสุดโควต้าอ่านฟรี' : 'อ่านฟรีครบ 40 ตอนแล้ว'}
+          </p>
+          <p className="mt-1 text-sm text-gray-500">
+            {isGuestLimit ? 'เข้าสู่ระบบเพื่ออ่านฟรีต่ออีก 30 ตอน' : 'ปลดล็อกตอนเพื่ออ่านต่อได้ทันที'}
+          </p>
+          <div className="mt-4 flex items-center justify-center gap-2">
+            {isGuestLimit ? (
+              <button
+                type="button"
+                onClick={openLoginModal}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+              >
+                เข้าสู่ระบบเพื่ออ่านต่อ
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => router.push('/store')}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+              >
+                เติมเหรียญเพื่ออ่านต่อ
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     const { coinPrice, freecoinPrice, hasDiscount } = getRegularEpisodePrices(ep);
     const { isEarlyAccess, canFastTicket, canFastCoin, isFastLocked, fastTicketPrice, fastCoinPrice, canUseFreecoin } = purchaseState;
     const baseRegularPrice = Number(coinPrice ?? 0);
+    const isDiscountFree = Boolean(purchaseState.isDiscountFree) && !isEarlyAccess;
+    const freeUntilLabel = isDiscountFree ? formatFreeUntil(purchaseState.discountEndDate) : null;
+
+    if (isDiscountFree || (!isEarlyAccess && baseRegularPrice <= 0)) {
+      return (
+        <div className="text-center py-12">
+          <Image src={settings?.img_buyep || '/images/unlock.png'} alt="Free Episode" width={100} height={100} unoptimized className="justify-center mx-auto" />
+          <p className="text-sm font-semibold text-emerald-700">{'\u0e15\u0e2d\u0e19\u0e19\u0e35\u0e49\u0e40\u0e1b\u0e34\u0e14\u0e2d\u0e48\u0e32\u0e19\u0e1f\u0e23\u0e35'}</p>
+          {freeUntilLabel && (
+            <p className="mt-1 text-xs text-emerald-700">{`\u0e2d\u0e48\u0e32\u0e19\u0e1f\u0e23\u0e35\u0e16\u0e36\u0e07 ${freeUntilLabel}`}</p>
+          )}
+        </div>
+      );
+    }
 
     return (
       <div className="text-center py-12">
@@ -863,6 +1003,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                 <div>
                   {group.list.map((ep: any) => {
                     const isCurrent = String(ep.ep_id ?? ep.epID) === String(episodeId);
+                    const { isDiscountFree, freeUntilLabel } = getEpisodeFreeMeta(ep);
                     return (
                       <button
                         key={ep.ep_id ?? ep.epID}
@@ -873,7 +1014,15 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                         }}
                         className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${isCurrent ? 'bg-red-50 text-red-600 font-medium' : 'text-gray-700'}`}
                       >
-                        <div className="truncate text-sm">{ep.name?.trim()}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="truncate text-sm">{ep.name?.trim()}</div>
+                          {isDiscountFree && (
+                            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">{'\u0e15\u0e2d\u0e19\u0e1f\u0e23\u0e35'}</span>
+                          )}
+                        </div>
+                        {isDiscountFree && freeUntilLabel && (
+                          <div className="mt-0.5 truncate text-[10px] text-emerald-700">{`\u0e2d\u0e48\u0e32\u0e19\u0e1f\u0e23\u0e35\u0e16\u0e36\u0e07 ${freeUntilLabel}`}</div>
+                        )}
                       </button>
                     )
                   })}
@@ -932,8 +1081,6 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
       onCut={(e) => e.preventDefault()}
       onContextMenu={(e) => e.preventDefault()}
     >
-      {messageContextHolder}
-
       {/* Sidebar Overlay */}
       {isSidebarOpen && (
         <>
@@ -961,6 +1108,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                         <div className="divide-y divide-gray-50">
                           {group.list.map((ep: any) => {
                             const isCurrentEpisode = String(ep.ep_id ?? ep.epID) === String(episodeId);
+                            const { isDiscountFree, freeUntilLabel, displayCoinPrice } = getEpisodeFreeMeta(ep);
                             return (
                               <button
                                 key={ep.ep_id}
@@ -971,7 +1119,16 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                                 </div>
                                 <div className="flex-shrink-0 flex items-center gap-2">
                                   {ep.isBuy && <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>}
-                                  {ep.coin > 0 && !ep.isBuy && <span className="text-xs text-gray-500">{ep.coin}</span>}
+                                  {!ep.isBuy && isDiscountFree ? (
+                                    <div className="flex flex-col items-end">
+                                      <span className="text-[11px] font-semibold text-emerald-700">{'\u0e15\u0e2d\u0e19\u0e1f\u0e23\u0e35'}</span>
+                                      {freeUntilLabel && (
+                                        <span className="text-[10px] text-emerald-700">{`\u0e16\u0e36\u0e07 ${freeUntilLabel}`}</span>
+                                      )}
+                                    </div>
+                                  ) : (displayCoinPrice > 0 && !ep.isBuy && (
+                                    <span className="text-xs text-gray-500">{displayCoinPrice}</span>
+                                  ))}
                                 </div>
                               </button>
                             );
@@ -1181,7 +1338,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                   pointerEvents: isFocused ? 'auto' : 'none',
                 }}>
                 {isFocused ? (
-                  renderedEpisodeHtml ? (
+                  renderedEpisodeHtml && !isQuotaHardBlocked ? (
                     parse(renderedEpisodeHtml)
                   ) : (
                     <PurchaseFallback />
@@ -1258,6 +1415,97 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
       </main>
 
       <BackToTopButton />
+      <Modal
+        open={quotaLoginModalOpen}
+        footer={null}
+        closable={false}
+        maskClosable
+        onCancel={() => setQuotaLoginModalOpen(false)}
+        centered
+        width={420}
+        zIndex={2100}
+      >
+        <div className="py-3 text-center">
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-red-100">
+            <svg className="h-10 w-10 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M7 10V7a5 5 0 0 1 10 0v3" strokeLinecap="round" strokeLinejoin="round" />
+              <rect x="5" y="10" width="14" height="10" rx="2" />
+              <circle cx="12" cy="15" r="1" />
+            </svg>
+          </div>
+          <h3 className="text-2xl font-bold text-gray-800">สิ้นสุดโควต้าอ่านฟรี</h3>
+          <p className="mt-2 text-xl font-bold text-gray-800">อยากอ่านต่อฟรีอีก 30 ตอน?</p>
+          <p className="mt-3 text-base leading-7 text-gray-500">
+            แค่เข้าสู่ระบบก็รับสิทธิ์อ่านตอนฟรีแบบจุกๆ
+            พร้อมสิทธิพิเศษอื่นๆ อีกมากมายได้ทันที
+          </p>
+          <button
+            type="button"
+            className="mt-6 w-full rounded-xl bg-red-600 py-3 text-lg font-bold !text-white hover:bg-red-700"
+            onClick={() => {
+              setQuotaLoginModalOpen(false);
+              openLoginModal();
+            }}
+          >
+            เข้าสู่ระบบเพื่ออ่านต่อ
+          </button>
+          <button
+            type="button"
+            className="mt-4 w-full py-2 text-lg font-semibold text-gray-500 hover:text-gray-700"
+            onClick={() => {
+              setQuotaLoginModalOpen(false);
+              router.push("/");
+            }}
+          >
+            กลับหน้าหลัก
+          </button>
+        </div>
+      </Modal>
+      <Modal
+        open={firstTopupModalOpen}
+        footer={null}
+        closable={false}
+        maskClosable
+        onCancel={() => setFirstTopupModalOpen(false)}
+        centered
+        width={420}
+        zIndex={2100}
+      >
+        <div className="py-3 text-center">
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-red-100">
+            <svg className="h-10 w-10 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M3 7h18" strokeLinecap="round" />
+              <rect x="3" y="4" width="18" height="16" rx="3" />
+              <path d="M16 13h2" strokeLinecap="round" />
+            </svg>
+          </div>
+          <h3 className="text-2xl font-bold text-gray-800">อ่านฟรีครบ 40 ตอนแล้ว</h3>
+          <p className="hidden">
+            รับสิทธิ์เติมเงินครั้งแรกราคาพิเศษ
+            เพื่อปลดล็อกตอนต่อไปได้ทันที
+          </p>
+          <p className="mt-2 text-base leading-7 text-gray-500">
+            {"อ่านฟรีครบแล้ว รับสิทธิ์เติมเงินครั้งแรกราคาพิเศษ"}
+          </p>
+          <button
+            type="button"
+            className="mt-6 w-full rounded-xl bg-red-600 py-3 text-lg font-bold !text-white hover:bg-red-700"
+            onClick={() => {
+              setFirstTopupModalOpen(false);
+              router.push("/store");
+            }}
+          >
+            เติมเงินครั้งแรกราคาพิเศษ
+          </button>
+          <button
+            type="button"
+            className="mt-4 w-full py-2 text-lg font-semibold text-gray-500 hover:text-gray-700"
+            onClick={() => setFirstTopupModalOpen(false)}
+          >
+            ไว้ทีหลัง
+          </button>
+        </div>
+      </Modal>
       <Modal
         open={confirmOpen}
         onCancel={() => setConfirmOpen(false)}

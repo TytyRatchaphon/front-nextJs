@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from 'react';
-import { Button, Modal, Form, Input, Progress, notification, App } from 'antd';
+import { Button, Modal, Form, Input, Progress, App } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import type { FormProps } from 'antd';
 import Image from 'next/image';
@@ -248,7 +248,7 @@ const LoginButtonHeader: React.FC = () => {
   const registerMutation = useMutation({
     mutationFn: registerUser,
     onSuccess: (responseData) => {
-      notification.success({
+      api.success({
         message: 'สมัครสมาชิกสำเร็จ!',
         description: 'สมัครสมาชิกเรียบร้อยแล้ว',
         icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
@@ -312,7 +312,7 @@ const LoginButtonHeader: React.FC = () => {
             console.log('[LOG] register =>', { method: 'email', email: userData.email });
             logActivity('register', 'user', '', { method: 'email', email: userData.email });
 
-            notification.success({
+            api.success({
               message: 'เข้าสู่ระบบอัตโนมัติแล้ว',
               description: 'เข้าสู่ระบบเรียบร้อยแล้ว',
               icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
@@ -321,7 +321,7 @@ const LoginButtonHeader: React.FC = () => {
             handleCancel();
             setRegisterFormData(null);
           } catch {
-            notification.error({
+            api.error({
               message: 'ไม่สามารถอ่านข้อมูลจาก Token ได้',
               description: 'ไม่สามารถอ่านข้อมูลจาก Token ได้',
               icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
@@ -342,7 +342,7 @@ const LoginButtonHeader: React.FC = () => {
       // Workaround for backend issue: If registration succeeds but token generation fails
       // with "Expected 'payload' to be a plain object.", treat it as success.
       if (typeof errorMessage === 'string' && (errorMessage.includes("plain object") || errorMessage.includes('payload'))) {
-        notification.success({
+        api.success({
           message: 'สมัครสมาชิกสำเร็จ',
           description: 'สมัครสมาชิกเรียบร้อยแล้ว',
           icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
@@ -350,7 +350,7 @@ const LoginButtonHeader: React.FC = () => {
         });
         handleViewChange('login');
       } else {
-        notification.error({
+        api.error({
           message: 'สมัครสมาชิกไม่สำเร็จ',
           description: errorMessage,
           icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
@@ -400,7 +400,7 @@ const LoginButtonHeader: React.FC = () => {
   };
 
   const onFinishFailed = () => {
-    notification.error({
+    api.error({
       message: 'เกิดข้อผิดพลาด',
       description: 'กรุณากรอกข้อมูลให้ครบถ้วน',
       icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,

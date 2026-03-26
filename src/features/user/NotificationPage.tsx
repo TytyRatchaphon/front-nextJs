@@ -7,9 +7,10 @@ import {
   markNotificationAsRead,
   markAllNotificationsAsRead,
   deleteNotifications,
+  deleteAllNotifications,
   NotificationTab,
 } from "@/services/apiServices";
-import { Button, Tag, Pagination, Tabs, Checkbox, App } from "antd";
+import { Button, Tag, Pagination, Tabs, App } from "antd";
 import {
   BellOutlined,
   CheckOutlined,
@@ -65,7 +66,7 @@ interface NotificationItem {
 }
 
 const NotificationPage: React.FC = () => {
-  const { message } = App.useApp();
+  const { notification } = App.useApp();
   const { token } = useAuthStore();
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -117,10 +118,23 @@ const NotificationPage: React.FC = () => {
       setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)));
       queryClient.invalidateQueries({ queryKey: ["allNotifications"] });
       queryClient.invalidateQueries({ queryKey: ["navbarNotifications"] });
-      message.success(ids.length > 1 ? "ลบการแจ้งเตือนที่เลือกแล้ว" : "ลบการแจ้งเตือนแล้ว");
+      notification.success({ message: ids.length > 1 ? "ลบการแจ้งเตือนที่เลือกแล้ว" : "ลบการแจ้งเตือนแล้ว" });
     },
     onError: () => {
-      message.error("ลบการแจ้งเตือนไม่สำเร็จ");
+      notification.error({ message: "ลบการแจ้งเตือนไม่สำเร็จ" });
+    },
+  });
+
+  const deleteAllNotificationsMutation = useMutation({
+    mutationFn: deleteAllNotifications,
+    onSuccess: () => {
+      setSelectedIds([]);
+      queryClient.invalidateQueries({ queryKey: ["allNotifications"] });
+      queryClient.invalidateQueries({ queryKey: ["navbarNotifications"] });
+      notification.success({ message: "ลบการแจ้งเตือนทั้งหมดแล้ว" });
+    },
+    onError: () => {
+      notification.error({ message: "ลบการแจ้งเตือนทั้งหมดไม่สำเร็จ" });
     },
   });
 
@@ -166,6 +180,11 @@ const NotificationPage: React.FC = () => {
   const handleDeleteOne = (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
     deleteNotificationsMutation.mutate([id]);
+  };
+
+  const handleDeleteAll = () => {
+    if (notifications.length === 0) return;
+    deleteAllNotificationsMutation.mutate();
   };
 
   const toggleExpand = (e: React.MouseEvent, id: number) => {
@@ -248,6 +267,17 @@ const NotificationPage: React.FC = () => {
               icon={<CheckOutlined />}
             >
               อ่านทั้งหมด
+            </Button>
+          )}
+          {notifications.length > 0 && (
+            <Button
+              danger
+              className="rounded-full"
+              onClick={handleDeleteAll}
+              loading={deleteAllNotificationsMutation.isPending}
+              icon={<DeleteOutlined />}
+            >
+              ลบทั้งหมด
             </Button>
           )}
         </div>
@@ -350,11 +380,17 @@ const NotificationPage: React.FC = () => {
                         {dayjs(item.create_at).format("D MMM YYYY, HH:mm")}
                       </span>
                       <div className="flex shrink-0 items-center gap-2">
-                        <Checkbox
-                          checked={selectedIds.includes(item.id)}
+                        <label
+                          className="flex h-5 w-5 cursor-pointer items-center justify-center"
                           onClick={(e) => e.stopPropagation()}
-                          onChange={(e) => toggleSelected(item.id, e.target.checked)}
-                        />
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.includes(item.id)}
+                            onChange={(e) => toggleSelected(item.id, e.target.checked)}
+                            className="h-4 w-4 cursor-pointer rounded border-gray-300 text-red-600 accent-red-600 focus:ring-red-500"
+                          />
+                        </label>
                         <button
                           type="button"
                           onClick={(e) => handleDeleteOne(e, item.id)}

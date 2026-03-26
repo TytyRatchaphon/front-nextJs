@@ -3,7 +3,7 @@
 import Image from "next/image";
 import React, { useState, useEffect, useMemo } from "react";
 import { useAuthStore } from "@/stores/authStore";
-import { Modal, Checkbox, Spin, Button, App, Radio } from "antd";
+import { Modal, Checkbox, Spin, Button, App, Radio, Image as AntImage } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import { fetchBookEpisodes, refreshToken } from "@/services/apiServices";
 import apiClient from "@/services/apiClient";
@@ -19,7 +19,7 @@ import { CountdownTimer as CommonCountdownTimer } from "@/components/common/Coun
 import { useWebsiteStore } from '@/stores/websiteStore';
 import "jwt-decode";
 import '@/utils/imageUtils';
-import type { EpisodeGroup, BookEpisodesResponse } from '@/types/api';
+import type { DiscountReward, EpisodeGroup, BookEpisodesResponse } from '@/types/api';
 import '@/types/errors';
 import { useLogger } from '@/hooks/useLogger';
 
@@ -50,6 +50,7 @@ type Book = {
     endDate: string;
     percent: number;
     price: number;
+    rewards?: DiscountReward[];
   };
   fastTicket?: {
     can_buy: boolean;
@@ -160,7 +161,13 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   const { token, isLoggedIn, updateToken, user } = useAuthStore();
   const openLoginModal = useUIStore((s) => s.openLoginModal);
   const queryClient = useQueryClient();
-  const { message: messageApi, modal: modalApi, notification } = App.useApp();
+  const { modal: modalApi, notification } = App.useApp();
+  const messageApi = {
+    success: (content: unknown) => notification.success({ message: String(content ?? '') }),
+    error: (content: unknown) => notification.error({ message: String(content ?? '') }),
+    warning: (content: unknown) => notification.warning({ message: String(content ?? '') }),
+    info: (content: unknown) => notification.info({ message: String(content ?? '') }),
+  };
   const { log } = useLogger();
   const [buyLoading, setBuyLoading] = useState(false);
   // Removed redundant local state for coins/flowers/hearts - using auth store directly
@@ -174,6 +181,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   const [payWith, setPayWith] = useState<'coin' | 'freecoin'>('coin');
   const [fastPayWith, setFastPayWith] = useState<'coin' | 'fast_ticket'>('fast_ticket');
   const [selectionModalMode, setSelectionModalMode] = useState<'all' | 'early'>('all');
+  const [isPromotionRewardsOpen, setIsPromotionRewardsOpen] = useState(false);
 
   // Fetch episodes when selection modal opens
   const queryResult = useQuery<{ groups: EpisodeGroup[] }>({
@@ -392,6 +400,36 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     }
   };
 
+  const formatFreeUntil = (endDate?: string | null) => {
+    if (!endDate) return null;
+    const parsed = new Date(endDate);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed.toLocaleString('th-TH', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const formatPromotionRewardDate = (value?: string | null) => {
+    if (!value) return null;
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed.toLocaleString('th-TH', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const promotionRewards = useMemo(() => {
+    return Array.isArray(book.promotion?.rewards) ? book.promotion.rewards.filter(Boolean) : [];
+  }, [book.promotion?.rewards]);
+  const previewPromotionRewards = useMemo(() => promotionRewards.slice(0, 3), [promotionRewards]);
+
   // Helper to resolve price (Regular vs Promo)
   const resolveEpisodePrice = (episode: any) => {
     const regularPrice = Number(episode.coin ?? 0);
@@ -429,8 +467,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
 
     const hasPromo = !episode.isBuy && promoPrice !== undefined && promoPrice < regularPrice && promoPrice >= 0;
     const finalPrice = hasPromo ? (promoPrice as number) : regularPrice;
+    const promoEndDate = activePromo?.end_date ?? null;
 
-    return { regularPrice, promoPrice, hasPromo, finalPrice, activePromo };
+    return { regularPrice, promoPrice, hasPromo, finalPrice, activePromo, promoEndDate };
   };
 
   const getEarlyAccess = (episode: any) => {
@@ -480,7 +519,8 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   };
   const isEpisodeBaseSelectable = (episode: any) => {
     if (episode?.isBuy) return false;
-    const hasNormalCoin = Number(episode?.coin ?? 0) > 0;
+    const { finalPrice } = resolveEpisodePrice(episode);
+    const hasNormalCoin = Number(finalPrice) > 0;
     const early = getEarlyAccess(episode);
     const hasEarlyPayMethod = early.isEarlyAccess && early.isBuyable && (early.fastTicket || early.fastCoin);
     return hasNormalCoin || hasEarlyPayMethod;
@@ -488,8 +528,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   const isEpisodeSelectable = (episode: any) => isEpisodeBaseSelectable(episode) && !isEpisodeFastLocked(episode);
   const isPrevEpisodeUnlocking = (prevEpisode: any) => {
     if (!prevEpisode) return false;
+    const { finalPrice } = resolveEpisodePrice(prevEpisode);
     return Boolean(prevEpisode?.isBuy)
-      || Number(prevEpisode?.coin ?? 0) <= 0
+      || Number(finalPrice) <= 0
       || selectedEpisodeIds.includes(Number(prevEpisode?.ep_id));
   };
   const isEpisodeSequentiallyUnlocked = (episode: any, index: number, groupList: any[]) => {
@@ -882,6 +923,54 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                       <CountdownTimer endDate={book.promotion.endDate} />
                     </div>
 
+                    {promotionRewards.length > 0 ? (
+                      <div className="mt-3 rounded-2xl border border-white/15 bg-white/12 p-3 backdrop-blur-sm">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/70">Rewards</p>
+                            <p className="mt-1 text-sm font-semibold text-white">ซื้อโปรนี้แล้วรับของรางวัลทันที</p>
+                          </div>
+                          {formatPromotionRewardDate(book.promotion.endDate) ? (
+                            <div className="rounded-full bg-white/14 px-2.5 py-1 text-[11px] font-medium text-white/85">
+                              ถึง {formatPromotionRewardDate(book.promotion.endDate)}
+                            </div>
+                          ) : null}
+                        </div>
+
+                        <div className="mt-2 flex flex-wrap gap-2 mb-2">
+                          {previewPromotionRewards.map((reward) => (
+                            <div
+                              key={reward.id}
+                              className="flex items-center gap-2 rounded-full border border-white/15 bg-white/14 px-2.5 py-1.5 shadow-[0_14px_30px_-26px_rgba(15,23,42,0.4)]"
+                            >
+                              <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full bg-white/92">
+                                <Image
+                                  src={reward.img}
+                                  alt={reward.name}
+                                  fill
+                                  className="object-contain p-1"
+                                  unoptimized
+                                />
+                              </div>
+                              <div className="inline-flex rounded-full bg-white/16 px-2 py-0.5 text-[10px] font-bold text-white">
+                                x{reward.amount || 1}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {promotionRewards.length > previewPromotionRewards.length ? (
+                          <button
+                            type="button"
+                            onClick={() => setIsPromotionRewardsOpen(true)}
+                            className="mt-3 inline-flex items-center rounded-full border border-white/18 bg-white/12 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/18"
+                          >
+                            ดูของรางวัลทั้งหมด +{promotionRewards.length - previewPromotionRewards.length}
+                          </button>
+                        ) : null}
+                      </div>
+                    ) : null}
+
                     <button
                       onClick={handleBuyPromotion}
                       disabled={buyLoading}
@@ -1055,7 +1144,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                                   const fastBuyable = isFastEpisode && sequentialUnlocked && !episode?.isBuy;
                                   const disabled = !isEpisodeBaseSelectable(episode) || !sequentialUnlocked;
                                   const checked = selectedEpisodeIds.includes(Number(episode.ep_id));
-                                  const { regularPrice, promoPrice, hasPromo, finalPrice, activePromo } = resolveEpisodePrice(episode);
+                                  const { regularPrice, promoPrice, hasPromo, finalPrice, activePromo, promoEndDate } = resolveEpisodePrice(episode);
+                                  const isDiscountFree = hasPromo && Number(finalPrice) === 0 && regularPrice > 0 && !fastBuyable;
+                                  const freeUntilLabel = isDiscountFree ? formatFreeUntil(promoEndDate) : null;
                                   const rpEarn = Number(episode?.rp_campaign?.rp_earn ?? 0);
                                   const rpCampaignEnd = episode?.rp_campaign?.end_date
                                     ? Date.parse(episode.rp_campaign.end_date)
@@ -1098,7 +1189,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                                         </div>
                                       </div>
                                       <div className="flex items-center gap-3">
-                                        {(regularPrice > 0 || hasPromo) ? (
+                                        {(regularPrice > 0 || hasPromo) && !isDiscountFree ? (
                                           <div className="flex flex-col items-end gap-1">
                                             {isRpCampaignActive && (
                                               <div className="flex items-center gap-1.5">
@@ -1176,7 +1267,12 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                                             </div>
                                           </div>
                                         ) : (
-                                          <span className="text-sm font-semibold text-emerald-600">อ่านฟรี</span>
+                                          <div className="flex flex-col items-end">
+                                            <span className="text-sm font-semibold text-emerald-600">{'\u0e15\u0e2d\u0e19\u0e1f\u0e23\u0e35'}</span>
+                                            {freeUntilLabel && (
+                                              <span className="text-[11px] text-emerald-700">{`\u0e2d\u0e48\u0e32\u0e19\u0e1f\u0e23\u0e35\u0e16\u0e36\u0e07 ${freeUntilLabel}`}</span>
+                                            )}
+                                          </div>
                                         )}
                                       </div>
                                     </div>
@@ -1191,6 +1287,52 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                   </div>
                 )}
 
+              </Modal>
+
+              <Modal
+                title={null}
+                open={isPromotionRewardsOpen}
+                onCancel={() => setIsPromotionRewardsOpen(false)}
+                footer={null}
+                centered
+                width={440}
+              >
+                <div className="px-1 pb-1 pt-2">
+                  <div className="mb-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-red-500">Rewards</p>
+                    <h3 className="mt-1 text-lg font-bold text-stone-900">ของรางวัลทั้งหมดจากโปรนี้</h3>
+                    {formatPromotionRewardDate(book.promotion?.endDate) ? (
+                      <p className="mt-1 text-sm text-stone-500">รับสิทธิ์ได้ถึง {formatPromotionRewardDate(book.promotion?.endDate)}</p>
+                    ) : null}
+                  </div>
+
+                  <div className="space-y-2">
+                    {promotionRewards.map((reward) => (
+                      <div
+                        key={reward.id}
+                        className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-stone-50 px-3 py-3"
+                      >
+                        <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full bg-white">
+                          <AntImage
+                            src={reward.img}
+                            alt={reward.name}
+                            width={44}
+                            height={44}
+                            className="h-11 w-11 object-contain p-1.5"
+                            preview={{ mask: false, zIndex: 3200 }}
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-stone-800">{reward.name}</p>
+                          <p className="text-xs text-stone-500">จำนวน {reward.amount || 1}</p>
+                        </div>
+                        <div className="rounded-full bg-red-100 px-2.5 py-1 text-sm font-bold text-red-600">
+                          x{reward.amount || 1}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </Modal>
 
               {/* Manual Buy Confirmation Modal */}

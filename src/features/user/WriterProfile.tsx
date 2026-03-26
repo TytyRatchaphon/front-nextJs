@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense, useCallback } from "react";
 import Image from "next/image";
 import { Image as AntdImage } from "antd";
-import { Pagination, Select, Empty, Button, message, Modal } from "antd";
+import { App, Pagination, Select, Empty, Button, Modal } from "antd";
 import { fetchWriterBooks, fetchPublicWriterProfile, followWriter, WriterBook, WriterProfileResponse } from "@/services/apiServices";
 import CardBook from "@/components/novelCard/CardBook";
 import { useSearchParams } from "next/navigation";
@@ -38,8 +38,13 @@ function WriterProfileContent() {
     const [isFollowing, setIsFollowing] = useState(false);
     const [followLoading, setFollowLoading] = useState(false);
 
-    // Antd Message Hook
-    const [messageApi, contextHolder] = message.useMessage();
+    const { notification } = App.useApp();
+    const messageApi = {
+        success: (content: unknown) => notification.success({ message: String(content ?? '') }),
+        error: (content: unknown) => notification.error({ message: String(content ?? '') }),
+        warning: (content: unknown) => notification.warning({ message: String(content ?? '') }),
+        info: (content: unknown) => notification.info({ message: String(content ?? '') }),
+    };
     const [shareModalOpen, setShareModalOpen] = useState(false);
     const openLoginModal = useUIStore((s) => s.openLoginModal);
 
@@ -142,7 +147,6 @@ function WriterProfileContent() {
 
     return (
         <div className="min-h-screen bg-white font-primary pb-10">
-            {contextHolder}
             {/* Banner Section */}
             <div className="w-full h-[200px] md:h-[280px] relative overflow-hidden bg-gray-100">
                 {profile?.writer?.banner && !bannerError ? (

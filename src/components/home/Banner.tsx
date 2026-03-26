@@ -18,10 +18,11 @@ import TopUpBanner from '@/components/home/TopUpBanner';
 
 interface BannerProps {
   slides?: Slide[];
+  showTopUpBanner?: boolean;
 }
 
 
-function Banner({ slides = [] }: BannerProps) {
+function Banner({ slides = [], showTopUpBanner = true }: BannerProps) {
   useWebsiteStore();
   const { isLoggedIn } = useAuthStore();
   useUIStore();
@@ -139,8 +140,8 @@ function Banner({ slides = [] }: BannerProps) {
                           fill
                           sizes="(max-width: 680px) 100vw, 680px"
                           className="object-cover"
-                          priority
-                          quality={100}
+                          priority={index === 0}
+                          quality={80}
                         />
                         </div>
                       </div>
@@ -176,7 +177,7 @@ function Banner({ slides = [] }: BannerProps) {
                 />
               </div>
             )}
-            {isLoggedIn && (
+            {isLoggedIn && showTopUpBanner && (
               <div className="mt-4 w-full max-w-[680px] mx-auto px-4 md:px-0 flex justify-start">
                  <TopUpBanner />
               </div>

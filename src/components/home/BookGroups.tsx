@@ -111,6 +111,9 @@ export default function BookGroups({ groupBookHome }: BookGroupsProps) {
                   link={group.link || undefined}
                   startDate={group.start_date}
                   endDate={group.end_date}
+                  groupId={group.home_group_id}
+                  canFollow={group.can_follow}
+                  isInitiallyFollowed={group.is_followed}
                   initialNow={rewardInitialNow}
                 />
               </div>

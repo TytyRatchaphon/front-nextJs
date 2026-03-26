@@ -93,6 +93,7 @@ export interface BookData {
   isFollowing?: boolean;
   isAddedToShelf?: boolean;
   last_read_ep?: number;
+  is_pin?: boolean;
   
   // Allow additional fields
   [key: string]: unknown;
@@ -386,6 +387,22 @@ export interface DiscountFullBook {
   update_at: string;
   discount_percent: number;
   status: string;
+  rewards?: DiscountReward[] | null;
+}
+
+export interface DiscountReward {
+  id: number;
+  dfb_id: number;
+  item_type: string;
+  item_id: string | null;
+  amount: number;
+  start_date: string | null;
+  end_date: string | null;
+  order_by: number;
+  create_at: string;
+  update_at: string;
+  img: string;
+  name: string;
 }
 
 export interface BookDetail {

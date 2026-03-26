@@ -85,7 +85,7 @@ const NovelMenu = () => {
                             activeCategories.map((cat: any) => (
                                 <Link 
                                     key={cat.id}
-                                    href={`/cat/list?type=${selectedType}&categoryId=${cat.id}&tab=bestseller&limit=10&page=1`}
+                                    href={`/cat/list?type=${selectedType}&categoryId=${cat.id}&tab=bestseller&period=30&limit=10&page=1`}
                                     className="text-gray-600 hover:text-red-600 transition-colors text-sm py-1 truncate block"
                                     title={cat.name}
                                     prefetch={false}

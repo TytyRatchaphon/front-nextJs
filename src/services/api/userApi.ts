@@ -247,6 +247,46 @@ export const fetchUserShelveBuy = async (limit: number = 20, page: number = 1, o
   }
 }
 
+export const pinBookShelve = async (book_ids: Array<number | string>, action: 'pin' | 'unpin') => {
+  try {
+    const resp = await apiClient.post('/user/pinbookshelve', {
+      book_ids,
+      action,
+    });
+    return resp.data;
+  } catch (err: any) {
+    throw err;
+  }
+}
+
+// --- Payment History ---
+
+export const fetchHasPaymentHistory = async (): Promise<boolean | null> => {
+  try {
+    const resp = await apiClient.get('/user/his_payment', {
+      params: {
+        page: 1,
+        limit: 1,
+      },
+    });
+
+    const payload = resp.data?.data ?? resp.data;
+    const historyList = Array.isArray(payload)
+      ? payload
+      : Array.isArray(payload?.data)
+        ? payload.data
+        : Array.isArray(payload?.history)
+          ? payload.history
+          : Array.isArray(resp.data?.history)
+            ? resp.data.history
+            : [];
+
+    return historyList.length > 0;
+  } catch {
+    return null;
+  }
+};
+
 // --- Redeem ---
 
 export const redeemCode = async (code: string) => {

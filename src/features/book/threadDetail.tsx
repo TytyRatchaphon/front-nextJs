@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchThreadDetail, deleteThread } from '@/services/apiServices';
-import { Alert, Modal, Button, message } from 'antd';
+import { Alert, Modal, Button, App } from 'antd';
 import GifLoader from '@/components/utility/GifLoader';
 import ThreadCommentSection from './ThreadCommentSection';
 import '@/services/apiServices'; 
@@ -19,8 +19,13 @@ interface ThreadDetailProps {
 export default function ThreadDetail({ topicId, initialThread = null }: ThreadDetailProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [messageApi, contextHolder] = message.useMessage();
-  const [modal, contextHolderModal] = Modal.useModal(); // Add useModal
+  const { notification, modal } = App.useApp();
+  const messageApi = {
+    success: (content: unknown) => notification.success({ message: String(content ?? '') }),
+    error: (content: unknown) => notification.error({ message: String(content ?? '') }),
+    warning: (content: unknown) => notification.warning({ message: String(content ?? '') }),
+    info: (content: unknown) => notification.info({ message: String(content ?? '') }),
+  };
   const { token } = useAuthStore() as any;
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
@@ -104,8 +109,6 @@ export default function ThreadDetail({ topicId, initialThread = null }: ThreadDe
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      {contextHolder}
-      {contextHolderModal} {/* Render modal context */}
       {/* Thread Header */}
       <div className="bg-white rounded-xl p-6 mb-6 shadow-sm border border-gray-100 relative">
         {/* Delete Button for Owner */}

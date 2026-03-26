@@ -42,12 +42,17 @@ interface NotificationItem {
     NotiType: NotificationType;
 }
 
-const NotificationList: React.FC = () => {
+const NotificationList: React.FC<{ onClose?: () => void; mode?: 'popover' | 'drawer' }> = ({
+    onClose,
+    mode = 'popover',
+}) => {
     const queryClient = useQueryClient();
     const router = useRouter(); // Initialize router
     React.useState<Set<number>>(new Set());
     const [activeTab, setActiveTab] = React.useState<NotificationTab>('all');
-    const panelClassName = 'w-[85vw] max-w-[380px] min-w-[320px] sm:w-[420px] md:w-[480px] flex flex-col bg-white rounded-xl overflow-hidden font-bai-jamjuree shadow-2xl border border-gray-100 ring-1 ring-black/5';
+    const panelClassName = mode === 'drawer'
+        ? 'flex h-full w-full min-w-0 flex-col bg-white font-bai-jamjuree'
+        : 'w-[85vw] max-w-[380px] min-w-[320px] sm:w-[420px] md:w-[480px] flex flex-col bg-white rounded-xl overflow-hidden font-bai-jamjuree shadow-2xl border border-gray-100 ring-1 ring-black/5';
 
     const { data: notificationResponse, isLoading } = useQuery({
         queryKey: ['navbarNotifications'],
@@ -311,7 +316,7 @@ const NotificationList: React.FC = () => {
                 }
 
                 <div className="p-3 bg-gray-50 border-t border-gray-200 text-center">
-                    <Link href="/user/notification" className="text-xs font-semibold !text-red-600 hover:text-[#E31C3D] transition-colors">
+                    <Link href="/user/notification" onClick={() => onClose?.()} className="text-xs font-semibold !text-red-600 hover:text-[#E31C3D] transition-colors">
                         ดูการแจ้งเตือนทั้งหมด
                     </Link>
                 </div>

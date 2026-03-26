@@ -678,6 +678,7 @@ a[href="/notifications"]:hover {
   max-height: calc(2 * 1em * 1.26);
   overflow-wrap: anywhere;
   word-break: break-word;
+  max-width: 100%;
 }
 
 .spotlight-thai-clamp-body {
@@ -690,4 +691,19 @@ a[href="/notifications"]:hover {
   max-height: calc(2 * 1em * 1.6);
   overflow-wrap: anywhere;
   word-break: break-word;
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  .spotlight-thai-clamp-title {
+    line-height: 1.18;
+    min-height: calc(2 * 1em * 1.18);
+    max-height: calc(2 * 1em * 1.18);
+  }
+
+  .spotlight-thai-clamp-body {
+    line-height: 1.45;
+    min-height: calc(2 * 1em * 1.45);
+    max-height: calc(2 * 1em * 1.45);
+  }
 }

@@ -3,14 +3,14 @@
 import React, { useEffect } from 'react';
 import { useLineLogin } from '@/hooks/useLineLogin';
 import { useRouter } from 'next/navigation';
-import { App, Spin, notification } from 'antd';
+import { App, Spin } from 'antd';
 import { useAuthStore } from '@/stores/authStore';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
 const LineCallbackContent = () => {
     const { initLIFF } = useLineLogin();
     const router = useRouter();
-    const { message } = App.useApp();
+    const { notification } = App.useApp();
     useAuthStore();
 
     useEffect(() => {
@@ -57,7 +57,7 @@ const LineCallbackContent = () => {
         };
 
         handleCallback();
-    }, [initLIFF, router, message]);
+    }, [initLIFF, router, notification]);
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-white">

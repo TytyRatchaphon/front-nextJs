@@ -1,6 +1,7 @@
 
 import apiClient from "../apiClient";
 import type { CategoryDetail, CategoryAllResponse, CategoryBookListResponse } from "@/types/api";
+import type { Slide } from "./homeApi";
 import { cachedRequest } from "../requestCache";
 
 // --- Activity Logging ---
@@ -87,6 +88,15 @@ export const fetchCategoryBooks = async (
     return response.data;
   } catch {
     return null;
+  }
+};
+
+export const fetchCategoryBanners = async (): Promise<Slide[]> => {
+  try {
+    const response = await apiClient.get<{ data?: Slide[] }>("/book-category/banner");
+    return Array.isArray(response.data?.data) ? response.data.data : [];
+  } catch {
+    return [];
   }
 };
 
@@ -232,6 +242,35 @@ export const deleteNotifications = async (ids: number[]) => {
   }
 };
 
+export const deleteAllNotifications = async () => {
+  try {
+    const response = await apiClient.delete('/user/notifications/all');
+    return response.data;
+  } catch {
+    return null;
+  }
+};
+
+export const followPromotion = async (payload: { type: string; ref_id: string | number }) => {
+  try {
+    const response = await apiClient.post('/follow-promotion', payload);
+    return response.data;
+  } catch {
+    return null;
+  }
+};
+
+export const unfollowPromotion = async (payload: { type: string; ref_id: string | number }) => {
+  try {
+    const response = await apiClient.delete('/follow-promotion', {
+      data: payload,
+    });
+    return response.data;
+  } catch {
+    return null;
+  }
+};
+
 export const postCommentNotification = async (commentId: string | number) => {
   try {
     const response = await apiClient.post(`/user/notifications/comments/${commentId}`, {});
@@ -308,6 +347,7 @@ export interface PopularSearchItem {
   normalized_keyword: string;
   total_search: number;
   type?: string;
+  is_pinned?: boolean;
 }
 
 export const getSearchHistory = async (): Promise<SearchHistoryItem[]> => {

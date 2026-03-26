@@ -3,14 +3,21 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { resolveSettingsImageSrc } from '@/utils/imageUtils';
+import {
+  DEFAULT_APP_STORE_URL,
+  DEFAULT_PLAY_STORE_URL,
+  normalizeAppStoreUrl,
+  normalizePlayStoreUrl,
+} from '@/utils/storeLinkUtils';
 
 // ... imports
 
 export default function Footer() {
   const { settings } = useWebsiteStore();
+  const playStoreLink = normalizePlayStoreUrl(settings?.play_store, DEFAULT_PLAY_STORE_URL);
+  const appStoreLink = normalizeAppStoreUrl(settings?.app_store, DEFAULT_APP_STORE_URL);
 
 
-1
   const bgImage = `url(${resolveSettingsImageSrc(settings?.img_footer_sm, '/images/Footer-sm.png')})`;
 
   return (
@@ -65,12 +72,12 @@ export default function Footer() {
               <Image src={resolveSettingsImageSrc(settings?.logo, '/images/ejb-footer.png')} alt="EnjoyBook Logo" fill className="object-contain" />
             </div>
             {settings?.img_play_store && (
-              <Link href={settings?.play_store || '#'} className="relative w-[140px] h-[45px] block">
+              <Link href={playStoreLink} className="relative w-[140px] h-[45px] block">
                 <Image src={resolveSettingsImageSrc(settings.img_play_store, '/images/google-play.png')} alt="Google Play" fill className="object-contain " />
               </Link>
             )}
             {settings?.img_app_store && (
-              <Link href={settings?.app_store || '#'} className="relative w-[140px] h-[45px] block">
+              <Link href={appStoreLink} className="relative w-[140px] h-[45px] block">
                 <Image src={resolveSettingsImageSrc(settings.img_app_store, '/images/app-store.png')} alt="App Store" fill className="object-contain" />
               </Link>
             )}

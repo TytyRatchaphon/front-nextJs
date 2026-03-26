@@ -238,12 +238,12 @@ export default function CollectionDetail({ collectionId }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#fff7f7_0%,#ffffff_22%,#ffffff_100%)] py-6 md:py-10">
+    <div className="min-h-screen bg-white py-6 md:py-10">
       <div className="mx-auto max-w-[1280px] px-4 md:px-6">
-        <div className="mb-5 flex items-center justify-between gap-3 md:mb-7">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 md:mb-7 md:gap-3">
           <button
             onClick={() => router.push('/shelve?tab=4')}
-            className="group inline-flex h-11 items-center gap-2 rounded-full border border-red-100 bg-white/90 px-4 text-sm font-medium text-gray-600 shadow-[0_10px_30px_-24px_rgba(15,23,42,0.7)] transition-all hover:border-red-200 hover:text-red-600"
+            className="group inline-flex h-10 items-center gap-2 rounded-full border border-red-100 bg-white/90 px-3.5 text-sm font-medium text-gray-600 shadow-[0_10px_30px_-24px_rgba(15,23,42,0.7)] transition-all hover:border-red-200 hover:text-red-600 md:h-11 md:px-4"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:-translate-x-1">
               <polyline points="15 18 9 12 15 6" />
@@ -253,7 +253,7 @@ export default function CollectionDetail({ collectionId }: Props) {
 
           <Button
             onClick={() => setShowEditCollectionModal(true)}
-            className="h-11 rounded-full px-5 text-sm font-medium !border-red-100 !bg-white !text-gray-700 shadow-[0_10px_30px_-24px_rgba(15,23,42,0.7)] hover:!border-red-300 hover:!text-red-600"
+            className="h-10 rounded-full px-4 text-sm font-medium !border-red-100 !bg-white !text-gray-700 shadow-[0_10px_30px_-24px_rgba(15,23,42,0.7)] hover:!border-red-300 hover:!text-red-600 md:h-11 md:px-5"
             icon={
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -265,20 +265,19 @@ export default function CollectionDetail({ collectionId }: Props) {
           </Button>
         </div>
 
-        <section className="relative mb-8 overflow-hidden rounded-[30px] border border-red-100/80 bg-[linear-gradient(135deg,rgba(255,247,247,0.98),rgba(255,255,255,0.98))] shadow-[0_30px_90px_-60px_rgba(15,23,42,0.75)]">
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(circle_at_top_left,rgba(220,38,38,0.14),transparent_58%)]" />
-          <div className="pointer-events-none absolute right-0 top-0 h-48 w-48 translate-x-12 -translate-y-10 rounded-full bg-[radial-gradient(circle,rgba(185,28,28,0.12),transparent_68%)]" />
+        <section className="relative mb-6 overflow-hidden rounded-[24px] border border-gray-200 bg-white shadow-sm md:mb-8 md:rounded-[28px]">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gray-100" />
 
-          <div className="relative grid gap-6 p-5 md:grid-cols-[220px_minmax(0,1fr)] md:gap-8 md:p-8 lg:grid-cols-[260px_minmax(0,1fr)]">
-            <div className="relative mx-auto w-full max-w-[260px] md:mx-0">
+          <div className="relative grid gap-4 p-4 md:grid-cols-[200px_minmax(0,1fr)] md:gap-7 md:p-8 lg:grid-cols-[240px_minmax(0,1fr)]">
+            <div className="relative mx-auto hidden w-full max-w-[240px] md:mx-0 md:block">
               <div className="absolute inset-0 translate-y-4 rounded-[28px] bg-red-950/10 blur-2xl" />
-              <div className="relative aspect-[4/5] overflow-hidden rounded-[28px] border border-white/80 bg-[linear-gradient(145deg,#fca5a5,#dc2626)] shadow-[0_24px_70px_-40px_rgba(127,29,29,0.65)]">
+              <div className="relative aspect-[4/5] overflow-hidden rounded-[24px] border border-gray-200 bg-gray-100 shadow-sm">
                 {collection.cover_image ? (
                   <Image src={collection.cover_image} alt={collection.name} fill className="object-cover" unoptimized />
                 ) : (
-                  <div className="flex h-full items-end bg-[linear-gradient(160deg,#ef4444,#7f1d1d)] p-5 text-white/90">
+                  <div className="flex h-full items-end bg-gray-100 p-5 text-gray-900">
                     <div>
-                      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-white/70">Collection</p>
+                      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-gray-400">Collection</p>
                       <p className="text-lg font-semibold leading-tight">{collection.name}</p>
                     </div>
                   </div>
@@ -286,40 +285,51 @@ export default function CollectionDetail({ collectionId }: Props) {
               </div>
             </div>
 
-            <div className="flex min-w-0 flex-col justify-between">
+            <div className="flex min-w-0 flex-col">
               <div>
-                <div className="mb-4 flex flex-wrap items-center gap-2">
+                <div className="mb-3 flex flex-wrap items-center gap-2">
                   <span className={`inline-flex h-8 items-center rounded-full px-3 text-xs font-semibold tracking-[0.16em] ${
                     collection.is_public ? 'bg-red-600 text-white' : 'bg-gray-900 text-white'
                   }`}>
                     {collection.is_public ? 'PUBLIC' : 'PRIVATE'}
                   </span>
-                  <span className="inline-flex h-8 items-center rounded-full border border-red-100 bg-white px-3 text-xs font-medium text-gray-600">
+                  <span className="inline-flex h-8 items-center rounded-full border border-gray-200 bg-white px-3 text-xs font-medium text-gray-600">
                     {totalCount} เล่มในคอลเลคชั่น
                   </span>
                 </div>
 
                 <div className="max-w-3xl">
-                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-red-500/80">My curated shelf</p>
-                  <h1 className="text-3xl font-semibold leading-tight text-gray-950 md:text-5xl">{collection.name}</h1>
-                  <p className="mt-4 max-w-2xl text-sm leading-7 text-gray-600 md:text-base">
+                  <div className="mb-3 flex items-start gap-3 md:hidden">
+                    <div className="relative h-20 w-16 flex-shrink-0 overflow-hidden rounded-[16px] border border-gray-200 bg-gray-100 shadow-sm">
+                      {collection.cover_image ? (
+                        <Image src={collection.cover_image} alt={collection.name} fill className="object-cover" unoptimized />
+                      ) : null}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-gray-400">My Collection shelf</p>
+                      <h1 className="line-clamp-2 text-[2rem] font-semibold leading-[1.02] text-gray-950">{collection.name}</h1>
+                    </div>
+                  </div>
+                  <p className="mb-2 hidden text-[11px] font-semibold uppercase tracking-[0.28em] text-gray-400 md:block">My Collection shelf</p>
+                  <h1 className="hidden text-4xl font-semibold leading-tight text-gray-950 md:block lg:text-5xl">{collection.name}</h1>
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600 md:mt-4 md:text-base md:leading-7">
                     {collection.description?.trim() || 'รวมหนังสือที่คุณอยากจัดเป็นคอลเลคชั่นเดียว ให้กลับมาหาเรื่องที่ชอบได้ง่ายขึ้น'}
                   </p>
                 </div>
               </div>
 
-              <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-red-100 bg-white/90 px-4 py-4">
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:mt-6 md:grid-cols-3">
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gray-400">Visible</p>
                   <p className="mt-2 text-2xl font-semibold text-gray-950">{visibleCount}</p>
                   <p className="mt-1 text-xs text-gray-500">รายการที่กำลังแสดงในคอลเลคชั่น</p>
                 </div>
-                <div className="rounded-2xl border border-red-100 bg-white/90 px-4 py-4">
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gray-400">Hidden</p>
                   <p className="mt-2 text-2xl font-semibold text-gray-950">{hiddenCount}</p>
                   <p className="mt-1 text-xs text-gray-500">รายการที่ซ่อนไว้ชั่วคราว</p>
                 </div>
-                <div className="rounded-2xl border border-red-100 bg-white/90 px-4 py-4">
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 mb-2">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gray-400">Status</p>
                   <p className="mt-2 text-lg font-semibold text-gray-950">{collection.is_public ? 'พร้อมแชร์' : 'ใช้งานส่วนตัว'}</p>
                   <p className="mt-1 text-xs text-gray-500">ปรับการเผยแพร่ได้จากเมนูแก้ไข</p>
@@ -329,7 +339,7 @@ export default function CollectionDetail({ collectionId }: Props) {
               <button
                 onClick={handleDeleteCollection}
                 disabled={deleteCollectionMutation.isPending}
-                className="mt-6 inline-flex h-11 w-fit items-center gap-2 rounded-full border border-red-200 bg-white px-4 text-sm font-medium text-red-700 transition-all hover:border-red-300 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-4 inline-flex h-10 w-fit items-center gap-2 rounded-full border border-gray-200 bg-white px-4 text-sm font-medium text-red-700 transition-all hover:border-red-300 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 md:mt-6 md:h-11"
                 title="ลบคอลเลคชั่น"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -356,7 +366,7 @@ export default function CollectionDetail({ collectionId }: Props) {
               </div>
               <p className="mt-3 text-sm leading-7 text-gray-600">
                 {viewMode === 'visible'
-                  ? 'จัดลำดับ เพิ่ม หรือซ่อนหนังสือเพื่อให้คอลเลคชั่นนี้อ่านง่ายและหาเรื่องสำคัญได้เร็ว'
+                  ? 'จัดลำดับ เพิ่ม หรือซ่อนหนังสือเพื่อให้คอลเลคชั่นนี้อ่านง่ายและหาเรื่องสำคัญได้เร็ว (กดค้างที่มุมซ้ายบนของหนังสือ เพื่อจัดลำดับหนังสือ)'
                   : 'หนังสือที่ซ่อนไว้จะไม่แสดงบนคอลเลคชั่นหลัก แต่คุณนำกลับมาได้เมื่อต้องการ'}
               </p>
             </div>

@@ -162,6 +162,27 @@ export const fetchBookPromotionOptions = async (bookId: number): Promise<BookPro
   }
 };
 
+export interface NovelPackCheckData {
+  btn_novel: number | null;
+  btn_novel_pack: number | null;
+  content_type: 'novel' | 'novel_pack' | string;
+}
+
+export const fetchNovelPackCheck = async (bookId: string | number): Promise<NovelPackCheckData | null> => {
+  try {
+    const response = await apiClient.get(`/check-novel-pack/${bookId}`);
+    const payload = response?.data?.data;
+    if (!payload) return null;
+    return {
+      btn_novel: payload.btn_novel ?? null,
+      btn_novel_pack: payload.btn_novel_pack ?? null,
+      content_type: payload.content_type ?? 'novel',
+    };
+  } catch {
+    return null;
+  }
+};
+
 export const fetchLatestReadEpisode = async (bookId: string | number): Promise<LatestReadEpisodeResponse | null> => {
   try {
     const response = await apiClient.get<LatestReadEpisodeResponse>(`/bookdetail/latest-read-ep/${bookId}`);

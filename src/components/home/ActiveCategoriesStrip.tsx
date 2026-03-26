@@ -8,15 +8,15 @@ interface ActiveCategoriesStripProps {
 }
 
 const pillThemes = [
-  "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200",
-  "bg-amber-100 text-amber-700 ring-1 ring-amber-200",
-  "bg-orange-100 text-orange-700 ring-1 ring-orange-200",
-  "bg-rose-100 text-rose-700 ring-1 ring-rose-200",
-  "bg-violet-100 text-violet-700 ring-1 ring-violet-200",
-  "bg-sky-100 text-sky-700 ring-1 ring-sky-200",
-  "bg-cyan-100 text-cyan-700 ring-1 ring-cyan-200",
-  "bg-green-100 text-green-700 ring-1 ring-green-200",
-  "bg-pink-100 text-pink-700 ring-1 ring-pink-200",
+  "!bg-emerald-500 !text-white border border-emerald-500 shadow-[0_10px_24px_-18px_rgba(16,185,129,0.8)]",
+  "!bg-amber-500 !text-white border border-amber-500 shadow-[0_10px_24px_-18px_rgba(245,158,11,0.8)]",
+  "!bg-orange-500 !text-white border border-orange-500 shadow-[0_10px_24px_-18px_rgba(249,115,22,0.8)]",
+  "!bg-rose-500 !text-white border border-rose-500 shadow-[0_10px_24px_-18px_rgba(244,63,94,0.8)]",
+  "!bg-violet-500 !text-white border border-violet-500 shadow-[0_10px_24px_-18px_rgba(139,92,246,0.8)]",
+  "!bg-sky-500 !text-white border border-sky-500 shadow-[0_10px_24px_-18px_rgba(14,165,233,0.8)]",
+  "!bg-cyan-500 !text-white border border-cyan-500 shadow-[0_10px_24px_-18px_rgba(6,182,212,0.8)]",
+  "!bg-green-500 !text-white border border-green-500 shadow-[0_10px_24px_-18px_rgba(34,197,94,0.8)]",
+  "!bg-pink-500 !text-white border border-pink-500 shadow-[0_10px_24px_-18px_rgba(236,72,153,0.8)]",
 ];
 
 export default function ActiveCategoriesStrip({ categories }: ActiveCategoriesStripProps) {
@@ -39,7 +39,7 @@ export default function ActiveCategoriesStrip({ categories }: ActiveCategoriesSt
           <Link
             key={`${category.id}-${category.name}`}
             href={`/cat/${category.id}?type=all&tab=new&page=1&name=${encodeURIComponent(category.name)}`}
-            className={`inline-flex min-h-8 items-center rounded-md px-3 py-1.5 text-xs font-semibold leading-none transition duration-200 hover:-translate-y-0.5 hover:shadow-sm ${pillThemes[index % pillThemes.length]}`}
+            className={`inline-flex min-h-8 items-center rounded-md px-3 py-1.5 text-xs font-semibold leading-none no-underline transition duration-200 hover:-translate-y-0.5 hover:brightness-[1.05] ${pillThemes[index % pillThemes.length]}`}
           >
             {category.name}
           </Link>

@@ -38,7 +38,10 @@ function Navbar() {
   const [openMobileCategoryId, setOpenMobileCategoryId] = React.useState<string | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
   const [isCartOpen, setIsCartOpen] = React.useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = React.useState(false);
+  const [isMobileNotificationOpen, setIsMobileNotificationOpen] = React.useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = React.useState(false);
+  const [isMobileViewport, setIsMobileViewport] = React.useState(false);
   const { settings } = useWebsiteStore();
 
   // Notification Logic
@@ -175,6 +178,13 @@ function Navbar() {
   useEffect(() => {
     setMounted();
   }, [setMounted]);
+
+  useEffect(() => {
+    const syncViewport = () => setIsMobileViewport(window.innerWidth < 1024);
+    syncViewport();
+    window.addEventListener('resize', syncViewport);
+    return () => window.removeEventListener('resize', syncViewport);
+  }, []);
 
   // Initialize LIFF (without auto login)
   useEffect(() => {
@@ -424,6 +434,7 @@ function Navbar() {
           <div className="hidden lg:flex flex-1 justify-center items-center gap-x-10">
             <Link href="/" className={getLinkClasses('/')}>หน้าหลัก</Link>
 
+            <Link href="/novel-pack" className={getLinkClasses('/novel-pack')}>มัดแพ็ค</Link>
             {/* Novel Menu Wrapper */}
             <div
               className="relative flex items-center h-full group"
@@ -469,7 +480,7 @@ function Navbar() {
                 open={isCartOpen}
                 onOpenChange={setIsCartOpen}
                 arrow={false}
-                zIndex={2000}
+                zIndex={1220}
                 styles={{ body: { padding: 0 } }}
               >
                 <div className="mr-2 lg:mr-0 cursor-pointer text-black hover:text-red-600 transition-colors duration-300 flex items-center relative">
@@ -482,14 +493,16 @@ function Navbar() {
                 </div>
               </Popover>
             )}
-            {isLoggedIn && user ? (
+            {isLoggedIn && user && !isMobileViewport ? (
               <Popover
-                content={<NotificationList />}
+                content={<NotificationList onClose={() => setIsNotificationOpen(false)} />}
                 trigger="click"
                 placement="bottom"
+                open={isNotificationOpen}
+                onOpenChange={setIsNotificationOpen}
                 arrow={false}
                 styles={{ body: { padding: 0 } }}
-                zIndex={2000}
+                zIndex={1220}
               >
                 <span className="mr-2 lg:mr-0 text-black hover:text-red-600 transition-colors duration-300 cursor-pointer relative">
                   <div className="relative">
@@ -507,6 +520,26 @@ function Navbar() {
                 </span>
               </Popover>
             ) : null}
+            {isLoggedIn && user && isMobileViewport ? (
+              <button
+                type="button"
+                onClick={() => setIsMobileNotificationOpen(true)}
+                className="mr-2 lg:mr-0 text-black hover:text-red-600 transition-colors duration-300 cursor-pointer relative"
+              >
+                <div className="relative">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M12.02 2.91016C8.70997 2.91016 6.01997 5.60016 6.01997 8.91016V11.8002C6.01997 12.4102 5.75997 13.3402 5.44997 13.8602L4.29997 15.7702C3.58997 16.9502 4.07997 18.2602 5.37997 18.7002C9.68997 20.1402 14.34 20.1402 18.65 18.7002C19.86 18.3002 20.39 16.8702 19.73 15.7702L18.58 13.8602C18.28 13.3402 18.02 12.4102 18.02 11.8002V8.91016C18.02 5.61016 15.32 2.91016 12.02 2.91016Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" />
+                    <path d="M13.87 3.19994C13.56 3.10994 13.24 3.03994 12.91 2.99994C11.95 2.87994 11.03 2.94994 10.17 3.19994C10.46 2.45994 11.18 1.93994 12.02 1.93994C12.86 1.93994 13.58 2.45994 13.87 3.19994Z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M15.02 19.0601C15.02 20.7101 13.67 22.0601 12.02 22.0601C11.2 22.0601 10.44 21.7201 9.90002 21.1801C9.36002 20.6401 9.02002 19.8801 9.02002 19.0601" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" />
+                  </svg>
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] text-white ring-2 ring-white">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </div>
+              </button>
+            ) : null}
             <div className="text-nowrap text-[15px] lg:text-[17px] leading-6 flex justify-end items-center cursor-pointer">
               {isLoggedIn && user ? (
                 <>
@@ -518,7 +551,7 @@ function Navbar() {
                       trigger="click"
                       open={isUserMenuOpen}
                       onOpenChange={setIsUserMenuOpen}
-                      zIndex={2000}
+                        zIndex={1220}
                     >
                       <div id="UserProfileDropdownDesktop" className="flex items-center gap-2 px-2 lg:px-4 py-2 border-2 border-transparent hover:bg-gray-200 transition-colors duration-300 lg:border-gray-800 rounded-full h-[48px] outline-none">
                         <span className="font-primary font-medium text-gray-800">
@@ -587,6 +620,14 @@ function Navbar() {
                 <span className="font-primary text-[16px] text-[#2D3748]">หน้าหลัก</span>
               </Link>
 
+              <Link 
+                href="/novel-pack" 
+                className="hover:text-red-500 transition-colors" 
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <span className="font-primary text-[16px] text-[#2D3748]">มัดแพ็ค</span>
+              </Link>
+
               <div
                 className="flex items-center gap-1 cursor-pointer hover:text-red-500 transition-colors"
                 onClick={() => setIsMobileNovelOpen(!isMobileNovelOpen)}
@@ -630,7 +671,7 @@ function Navbar() {
                         mobileCategories.map((cat) => (
                           <Link
                             key={cat.id}
-                            href={`/cat/list?type=${type.type}&categoryId=${cat.id}&tab=bestseller&limit=10&page=1`}
+                            href={`/cat/list?type=${type.type}&categoryId=${cat.id}&tab=bestseller&period=30&limit=10&page=1`}
                             className="text-[14px] text-gray-400 hover:text-red-500 py-1 font-primary transition-colors"
                             onClick={() => setIsMobileMenuOpen(false)}
                           >
@@ -660,8 +701,8 @@ function Navbar() {
         open={isMobileDrawerOpen}
         key="mobile-user-drawer"
         styles={{ body: { padding: 0 } }}
-        width={320}
-        zIndex={2000}
+        width="100vw"
+        zIndex={1320}
       >
         <div className="flex flex-col h-full w-full">
           {/* Mobile version of userMenuContent, we clone it but override onClick to close drawer */}
@@ -837,6 +878,18 @@ function Navbar() {
             </button>
           </div>
         </div>
+      </Drawer>
+      <Drawer
+        placement="right"
+        closable={true}
+        onClose={() => setIsMobileNotificationOpen(false)}
+        open={isMobileNotificationOpen}
+        key="mobile-notification-drawer"
+        styles={{ body: { padding: 0 } }}
+        width="100vw"
+        zIndex={1320}
+      >
+        <NotificationList mode="drawer" onClose={() => setIsMobileNotificationOpen(false)} />
       </Drawer>
     </>
   );

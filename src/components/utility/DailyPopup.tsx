@@ -35,6 +35,9 @@ const DailyPromoPopup: React.FC = () => {
   const [promoItems, setPromoItems] = useState<PromoItem[]>([]);
 
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    let idleId: number | undefined;
+
     const initPopup = async () => {
       try {
         const homeData = await fetchHomeData();
@@ -45,7 +48,9 @@ const DailyPromoPopup: React.FC = () => {
               link = item.ref_id ? `/book/${item.ref_id}` : `/book/${item.popup_id}`;
             } else if (item.txt && (item.txt.startsWith('http') || item.txt.startsWith('/'))) {
               link = item.txt;
-            } 
+            } else if (item.type_link === 'link') {
+              link = String(item.ref_id);
+            }
             return {
               id: item.popup_id,
               imageUrl: item.img,
@@ -71,7 +76,24 @@ const DailyPromoPopup: React.FC = () => {
         setDailyPopupProcessComplete(true);
       }
     };
-    initPopup();
+
+    const runInit = () => {
+      void initPopup();
+    };
+
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      idleId = (window as Window & { requestIdleCallback: (callback: IdleRequestCallback) => number })
+        .requestIdleCallback(() => runInit());
+    } else {
+      timeoutId = setTimeout(runInit, 1500);
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      if (typeof window !== 'undefined' && idleId && 'cancelIdleCallback' in window) {
+        (window as Window & { cancelIdleCallback: (handle: number) => void }).cancelIdleCallback(idleId);
+      }
+    };
   }, [openDailyPopup, setDailyPopupProcessComplete]);
 
   const handleNormalClose = () => {

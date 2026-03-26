@@ -5,6 +5,12 @@ import Image from 'next/image';
 import { CloseOutlined } from '@ant-design/icons';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { resolveSettingsImageSrc } from '@/utils/imageUtils';
+import {
+    DEFAULT_APP_STORE_URL,
+    DEFAULT_PLAY_STORE_URL,
+    normalizeAppStoreUrl,
+    normalizePlayStoreUrl,
+} from '@/utils/storeLinkUtils';
 
 const SmartAppBanner = () => {
     const { settings } = useWebsiteStore();
@@ -37,21 +43,9 @@ const SmartAppBanner = () => {
         localStorage.setItem('smart_app_banner_closed_at', Date.now().toString());
     };
 
-    const DEFAULT_APP_STORE_URL = 'https://bit.ly/47zskk0';
-    const DEFAULT_PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.enjoybook.enjoyread&hl=en';
-
-    // Helper to detect if a link is suspiciously Apple-like when it shouldn't be
-    const isAppleLink = (url?: string) => url && (url.includes('apps.apple.com') || url.includes('itunes.apple.com'));
-
-    // Determine Link based on OS
-    let finalPlayStoreLink = settings?.play_store;
-    if (isAppleLink(finalPlayStoreLink)) {
-        finalPlayStoreLink = DEFAULT_PLAY_STORE_URL;
-    }
-
     const targetUrl = os === 'ios' 
-        ? (settings?.app_store || DEFAULT_APP_STORE_URL) 
-        : (finalPlayStoreLink || DEFAULT_PLAY_STORE_URL);
+        ? normalizeAppStoreUrl(settings?.app_store, DEFAULT_APP_STORE_URL) 
+        : normalizePlayStoreUrl(settings?.play_store, DEFAULT_PLAY_STORE_URL);
 
     if (!isVisible) return null;
 

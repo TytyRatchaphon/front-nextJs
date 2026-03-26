@@ -1,6 +1,6 @@
 "use client"
 import React, { useState } from 'react'
-import { Modal, Select, message, InputNumber } from 'antd'
+import { App, Modal, Select, InputNumber } from 'antd'
 import { updateEpisodesPrice } from '../../services/apiServices'
 
 export default function BulkPriceModal({
@@ -16,11 +16,16 @@ export default function BulkPriceModal({
 }) {
   const [price, setPrice] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [msgApi, msgHolder] = message.useMessage()
+  const { notification } = App.useApp()
+  const msgApi = {
+    success: (content: unknown) => notification.success({ message: String(content ?? '') }),
+    error: (content: unknown) => notification.error({ message: String(content ?? '') }),
+    warning: (content: unknown) => notification.warning({ message: String(content ?? '') }),
+    info: (content: unknown) => notification.info({ message: String(content ?? '') }),
+  }
 
   return (
     <Modal open={open} onCancel={onClose} footer={null} centered>
-      {msgHolder}
       <div className="py-4 text-center">
         <h3 className="text-lg text-amber-500 font-semibold mb-4">แก้ไขราคาทั้งหมดที่เลือก</h3>
         <div className="mx-auto w-48">

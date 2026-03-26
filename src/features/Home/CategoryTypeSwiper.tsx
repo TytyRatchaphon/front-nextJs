@@ -11,8 +11,25 @@ import { fetchActiveTypes } from '@/services/apiServices';
 export default function CategoryTypeSwiper() {
   const searchParams = useSearchParams();
   const currentType = searchParams.get('type') || 'all';
-  const currentTab = searchParams.get('tab') || 'new';
+  const currentTab = searchParams.get('tab') || 'bestseller';
+  const currentPeriod = searchParams.get('period') || ((currentTab === 'bestseller' || currentTab === 'topchart') ? '30' : '');
   const [swiper, setSwiper] = React.useState<any>(null);
+
+  const buildTypeHref = (typeValue: string) => {
+    const params = new URLSearchParams({
+      type: typeValue,
+      categoryId: 'all',
+      tab: currentTab,
+      limit: '10',
+      page: '1',
+    });
+
+    if (currentTab === 'bestseller' || currentTab === 'topchart') {
+      params.set('period', currentPeriod || '30');
+    }
+
+    return `/cat/list?${params.toString()}`;
+  };
 
   const { data: categoryTypes = [] } = useQuery({
     queryKey: ['activeTypes'],
@@ -42,7 +59,7 @@ export default function CategoryTypeSwiper() {
           {categoryTypes.map((type) => (
             <SwiperSlide key={type.type} className="!w-auto">
               <Link
-                href={`/cat/list?type=${type.type}&categoryId=all&tab=${currentTab}&limit=10&page=1`}
+                href={buildTypeHref(type.type)}
                 className={`block px-6 py-2 text-[15px] whitespace-nowrap rounded-t-lg border transition-all ${
                   currentType === type.type
                     ? 'bg-white text-red-600 border-gray-200 border-b-white font-bold relative z-10 -mb-[1px]'

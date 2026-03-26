@@ -33,21 +33,52 @@ import { useQuery } from "@tanstack/react-query";
 
 interface HomeContentProps {
   initialData: HomeDataResponse | null;
+  contentType?: string;
+  showPopups?: boolean;
+  showSpotlightFeature?: boolean;
 }
 
-export default function HomeContent({ initialData }: HomeContentProps) {
+export default function HomeContent({
+  initialData,
+  contentType,
+  showPopups = true,
+  showSpotlightFeature = true,
+}: HomeContentProps) {
   const { notification } = App.useApp();
   const { user, token, isLoggedIn } = useAuthStore();
   const [selectedSpotlightId, setSelectedSpotlightId] = React.useState<number | string | null>(null);
+  const [enableSecondaryQueries, setEnableSecondaryQueries] = React.useState(false);
   const [isPending, startTransition] = React.useTransition();
   const authToken = parseJwtToken(token);
 
+  React.useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    let idleId: number | undefined;
+
+    const enable = () => setEnableSecondaryQueries(true);
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      idleId = (window as Window & { requestIdleCallback: (callback: IdleRequestCallback) => number })
+        .requestIdleCallback(() => enable());
+    } else {
+      timeoutId = setTimeout(enable, 1000);
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      if (typeof window !== "undefined" && idleId && "cancelIdleCallback" in window) {
+        (window as Window & { cancelIdleCallback: (handle: number) => void }).cancelIdleCallback(idleId);
+      }
+    };
+  }, []);
+
   const { data: homeData, isLoading, error: homeDataError } = useQuery({
-    queryKey: ["homeData", isLoggedIn ? "auth" : "guest"],
-    queryFn: () => fetchHomeData(isLoggedIn ? authToken : undefined),
+    queryKey: ["homeData", contentType || "default", isLoggedIn ? "auth" : "guest"],
+    queryFn: () => fetchHomeData(isLoggedIn ? authToken : undefined, contentType),
     initialData,
     staleTime: isLoggedIn ? 0 : 60 * 1000,
-    refetchOnMount: isLoggedIn ? "always" : true,
+    refetchOnMount: isLoggedIn ? "always" : false,
+    refetchOnWindowFocus: false,
   });
 
   const {
@@ -57,7 +88,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
   } = useQuery({
     queryKey: ["bookUpdates"],
     queryFn: fetchBookUpdates,
-    enabled: !isLoading,
+    enabled: !isLoading && enableSecondaryQueries,
     staleTime: 10 * 60 * 1000,
   });
 
@@ -68,7 +99,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
   } = useQuery({
     queryKey: ["activeCategories", "all"],
     queryFn: () => fetchActiveCategories("all"),
-    enabled: !isLoading,
+    enabled: !isLoading && enableSecondaryQueries,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -79,7 +110,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
   } = useQuery({
     queryKey: ["rankingCategories"],
     queryFn: fetchRankingCategories,
-    enabled: !isLoading,
+    enabled: !isLoading && enableSecondaryQueries,
   });
 
   const {
@@ -89,7 +120,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
   } = useQuery({
     queryKey: ["continueBooks"],
     queryFn: () => fetchUserShelveContinue(10),
-    enabled: !isLoading && !!user,
+    enabled: !isLoading && enableSecondaryQueries && !!user,
     select: (data: any) => data?.books ?? [],
   });
 
@@ -100,7 +131,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
   } = useQuery({
     queryKey: ["pinnedReviews"],
     queryFn: fetchPinnedReviews,
-    enabled: !isLoading,
+    enabled: !isLoading && enableSecondaryQueries,
   });
 
   const pinnedReviews = pinnedReviewsData?.reviews || [];
@@ -134,14 +165,6 @@ export default function HomeContent({ initialData }: HomeContentProps) {
     pinnedReviewsError,
     rankingCategoriesError,
   ]);
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <GifLoader />
-      </div>
-    );
-  }
 
   const slides = homeData?.data?.slides || [];
   const groupBookHome = (homeData?.data as any)?.groupBookHome || [];
@@ -189,6 +212,14 @@ export default function HomeContent({ initialData }: HomeContentProps) {
     }
   }, [selectedSpotlightId, spotlightBooks]);
 
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <GifLoader />
+      </div>
+    );
+  }
+
   const cleanHtmlText = (value?: string) =>
     (value || "")
       .replace(/<[^>]*>/g, " ")
@@ -201,7 +232,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
 
   return (
     <div className="flex w-full flex-col items-center overflow-x-hidden bg-white font-primary font-medium transition-colors duration-300">
-      <DailyCheckinModal />
+      {showPopups ? <DailyCheckinModal /> : null}
       <Banner slides={slides} />
 
       <div className="mt-4 flex w-full justify-center lg:mt-8">
@@ -237,15 +268,17 @@ export default function HomeContent({ initialData }: HomeContentProps) {
             <ActiveCategoriesStrip categories={activeCategories} />
           ) : null}
 
-          <SpotlightFeatureSection
-            selectedSpotlight={selectedSpotlight}
-            spotlightBooks={spotlightBooks}
-            onSelectSpotlight={handleSpotlightSelect}
-            isPending={isPending}
-            editorNoteTitle={editorNoteTitle}
-            editorNoteItems={editorNoteItems}
-            editorNoteLabeltag={editorNoteGroup?.labeltag}
-          />
+          {showSpotlightFeature ? (
+            <SpotlightFeatureSection
+              selectedSpotlight={selectedSpotlight}
+              spotlightBooks={spotlightBooks}
+              onSelectSpotlight={handleSpotlightSelect}
+              isPending={isPending}
+              editorNoteTitle={editorNoteTitle}
+              editorNoteItems={editorNoteItems}
+              editorNoteLabeltag={editorNoteGroup?.labeltag}
+            />
+          ) : null}
 
           <BookGroups groupBookHome={groupBookHome} />
         </div>
@@ -332,7 +365,7 @@ export default function HomeContent({ initialData }: HomeContentProps) {
 
           <BackToTopButton />
           <FloatingGiftButton />
-          <DailyPopup />
+          {showPopups ? <DailyPopup /> : null}
         </div>
       </div>
     </div>

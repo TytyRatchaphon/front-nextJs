@@ -15,6 +15,18 @@ type Props = {
 
 export const BookEpisodesTab = ({ episodesData, bookId, bookDetail, settings, isLoading, latestUpdate }: Props) => {
     const [expandedGroups, setExpandedGroups] = useState<Record<number, boolean>>({});
+    const formatFreeUntil = (endDate?: string | null) => {
+        if (!endDate) return null;
+        const parsed = new Date(endDate);
+        if (Number.isNaN(parsed.getTime())) return null;
+        return parsed.toLocaleString("th-TH", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    };
 
     if (isLoading) {
         return <GifLoader className="h-48 w-48 mx-auto" width={200} height={200} />;
@@ -116,6 +128,8 @@ export const BookEpisodesTab = ({ episodesData, bookId, bookDetail, settings, is
 
                                         const hasPromo = !episode.isBuy && promoPrice !== undefined && promoPrice < regularPrice && promoPrice >= 0;
                                         const displayRegularPrice = hasPromo ? Number(promoPrice) : regularPrice;
+                                        const isDiscountFree = !hasEarlyAccess && hasPromo && Number(promoPrice) === 0 && regularPrice > 0;
+                                        const freeUntilLabel = isDiscountFree ? formatFreeUntil(activePromo?.end_date) : null;
                                         const rpEarn = Number((episode as any)?.rp_campaign?.rp_earn ?? 0);
                                         const rpCampaignEnd = (episode as any)?.rp_campaign?.end_date
                                             ? Date.parse((episode as any).rp_campaign.end_date)
@@ -157,7 +171,7 @@ export const BookEpisodesTab = ({ episodesData, bookId, bookDetail, settings, is
 
                                                 <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0 text-right">
                                                     <div className="flex flex-col items-end justify-center min-w-[60px]">
-                                                        {(regularPrice > 0 || hasPromo) ? (
+                                                        {(regularPrice > 0 || hasPromo) && !isDiscountFree ? (
                                                             <div className="flex flex-col items-end gap-1">
                                                                 {isRpCampaignActive && (
                                                                     <div className="flex items-center gap-1.5">
@@ -255,7 +269,12 @@ export const BookEpisodesTab = ({ episodesData, bookId, bookDetail, settings, is
                                                                 </div>
                                                             </div>
                                                         ) : (
-                                                            <span className="text-sm font-semibold text-emerald-600">อ่านฟรี</span>
+                                                            <div className="flex flex-col items-end">
+                                                                <span className="text-sm font-semibold text-emerald-600">{'\u0e15\u0e2d\u0e19\u0e1f\u0e23\u0e35'}</span>
+                                                                {freeUntilLabel && (
+                                                                    <span className="text-[11px] text-emerald-700">{`\u0e2d\u0e48\u0e32\u0e19\u0e1f\u0e23\u0e35\u0e16\u0e36\u0e07 ${freeUntilLabel}`}</span>
+                                                                )}
+                                                            </div>
                                                         )}
                                                     </div>
 

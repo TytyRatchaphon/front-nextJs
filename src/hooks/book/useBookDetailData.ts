@@ -5,6 +5,7 @@ import {
     fetchBookEpisodes,
     fetchUserShelve,
     fetchBookPurchaseDetails,
+    fetchNovelPackCheck,
 } from "@/services/apiServices";
 
 export function useBookDetailData(bookId: string, token: string | null, isReady: boolean) {
@@ -46,6 +47,14 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
     const { data: purchaseDetails } = useQuery({
         queryKey: ["bookPurchaseDetails", bookId, token],
         queryFn: () => fetchBookPurchaseDetails(bookId),
+        enabled: !!bookId && isReady,
+        staleTime: 5 * 60 * 1000,
+    });
+
+    // Reading Mode (Episode vs Pack)
+    const { data: novelPackCheck } = useQuery({
+        queryKey: ["novelPackCheck", bookId],
+        queryFn: () => fetchNovelPackCheck(bookId),
         enabled: !!bookId && isReady,
         staleTime: 5 * 60 * 1000,
     });
@@ -115,6 +124,9 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
                     endDate: (purchaseDetails?.discount_full_book?.end_date || (bookDetail as any).discount_full_book.end_date),
                     percent: (purchaseDetails?.discount_full_book?.discount_percent || (bookDetail as any).discount_full_book.discount_percent),
                     price: (purchaseDetails?.remaining_promo_total_discount ?? (bookDetail as any).remaining_promo_total_discount ?? 0),
+                    rewards: (purchaseDetails?.discount_full_book?.rewards || (bookDetail as any).discount_full_book.rewards || [])
+                      .slice()
+                      .sort((a: any, b: any) => Number(a?.order_by ?? 0) - Number(b?.order_by ?? 0)),
                 } : undefined,
                 description: bookDetail.title,
                 tags: Array.isArray(bookDetail.tag)
@@ -149,6 +161,7 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
         bookDetail, // Raw object
         book,       // Transformed object
         episodesData,
+        novelPackCheck,
         isLoading: isLoadingDetail,
         isLoadingEpisodes,
         isError: isErrorDetail || isErrorEpisodes,

@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { fetchCategoryBooks, fetchActiveCategories } from "@/services/apiServices";
+import { fetchCategoryBooks, fetchActiveCategories, fetchCategoryBanners } from "@/services/apiServices";
 import CategoryHorizontalCard from "@/components/novelCard/CategoryHorizontalCard";
 import { Pagination } from "antd";
 import GifLoader from '@/components/utility/GifLoader';
@@ -14,6 +14,7 @@ import { useWebsiteStore } from '@/stores/websiteStore';
 import CategoryTypeSwiper from "./CategoryTypeSwiper";
 import CategoryGenreSwiper from "./CategoryGenreSwiper";
 import { useLogger } from "@/hooks/useLogger";
+import Banner from "@/components/home/Banner";
 
 const TABS = [
   { key: "bestseller", label: "นิยายขายดี" },
@@ -41,8 +42,8 @@ export default function Category() {
   const idParam = params.id as string;
   const categoryId = idParam === 'list' ? searchParams.get('categoryId') || '' : idParam;
   const type = searchParams.get("type") || "tran";
-  const tab = searchParams.get("tab") || "new";
-  const period = searchParams.get("period") || "1"; // Default to today (1)
+  const tab = searchParams.get("tab") || "bestseller";
+  const period = searchParams.get("period") || ((tab === "bestseller" || tab === "topchart") ? "30" : "1");
   const page = Number(searchParams.get("page")) || 1;
 
   // --- Activity Logging ---
@@ -59,6 +60,12 @@ export default function Category() {
   const { data: activeCategories = [] } = useQuery({
     queryKey: ['activeCategories', type],
     queryFn: () => fetchActiveCategories(type),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: categoryBanners = [] } = useQuery({
+    queryKey: ["categoryBanners"],
+    queryFn: fetchCategoryBanners,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -104,7 +111,7 @@ export default function Category() {
     if (newTab !== 'bestseller' && newTab !== 'topchart') {
       newParams.delete("period");
     } else if (!newParams.get("period")) {
-       newParams.set("period", "1");
+       newParams.set("period", "30");
     }
     router.push(`/cat/${categoryId}?${newParams.toString()}`);
   };
@@ -138,25 +145,30 @@ export default function Category() {
       <div className="container mx-auto px-4 lg:px-8 max-w-[1200px] py-8">
 
         {/* Header */}
-        <div
-          className="text-center mb-8 py-20 md:py-28 rounded-xl relative overflow-hidden"
-          style={{
-            backgroundImage: settings?.cat_pic_default === "active" 
-                ? `url('https://image.enjoybook.co/enjoybook.image/banner/Web_bg_cat.jpg')` 
+        {categoryBanners.length > 0 ? (
+          <div className="mb-8">
+            <Banner slides={categoryBanners} showTopUpBanner={false} />
+          </div>
+        ) : (
+          <div
+            className="text-center mb-8 py-20 md:py-28 rounded-xl relative overflow-hidden"
+            style={{
+              backgroundImage: settings?.cat_pic_default === "active"
+                ? `url('https://image.enjoybook.co/enjoybook.image/banner/Web_bg_cat.jpg')`
                 : (categoryDetail?.img_bg ? `url(${categoryDetail.img_bg})` : undefined),
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        >
-          {/* Dark Overlay for contrast */}
-          <div className="absolute inset-0  transition-opacity duration-300"></div>
-
-          <h1
-            className="text-xl md:text-4xl font-bold relative z-10 py-2 leading-relaxed text-white drop-shadow-lg"
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
           >
-            {typeLabel} {categoryName}
-          </h1>
-        </div>
+            <div className="absolute inset-0 transition-opacity duration-300"></div>
+
+            <h1
+              className="text-xl md:text-4xl font-bold relative z-10 py-2 leading-relaxed text-white drop-shadow-lg"
+            >
+              {typeLabel} {categoryName}
+            </h1>
+          </div>
+        )}
 
         {/* Tabs - Sticky Swiper */}
         <div className="sticky top-[150px] lg:top-[170px] z-[990] bg-white border-b border-gray-200 mb-8 pt-2 flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-2">

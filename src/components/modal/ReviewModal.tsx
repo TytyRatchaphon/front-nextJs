@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { Modal, Rate, Input, App } from 'antd';
+import { Modal, Rate, Input, App, Popover } from 'antd';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
@@ -9,8 +9,8 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/th';
 import parse from 'html-react-parser';
-import { Edit2, Trash2, Heart, Share2, MessageCircle, Flag, Send } from 'lucide-react';
-import { likeReview, shareReview, postReviewComment, fetchReviewComments, reportReviewOrComment } from '@/services/api/commentApi';
+import { Edit2, Trash2, Heart, Share2, MessageCircle, Flag, Send, Ellipsis } from 'lucide-react';
+import { likeReview, shareReview, postReviewComment, fetchReviewComments, deleteReviewComment, reportReviewOrComment } from '@/services/api/commentApi';
 import { useAuthStore } from '@/stores/authStore';
 import ProfileAvatarLink, { extractFrameSrc, normalizeProfileAssetSrc } from '@/components/ui/ProfileAvatarLink';
 
@@ -76,8 +76,8 @@ export default function ReviewModal({
   onDelete,
   onReviewUpdate,
 }: ReviewModalProps) {
-  const REVIEW_MODAL_Z_INDEX = 3000;
-  const REVIEW_NOTIFICATION_Z_INDEX = 3200;
+  const REVIEW_MODAL_Z_INDEX = 1200;
+  const REVIEW_NOTIFICATION_Z_INDEX = 1260;
   const queryClient = useQueryClient();
 
   const [liked, setLiked] = useState(false);
@@ -87,6 +87,7 @@ export default function ReviewModal({
   const [commentText, setCommentText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [openCommentActionId, setOpenCommentActionId] = useState<string | number | null>(null);
 
   const { notification, modal } = App.useApp();
   const { user } = useAuthStore();
@@ -190,7 +191,7 @@ export default function ReviewModal({
       onOk: async () => {
         try {
           await reportReviewOrComment(targetType, targetId);
-          notification.success({ message: 'รายงานสำเร็จ ขอบคุณสำหรับการแจ้ง', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
+          notification.success({ message: 'รายงานความคิดเห็นสำเร็จ', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
         } catch (error: any) {
           notification.error({ message: error?.response?.data?.message || 'เกิดข้อผิดพลาดในการรายงาน', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
         }
@@ -221,6 +222,33 @@ export default function ReviewModal({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleDeleteComment = (commentId: string | number) => {
+    if (!review) return;
+    if (!user) {
+      notification.warning({ message: '\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e02\u0e49\u0e32\u0e2a\u0e39\u0e48\u0e23\u0e30\u0e1a\u0e1a\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e25\u0e1a\u0e04\u0e27\u0e32\u0e21\u0e04\u0e34\u0e14\u0e40\u0e2b\u0e47\u0e19', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
+      return;
+    }
+
+    const reviewId = review.review_id || review.id;
+    modal.confirm({
+      zIndex: REVIEW_MODAL_Z_INDEX + 10,
+      title: '\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e01\u0e32\u0e23\u0e25\u0e1a',
+      content: '\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e25\u0e1a\u0e04\u0e27\u0e32\u0e21\u0e04\u0e34\u0e14\u0e40\u0e2b\u0e47\u0e19\u0e19\u0e35\u0e49\u0e43\u0e0a\u0e48\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48?',
+      okText: '\u0e25\u0e1a',
+      okType: 'danger',
+      cancelText: '\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01',
+      onOk: async () => {
+        try {
+          await deleteReviewComment(reviewId, commentId);
+          notification.success({ message: '\u0e25\u0e1a\u0e04\u0e27\u0e32\u0e21\u0e04\u0e34\u0e14\u0e40\u0e2b\u0e47\u0e19\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
+          await loadComments();
+        } catch (error: any) {
+          notification.error({ message: error?.response?.data?.message || '\u0e40\u0e01\u0e34\u0e14\u0e02\u0e49\u0e2d\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14\u0e43\u0e19\u0e01\u0e32\u0e23\u0e25\u0e1a\u0e04\u0e27\u0e32\u0e21\u0e04\u0e34\u0e14\u0e40\u0e2b\u0e47\u0e19', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
+        }
+      },
+    });
   };
 
   if (!review) return null;
@@ -394,13 +422,16 @@ export default function ReviewModal({
           ) : comments.length > 0 ? (
             <div className="max-h-[250px] space-y-3 overflow-y-auto pr-1">
               {comments.map((comment: any, index: number) => {
-                const commentId = comment.comment_id || comment.id || index;
+                const commentId = comment.comment_id || comment.id;
+                const hasCommentId = commentId !== undefined && commentId !== null;
                 const commentUserId = comment.user?.user_id || comment.user_id;
-                const isCommentOwner = currentUserId && currentUserId === commentUserId;
+                const activeUserId = currentUserId ?? user?.user_id;
+                const isCommentOwner = !!activeUserId && String(activeUserId) === String(commentUserId);
                 const commentUserName = comment.user?.fullname || 'ผู้ใช้งาน';
+                const showCommentAction = !!activeUserId && hasCommentId;
 
                 return (
-                  <div key={commentId} className="group flex gap-2">
+                  <div key={commentId || `comment-${index}`} className="group flex gap-2">
                     <ProfileAvatarLink
                       userId={commentUserId}
                       name={commentUserName}
@@ -411,24 +442,64 @@ export default function ReviewModal({
                     />
 
                     <div className="min-w-0 flex-1">
-                      <div className="rounded-xl bg-gray-50 px-3 py-2">
+                      <div className="relative rounded-xl bg-gray-50 px-3 py-2">
+                        {showCommentAction && (
+                          <div className="absolute right-2 top-2">
+                            <Popover
+                              trigger="click"
+                              placement="bottomLeft"
+                              open={openCommentActionId === commentId}
+                              onOpenChange={(open) => setOpenCommentActionId(open ? commentId : null)}
+                              content={
+                                <div className="flex min-w-[120px] flex-col py-1">
+                                  {isCommentOwner ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setOpenCommentActionId(null);
+                                        handleDeleteComment(commentId);
+                                      }}
+                                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-red-500 transition-colors hover:bg-red-50"
+                                    >
+                                      <Trash2 size={14} />
+                                      <span>ลบ</span>
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setOpenCommentActionId(null);
+                                        handleReport('comment', commentId);
+                                      }}
+                                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-orange-500 transition-colors hover:bg-orange-50"
+                                    >
+                                      <Flag size={14} />
+                                      <span>รายงาน</span>
+                                    </button>
+                                  )}
+                                </div>
+                              }
+                            >
+                              <button
+                                type="button"
+                                onClick={(event) => event.stopPropagation()}
+                                className="flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition hover:bg-white hover:text-gray-700"
+                                aria-label="จัดการความคิดเห็น"
+                              >
+                                <Ellipsis size={15} />
+                              </button>
+                            </Popover>
+                          </div>
+                        )}
+
                         <div className="flex items-center gap-2">
                           <Link href={`/profile/${commentUserId}`} className="text-sm font-semibold text-gray-800 hover:text-[#E33527]">
                             {commentUserName}
                           </Link>
                           <span className="text-xs text-gray-400">{dayjs(comment.created_at).fromNow()}</span>
                         </div>
-                        <p className="mt-0.5 break-words text-sm text-gray-700">{comment.content}</p>
+                        <p className={`break-words pr-8 text-sm text-gray-700 ${showCommentAction ? 'mt-2.5' : 'mt-0.5'}`}>{comment.content}</p>
                       </div>
-
-                      {!isCommentOwner && currentUserId && (
-                        <button
-                          onClick={() => handleReport('comment', commentId)}
-                          className="ml-3 mt-1 text-xs text-gray-400 opacity-0 transition-opacity hover:text-orange-500 group-hover:opacity-100"
-                        >
-                          รายงาน
-                        </button>
-                      )}
                     </div>
                   </div>
                 );

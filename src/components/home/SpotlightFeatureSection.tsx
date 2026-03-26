@@ -96,12 +96,12 @@ export default function SpotlightFeatureSection({
     const writer = (item as any)?.writer_name || (item as any)?.["writer.writer_name"] || "Enjoybook";
 
     return (
-      <div className="flex min-h-[520px] w-full flex-col rounded-[24px] border border-stone-200 bg-white p-4 text-stone-900 shadow-[0_18px_36px_-30px_rgba(15,23,42,0.22)] md:min-h-[548px] md:p-5">
+      <div className="flex min-h-[360px] w-full flex-col rounded-[24px] border border-stone-200 bg-white p-3 text-stone-900 shadow-[0_18px_36px_-30px_rgba(15,23,42,0.22)] sm:min-h-[420px] sm:p-3.5 md:min-h-[454px] md:p-4">
         <Link
           href={resolveEditorNoteEpisodeHref(item)}
-          className="group relative mb-4 block overflow-hidden rounded-[18px] bg-stone-100"
+          className="group relative mb-3 block overflow-hidden rounded-[18px] bg-stone-100"
         >
-          <div className="relative h-[176px] w-full sm:h-[210px]">
+          <div className="relative h-[126px] w-full sm:h-[168px]">
             <Image
               src={coverSrc(item?.img || item?.img_full)}
               alt={item?.name || "Editor note"}
@@ -111,25 +111,25 @@ export default function SpotlightFeatureSection({
           </div>
         </Link>
 
-        <h4 className="line-clamp-2 text-[clamp(1rem,1.2vw,1.3rem)] font-bold leading-tight text-stone-900">
+        <h4 className="line-clamp-2 text-[clamp(0.95rem,1.2vw,1.3rem)] font-bold leading-tight text-stone-900">
           {item?.name || selectedSpotlight?.name}
         </h4>
-        <p className="mt-2 line-clamp-1 text-xs font-semibold text-orange-600">
+        <p className="mt-1.5 line-clamp-1 text-xs font-semibold text-orange-600">
           {editorNoteLabeltag ? `${editorNoteLabeltag} • ` : ""}
           {writer}
         </p>
-        <p className="mt-2 min-h-[4.5rem] line-clamp-3 text-sm leading-6 text-stone-600">{description}</p>
+        <p className="mt-1.5 min-h-[3.25rem] line-clamp-3 text-[13px] leading-5 text-stone-600 sm:min-h-[3.9rem] sm:text-sm sm:leading-5">{description}</p>
 
-        <div className="mt-auto grid grid-cols-2 gap-2.5 pt-4">
+        <div className="mt-3 grid grid-cols-1 gap-2 pt-1.5 sm:mx-auto sm:mt-4 sm:w-full sm:max-w-[320px] sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] sm:gap-1.5 sm:pt-2">
           <Link
             href={resolveEditorNoteEpisodeHref(item)}
-            className="inline-flex items-center justify-center rounded-xl bg-orange-500 px-3 py-2 text-sm font-semibold text-white transition hover:bg-orange-600"
+            className="inline-flex w-full items-center justify-center rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-orange-600 transition hover:bg-orange-50"
           >
             อ่านรายตอน
           </Link>
           <Link
             href={resolveEditorNotePackHref(item)}
-            className="inline-flex items-center justify-center rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-orange-600 transition hover:bg-orange-50"
+            className="inline-flex w-full items-center justify-center rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-orange-600 transition hover:bg-orange-50"
           >
             อ่านมัดแพ็ค
           </Link>
@@ -156,10 +156,10 @@ export default function SpotlightFeatureSection({
 
   return (
     <section className="mb-10 space-y-6">
-      <div className="overflow-hidden rounded-[30px] border border-stone-200 bg-white shadow-[0_24px_70px_-40px_rgba(15,23,42,0.22)]">
-        <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_408px]">
-          <div className="min-w-0 p-5 md:p-7 lg:p-8">
-            <div className="mb-5 flex items-center justify-between gap-4 border-b border-stone-200 pb-4">
+      <div className="overflow-hidden rounded-[26px] border border-stone-200 bg-white shadow-[0_24px_70px_-40px_rgba(15,23,42,0.22)] sm:rounded-[30px]">
+        <div className="grid gap-0 lg:grid-cols-[minmax(0,0.92fr)_448px] xl:grid-cols-[minmax(0,0.9fr)_472px]">
+          <div className="min-w-0 p-3 sm:p-4 md:p-5 lg:p-6">
+            <div className="mb-3 flex items-center justify-between gap-4 border-b border-stone-200 pb-2.5 sm:mb-4 sm:pb-3">
               <div className="hidden">
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-red-600/80">
                   Spotlight
@@ -169,22 +169,22 @@ export default function SpotlightFeatureSection({
                 </h3>
               </div>
               <div>
-                <h3 className="text-[clamp(1.05rem,1.2vw,1.25rem)] font-bold leading-[1.25] text-stone-950">
+                <h3 className="text-[0.95rem] font-bold leading-[1.2] text-stone-950 sm:text-[clamp(1rem,1.15vw,1.18rem)]">
                   เรื่องเด่น
                 </h3>
               </div>
             </div>
 
-            <div className="spotlight-stage-shell min-h-[15.5rem] md:min-h-[16.5rem]">
+            <div className="spotlight-stage-shell min-h-[8.75rem] sm:min-h-[10.75rem] md:min-h-[11.75rem]">
               <div
                 key={selectedSpotlight.book_id}
-                className={`spotlight-stage-enter grid gap-5 md:grid-cols-[168px_minmax(0,1fr)] md:items-start ${
+                className={`spotlight-stage-enter grid gap-3 sm:gap-4 md:grid-cols-[136px_minmax(0,1fr)] lg:grid-cols-[132px_minmax(0,1fr)] md:items-start ${
                   isPending ? "opacity-90" : ""
                 }`}
               >
                 <Link
                   href={`/book/${selectedSpotlight.book_id}`}
-                  className="spotlight-poster-enter relative mx-auto w-full max-w-[180px] overflow-hidden rounded-[22px] border border-stone-200 bg-white shadow-[0_18px_40px_-28px_rgba(15,23,42,0.45)] md:mx-0"
+                  className="spotlight-poster-enter relative mx-auto w-full max-w-[132px] overflow-hidden rounded-[20px] border border-stone-200 bg-white shadow-[0_18px_40px_-28px_rgba(15,23,42,0.45)] sm:max-w-[168px] sm:rounded-[22px] md:mx-0 md:max-w-[136px] lg:max-w-[132px]"
                 >
                   <div className="relative aspect-[5/7] w-full">
                     <Image
@@ -197,26 +197,26 @@ export default function SpotlightFeatureSection({
                 </Link>
 
                 <div className="spotlight-copy-enter flex min-w-0 flex-col">
-                  <p className="min-h-[1.5rem] text-sm font-medium text-stone-500">
+                  <p className="min-h-[1.1rem] text-[12px] font-medium text-stone-500 sm:min-h-[1.3rem] sm:text-[13px]">
                     {selectedSpotlight["writer.writer_name"] ||
                       (selectedSpotlight as any).writer_name ||
                       "Enjoybook"}
                   </p>
                   <Link
                     href={`/book/${selectedSpotlight.book_id}`}
-                    className="mt-1 block overflow-hidden text-[clamp(1.35rem,2vw,2rem)] font-bold text-stone-950 transition-colors hover:text-red-600"
+                  className="mt-0.5 block min-w-0 overflow-hidden text-[clamp(0.92rem,4.4vw,1.55rem)] font-bold text-stone-950 transition-colors hover:text-red-600 sm:text-[clamp(0.98rem,1.4vw,1.35rem)]"
                   >
-                    <span className="spotlight-thai-clamp-title block">
+                    <span className="spotlight-thai-clamp-title block max-w-full">
                       {selectedSpotlight.name}
                     </span>
                   </Link>
-                  <p className="spotlight-thai-clamp-body mt-2 text-sm text-stone-600">
+                  <p className="spotlight-thai-clamp-body mt-1 text-[12.5px] leading-5 text-stone-600 sm:text-[13px]">
                     {selectedSpotlight.title ||
                       selectedSpotlight.des ||
                       "คัดเรื่องเด่นที่น่าอ่านในตอนนี้ เพื่อให้คุณตัดสินใจได้รวดเร็วและไม่พลาดเรื่องที่กำลังมาแรง"}
                   </p>
 
-                  <div className="mt-4 flex min-h-[1.5rem] flex-wrap items-center gap-4 text-sm text-stone-500">
+                  <div className="mt-2 flex min-h-[1.1rem] flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-stone-500 sm:mt-2.5 sm:gap-3 sm:text-[13px]">
                     <div className="inline-flex items-center gap-1.5">
                       <Heart size={14} />
                       {formatCount(selectedSpotlight.shelve_count || 0)}
@@ -235,11 +235,11 @@ export default function SpotlightFeatureSection({
             </div>
 
             {spotlightBooks.length > 0 && (
-              <div className="mt-4">
-                <div className="mb-3 text-sm font-semibold text-stone-500">
+              <div className="mt-1.5 sm:mt-2">
+                <div className="mb-1.5 text-sm font-semibold text-stone-500">
                   ยังมีให้อ่านอีกเพียบ...
                 </div>
-                {spotlightBooks.length > 6 ? (
+                {
                   <div className="group/spotlight-swiper relative">
                     <button
                       ref={spotlightPrevRef}
@@ -299,24 +299,20 @@ export default function SpotlightFeatureSection({
                       ))}
                     </Swiper>
                   </div>
-                ) : (
-                  <div className="flex flex-wrap gap-3">
-                    {spotlightBooks.map((book: any, i: number) => renderSpotlightThumb(book, i))}
-                  </div>
-                )}
+                }
               </div>
             )}
           </div>
 
-          <div className="border-t border-stone-200 bg-white p-4 md:p-5 lg:border-l lg:border-t-0 lg:px-4 xl:px-5">
-            <div className="flex flex-col gap-3">
-              <div>
+            <div className="border-t border-stone-200 bg-white p-2.5 sm:p-3 md:p-3.5 lg:border-l lg:border-t-0 lg:px-4 xl:px-5">
+            <div className="flex flex-col items-center gap-2 lg:translate-x-3 xl:translate-x-4">
+              <div className="w-full max-w-[320px] sm:max-w-[360px] lg:max-w-[420px] xl:max-w-[444px]">
                 <h3 className="text-[clamp(1.05rem,1.2vw,1.25rem)] font-bold leading-[1.25] text-stone-950">
                   {editorNoteTitle}
                 </h3>
               </div>
 
-              <div className="mx-auto w-full max-w-[380px] lg:w-[380px]">
+              <div className="mx-auto w-full max-w-[320px] sm:max-w-[360px] lg:w-[420px] lg:max-w-[420px] xl:w-[444px] xl:max-w-[444px]">
                 {editorNoteItems.length > 1 ? (
                   <Swiper
                     modules={[Pagination]}
@@ -324,12 +320,12 @@ export default function SpotlightFeatureSection({
                     slidesPerView={1}
                     spaceBetween={12}
                     pagination={{ clickable: true }}
-                    className="editor-note-swiper !overflow-hidden [&_.swiper-wrapper]:items-start [&_.swiper-pagination]:!relative [&_.swiper-pagination]:!bottom-0 [&_.swiper-pagination]:mt-3"
+                    className="editor-note-swiper !overflow-hidden [&_.swiper-wrapper]:items-start [&_.swiper-pagination]:!relative [&_.swiper-pagination]:!bottom-0 [&_.swiper-pagination]:mt-1"
                   >
                     {editorNoteItems.map((item: any, idx: number) => (
                       <SwiperSlide
                         key={item?.book_id || item?.btn_novel_pack || idx}
-                        className="!h-auto !w-full sm:!w-[380px] !opacity-100"
+                        className="!h-auto !w-full lg:!w-[420px] xl:!w-[444px] !opacity-100"
                       >
                         {renderEditorNoteCard(item)}
                       </SwiperSlide>

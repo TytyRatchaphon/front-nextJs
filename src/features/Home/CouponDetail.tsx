@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Ticket } from 'lucide-react';
-import { message, Tabs, ConfigProvider, Button, Input, notification } from 'antd';
+import { Tabs, ConfigProvider, Button, Input, notification } from 'antd';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { claimCouponByCode, fetchAvailableCoupons, fetchUserCoupons } from '@/services/apiServices';
 import AvailableCoupons from './AvailableCoupons';
@@ -16,7 +16,6 @@ dayjs.extend(buddhistEra);
 dayjs.locale('th');
 
 const CouponDetail = () => {
-    const [, contextHolder] = message.useMessage();
     const queryClient = useQueryClient();
     const [couponCode, setCouponCode] = useState('');
 
@@ -82,8 +81,6 @@ const CouponDetail = () => {
             }}
         >
             <div className="min-h-screen bg-gray-50 pb-20">
-                {contextHolder}
-                
                 {/* Header Section */}
                 <div className="bg-white sticky top-0 z-40 shadow-sm border-b border-gray-100">
                     <div className="container mx-auto px-4 max-w-5xl">

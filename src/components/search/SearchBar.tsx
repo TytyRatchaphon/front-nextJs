@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import { Drawer, Button } from "antd";
-import { FilterOutlined, HistoryOutlined, CloseOutlined } from "@ant-design/icons";
+import { FilterOutlined, HistoryOutlined, CloseOutlined, PushpinFilled } from "@ant-design/icons";
 import GifLoader from '@/components/utility/GifLoader';
 import { useAuthStore } from '@/stores/authStore';
 import { getSearchHistory, deleteSearchHistory, clearSearchHistory, saveSearchHistory, SearchHistoryItem, fetchPopularSearches, fetchSearchSuggestions, PopularSearchItem } from '@/services/apiServices';
@@ -377,7 +377,6 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
         order,
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFilters, sortBy, order, onSearch]);
 
   const handleSearchClick = () => {
@@ -780,8 +779,9 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
                     }
                     addToHistory(item.normalized_keyword);
                   }}
-                  className="px-3 py-1.5 text-xs bg-gray-50 border border-gray-100 text-gray-600 rounded-full hover:bg-red-50 hover:text-red-500 hover:border-red-100 hover:shadow-sm transition-all duration-200 whitespace-nowrap"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-gray-50 border border-gray-100 text-gray-600 rounded-full hover:bg-red-50 hover:text-red-500 hover:border-red-100 hover:shadow-sm transition-all duration-200 whitespace-nowrap"
                 >
+                  {item.is_pinned ? <PushpinFilled className="text-red-500 text-[10px]" /> : null}
                   {item.normalized_keyword}
                 </button>
               ))}

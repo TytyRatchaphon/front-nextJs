@@ -65,10 +65,16 @@ export interface BookUpdate {
   }[];
 }
 
-export const fetchHomeData = async (token?: string | null): Promise<HomeDataResponse | null> => {
+export const fetchHomeData = async (
+  token?: string | null,
+  contentType?: string,
+): Promise<HomeDataResponse | null> => {
   try {
     const cleanedToken = parseJwtToken(token);
-    const config = cleanedToken ? { headers: { Authorization: cleanedToken } } : undefined;
+    const config = {
+      ...(cleanedToken ? { headers: { Authorization: cleanedToken } } : {}),
+      ...(contentType ? { params: { content_type: contentType } } : {}),
+    };
     const response = await apiClient.get<HomeDataResponse>("/getAllBookHome", config);
     return response.data;
   } catch {

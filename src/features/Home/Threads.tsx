@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchThreads, createThread, deleteThread } from '@/services/apiServices';
-import { Pagination, Select, Tabs, Modal, Input, Button, Form, message } from 'antd';
+import { App, Pagination, Select, Tabs, Modal, Input, Button, Form } from 'antd';
 import GifLoader from '@/components/utility/GifLoader';
 import Link from 'next/link';
 import 'next/image';
@@ -43,7 +43,13 @@ export default function Threads({ initialThreadResponse }: ThreadsProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
-  const [messageApi, contextHolder] = message.useMessage();
+  const { notification } = App.useApp();
+  const messageApi = {
+    success: (content: unknown) => notification.success({ message: String(content ?? '') }),
+    error: (content: unknown) => notification.error({ message: String(content ?? '') }),
+    warning: (content: unknown) => notification.warning({ message: String(content ?? '') }),
+    info: (content: unknown) => notification.info({ message: String(content ?? '') }),
+  };
   const { token } = useAuthStore() as any;
   const { openLoginModal } = useUIStore();
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
@@ -133,7 +139,6 @@ export default function Threads({ initialThreadResponse }: ThreadsProps) {
 
   return (
     <div className="min-h-screen bg-white pb-20">
-       {contextHolder}
        <style jsx>{`
         :global(.ant-tabs-tab:hover) {
           color: #dc2626 !important;

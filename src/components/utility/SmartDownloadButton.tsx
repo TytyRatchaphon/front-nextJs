@@ -4,6 +4,12 @@ import React, { useEffect, useState } from 'react';
 import { Button } from 'antd';
 import { DownloadOutlined, AppleOutlined, AndroidOutlined } from '@ant-design/icons';
 import { useWebsiteStore } from '@/stores/websiteStore';
+import {
+    DEFAULT_APP_STORE_URL,
+    DEFAULT_PLAY_STORE_URL,
+    normalizeAppStoreUrl,
+    normalizePlayStoreUrl,
+} from '@/utils/storeLinkUtils';
 
 interface SmartDownloadButtonProps {
     className?: string;
@@ -14,10 +20,6 @@ interface SmartDownloadButtonProps {
 const SmartDownloadButton: React.FC<SmartDownloadButtonProps> = ({ className, label = 'Download App', children }) => {
     const { settings } = useWebsiteStore();
     const [os, setOs] = useState<'ios' | 'android' | 'other' | null>(null);
-
-    // Fallbacks provided by user
-    const DEFAULT_APP_STORE_URL = 'https://bit.ly/47zskk0';
-    const DEFAULT_PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.enjoybook.enjoyread&hl=en';
 
     useEffect(() => {
         const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
@@ -32,8 +34,8 @@ const SmartDownloadButton: React.FC<SmartDownloadButtonProps> = ({ className, la
     }, []);
 
     const handleClick = () => {
-        const iosLink = settings?.app_store || DEFAULT_APP_STORE_URL;
-        const androidLink = settings?.play_store || DEFAULT_PLAY_STORE_URL;
+        const iosLink = normalizeAppStoreUrl(settings?.app_store, DEFAULT_APP_STORE_URL);
+        const androidLink = normalizePlayStoreUrl(settings?.play_store, DEFAULT_PLAY_STORE_URL);
 
         if (os === 'ios') {
             window.open(iosLink, '_blank');

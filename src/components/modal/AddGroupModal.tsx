@@ -1,6 +1,6 @@
 "use client"
 import  { useState } from 'react'
-import { Modal, message } from 'antd'
+import { App, Modal } from 'antd'
 import { createGroup } from '@/services/apiServices'
 
 export default function AddGroupModal({
@@ -17,7 +17,13 @@ export default function AddGroupModal({
   const [creating, setCreating] = useState(false)
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [msgApi, msgHolder] = message.useMessage()
+  const { notification } = App.useApp()
+  const msgApi = {
+    success: (content: unknown) => notification.success({ message: String(content ?? '') }),
+    error: (content: unknown) => notification.error({ message: String(content ?? '') }),
+    warning: (content: unknown) => notification.warning({ message: String(content ?? '') }),
+    info: (content: unknown) => notification.info({ message: String(content ?? '') }),
+  }
 
   const validate = (v: string) => {
     const t = String(v ?? '').trim()
@@ -28,7 +34,6 @@ export default function AddGroupModal({
 
   return (
     <Modal open={open} onCancel={onClose} footer={null} title="เพิ่มเล่มนิยาย" centered>
-      {msgHolder}
       <div className="py-4">
         <input
           type="text"

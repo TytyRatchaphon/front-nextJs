@@ -165,6 +165,15 @@ export const fetchReviewComments = async (reviewId: string | number): Promise<{ 
   }
 };
 
+export const deleteReviewComment = async (reviewId: string | number, commentId: string | number) => {
+  try {
+    const response = await apiClient.delete(`/review/${reviewId}/comment/${commentId}`);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
 export const reportReviewOrComment = async (targetType: 'review' | 'comment', targetId: string | number) => {
   try {
     const payload = { target_type: targetType, target_id: targetId };

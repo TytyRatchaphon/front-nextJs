@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Alert, Button, Select, Popover, Tabs, Pagination, App, Empty } from "antd";
+import { Alert, Button, Select, Popover, Tabs, Pagination, App, Empty, Segmented } from "antd";
 import { fetchBookReviews, fetchStickers, postBookReview, fetchBookComments, postCommentNotification, postReviewNotification } from "@/services/apiServices";
 import { CommentData, CommentEpData, StickerSet } from "@/types/api";
 import CommentItem from "./CommentItem";
@@ -47,11 +47,16 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [pageSize, setPageSize] = useState(10);
+  const [commentTypeSegment, setCommentTypeSegment] = useState<"ep" | "story">("ep");
 
   // Form State
   const [newComment, setNewComment] = useState("");
   const [rating, setRating] = useState(mode === "comment" ? 5 : 0);
   const [sortOrder, setSortOrder] = useState("newest");
+
+  const isAllCommentsMode = mode === "comment_ep";
+  const effectiveMode: "comment" | "comment_ep" =
+    isAllCommentsMode && commentTypeSegment === "story" ? "comment" : mode;
 
   // Sticker State
   const [stickers, setStickers] = useState<StickerSet[]>([]);
@@ -68,7 +73,7 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
       setLoading(true);
       let data;
 
-      if (mode === "comment") {
+      if (effectiveMode === "comment") {
         data = await fetchBookReviews(bookId, currentPage, pageSize, sortOrder);
       } else {
         // For fetchBookComments, check if it supports sort param usage. 
@@ -104,11 +109,19 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
     } finally {
       setLoading(false);
     }
-  }, [mode, bookId, currentPage, pageSize, sortOrder]);
+  }, [effectiveMode, bookId, currentPage, pageSize, sortOrder]);
 
   useEffect(() => {
     if (bookId) loadReviews();
   }, [bookId, loadReviews]);
+
+  useEffect(() => {
+    if (!isAllCommentsMode) return;
+    const nextPageSize = commentTypeSegment === "story" ? 20 : 10;
+    setCurrentPage(1);
+    setPageSize(nextPageSize);
+    setSortOrder("newest");
+  }, [commentTypeSegment, isAllCommentsMode]);
 
   // Fetch Stickers
   useEffect(() => {
@@ -260,13 +273,13 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
       // Use innerHTML or newComment since we know it's not empty/strictly-whitespace
       const commentToSend = editor?.innerHTML || newComment;
 
-      const response = await postBookReview(bookId, commentToSend, mode === 'comment' ? 5 : 0);
+      const response = await postBookReview(bookId, commentToSend, effectiveMode === 'comment' ? 5 : 0);
 
       // Trigger notification if comment id exists
       if (response && response.data) {
         const commentId = response.data.comment_book_id || response.data.id;
         if (commentId) {
-          if (mode === 'comment') {
+          if (effectiveMode === 'comment') {
             await postReviewNotification(commentId);
           } else {
             await postCommentNotification(commentId);
@@ -286,7 +299,7 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
         editorRef.current.innerHTML = "";
       }
       setNewComment("");
-      setRating(mode === "comment" ? 5 : 0);
+      setRating(effectiveMode === "comment" ? 5 : 0);
 
       // Reload data 
       setCurrentPage(1);
@@ -331,11 +344,11 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
         <h3 className="text-xl font-bold text-gray-900">{mode === 'comment' ? 'รีวิวทั้งหมด' : 'ความคิดเห็นทั้งหมด'} ({totalItems})</h3>
         <div className="w-full sm:w-48">
           <Select
-            defaultValue="newest"
+            value={sortOrder}
             style={{ width: "100%" }}
             onChange={(val) => setSortOrder(val)}
             options={
-              mode === 'comment'
+              mode === 'comment' && !isAllCommentsMode
                 ? [
                   { value: "newest", label: "เรียงตาม: ใหม่ล่าสุด" },
                   { value: "oldest", label: "เรียงตาม: เก่าสุด" },
@@ -351,8 +364,21 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
         </div>
       </div>
 
+      {isAllCommentsMode && (
+        <div className="mb-6">
+          <Segmented
+            value={commentTypeSegment}
+            onChange={(value) => setCommentTypeSegment(value as "ep" | "story")}
+            options={[
+              { label: "คอมเมนต์ตอน", value: "ep" },
+              { label: "คอมเมนต์เรื่อง", value: "story" },
+            ]}
+          />
+        </div>
+      )}
+
       {/* Write Comment Box */}
-      {mode === "comment" && (
+      {effectiveMode === "comment" && (
         <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm mb-8">
           <h3 className="text-lg font-bold text-gray-900 mb-4">เขียนความคิดเห็น</h3>
 
@@ -437,7 +463,7 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
                   currentUserId={currentUserId}
                   onReplySuccess={() => loadReviews()}
                   onDeleteSuccess={handleDeleteSuccess}
-                  mode={mode}
+                  mode={effectiveMode}
                 />
               );
             })}
@@ -453,7 +479,7 @@ export default function CommentSection({ bookId, mode = "comment" }: CommentSect
           </>
         ) : (
           <div className="py-12 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-            <Empty description="ยังไม่มีความคิดเห็น" />
+            <Empty description={effectiveMode === "comment" ? "ยังไม่มีคอมเมนต์เรื่อง" : "ยังไม่มีคอมเมนต์ตอน"} />
           </div>
         )}
       </div>

@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchUserCoupons, useCoupon as applyCoupon } from '@/services/apiServices';
-import { Empty, message, Modal, Checkbox, Button, Image as AntImage } from 'antd';
+import { App, Empty, Modal, Checkbox, Button, Image as AntImage } from 'antd';
 import { Ticket, Percent, Coins, BookOpenCheck, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
 import GifLoader from '@/components/utility/GifLoader';
 import CouponCard from '@/components/coupon/CouponCard';
@@ -16,8 +16,13 @@ import { useWebsiteStore } from '@/stores/websiteStore';
 
 const MyCoupons = () => {
     const queryClient = useQueryClient();
-    const [messageApi, contextHolder] = message.useMessage();
-    const [modal, contextHolderModal] = Modal.useModal();
+    const { notification, modal } = App.useApp();
+    const messageApi = {
+        success: (content: unknown) => notification.success({ message: String(content ?? '') }),
+        error: (content: unknown) => notification.error({ message: String(content ?? '') }),
+        warning: (content: unknown) => notification.warning({ message: String(content ?? '') }),
+        info: (content: unknown) => notification.info({ message: String(content ?? '') }),
+    };
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedCoupon, setSelectedCoupon] = useState<CouponUI | null>(null);
     const [selectedRewardIds, setSelectedRewardIds] = useState<number[]>([]);
@@ -257,8 +262,6 @@ const MyCoupons = () => {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 min-h-[60vh] content-start">
-            {contextHolder}
-            {contextHolderModal}
             {userCoupons.map((coupon) => (
                 <CouponCard 
                     key={coupon.id} 

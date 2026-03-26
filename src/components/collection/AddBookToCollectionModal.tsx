@@ -216,7 +216,6 @@ function SearchAllTab({
     if (committed) {
       setPage(1);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.categories, filters.types, filters.content_type, filters.end]);
 
   // Active filter chips
@@ -546,9 +545,14 @@ export default function AddBookToCollectionModal({
 
   const addBooksMutation = useMutation({
     mutationFn: () => addBooksToCollection(collectionId, Array.from(selectedBookIds)),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['collectionBooks'] });
-      queryClient.invalidateQueries({ queryKey: ['userCollections'] });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['collectionBooks', collectionId] }),
+        queryClient.invalidateQueries({ queryKey: ['collectionBooks', String(collectionId)] }),
+        queryClient.invalidateQueries({ queryKey: ['userCollections'] }),
+        queryClient.refetchQueries({ queryKey: ['collectionBooks', collectionId], exact: true }),
+        queryClient.refetchQueries({ queryKey: ['collectionBooks', String(collectionId)], exact: true }),
+      ]);
       handleClose();
       notification.success({ message: 'เพิ่มหนังสือสำเร็จ' });
     },

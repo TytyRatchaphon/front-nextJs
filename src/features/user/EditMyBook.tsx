@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
-import { Image as AntdImage, Spin, Modal, Popconfirm, message, Empty, Dropdown, Select, DatePicker, InputNumber, Popover, Segmented } from 'antd'
+import { App, Image as AntdImage, Spin, Modal, Popconfirm, Empty, Dropdown, Select, DatePicker, InputNumber, Popover, Segmented } from 'antd'
 import dayjs from 'dayjs'
 import type { BookDetail } from '@/types/api'
 import { TagSwiper } from '@/components/swiper/ImageSlider'
@@ -30,10 +30,13 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 	const [, setDataSource] = useState<'prop' | 'session' | 'api' | 'none'>(initialBook ? 'prop' : 'none')
 	useState(false);
 
-	// Antd message api (avoid static message warning in App Router)
-	const [messageApi, messageContextHolder] = message.useMessage()
-	// Use Modal.useModal to avoid static Modal.confirm warnings in App Router
-	const [modalApi, modalContextHolder] = Modal.useModal()
+	const { notification, modal: modalApi } = App.useApp()
+	const messageApi = {
+		success: (content: unknown) => notification.success({ message: String(content ?? '') }),
+		error: (content: unknown) => notification.error({ message: String(content ?? '') }),
+		warning: (content: unknown) => notification.warning({ message: String(content ?? '') }),
+		info: (content: unknown) => notification.info({ message: String(content ?? '') }),
+	}
 
 	// runtime debug helpers
 	const log = (...args: any[]) => {
@@ -631,9 +634,6 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 	}
 	return (
 		<div className="max-w-5xl mx-auto py-10 px-6">
-			{messageContextHolder}
-			{modalContextHolder}
-
 			{/* Add Group Modal */}
 			<Modal
 				open={addGroupModalOpen}
