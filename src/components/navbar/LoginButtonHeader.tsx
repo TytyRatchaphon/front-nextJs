@@ -211,8 +211,6 @@ const LoginButtonHeader: React.FC = () => {
 
             login(userData, token);
 
-            // Log login event
-            console.log('[LOG] login =>', { method: 'email', email: userData.email });
             logActivity('login', 'user', '', { method: 'email', email: userData.email });
 
             setLoginFormData(null);
@@ -308,8 +306,6 @@ const LoginButtonHeader: React.FC = () => {
 
             login(userData, token);
 
-            // Log register event
-            console.log('[LOG] register =>', { method: 'email', email: userData.email });
             logActivity('register', 'user', '', { method: 'email', email: userData.email });
 
             api.success({
@@ -452,6 +448,7 @@ const LoginButtonHeader: React.FC = () => {
         footer={null}
         centered
         width={800}
+        zIndex={1600}
         styles={{
           body: { padding: 0 },
           content: { padding: 0 }
@@ -559,7 +556,7 @@ const LoginButtonHeader: React.FC = () => {
                     </div>
                   </div>
 
-                  <a target="_blank" className="text-sm cursor-pointer font-bold mt-5 inline-block font-primary login-link" href="/policy-privacy">
+                  <a target="_blank" rel="noopener noreferrer" className="text-sm cursor-pointer font-bold mt-5 inline-block font-primary login-link" href="/policy-privacy">
                     <span className='font-primary text-red-600 underline'>นโยบายข้อมูลส่วนบุคคล</span>
                   </a>
                 </div>

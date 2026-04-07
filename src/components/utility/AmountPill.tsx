@@ -39,10 +39,10 @@ function AmountPill({ amount, icon, onAddClick, className = "" }: AmountPillProp
 
     return (
         <div
-            className={`w-[108px] h-[32px] bg-white rounded-full flex items-center justify-between p-1 shadow-sm border border-gray-100 select-none ${className}`}
+            className={`amount-pill w-[108px] h-[32px] bg-white rounded-full flex items-center justify-between p-1 shadow-sm border border-gray-100 select-none ${className}`}
         >
             {/* Coin Icon */}
-            <div className="w-6 h-6 flex-shrink-0 relative">
+            <div className="amount-pill-icon w-6 h-6 flex-shrink-0 relative">
                 <Image
                     src={iconSrc}
                     alt="coin"
@@ -55,7 +55,7 @@ function AmountPill({ amount, icon, onAddClick, className = "" }: AmountPillProp
             {/* Amount Text */}
             <div className="flex-1 text-center mx-1 overflow-hidden cursor-pointer">
                 <Tooltip title={amount.toLocaleString()} trigger={['click', 'hover']} placement="bottom">
-                    <span className="text-sm font-medium text-gray-800 truncate block leading-none">
+                    <span className="amount-pill-text text-sm font-medium text-gray-800 truncate block leading-none">
                         {formattedAmount}
                     </span>
                 </Tooltip>
@@ -64,7 +64,7 @@ function AmountPill({ amount, icon, onAddClick, className = "" }: AmountPillProp
             {/* Add Button */}
             <button
                 onClick={handleClick}
-                className="w-6 h-6 rounded-full bg-[#7AC142] hover:bg-[#68a635] flex items-center justify-center !text-white transition-colors flex-shrink-0 active:scale-95"
+                className="amount-pill-add w-6 h-6 rounded-full bg-[#7AC142] hover:bg-[#68a635] flex items-center justify-center !text-white transition-colors flex-shrink-0 active:scale-95"
             >
                 <Plus size={16} strokeWidth={3} />
             </button>

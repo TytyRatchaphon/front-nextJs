@@ -11,6 +11,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { FreeMode, Navigation } from "swiper/modules";
 import { followPromotion, unfollowPromotion } from "@/services/apiServices";
 import { useAuthStore } from "@/stores/authStore";
+import { resolveBookCoverImageSrc } from "@/utils/imageUtils";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/free-mode";
@@ -74,6 +75,8 @@ const coverSrc = (img?: string) => {
   return img.startsWith("http") ? img : `https://img.enjoybook.co/img/book/${img}`;
 };
 
+const bookCoverSrc = (book?: any) => resolveBookCoverImageSrc(book, '/images/ejb.png', 'book');
+
 const formatCount = (num?: number) => {
   const value = Number(num || 0);
   if (value >= 1000000) return `${(value / 1000000).toFixed(1)}m`;
@@ -113,7 +116,7 @@ function RewardCard({
               }`}
             >
               <Image
-                src={coverSrc(book?.img_full || book?.img)}
+                src={bookCoverSrc(book)}
                 alt={book?.name || "reward book"}
                 fill
                 className="object-cover transition duration-500 group-hover:scale-[1.04]"
@@ -218,7 +221,7 @@ function RewardCard({
           <div className="mb-4 flex items-start gap-3">
             <div className="relative h-16 w-12 shrink-0 overflow-hidden rounded-xl bg-stone-100">
               <Image
-                src={coverSrc(book?.img_full || book?.img)}
+                src={bookCoverSrc(book)}
                 alt={book?.name || "reward book"}
                 fill
                 className="object-cover"

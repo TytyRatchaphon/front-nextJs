@@ -14,18 +14,22 @@ interface MyBookSalesTabProps {
 }
 
 const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
-  const [salesDateRange, setSalesDateRange] = useState<[Dayjs | null, Dayjs | null] | null>([dayjs().startOf('month'), dayjs()]);
+  const [salesDateRange, setSalesDateRange] = useState<[Dayjs | null, Dayjs | null] | null>([
+    dayjs().startOf('month'),
+    dayjs().endOf('day'),
+  ]);
   const [currentPage, setCurrentPage] = useState(1);
   const [exporting, setExporting] = useState(false);
   const [api, contextHolder] = notification.useNotification();
 
   const formattedSalesRange = useMemo(() => {
     if (salesDateRange && salesDateRange[0] && salesDateRange[1]) {
-      const s = (salesDateRange[0] as any).startOf ? (salesDateRange[0] as any).startOf('day').format('YYYY-MM-DD HH:mm:ss') : dayjs(salesDateRange[0]).startOf('day').format('YYYY-MM-DD HH:mm:ss');
-      const e = (salesDateRange[1] as any).endOf ? (salesDateRange[1] as any).endOf('day').format('YYYY-MM-DD HH:mm:ss') : dayjs(salesDateRange[1]).endOf('day').format('YYYY-MM-DD HH:mm:ss');
+      // Keep exact datetime selected by user.
+      const s = dayjs(salesDateRange[0]).format('YYYY-MM-DD HH:mm:ss');
+      const e = dayjs(salesDateRange[1]).format('YYYY-MM-DD HH:mm:ss');
       return [s, e];
     }
-    const end = dayjs();
+    const end = dayjs().endOf('day');
     const start = end.startOf('day').subtract(13, 'day');
     return [start.format('YYYY-MM-DD HH:mm:ss'), end.format('YYYY-MM-DD HH:mm:ss')];
   }, [salesDateRange]);
@@ -103,7 +107,7 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
     return { total: 0, limit: 20, page: 1 };
   }, [salesResponse]);
 
-  const salesColumns: ColumnsType<{ key: any; name: any; coin_sales_total: any; freecoin_sales_total: any; revenue: any; }> = useMemo(() => [
+  const salesColumns: ColumnsType<{ key: any; name: any; coin_sales_total: any; freecoin_sales_total: any; fast_ticket_total: any; fast_coin_total: any; revenue: any; }> = useMemo(() => [
     {
       title: 'ลำดับ',
       key: 'index',
@@ -152,6 +156,40 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
     },
   ], [currentPage, paginationData]);
 
+  const salesColumnsWithFast: ColumnsType<any> = useMemo(() => {
+    const fastTicketCol = {
+      title: 'ยอดใช้ Fast Ticket',
+      dataIndex: 'fast_ticket_total',
+      key: 'fast_ticket_total',
+      align: 'right' as const,
+      render: (v: any) => {
+        const n = Number(v) || 0;
+        return `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      }
+    };
+    const fastCoinCol = {
+      title: 'ยอดใช้ Fast Coin',
+      dataIndex: 'fast_coin_total',
+      key: 'fast_coin_total',
+      align: 'right' as const,
+      render: (v: any) => {
+        const n = Number(v) || 0;
+        return `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      }
+    };
+
+    const base = [...salesColumns];
+    if (!base.some((col: any) => col?.key === 'fast_ticket_total')) {
+      const revenueIndex = base.findIndex((col: any) => col?.key === 'revenue');
+      if (revenueIndex >= 0) {
+        base.splice(revenueIndex, 0, fastTicketCol as any, fastCoinCol as any);
+      } else {
+        base.push(fastTicketCol as any, fastCoinCol as any);
+      }
+    }
+    return base;
+  }, [salesColumns]);
+
   const salesRows: any[] = useMemo(() => {
     if (!salesResponse) return [];
     const d = salesResponse;
@@ -171,10 +209,40 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
     return d?.data?.totals ?? null;
   }, [salesResponse]);
 
+  const summaryTotals = useMemo(() => {
+    const totals = salesTotals ?? {};
+    const sumFromRows = (key: string) =>
+      salesRows.reduce((acc: number, row: any) => acc + (Number(row?.[key]) || 0), 0);
+
+    const coinSalesTotal = Number((totals as any).coin_sales_total ?? sumFromRows('coin_sales_total') ?? 0);
+    const freecoinSalesTotal = Number((totals as any).freecoin_sales_total ?? sumFromRows('freecoin_sales_total') ?? 0);
+    const fastTicketTotal = Number((totals as any).fast_ticket_total ?? sumFromRows('fast_ticket_total') ?? 0);
+    const fastCoinTotal = Number((totals as any).fast_coin_total ?? sumFromRows('fast_coin_total') ?? 0);
+    const overallIncomeBaht = Number(
+      (totals as any).overall_income_baht ??
+      (totals as any).total_income_baht ??
+      (totals as any).overall_income ??
+      (totals as any).income_baht ??
+      salesRows.reduce(
+        (acc: number, row: any) =>
+          acc + (Number(row?.income_baht ?? row?.total ?? row?.income ?? row?.revenue ?? row?.amount ?? row?.total_money ?? row?.money) || 0),
+        0
+      ) ??
+      0
+    );
+
+    return {
+      coinSalesTotal,
+      freecoinSalesTotal,
+      fastTicketTotal,
+      fastCoinTotal,
+      overallIncomeBaht,
+    };
+  }, [salesTotals, salesRows]);
+
 
 
   const salesData = useMemo(() => {
-    console.log('Calculating salesData. Rows count:', salesRows.length, 'Page:', currentPage);
     if (!Array.isArray(salesRows)) return [];
     
     return salesRows.map((r: any, idx: number) => ({
@@ -182,6 +250,8 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
       name: r.name ?? r.title ?? r.book_name ?? '-',
       coin_sales_total: r.coin_sales_total ?? r.coin_sales ?? r.coin_sales_total_amount ?? 0,
       freecoin_sales_total: r.freecoin_sales_total ?? r.freecoin_sales ?? r.freecoin_sales_total_amount ?? 0,
+      fast_ticket_total: r.fast_ticket_total ?? r.fast_ticket ?? 0,
+      fast_coin_total: r.fast_coin_total ?? r.fast_coin ?? 0,
       revenue: r.income_baht ?? r.total ?? r.income ?? r.revenue ?? r.amount ?? r.total_money ?? r.money ?? 0,
     }));
   }, [salesRows, currentPage]);
@@ -255,7 +325,7 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
 
       {/* Sales Table */}
       <Table
-        columns={salesColumns}
+        columns={salesColumnsWithFast}
         dataSource={salesData}
         pagination={false}
         className='mb-6'
@@ -270,12 +340,22 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
             <div className='flex items-center gap-2'>
               <div className='flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-50 border border-yellow-200'>
                 <Image src="/images/e-coin.png" alt="Coins" width={20} height={20} />
-                <span className='text-sm font-medium'>{salesTotals ? (Number(salesTotals.coin_sales_total || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</span>
+                <span className='text-sm font-medium'>{summaryTotals.coinSalesTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
 
               <div className='flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 border border-red-200'>
                 <Image src="/images/money-bag.png" alt="Freecoin" width={20} height={20} />
-                <span className='text-sm font-medium'>{salesTotals ? (Number(salesTotals.freecoin_sales_total || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</span>
+                <span className='text-sm font-medium'>{summaryTotals.freecoinSalesTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+
+              <div className='flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200'>
+                <Image src="/images/fast_ticket.png" alt="Fast Ticket" width={20} height={20} />
+                <span className='text-sm font-medium'>ยอดใช้ Fast Ticket: {summaryTotals.fastTicketTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+
+              <div className='flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-200'>
+                <Image src="/images/e-coin.png" alt="Fast Coin" width={20} height={20} />
+                <span className='text-sm font-medium'>ยอดใช้ Fast Coin: {summaryTotals.fastCoinTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </div>
           </div>
@@ -283,7 +363,7 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
           <div className='text-right mt-3 md:mt-0'>
             <div className='text-sm text-gray-600'>รวมรายได้</div>
             <div className='text-lg font-semibold'>
-              {salesTotals ? (Number(salesTotals.overall_income_baht ?? salesTotals.total_income_baht ?? salesTotals.overall_income ?? salesTotals.income_baht ?? 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'} บาท
+              {summaryTotals.overallIncomeBaht.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท
             </div>
           </div>
         </div>

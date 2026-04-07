@@ -1,5 +1,21 @@
-import { describe, it, expect } from 'vitest'
-import { imageLoader, resolveBannerImageSrc, resolveBookImageSrc, resolveStoreImageSrc, simpleImageLoader } from '@/utils/imageUtils'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
+
+const mockReadGifModePreference = vi.fn((defaultValue = true) => defaultValue)
+
+vi.mock('@/utils/gifPreference', () => ({
+  GIF_MODE_STORAGE_KEY: 'enjoybook:gif-mode',
+  GIF_MODE_ENABLED_VALUE: '1',
+  GIF_MODE_DISABLED_VALUE: '0',
+  readGifModePreference: (defaultValue = true) => mockReadGifModePreference(defaultValue),
+  writeGifModePreference: vi.fn(),
+}))
+
+import { imageLoader, resolveBannerImageSrc, resolveBookCoverImageSrc, resolveBookImageSrc, resolveStoreImageSrc, simpleImageLoader } from '@/utils/imageUtils'
+
+beforeEach(() => {
+  mockReadGifModePreference.mockReset()
+  mockReadGifModePreference.mockReturnValue(true)
+})
 
 describe('imageLoader', () => {
   it('upgrades http URL to https', () => {
@@ -44,6 +60,39 @@ describe('resolve helpers', () => {
 
   it('builds book thumbnail URLs from filenames', () => {
     expect(resolveBookImageSrc('cover.png')).toBe('https://img.enjoybook.co/img/book/tn/cover.png')
+  })
+
+  it('uses static frame params for gif book cover when gif mode is disabled', () => {
+    mockReadGifModePreference.mockReturnValue(false)
+    expect(resolveBookImageSrc('cover.gif')).toContain('frame=1')
+    expect(resolveBookImageSrc('cover.gif')).toContain('still=1')
+  })
+
+  it('prefers img_gif when gif mode is enabled', () => {
+    mockReadGifModePreference.mockReturnValue(true)
+    expect(
+      resolveBookCoverImageSrc({
+        img: 'https://image.enjoybook.co/enjoybook.image/book/sample.webp',
+        img_gif: 'https://image.enjoybook.co/enjoybook.image/book/sample.gif',
+      }),
+    ).toBe('https://image.enjoybook.co/enjoybook.image/book/sample.gif')
+  })
+
+  it('falls back to img when gif mode is disabled', () => {
+    mockReadGifModePreference.mockReturnValue(false)
+    expect(
+      resolveBookCoverImageSrc({
+        img: 'https://image.enjoybook.co/enjoybook.image/book/sample.webp',
+        img_gif: 'https://image.enjoybook.co/enjoybook.image/book/sample.gif',
+      }),
+    ).toBe('https://image.enjoybook.co/enjoybook.image/book/sample.webp')
+  })
+
+  it('uses first frame when only gif is available and gif mode is disabled', () => {
+    mockReadGifModePreference.mockReturnValue(false)
+    const url = resolveBookCoverImageSrc({ img_gif: 'cover.gif' })
+    expect(url).toContain('frame=1')
+    expect(url).toContain('still=1')
   })
 
   it('builds store URLs from filenames', () => {

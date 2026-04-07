@@ -8,6 +8,7 @@ import { Button, Input, notification, Popover } from "antd";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
 import { sanitizeUserGeneratedHtml } from "@/utils/sanitizeHtml";
+import FrameOverlayImage from "@/components/ui/FrameOverlayImage";
 
 interface ThreadCommentItemProps {
   review: CommentThreadData;
@@ -200,12 +201,10 @@ export default function ThreadCommentItem({
             {/* Frame Overlay */}
             {userFrame && (
                 <div className="absolute -top-[15%] -left-[15%] w-[130%] h-[130%] pointer-events-none z-10">
-                    <Image
-                        src={typeof userFrame === 'string' ? userFrame.trim() : userFrame}
-                        alt="User Frame"
-                        fill
-                        className="object-contain"
-                        unoptimized
+                    <FrameOverlayImage
+                      src={typeof userFrame === 'string' ? userFrame.trim() : userFrame}
+                      alt="User Frame"
+                      className="object-contain"
                     />
                 </div>
             )}

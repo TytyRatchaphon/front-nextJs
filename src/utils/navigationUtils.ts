@@ -85,7 +85,10 @@ export const openSafeExternalInNewTab = (input: string): boolean => {
 
 export const buildCoinEnjoyTopupUrl = (token?: string | null): string => {
   const topupUrl = new URL(COINENJOY_BASE_URL);
-  const cleanToken = (token || "").replace(/^Bearer\s+/i, "").trim();
+  const cleanToken = (token || "")
+    .replace(/^Bearer\s+/i, "")
+    .replace(/^['"]+|['"]+$/g, "")
+    .trim();
   if (cleanToken && TOKEN_PATTERN.test(cleanToken)) {
     topupUrl.searchParams.set("tk", cleanToken);
   }

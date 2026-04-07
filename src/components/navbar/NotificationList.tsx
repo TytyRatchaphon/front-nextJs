@@ -52,8 +52,8 @@ const NotificationList: React.FC<{ onClose?: () => void; mode?: 'popover' | 'dra
     React.useState<Set<number>>(new Set());
     const [activeTab, setActiveTab] = React.useState<NotificationTab>('all');
     const panelClassName = mode === 'drawer'
-        ? 'flex h-full w-full min-w-0 flex-col bg-white font-bai-jamjuree'
-        : 'w-[85vw] max-w-[380px] min-w-[320px] sm:w-[420px] md:w-[480px] flex flex-col bg-white rounded-xl overflow-hidden font-bai-jamjuree shadow-2xl border border-gray-100 ring-1 ring-black/5';
+        ? 'reader-notification-panel flex h-full w-full min-w-0 flex-col bg-white font-bai-jamjuree'
+        : 'reader-notification-panel w-[85vw] max-w-[380px] min-w-[320px] sm:w-[420px] md:w-[480px] flex flex-col bg-white rounded-xl overflow-hidden font-bai-jamjuree shadow-2xl border border-gray-100 ring-1 ring-black/5';
 
     const { data: notificationResponse, isLoading } = useQuery({
         queryKey: ['navbarNotifications'],
@@ -150,19 +150,25 @@ const NotificationList: React.FC<{ onClose?: () => void; mode?: 'popover' | 'dra
         }
     };
 
+    const getTypeToneKey = (type: string) => {
+        if (['book_new', 'book_update'].includes(type)) return 'book';
+        if (type === 'system') return 'system';
+        return 'comment';
+    };
+
     if (isLoading) {
         return (
             <div className={panelClassName}>
-                <div className="px-5 py-4 border-b border-gray-100 bg-white">
+                <div className="reader-notification-header px-5 py-4 border-b border-gray-100 bg-white">
                     <div className="h-7 w-32 rounded-md bg-gray-100 animate-pulse" />
                 </div>
-                <div className="px-3 pt-2 bg-white border-b border-gray-100">
+                <div className="reader-notification-tabs px-3 pt-2 bg-white border-b border-gray-100">
                     <div className="h-10 rounded-lg bg-gray-100 animate-pulse" />
                 </div>
-                <div className="h-[300px] flex justify-center items-center bg-white">
+                <div className="reader-notification-empty h-[300px] flex justify-center items-center bg-white">
                     <GifLoader width={100} height={100} />
                 </div>
-                <div className="p-3 bg-gray-50 border-t border-gray-200">
+                <div className="reader-notification-footer p-3 bg-gray-50 border-t border-gray-200">
                     <div className="h-4 w-28 mx-auto rounded bg-gray-100 animate-pulse" />
                 </div>
             </div>
@@ -179,7 +185,7 @@ const NotificationList: React.FC<{ onClose?: () => void; mode?: 'popover' | 'dra
         `}</style>
             <div className={panelClassName}>
                 {/* Header */}
-                <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-20 shadow-sm">
+                <div className="reader-notification-header px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-20 shadow-sm">
                     <div className="flex items-center gap-2">
                         <h3 className="font-bold text-lg text-gray-800 m-0">การแจ้งเตือน</h3>
                         {notifications && notifications.filter((n: any) => n.readed === 'N').length > 0 && (
@@ -204,7 +210,7 @@ const NotificationList: React.FC<{ onClose?: () => void; mode?: 'popover' | 'dra
                     )}
                 </div>
 
-                <div className="px-3 pt-2 bg-white border-b border-gray-100">
+                <div className="reader-notification-tabs px-3 pt-2 bg-white border-b border-gray-100">
                     <Tabs
                         activeKey={activeTab}
                         onChange={(key) => setActiveTab(key as NotificationTab)}
@@ -220,21 +226,23 @@ const NotificationList: React.FC<{ onClose?: () => void; mode?: 'popover' | 'dra
 
                 {/* List */}
                 {!filteredNotifications || filteredNotifications.length === 0 ? (
-                    <div className="w-full h-[300px] flex flex-col justify-center items-center gap-3 text-gray-400">
-                        <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mb-2">
+                    <div className="reader-notification-empty w-full h-[300px] flex flex-col justify-center items-center gap-3 text-gray-400">
+                        <div className="reader-notification-empty-icon w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mb-2">
                             <BellOutlined className="text-xl opacity-30" />
                         </div>
                         <p className="m-0 text-sm">ไม่มีการแจ้งเตือนใหม่</p>
                     </div>
                 ) : (
-                    <div className="max-h-[70vh] sm:max-h-[500px] overflow-y-auto custom-scrollbar bg-slate-50">
+                    <div className="reader-notification-list max-h-[70vh] sm:max-h-[500px] overflow-y-auto custom-scrollbar bg-slate-50">
                         {filteredNotifications.map((item: any) => {
                             const typeInfo = getTypeLabel(item.NotiType.type);
+                            const toneKey = getTypeToneKey(item.NotiType.type);
+                            const tagTone = item.readed === 'N' ? toneKey : 'default';
 
                             return (
                                 <div
                                     key={item.id}
-                                    className={`group relative px-4 py-4 hover:bg-white cursor-pointer border-b border-gray-100 last:border-0 transition-all duration-200
+                                    className={`reader-notification-item group relative px-4 py-4 hover:bg-white cursor-pointer border-b border-gray-100 last:border-0 transition-all duration-200
                                 ${item.readed === 'N' ? 'bg-white' : 'bg-slate-50/50 grayscale-[20%] hover:grayscale-0'}
                             `}
                                     onClick={() => handleNotificationClick(item)}
@@ -259,7 +267,7 @@ const NotificationList: React.FC<{ onClose?: () => void; mode?: 'popover' | 'dra
                                                         />
                                                     </div>
                                                     {/* Type Icon Badge */}
-                                                    <div className={`absolute -bottom-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] shadow-sm ring-2 ring-white
+                                                    <div className={`reader-notification-type-badge reader-notification-type-badge-${toneKey} absolute -bottom-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] shadow-sm ring-2 ring-white
                                                 ${['book_new', 'book_update'].includes(item.NotiType.type) ? 'bg-blue-500' :
                                                             item.NotiType.type === 'system' ? 'bg-red-500' : 'bg-orange-500'}
                                             `}>
@@ -267,7 +275,7 @@ const NotificationList: React.FC<{ onClose?: () => void; mode?: 'popover' | 'dra
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <div className={`w-14 h-14 rounded-lg flex items-center justify-center text-2xl shadow-sm border border-gray-100
+                                                <div className={`reader-notification-type-card reader-notification-type-card-${toneKey} w-14 h-14 rounded-lg flex items-center justify-center text-2xl shadow-sm border border-gray-100
                                              ${['book_new', 'book_update'].includes(item.NotiType.type) ? 'bg-blue-50 text-blue-500' :
                                                         item.NotiType.type === 'system' ? 'bg-red-50 text-red-500' : 'bg-orange-50 text-orange-500'}
                                         `}>
@@ -280,7 +288,7 @@ const NotificationList: React.FC<{ onClose?: () => void; mode?: 'popover' | 'dra
                                         <div className="flex-1 min-w-0 flex flex-col gap-1">
                                             {/* Top Row: Type Label & Time */}
                                             <div className="flex justify-between items-center">
-                                                <Tag color={item.readed === 'N' ? typeInfo.color : 'default'} className="m-0 text-[10px] border-none px-1.5 py-0 h-5 leading-5 font-semibold">
+                                                <Tag color={item.readed === 'N' ? typeInfo.color : 'default'} className={`reader-notification-type-tag reader-notification-type-tag-${tagTone} m-0 text-[10px] border-none px-1.5 py-0 h-5 leading-5 font-semibold`}>
                                                     {typeInfo.text}
                                                 </Tag>
                                                 <span className="text-[10px] text-gray-400">
@@ -319,7 +327,7 @@ const NotificationList: React.FC<{ onClose?: () => void; mode?: 'popover' | 'dra
                 )
                 }
 
-                <div className="p-3 bg-gray-50 border-t border-gray-200 text-center">
+                <div className="reader-notification-footer p-3 bg-gray-50 border-t border-gray-200 text-center">
                     <Link href="/user/notification" onClick={() => onClose?.()} className="text-xs font-semibold !text-red-600 hover:text-[#E31C3D] transition-colors">
                         ดูการแจ้งเตือนทั้งหมด
                     </Link>

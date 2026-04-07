@@ -2,7 +2,7 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { NovelCardItem } from "@/types/api";
-import { resolveBookImageSrc } from '@/utils/imageUtils';
+import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 type TagType = "new" | "bestseller" | "completed" | null;
 
@@ -103,6 +103,7 @@ const NovelTag = ({ type }: { type: TagType }) => {
 
 export default function NovelCard({ novel, tag = null }: NovelCardProps) {
   if (!novel) return null;
+  const novelWithGif = novel as NovelCardItem & { img_gif?: string; img_gif_full?: string; img_full?: string };
 
   return (
     <div className="w-[168px] h-[355px]">
@@ -129,7 +130,7 @@ export default function NovelCard({ novel, tag = null }: NovelCardProps) {
               fill
               sizes="168px"
               className="rounded-lg object-cover"
-              src={resolveBookImageSrc(novel.img, '/images/ejb.png')}
+              src={resolveBookCoverImageSrc(novelWithGif, '/images/ejb.png')}
             />
           </div>
         </div>

@@ -67,7 +67,6 @@ const CouponDetail = () => {
 
     const handleClaimByCode = () => {
         if (!couponCode.trim()) return;
-        console.log('Claiming Coupon Code:', couponCode);
         claimByCodeMutation.mutate(couponCode);
     };
 

@@ -99,7 +99,6 @@ export default function Category() {
     if (hasLoggedRef.current === logKey) return;
     hasLoggedRef.current = logKey;
 
-    console.log('[LOG] category_click =>', { categoryId, type, tab, name: categoryName || '' });
     log('category_click', 'category', categoryId, { type, tab, name: categoryName || '' });
   }, [categoryId, type, tab, categoryName, log]);
 

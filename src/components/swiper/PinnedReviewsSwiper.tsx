@@ -12,6 +12,8 @@ import ReviewModal from "@/components/modal/ReviewModal";
 import SpoilerCardWrapper from "@/components/ui/SpoilerCardWrapper";
 import ImageWithFallback from "@/components/ui/ImageWithFallback";
 import ProfileAvatarLink, { extractFrameSrc, normalizeProfileAssetSrc } from "@/components/ui/ProfileAvatarLink";
+import { resolveBookCoverImageSrc } from "@/utils/imageUtils";
+import { toSafeReviewPreviewHtml } from "@/utils/reviewText";
 
 import "swiper/css";
 import "swiper/css/navigation";
@@ -58,9 +60,6 @@ export default function PinnedReviewsSwiper({ reviews }: PinnedReviewsSwiperProp
             </h2>
           </div>
           <div className="flex items-center gap-2 self-end md:ml-auto">
-            <span className="rounded-full border border-[#f1bdb7] bg-white/85 px-3 py-1 text-xs font-semibold text-[#cc3f2f]">
-              {reviews.length} รีวิว
-            </span>
             <Link
               href="/all-review"
               className="inline-flex items-center gap-1 rounded-full border border-[#f0c5c0] bg-white px-3 py-1.5 text-sm font-semibold text-[#cc3f2f] transition-colors hover:bg-[#fff7f6]"
@@ -118,20 +117,14 @@ export default function PinnedReviewsSwiper({ reviews }: PinnedReviewsSwiperProp
             );
             const userFrame = extractFrameSrc(review.user);
             const userName = review.user?.fullname || "Unknown";
-            const bookCover = normalizeProfileAssetSrc(
-              review.book?.img || review.book?.img_full,
-              "/images/ejb.png",
-              "https://img.enjoybook.co/img/book/",
-            );
+            const bookCover = resolveBookCoverImageSrc(review.book, "/images/ejb.png");
             const bookTitle = review.book?.name || "Unknown Book";
             const bookTag = review.book?.tag?.[0] || "นิยาย";
             const writerName = review.book?.writer_name || "Unknown Writer";
             const timeAgo = dayjs(review.created_at).fromNow();
             const episodeRead = Number(review.ep_read || 0);
 
-            let cleanContent = String(review.content || "");
-            cleanContent = cleanContent.replace(/<[^>]+>/g, "");
-            cleanContent = cleanContent.replace(/\[\/?\s*SPOILER\s*\]/gi, "").trim();
+            const cleanContentHtml = toSafeReviewPreviewHtml(review.content);
 
             const isSpoilerCard = Boolean(review.is_spoiler);
 
@@ -167,12 +160,16 @@ export default function PinnedReviewsSwiper({ reviews }: PinnedReviewsSwiperProp
                     className="text-[15px] text-amber-500 [&_.ant-rate-star]:!me-[2px]"
                   />
                   <span className="rounded-full bg-[#fff1ef] px-2.5 py-1 text-[11px] font-semibold text-[#b3554a]">
-                    {episodeRead > 0 ? `อ่านถึง #${episodeRead}` : "รีวิวจากนักอ่าน"}
+                    {episodeRead > 0 ? `อ่านแล้ว ${episodeRead} ตอน` : "รีวิวจากนักอ่าน"}
                   </span>
                 </div>
 
-                <div className="mb-4 flex-1 break-words text-[14px] leading-6 text-[#4d4b52] line-clamp-3">
-                  {cleanContent || "รีวิวนี้ยังไม่มีข้อความเพิ่มเติม"}
+                <div className="mb-4 flex-1 break-words text-[14px] leading-6 text-[#4d4b52] line-clamp-3 [&_a]:pointer-events-none">
+                  {cleanContentHtml ? (
+                    <span dangerouslySetInnerHTML={{ __html: cleanContentHtml }} />
+                  ) : (
+                    "รีวิวนี้ยังไม่มีข้อความเพิ่มเติม"
+                  )}
                 </div>
 
                 <Link

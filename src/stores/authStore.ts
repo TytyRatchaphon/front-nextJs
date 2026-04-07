@@ -5,8 +5,13 @@ import Cookies from 'js-cookie'
 import { parseJwtToken, decodeAndMapUserFromToken } from '@/utils/jwtParser';
 
 const getTokenCookieOptions = () => {
+  const isProduction = process.env.NODE_ENV === 'production';
   const isSecureContext = typeof window !== 'undefined' && window.location.protocol === 'https:';
-  return { sameSite: 'lax' as const, secure: isSecureContext };
+  return {
+    sameSite: 'lax' as const,
+    secure: isProduction || isSecureContext,
+    path: '/',
+  };
 };
 
 const clearLegacyLocalAuthStorage = () => {

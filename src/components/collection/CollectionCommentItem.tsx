@@ -8,6 +8,7 @@ import { Button, Input, Modal, App, Popover } from "antd";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
 import { sanitizeUserGeneratedHtml } from "@/utils/sanitizeHtml";
+import FrameOverlayImage from "@/components/ui/FrameOverlayImage";
 
 interface CollectionCommentItemProps {
     comment: CollectionCommentData;
@@ -226,13 +227,7 @@ export default function CollectionCommentItem({
                         {/* Frame Overlay (if exists) */}
                         {userFrame && (
                             <div className="absolute -top-[15%] -left-[15%] w-[130%] h-[130%] pointer-events-none z-10">
-                                <Image
-                                    src={userFrame}
-                                    alt="User Frame"
-                                    fill
-                                    className="object-contain"
-                                    loader={({ src, width, quality }) => `${src}?w=${width ?? ''}&q=${quality ?? 75}`}
-                                />
+                                <FrameOverlayImage src={userFrame} alt="User Frame" className="object-contain" />
                             </div>
                         )}
                     </Link>

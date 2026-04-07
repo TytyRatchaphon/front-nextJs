@@ -9,6 +9,8 @@ import { fetchArticleDetail } from '@/services/apiServices';
 import type { ArticleResponse } from '@/types/api';
 import GifLoader from '@/components/utility/GifLoader';
 import { useLogger } from '@/hooks/useLogger';
+import { sanitizeUserGeneratedHtml } from '@/utils/sanitizeHtml';
+import { resolveSafeNavigationUrl } from '@/utils/navigationUtils';
 
 
 // Helper for date formatting
@@ -83,11 +85,8 @@ export default function ArticleDetail({ id, initialData = null }: { id: string; 
       const detail = data.result[0];
       const startTime = Date.now();
 
-      console.log('[LOG] page_view tracking started =>', { id, title: detail.title });
-
       return () => {
         const duration = Math.round((Date.now() - startTime) / 1000 * 10) / 10;
-        console.log('[LOG] page_view =>', { id, title: detail.title, duration: `${duration}s` });
         log('page_view', 'article', id, {
           title: detail.title,
           category: detail.type,
@@ -124,6 +123,9 @@ export default function ArticleDetail({ id, initialData = null }: { id: string; 
       </div>
     )
   }
+
+  const safeDetail1Html = sanitizeUserGeneratedHtml(detail.detail_1 || '');
+  const safeDetail2Html = sanitizeUserGeneratedHtml(detail.detail_2 || '');
 
   return (
     <div className="bg-gray-50 min-h-screen py-8 font-primary">
@@ -180,8 +182,8 @@ export default function ArticleDetail({ id, initialData = null }: { id: string; 
 
                 {/* Content Body */}
                 <div className="prose prose-lg max-w-none text-gray-800 prose-headings:text-gray-900 prose-a:text-red-600 hover:prose-a:text-red-700 prose-img:rounded-xl mb-8">
-                     <div dangerouslySetInnerHTML={{ __html: detail.detail_1 }} />
-                     {detail.detail_2 && <div className="mt-4" dangerouslySetInnerHTML={{ __html: detail.detail_2 }} />}
+                     <div dangerouslySetInnerHTML={{ __html: safeDetail1Html }} />
+                     {safeDetail2Html && <div className="mt-4" dangerouslySetInnerHTML={{ __html: safeDetail2Html }} />}
                 </div>
 
                 {/* Tags */}
@@ -207,14 +209,23 @@ export default function ArticleDetail({ id, initialData = null }: { id: string; 
                         if (!img) return null;
 
                         let href = '#';
+                        let isExternalLink = false;
                         if (type === 'book') {
                              href = `/book/${data}`;
                         } else if (type === 'link') {
-                             href = data;
+                             const safeLink = resolveSafeNavigationUrl(String(data || ''), { allowExternal: true });
+                             href = safeLink || '#';
+                             isExternalLink = Boolean(safeLink);
                         }
 
                         return (
-                            <Link key={num} href={href} target={type === 'link' ? '_blank' : undefined} className="block hover:opacity-90 transition-opacity">
+                            <Link
+                                key={num}
+                                href={href}
+                                target={isExternalLink ? '_blank' : undefined}
+                                rel={isExternalLink ? 'noopener noreferrer' : undefined}
+                                className="block hover:opacity-90 transition-opacity"
+                            >
                                 <div className="relative w-full h-auto aspect-[4/1] md:aspect-[5/1] rounded-lg overflow-hidden">
                                      <Image 
                                         src={img} 
@@ -250,7 +261,10 @@ export default function ArticleDetail({ id, initialData = null }: { id: string; 
                     </h3>
                     <div className="space-y-6">
                         {listRecommend && listRecommend.length > 0 ? (
-                            listRecommend.map((item) => (
+                            listRecommend.map((item) => {
+                                const safeRecommendNameHtml = sanitizeUserGeneratedHtml(String(item.name || ''));
+                                const plainRecommendName = safeRecommendNameHtml.replace(/<[^>]+>/g, '');
+                                return (
                                 <Link 
                                     href={`/article/${item.id}`} 
                                     key={item.id}
@@ -259,7 +273,7 @@ export default function ArticleDetail({ id, initialData = null }: { id: string; 
                                     <div className="relative w-[100px] h-[70px] flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
                                         <Image
                                             src={item.img}
-                                            alt={item.name.replace(/<[^>]+>/g, '')} // Strip HTML from name if needed, though usually name is plain text or needs parsing
+                                            alt={plainRecommendName}
                                             fill
                                             className="object-cover group-hover:scale-105 transition-transform duration-300"
                                         />
@@ -267,7 +281,7 @@ export default function ArticleDetail({ id, initialData = null }: { id: string; 
                                     <div className="flex-1 min-w-0">
                                         <div 
                                             className="text-sm font-medium text-gray-900 group-hover:text-red-600 transition-colors line-clamp-2 mb-1 leading-snug"
-                                            dangerouslySetInnerHTML={{ __html: item.name }} // Name seems to contain HTML based on JSON
+                                            dangerouslySetInnerHTML={{ __html: safeRecommendNameHtml }}
                                         ></div>
                                         <div className="flex items-center text-xs text-gray-400 gap-2">
                                             <div className="flex items-center gap-1">
@@ -279,7 +293,7 @@ export default function ArticleDetail({ id, initialData = null }: { id: string; 
                                         </div>
                                     </div>
                                 </Link>
-                            ))
+                            )})
                         ) : (
                             <p className="text-gray-500 text-sm">ไม่มีบทความแนะนำ</p>
                         )}

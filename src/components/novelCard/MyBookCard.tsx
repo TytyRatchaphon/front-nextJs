@@ -2,6 +2,7 @@
 import React from 'react'
 import Image from 'next/image';
 import { useRouter } from 'next/navigation'
+import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 interface Book {
   book_id?: number;
@@ -46,13 +47,7 @@ function MyCardBook({ book }: CardBookProps) {
     }
     return num;
 }
-  // สร้าง URL รูปภาพ
-  // Support both full URLs and filename keys from the API.
-  const imageUrl = book.img
-    ? (typeof book.img === 'string' && book.img.startsWith('http')
-        ? book.img
-        : `https://image.enjoybook.co/enjoybook.image/book_thumbnail/${book.img}`)
-    : "/images/ejb.png";
+  const imageUrl = resolveBookCoverImageSrc(book, '/images/ejb.png');
 
   // Normalize and detect various "ended" values from different APIs
   const isEndedValue = (v: any) => {

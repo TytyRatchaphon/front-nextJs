@@ -3,6 +3,7 @@ import { Modal, Rate, Input, Switch, Button, App } from 'antd';
 import Image from 'next/image';
 import { updateBookReview } from '@/services/api/commentApi';      
 import { useQueryClient } from '@tanstack/react-query';
+import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 const { TextArea } = Input;
 
@@ -79,11 +80,7 @@ export default function EditReviewModal({ isOpen, onClose, review, onSuccess }: 
   };
 
   const getBookImg = (book: any) => {
-    if (!book) return '/images/ejb.png';
-    const raw = book.img || book.imgtn || book.thumb || book.img_full || '';
-    if (!raw) return '/images/ejb.png';
-    if (typeof raw === 'string' && raw.startsWith('http')) return raw;
-    return `https://img.enjoybook.co/img/book/tn/${raw}`;
+    return resolveBookCoverImageSrc(book, '/images/ejb.png');
   };
 
   if (!review) return null;

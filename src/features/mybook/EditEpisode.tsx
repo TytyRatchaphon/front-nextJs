@@ -4,15 +4,13 @@ import React, { useEffect, useState } from "react";
 import { Form, Input, Select, DatePicker, notification, Modal } from "antd";
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import "axios";
-import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
 
 // Import TextEditor
 import TextEditorTiny from "@/components/editor/TextEditorTiny";
 import GifLoader from '@/components/utility/GifLoader';
 import { fetchGroupEpisodes } from "@/services/apiServices";
-import apiClient from '@/services/apiClient';
+import secureProxyClient from "@/services/secureProxyClient";
 
 dayjs.extend(customParseFormat);
 
@@ -35,9 +33,6 @@ interface ChapterFormValues {
     order_by: string | number;
     bookID: string | number;
 }
-
-// Configs
-const ACCESS_TOKEN = process.env.NEXT_PUBLIC_ACCESS_TOKEN || '';
 
 // --- Constants ---
 const priceCoin = Array.from({ length: 11 }, (_, i) => ({
@@ -64,19 +59,6 @@ const EditChapter: React.FC<EditChapterProps> = ({ epID }) => {
     const inputStyle = 'input';
 
     // --- Helper: สร้าง Headers ---
-    const getHeaders = () => {
-        const token = Cookies.get('token');
-        const cleanToken = token ? token.replace(/^['"]+|['"]+$/g, '') : '';
-
-        const encodedApiKey = typeof window !== 'undefined'
-            ? btoa(ACCESS_TOKEN)
-            : Buffer.from(ACCESS_TOKEN).toString('base64');
-
-        return {
-            'Authorization': cleanToken || '',
-            'X-API-Key': encodedApiKey
-        };
-    };
 
     // --- Fetch Existing Data (ดึงข้อมูลเดิมมาแสดง) ---
     useEffect(() => {
@@ -85,9 +67,7 @@ const EditChapter: React.FC<EditChapterProps> = ({ epID }) => {
                 setSpinLoading(true);
                 try {
                     // GET ข้อมูลเดิม
-                    const response = await apiClient.get(`/user/mybook/ep/${epID}`, {
-                        headers: getHeaders()
-                    });
+                    const response = await secureProxyClient.get(`/user/mybook/ep/${epID}`);
                     const resData = response.data;
 
                     if (resData.code === 200 && resData.data) {
@@ -186,9 +166,7 @@ const EditChapter: React.FC<EditChapterProps> = ({ epID }) => {
 
 
             // ยิง PUT ไปที่ /user/mybook/ep/update
-            const response = await apiClient.put(`/user/mybook/ep/update`, payload, {
-                headers: getHeaders()
-            });
+            const response = await secureProxyClient.put(`/user/mybook/ep/update`, payload);
 
             const resData = response.data;
 

@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { App } from 'antd';
-import { useRouter } from 'next/navigation';
 import { useUIStore } from '@/stores/uiStore';
+import { useAuthStore } from '@/stores/authStore';
 import Image from 'next/image';
 import { useLineLogin } from '@/hooks/useLineLogin';
 import { CloseCircleOutlined } from '@ant-design/icons';
@@ -11,7 +11,6 @@ import { useLogger } from '@/hooks/useLogger';
 
 const LoginLine = () => {
   const { notification } = App.useApp();
-  const router = useRouter();
   const { closeLoginModal } = useUIStore();
   const { loginWithLine, loading } = useLineLogin();
   const { log: logActivity } = useLogger();
@@ -20,15 +19,11 @@ const LoginLine = () => {
     try {
       await loginWithLine();
 
-      // Log login event
-      console.log('[LOG] login =>', { method: 'line' });
       logActivity('login', 'user', '', { method: 'line' });
 
-      // if no error was thrown, consider login successful
-      closeLoginModal();
-      setTimeout(() => {
-        router.push('/');
-      }, 500);
+      if (useAuthStore.getState().isLoggedIn) {
+        closeLoginModal();
+      }
     } catch {
       notification.error({
         message: 'เข้าสู่ระบบไม่สำเร็จ',

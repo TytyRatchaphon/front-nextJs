@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Eye, List } from "lucide-react";
 import { CategoryBook } from "@/types/api";
 import { TagSwiper } from "@/components/swiper/ImageSlider";
+import { resolveBookCoverImageSrc } from "@/utils/imageUtils";
 
 interface CategoryHorizontalCardProps {
   book: CategoryBook;
@@ -29,7 +30,7 @@ const CategoryHorizontalCard: React.FC<CategoryHorizontalCardProps> = ({ book })
       {/* Cover Image */}
       <Link href={`/book/${book.book_id}`} className="block flex-shrink-0 w-[147px] h-full relative group">
         <Image
-          src={book.img}
+          src={resolveBookCoverImageSrc(book, '/images/ejb.png')}
           alt={book.name}
           fill
           className="object-cover group-hover:scale-105 transition-transform duration-300"

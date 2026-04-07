@@ -20,6 +20,7 @@ import FloatingGiftButton from "@/components/utility/FloatingGiftButton";
 import { BackToTopButton } from "@/components/utility/BackToTopButton";
 import { useAuthStore } from "@/stores/authStore";
 import { parseJwtToken } from "@/utils/jwtParser";
+import { resolveBookCoverImageSrc } from "@/utils/imageUtils";
 import {
   fetchActiveCategories,
   fetchBookUpdates,
@@ -129,8 +130,8 @@ export default function HomeContent({
     isLoading: isPinnedReviewsLoading,
     error: pinnedReviewsError,
   } = useQuery({
-    queryKey: ["pinnedReviews"],
-    queryFn: fetchPinnedReviews,
+    queryKey: ["pinnedReviews", "liked", 10, 1],
+    queryFn: () => fetchPinnedReviews({ sort: "liked", limit: 10, page: 1 }),
     enabled: !isLoading && enableSecondaryQueries,
   });
 
@@ -343,7 +344,7 @@ export default function HomeContent({
                       book_id: book.book_id,
                       title: book.name,
                       author: book.writer_name,
-                      cover: book.img_full || book.img,
+                      cover: resolveBookCoverImageSrc(book, '/images/default-book.png', 'book'),
                       chapters:
                         book.BookTranEps?.map((ep: any) => ({
                           id: ep.ep_id,

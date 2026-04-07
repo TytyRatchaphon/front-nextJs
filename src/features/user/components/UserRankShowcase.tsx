@@ -39,6 +39,14 @@ export default function UserRankShowcase({
     return idx >= 0 ? idx : 0;
   }, [allRanks]);
 
+  const isTopRank = useMemo(() => {
+    const currentRank = allRanks[currentRankIndex];
+    if (currentRank?.is_current_rank && currentRank.max_rp === null) return true;
+    if (rankData?.rp_needed === 0) return true;
+    if (!rankData?.next_rank?.name?.trim()) return true;
+    return false;
+  }, [allRanks, currentRankIndex, rankData]);
+
   useEffect(() => {
     const loadRankData = async () => {
       if (!isLoggedIn) return;
@@ -64,6 +72,12 @@ export default function UserRankShowcase({
       loadRankData();
     }
   }, [hasMounted, isLoggedIn]);
+
+  useEffect(() => {
+    if (showRanksModal) {
+      setActiveSlideIndex(currentRankIndex);
+    }
+  }, [currentRankIndex, showRanksModal]);
 
   if (!hasMounted || !isLoggedIn) {
     return null;
@@ -94,6 +108,13 @@ export default function UserRankShowcase({
       </div>
     );
   }
+
+  const progressWidth =
+    rankData.current_rank.max_rp > 0
+      ? Math.min(100, Math.max(0, (rankData.total_rp / rankData.current_rank.max_rp) * 100))
+      : isTopRank
+        ? 100
+        : 0;
 
   return (
     <>
@@ -165,17 +186,20 @@ export default function UserRankShowcase({
 
           <div className="mb-2 h-2.5 w-full overflow-hidden rounded-full bg-[#fa807280] shadow-inner">
             <div
-              className="h-full rounded-full bg-[#ff0000] transition-all duration-500 ease-out"
-              style={{
-                width: `${rankData.current_rank.max_rp > 0 ? Math.min(100, Math.max(0, (rankData.total_rp / rankData.current_rank.max_rp) * 100)) : 0}%`,
-              }}
+              className={`h-full rounded-full transition-all duration-500 ease-out ${isTopRank ? "bg-emerald-500" : "bg-[#ff0000]"}`}
+              style={{ width: `${progressWidth}%` }}
             />
           </div>
 
           <p className={`font-medium text-stone-700 ${isCompact ? "mt-1.5 text-[11px] leading-[1.45]" : "mt-3 text-sm"}`}>
-            ต้องการอีก <span className="font-bold text-red-600">{rankData.rp_needed.toLocaleString()}</span>{" "}
-            แต้ม เพื่ออัปแรงก์เป็น{" "}
-            <span className="font-bold text-amber-600">{rankData.next_rank.name}</span>
+            {isTopRank ? (
+              <span className="font-semibold text-emerald-700">อยู่ในระดับสูงสุดแล้ว</span>
+            ) : (
+              <>
+                ต้องการอีก <span className="font-bold text-red-600">{rankData.rp_needed.toLocaleString()}</span>{" "}
+                แต้ม เพื่ออัปแรงก์เป็น <span className="font-bold text-amber-600">{rankData.next_rank.name}</span>
+              </>
+            )}
           </p>
         </div>
       </button>
@@ -218,52 +242,68 @@ export default function UserRankShowcase({
                 className="pb-4"
                 navigation
               >
-                {allRanks.map((rank) => (
-                  <SwiperSlide key={rank.rank_id} style={{ width: "200px" }}>
-                    <div
-                      className={`flex min-h-[240px] flex-col items-center gap-3 rounded-2xl border-2 p-5 transition-all duration-300 ${
-                        rank.is_current_rank
-                          ? "border-red-400 bg-gradient-to-br from-red-50 to-red-100 shadow-xl shadow-red-100"
-                          : "border-gray-100 bg-white"
-                      }`}
-                    >
+                {allRanks.map((rank) => {
+                  const isCurrentTopRank = rank.is_current_rank && isTopRank;
+
+                  return (
+                    <SwiperSlide key={rank.rank_id} style={{ width: "200px" }}>
                       <div
-                        className={`flex h-20 w-20 items-center justify-center rounded-full p-1 ${
-                          rank.is_current_rank ? "bg-red-50 ring-2 ring-red-300" : "bg-gray-50"
+                        className={`flex min-h-[240px] flex-col items-center gap-3 rounded-2xl border-2 p-5 transition-all duration-300 ${
+                          rank.is_current_rank
+                            ? "border-red-400 bg-gradient-to-br from-red-50 to-red-100 shadow-xl shadow-red-100"
+                            : "border-gray-100 bg-white"
                         }`}
                       >
-                        <Image
-                          src={rank.rank_img || "/images/user.png"}
-                          alt={rank.name}
-                          width={90}
-                          height={90}
-                          className="object-contain"
-                          unoptimized
-                        />
+                        <div
+                          className={`flex h-20 w-20 items-center justify-center rounded-full p-1 ${
+                            rank.is_current_rank
+                              ? isCurrentTopRank
+                                ? "bg-emerald-50 ring-2 ring-emerald-300"
+                                : "bg-red-50 ring-2 ring-red-300"
+                              : "bg-gray-50"
+                          }`}
+                        >
+                          <Image
+                            src={rank.rank_img || "/images/user.png"}
+                            alt={rank.name}
+                            width={90}
+                            height={90}
+                            className="object-contain"
+                            unoptimized
+                          />
+                        </div>
+
+                        <p
+                          className={`text-center text-sm font-bold leading-tight ${
+                            rank.is_current_rank
+                              ? isCurrentTopRank
+                                ? "text-emerald-600"
+                                : "text-red-600"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          {rank.name}
+                        </p>
+
+                        <p className="text-center text-xs text-gray-400">
+                          {rank.max_rp !== null
+                            ? `${rank.min_rp.toLocaleString()} - ${rank.max_rp.toLocaleString()} RP`
+                            : `${rank.min_rp.toLocaleString()}+ RP`}
+                        </p>
+
+                        {rank.is_current_rank && (
+                          <span
+                            className={`rounded-full px-3.5 py-1 text-[11px] font-semibold text-white ${
+                              isCurrentTopRank ? "bg-emerald-500" : "bg-red-500"
+                            }`}
+                          >
+                            {isCurrentTopRank ? "อยู่ในระดับสูงสุดแล้ว" : "แรงก์ปัจจุบัน"}
+                          </span>
+                        )}
                       </div>
-
-                      <p
-                        className={`text-center text-sm font-bold leading-tight ${
-                          rank.is_current_rank ? "text-red-600" : "text-gray-700"
-                        }`}
-                      >
-                        {rank.name}
-                      </p>
-
-                      <p className="text-center text-xs text-gray-400">
-                        {rank.max_rp !== null
-                          ? `${rank.min_rp.toLocaleString()} - ${rank.max_rp.toLocaleString()} RP`
-                          : `${rank.min_rp.toLocaleString()}+ RP`}
-                      </p>
-
-                      {rank.is_current_rank && (
-                        <span className="rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white">
-                          แรงก์ปัจจุบัน
-                        </span>
-                      )}
-                    </div>
-                  </SwiperSlide>
-                ))}
+                    </SwiperSlide>
+                  );
+                })}
               </Swiper>
 
               <div className="mt-4 flex h-10 justify-center">

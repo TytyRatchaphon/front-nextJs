@@ -7,6 +7,7 @@ import {
     fetchBookPurchaseDetails,
     fetchNovelPackCheck,
 } from "@/services/apiServices";
+import { resolveBookCoverImageSrc } from "@/utils/imageUtils";
 
 export function useBookDetailData(bookId: string, token: string | null, isReady: boolean) {
     // Book Detail
@@ -92,7 +93,20 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
             ? {
                 id: bookDetail.book_id,
                 isAddedToShelf: (bookDetail as any).isAddedToShelf || bookDetail.isFollowing || isInShelf,
-                cover: bookDetail.img_full,
+                img: bookDetail.img,
+                img_full: bookDetail.img_full,
+                img_gif: (bookDetail as any).img_gif,
+                img_gif_full: (bookDetail as any).img_gif_full,
+                cover: resolveBookCoverImageSrc(
+                    {
+                        img: bookDetail.img,
+                        img_full: bookDetail.img_full,
+                        img_gif: (bookDetail as any).img_gif,
+                        img_gif_full: (bookDetail as any).img_gif_full,
+                    },
+                    '/images/book.png',
+                    'book',
+                ),
                 title: bookDetail.name,
                 tag: (bookDetail as any).category1?.name || bookDetail["category1.name"],
                 category2: (bookDetail as any).category2?.name || bookDetail["category2.name"],

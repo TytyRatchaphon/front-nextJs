@@ -4,6 +4,7 @@ import React from 'react';
 import { Collapse } from 'antd';
 import type { FaqItem } from '@/services/apiServices';
 import { PlusOutlined, MinusOutlined } from '@ant-design/icons';
+import { sanitizeUserGeneratedHtml } from '@/utils/sanitizeHtml';
 
 interface FaqContentProps {
     initialFaqs?: FaqItem[];
@@ -53,7 +54,7 @@ export default function FaqContent({ initialFaqs = [] }: FaqContentProps) {
                                     children: (
                                         <div 
                                             className="text-gray-600 leading-relaxed prose prose-red max-w-none"
-                                            dangerouslySetInnerHTML={{ __html: faq.answer }}
+                                            dangerouslySetInnerHTML={{ __html: sanitizeUserGeneratedHtml(faq.answer) }}
                                         />
                                     ),
                                     style: {

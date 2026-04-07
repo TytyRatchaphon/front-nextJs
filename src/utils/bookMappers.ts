@@ -23,12 +23,18 @@ export interface NormalizedContinueBook extends UniversalBook {
  * @returns Normalized book data in UniversalBook format
  */
 export const normalizeBookData = (book: BookData): UniversalBook => {
+  const gifSource = (book.img_gif ?? (book as any).imgGif ?? (book as any).gif ?? '') as string;
+  const gifFullSource = (book.img_gif_full ?? (book as any).imgGifFull ?? gifSource ?? '') as string;
+
   return {
     book_id: typeof book.book_id === 'number' ? book.book_id : 
              typeof book.bookID === 'number' ? book.bookID :
              typeof book.id === 'number' ? book.id : undefined,
     bookID: String(book.bookID ?? book.book_id ?? ''),
-    img: book.img ?? book.imgtn ?? book.imgtn_url ?? '',
+    img: book.img ?? book.imgtn ?? book.imgtn_url ?? book.img_full ?? '',
+    img_full: (book.img_full ?? book.img ?? book.imgtn ?? book.imgtn_url ?? '') as string,
+    img_gif: gifSource || undefined,
+    img_gif_full: gifFullSource || undefined,
     name: book.name ?? book.title ?? '',
     title: book.title ?? book.name ?? '',
     author: book.writer_name ?? book.user_name ?? book.author ?? '',

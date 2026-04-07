@@ -23,6 +23,7 @@ import { useRouter } from 'next/navigation';
 import apiClient from '@/services/apiClient';
 import Image from 'next/image';
 import GifLoader from '@/components/utility/GifLoader';
+import FrameOverlayImage from '@/components/ui/FrameOverlayImage';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -468,7 +469,7 @@ const ProfilePictureTab = ({ onProfileFileChange }: ProfilePictureTabProps) => {
 
               {currentFrameImg && (
                 <div className='absolute inset-0 pointer-events-none'>
-                  <Image src={currentFrameImg} alt="Frame" fill className='object-contain' unoptimized={currentFrameImg.endsWith('.gif')} style={{ zIndex: 10 }} />
+                  <FrameOverlayImage src={currentFrameImg} alt="Frame" className='object-contain' style={{ zIndex: 10 }} />
                 </div>
               )}
             </div>
@@ -549,7 +550,7 @@ const ProfilePictureTab = ({ onProfileFileChange }: ProfilePictureTabProps) => {
                       </>
                     )}
                     <div className={`relative w-full h-28 mb-2 ${isLocked ? 'opacity-50' : ''}`}>
-                      <Image src={frame.img} alt={frame.name} fill className='object-contain' unoptimized={frame.img?.endsWith('.gif')} />
+                      <FrameOverlayImage src={frame.img} alt={frame.name} className='object-contain' />
                     </div>
                     <span className={`text-xs ${isLocked ? 'text-white font-bold' : ''}`}>{frame.name}</span>
                   </div>

@@ -8,6 +8,7 @@ import CardBook from '@/components/novelCard/CardBook';
 import { Spin } from 'antd';
 import Image from 'next/image';
 import Link from 'next/link';
+import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 // Swiper imports
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -159,7 +160,7 @@ const PromotionBlockTypeC = ({ block }: { block: PromotingBlock }) => {
                 {/* Book Cover */}
                 <div className="relative w-[140px] flex-shrink-0 h-full rounded-lg overflow-hidden shadow-sm">
                    <Image
-                      src={book.img.startsWith('http') ? book.img : `https://img.enjoybook.co/img/book/tn/${book.img}`}
+                      src={resolveBookCoverImageSrc(book, '/images/ejb.png')}
                       alt={book.name}
                       fill
                       className="object-cover"
@@ -266,14 +267,18 @@ function PromotionDetail() {
     <div className="min-h-screen bg-[#FDFDFD] pb-20">
       {/* Main Banner */}
       {promotionData.banner && (
-        <div className="relative w-full max-w-[1152px] mx-auto mt-6 rounded-2xl overflow-hidden shadow-sm h-[200px] md:h-[400px]">
-          <Image
-            src={promotionData.banner}
-            alt={promotionData.name}
-            fill
-            sizes="100vw"
-            className="object-fill"
-          />
+        <div className="mx-auto mt-6 w-full max-w-[1200px] px-4 sm:px-6">
+          <div className="relative isolate h-[220px] w-full overflow-hidden rounded-[28px] border border-black/5 bg-[#f5f1ee] shadow-[0_20px_60px_rgba(15,23,42,0.08)] md:h-[420px]">
+            <Image
+              src={promotionData.banner}
+              alt={promotionData.name}
+              fill
+              priority
+              unoptimized
+              sizes="(max-width: 768px) calc(100vw - 32px), 1152px"
+              className="object-cover object-center"
+            />
+          </div>
         </div>
       )}
 
@@ -285,16 +290,17 @@ function PromotionDetail() {
 
         {/* Blocks */}
         {promotionData.blocks?.map((block) => (
-          <div key={block.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div key={block.id} className="bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-visible">
             {/* Block Banner */}
             {block.banner && (
-              <div className="relative w-full mb-0 h-[150px] md:h-[250px]">
+              <div className="relative w-full mb-0 h-[170px] overflow-hidden rounded-t-[28px] bg-[#f7f3f0] md:h-[250px]">
                 <Image
                   src={block.banner}
                   alt={`Block Banner ${block.id}`}
                   fill
-                  sizes="100vw"
-                  className="object-fill"
+                  unoptimized
+                  sizes="(max-width: 768px) calc(100vw - 32px), 1070px"
+                  className="object-cover object-center"
                 />
               </div>
             )}

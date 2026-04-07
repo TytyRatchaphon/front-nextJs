@@ -13,7 +13,7 @@ export function proxy(request: NextRequest) {
     ) {
         const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'Unknown IP';
         const method = request.method;
-        const url = `${pathname}${search}`;
+        const url = search ? `${pathname}?<redacted>` : pathname;
         const userAgent = request.headers.get('user-agent') || 'No Agent';
 
         // Log format: [TIMESTAMP] [METHOD] [URL] - [IP] - [UserAgent]

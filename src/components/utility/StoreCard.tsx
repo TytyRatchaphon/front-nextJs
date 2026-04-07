@@ -2,7 +2,7 @@ import React from 'react';
 import Image from 'next/image';
 import { StorePack } from '@/types/api';
 import { useWebsiteStore } from '@/stores/websiteStore';
-import { App } from 'antd';
+import { App, Image as AntImage } from 'antd';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
@@ -101,11 +101,17 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
   return (
     <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col items-center text-center h-full hover:shadow-md transition-shadow">
       <div className="w-24 h-24 sm:w-28 sm:h-28 mb-3 relative flex-shrink-0">
-        <Image
+        <AntImage
           src={resolveStoreImageSrc(pack.img, '/images/ejb.png')}
           alt={pack.name}
-          fill
-          className="object-contain"
+          width="100%"
+          height="100%"
+          fallback="/images/ejb.png"
+          preview={{
+            mask: <span className="text-xs">Preview</span>,
+          }}
+          className="!h-full !w-full object-contain"
+          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
         />
       </div>
       <h3 className="font-medium text-base sm:text-lg mb-1 line-clamp-1" title={pack.name}>

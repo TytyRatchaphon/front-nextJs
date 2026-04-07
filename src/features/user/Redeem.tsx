@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image'
 import { useAuthStore } from '@/stores/authStore'
 import { notification, Modal } from 'antd';
@@ -82,7 +82,11 @@ function Redeem() {
         }
     }
 
-    const { settings } = useWebsiteStore();
+    const { settings, fetchSettings } = useWebsiteStore();
+
+    useEffect(() => {
+        fetchSettings();
+    }, [fetchSettings]);
 
     // Helper to get value reliably
     const getRewardValue = (key: string) => {
@@ -107,7 +111,7 @@ function Redeem() {
             {/* Background Section */}
             <div className='relative w-full h-[400px]'>
                 <Image
-                    src={resolveSettingsImageSrc(settings?.redeembg, '/images/redeembg.png')}
+                    src={resolveSettingsImageSrc(settings?.redeembg, '/images/hero-banner.png')}
                     alt="Redeem Background"
                     fill
                     className='object-cover'
@@ -121,7 +125,7 @@ function Redeem() {
                     {/* Header with Logo */}
                     <div className='flex items-center justify-center gap-2 mb-6'>
                         <Image
-                            src={resolveSettingsImageSrc(settings?.logo, '/images/logo.png')}
+                            src={resolveSettingsImageSrc(settings?.logo, '/images/ejb.png')}
                             alt="Logo"
                             width={24}
                             height={24}

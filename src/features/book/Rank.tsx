@@ -15,6 +15,7 @@ import {
 import { TagSwiper } from "@/components/swiper/ImageSlider";
 import GifLoader from "@/components/utility/GifLoader";
 import { useAuthStore } from "@/stores/authStore";
+import { resolveBookCoverImageSrc } from "@/utils/imageUtils";
 
 type RankingMode = "books" | "users";
 
@@ -146,7 +147,7 @@ export default function Rank() {
                 )}
 
                 <Image
-                  src={book.img}
+                  src={resolveBookCoverImageSrc(book, '/images/ejb.png')}
                   alt={book.name}
                   fill
                   className="rounded-md object-cover shadow-sm transition-transform duration-300 group-hover:scale-105"

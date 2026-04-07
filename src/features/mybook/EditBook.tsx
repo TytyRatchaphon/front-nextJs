@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useEffect, useState } from "react";
-import { Checkbox, Form, Input, Select, Modal, notification } from "antd";
+import { Checkbox, Form, Input, Select, Modal, Slider, Spin, Upload, notification } from "antd";
 import type { CheckboxChangeEvent } from "antd/es/checkbox";
+import type { RcFile } from 'antd/es/upload/interface';
 // import Cookies from "js-cookie";
 import { useParams, useRouter } from "next/navigation";
 
@@ -10,9 +11,16 @@ import { useParams, useRouter } from "next/navigation";
 import TextEditorTiny from "@/components/editor/TextEditorTiny";
 import UploadCropBook from "@/components/upload/UploadBook";
 import UploadCropBookBanner from "@/components/upload/UploadCropBookBanner";
-import apiClient from "@/services/apiClient";
+import secureProxyClient from "@/services/secureProxyClient";
 import GifLoader from '@/components/utility/GifLoader';
 import { useWebsiteStore } from '@/stores/websiteStore';
+import { sanitizeUserGeneratedHtml } from "@/utils/sanitizeHtml";
+import {
+    extractGifFrameAsFile,
+    getGifFrameCount,
+    isGifFile,
+    isGifFrameSelectionSupported,
+} from '@/utils/gifUtils';
 
 // --- Constant Data ---
 const novelType = [
@@ -45,8 +53,47 @@ interface BookFormValues {
     status: string;
     imgBook?: any;
     bgimg?: any;
+    img_gif?: any;
+    content_type?: 'novel' | 'novel_pack' | string;
+    fast_ticket?: number;
+    fast_coin?: number;
     [key: string]: any;
+    
 }
+
+interface MyBookPermissionSuggestConfig {
+    content_type: 'novel' | 'novel_pack' | string;
+    fast_ticket?: number;
+    fast_coin?: number;
+}
+
+interface MyBookPermissionData {
+    set_content_type: boolean;
+    set_fast_ticket: boolean;
+    set_fast_coin: boolean;
+    suggest_configs: MyBookPermissionSuggestConfig[];
+}
+
+const isGifArrayBuffer = (arrayBuffer: ArrayBuffer): boolean => {
+    if (arrayBuffer.byteLength < 6) return false;
+    const header = new Uint8Array(arrayBuffer.slice(0, 6));
+    const signature = String.fromCharCode(...header);
+    return signature === 'GIF87a' || signature === 'GIF89a';
+};
+
+const buildGifFilenameFromUrl = (url: string): string => {
+    try {
+        const parsed = new URL(url, typeof window !== 'undefined' ? window.location.origin : undefined);
+        const rawName = parsed.pathname.split('/').pop() || 'book-cover';
+        const decoded = decodeURIComponent(rawName).trim();
+        if (!decoded) return `book-cover-${Date.now()}.gif`;
+
+        const base = decoded.replace(/\.[a-z0-9]+$/i, '');
+        return `${base || 'book-cover'}-source.gif`;
+    } catch {
+        return `book-cover-${Date.now()}.gif`;
+    }
+};
 
 const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
     // --- Setup Logic ---
@@ -66,16 +113,46 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
     // Preview Images
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [imagePreviewBanner, setImagePreviewBanner] = useState<string | null>(null);
+    const [gifPreview, setGifPreview] = useState<string | null>(null);
+    const [gifSourceFile, setGifSourceFile] = useState<RcFile | null>(null);
+    const [gifFramePickerOpen, setGifFramePickerOpen] = useState(false);
+    const [gifFramePickerLoading, setGifFramePickerLoading] = useState(false);
+    const [gifFrameCount, setGifFrameCount] = useState(1);
+    const [gifFrameIndex, setGifFrameIndex] = useState(0);
+    const [gifFramePreview, setGifFramePreview] = useState<string | null>(null);
+    const [appliedGifFrameIndex, setAppliedGifFrameIndex] = useState(0);
+    const ENABLE_GIF_UPLOAD = false;
 
     const [category, setCategory] = useState<Category[]>([]);
     const [category1, setCategory1] = useState<Category[]>([]);
     const [category2, setCategory2] = useState<Category[]>([]);
     const [acceptBookCon, setAcceptBookCon] = useState<boolean>(true); // Default true สำหรับหน้า Edit
     const [initialStatus, setInitialStatus] = useState<string>('');
+    const [permissions, setPermissions] = useState<MyBookPermissionData>({
+        set_content_type: false,
+        set_fast_ticket: false,
+        set_fast_coin: false,
+        suggest_configs: [],
+    });
     const { settings: website, fetchSettings } = useWebsiteStore();
 
-    // Configs
-    const ACCESS_TOKEN = process.env.NEXT_PUBLIC_ACCESS_TOKEN || '';
+    const applySuggestConfig = (contentType: string, permissionData?: MyBookPermissionData) => {
+        const source = permissionData || permissions;
+        const matched = source.suggest_configs?.find((item) => item.content_type === contentType);
+        if (!matched) return;
+
+        const nextValues: Record<string, any> = {};
+        if (source.set_fast_ticket && typeof matched.fast_ticket === 'number') {
+            nextValues.fast_ticket = matched.fast_ticket;
+        }
+        if (source.set_fast_coin && typeof matched.fast_coin === 'number') {
+            nextValues.fast_coin = matched.fast_coin;
+        }
+
+        if (Object.keys(nextValues).length > 0) {
+            formNewBook.setFieldsValue(nextValues);
+        }
+    };
 
     // --- Fetch Data (Logic ของ EditBook) ---
     useEffect(() => {
@@ -84,23 +161,24 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
 
             setSpinLoading(true);
 
-            const encodedApiKey = typeof window !== 'undefined'
-                ? btoa(ACCESS_TOKEN)
-                : Buffer.from(ACCESS_TOKEN).toString('base64');
-
-            const config = {
-                headers: {
-                    'X-API-Key': encodedApiKey
-                }
-            };
-
             try {
                 // Fetch 3 API พร้อมกัน
                 await fetchSettings();
-                const [catRes, bookRes] = await Promise.all([
-                    apiClient.get(`/category`, config),
-                    apiClient.get(`/user/mybook/${finalBookId}`, config)
+                const [catRes, bookRes, permissionRes] = await Promise.all([
+                    secureProxyClient.get(`/category`),
+                    secureProxyClient.get(`/user/mybook/${finalBookId}`),
+                    secureProxyClient.get(`/user/mybook-permissions`)
                 ]);
+
+                const permissionData: MyBookPermissionData = {
+                    set_content_type: Boolean(permissionRes.data?.data?.set_content_type),
+                    set_fast_ticket: Boolean(permissionRes.data?.data?.set_fast_ticket),
+                    set_fast_coin: Boolean(permissionRes.data?.data?.set_fast_coin),
+                    suggest_configs: Array.isArray(permissionRes.data?.data?.suggest_configs)
+                        ? permissionRes.data.data.suggest_configs
+                        : [],
+                };
+                setPermissions(permissionData);
 
                 // 1. จัดการ Category
                 const cats = catRes.data?.data || [];
@@ -121,6 +199,33 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                     // Preview Images
                     if (bookData.img) setImagePreview(bookData.img);
                     if (bookData.bgimg) setImagePreviewBanner(bookData.bgimg);
+                    const existingGifPreviewUrl = bookData.img_gif_full || bookData.img_gif;
+                    const existingGifSourceUrl = bookData.img_gif_full || null;
+
+                    if (existingGifPreviewUrl) {
+                        setGifPreview(existingGifPreviewUrl);
+                    }
+
+                    if (existingGifSourceUrl) {
+                        const sourceGifFile = await toGifRcFileFromUrl(existingGifSourceUrl);
+                        if (sourceGifFile) {
+                            const frameCount = await getGifFrameCount(sourceGifFile);
+                            setGifSourceFile(sourceGifFile);
+                            setGifFrameCount(frameCount);
+                            setGifFrameIndex(0);
+                            setAppliedGifFrameIndex(0);
+                        } else {
+                            setGifSourceFile(null);
+                            setGifFrameCount(1);
+                            setGifFrameIndex(0);
+                            setAppliedGifFrameIndex(0);
+                        }
+                    } else {
+                        setGifSourceFile(null);
+                        setGifFrameCount(1);
+                        setGifFrameIndex(0);
+                        setAppliedGifFrameIndex(0);
+                    }
 
                     // Handle Tags (String -> Array)
                     let tagValue = bookData.tag;
@@ -142,7 +247,21 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                         rate: bookData.rate,
                         end: bookData.end,
                         status: bookData.status,
+                        ...(permissionData.set_content_type ? { content_type: bookData.content_type || permissionData.suggest_configs?.[0]?.content_type || 'novel' } : {}),
+                        ...(permissionData.set_fast_ticket ? { fast_ticket: bookData.fast_ticket } : {}),
+                        ...(permissionData.set_fast_coin ? { fast_coin: bookData.fast_coin } : {}),
                     });
+
+                    if (
+                        permissionData.suggest_configs.length > 0 &&
+                        (bookData.fast_ticket === null || bookData.fast_ticket === undefined) &&
+                        (bookData.fast_coin === null || bookData.fast_coin === undefined)
+                    ) {
+                        const currentContentType = bookData.content_type || permissionData.suggest_configs?.[0]?.content_type;
+                        if (currentContentType) {
+                            applySuggestConfig(currentContentType, permissionData);
+                        }
+                    }
 
                     // Filter หมวดหมู่ตาม Type ของหนังสือที่ดึงมา
                     if (bookData.type === 'tran') {
@@ -170,7 +289,7 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
         };
 
         fetchData();
-    }, [finalBookId, formNewBook, api, ACCESS_TOKEN]);
+    }, [finalBookId, formNewBook, api]);
 
     // --- Event Handlers ---
     const handleSelectType = (type: string) => {
@@ -188,6 +307,190 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
         setAcceptBookCon(e.target.checked);
     };
 
+    // Keep the uploaded GIF as source, but render one selected frame as static cover image.
+    const applyCoverFromGifFrame = async (file: RcFile, frameIndex: number) => {
+        const coverFromGif = await extractGifFrameAsFile(file, frameIndex, {
+            outputType: 'image/jpeg',
+            quality: 0.82,
+        });
+
+        formNewBook.setFieldsValue({
+            img_gif: file,
+            img: coverFromGif,
+        });
+
+        const coverBlobUrl = URL.createObjectURL(coverFromGif);
+        setImagePreview((prev) => {
+            if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev);
+            return coverBlobUrl;
+        });
+    };
+
+    const closeGifFramePicker = () => {
+        setGifFramePickerOpen(false);
+        setGifFramePickerLoading(false);
+        setGifFramePreview((prev) => {
+            if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev);
+            return null;
+        });
+    };
+
+    // GIF upload flow:
+    // 1) validate file type, 2) store original GIF, 3) auto-generate cover from frame 1,
+    // 4) open frame picker when multiple frames are available.
+    const handleGifBeforeUpload = async (file: RcFile) => {
+        if (!isGifFile(file)) {
+            api.error({ message: 'กรุณาอัปโหลดไฟล์ GIF เท่านั้น' });
+            return Upload.LIST_IGNORE;
+        }
+
+        try {
+            formNewBook.setFieldsValue({ img_gif: file });
+
+            const gifBlobUrl = URL.createObjectURL(file);
+            setGifPreview((prev) => {
+                if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev);
+                return gifBlobUrl;
+            });
+
+            const frameCount = await getGifFrameCount(file);
+            setGifSourceFile(file);
+            setGifFrameCount(frameCount);
+            setGifFrameIndex(0);
+            setAppliedGifFrameIndex(0);
+            await applyCoverFromGifFrame(file, 0);
+
+            if (frameCount > 1 && isGifFrameSelectionSupported()) {
+                setGifFramePickerOpen(true);
+                api.success({
+                    message: 'อัปโหลด GIF สำเร็จ',
+                    description: 'เลือกเฟรมที่ต้องการใช้เป็นภาพปกได้เลย',
+                });
+            } else {
+                api.success({
+                    message: 'อัปโหลด GIF สำเร็จ',
+                    description: 'ตั้งภาพปกจากเฟรมแรกให้อัตโนมัติแล้ว',
+                });
+            }
+        } catch (error: any) {
+            api.error({
+                message: 'ไม่สามารถประมวลผล GIF ได้',
+                description: error?.message || 'กรุณาลองใหม่อีกครั้ง',
+            });
+        }
+
+        return false;
+    };
+
+    // Manual re-open for choosing another frame after upload/from existing GIF source.
+    const handleOpenGifFramePicker = () => {
+        if (!gifSourceFile) {
+            api.info({
+                message: 'ยังเลือกเฟรมจาก GIF เดิมไม่ได้',
+                description: 'ไม่พบ img_gif_full หรือไฟล์ GIF ต้นฉบับถูกบล็อกจาก CORS กรุณาอัปโหลด GIF ใหม่เพื่อเลือกเฟรม',
+            });
+            return;
+        }
+
+        if (!isGifFrameSelectionSupported() || gifFrameCount <= 1) {
+            api.info({
+                message: 'ไม่สามารถเลือกเฟรมได้',
+                description: 'ไฟล์นี้มีเฟรมเดียว หรือเบราว์เซอร์นี้ไม่รองรับการเลือกเฟรม GIF',
+            });
+            return;
+        }
+
+        setGifFrameIndex(appliedGifFrameIndex);
+        setGifFramePickerOpen(true);
+    };
+
+    const handleApplySelectedGifFrame = async () => {
+        if (!gifSourceFile) return;
+
+        try {
+            setGifFramePickerLoading(true);
+            await applyCoverFromGifFrame(gifSourceFile, gifFrameIndex);
+            setAppliedGifFrameIndex(gifFrameIndex);
+            api.success({
+                message: 'ตั้งภาพปกสำเร็จ',
+                description: `ใช้เฟรมที่ ${gifFrameIndex + 1} เป็นภาพปกแล้ว`,
+            });
+            closeGifFramePicker();
+        } catch (error: any) {
+            api.error({
+                message: 'ไม่สามารถตั้งภาพปกจากเฟรมนี้ได้',
+                description: error?.message || 'กรุณาลองเลือกเฟรมใหม่',
+            });
+        } finally {
+            setGifFramePickerLoading(false);
+        }
+    };
+
+    const toGifRcFileFromUrl = async (url: string): Promise<RcFile | null> => {
+        if (!url) return null;
+
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                mode: 'cors',
+                credentials: 'omit',
+            });
+
+            if (!response.ok) return null;
+
+            const buffer = await response.arrayBuffer();
+            const contentType = response.headers.get('content-type')?.toLowerCase() || '';
+            const isGif = contentType.includes('gif') || isGifArrayBuffer(buffer);
+            if (!isGif) return null;
+
+            const gifFile = new File(
+                [new Blob([buffer], { type: 'image/gif' })],
+                buildGifFilenameFromUrl(url),
+                {
+                    type: 'image/gif',
+                    lastModified: Date.now(),
+                },
+            );
+
+            return gifFile as RcFile;
+        } catch {
+            return null;
+        }
+    };
+
+    useEffect(() => {
+        if (!gifFramePickerOpen || !gifSourceFile) return;
+
+        const timer = window.setTimeout(async () => {
+            try {
+                setGifFramePickerLoading(true);
+                const previewFile = await extractGifFrameAsFile(gifSourceFile, gifFrameIndex, {
+                    outputType: 'image/jpeg',
+                    quality: 0.82,
+                });
+                const previewUrl = URL.createObjectURL(previewFile);
+                setGifFramePreview((prev) => {
+                    if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev);
+                    return previewUrl;
+                });
+            } catch {
+                // preview error is non-blocking
+            } finally {
+                setGifFramePickerLoading(false);
+            }
+        }, 180);
+
+        return () => window.clearTimeout(timer);
+    }, [gifFramePickerOpen, gifSourceFile, gifFrameIndex]);
+
+    useEffect(() => {
+        return () => {
+            if (imagePreview?.startsWith('blob:')) URL.revokeObjectURL(imagePreview);
+            if (gifPreview?.startsWith('blob:')) URL.revokeObjectURL(gifPreview);
+            if (gifFramePreview?.startsWith('blob:')) URL.revokeObjectURL(gifFramePreview);
+        };
+    }, [imagePreview, gifPreview, gifFramePreview]);
+
     // --- Submit Logic (PUT) ---
     const onFinish = async (values: BookFormValues) => {
         if (!acceptBookCon) {
@@ -200,24 +503,34 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
         formdata.append("accept_conditions", "true");
 
         for (const key in values) {
-            const value = values[key];
+            let value = values[key];
             let keyName = key;
 
             if (key === 'imgBook') keyName = 'img';
             if (key === 'bgimg') keyName = 'bgImg';
 
-            if (value === undefined || value === null) continue;
+            if (value === undefined || value === null || value === '') continue;
 
             if (Array.isArray(value)) {
-                // const quotedTags = value.map(t => `"${t}"`).join(',');
                 formdata.append(keyName, value.join(','));
                 continue;
             }
 
-            if ((keyName === 'img' || keyName === 'bgImg')) {
+            if ((keyName === 'img' || keyName === 'bgImg' || keyName === 'img_gif')) {
                 if (!(value instanceof File)) {
                     continue;
                 }
+            }
+
+            const maxFileSize = keyName === 'img_gif' ? 10_000_000 : 2_000_000;
+            if (value instanceof File && value.size > maxFileSize) {
+                api.error({
+                    message: keyName === 'img_gif'
+                        ? 'ไฟล์ GIF ต้องมีขนาดไม่เกิน 10 MB'
+                        : 'รูปภาพต้องมีขนาดไม่เกิน 2 MB'
+                });
+                console.groupEnd();
+                return;
             }
 
             formdata.append(keyName, value);
@@ -227,16 +540,8 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
         setSpinLoading(true);
 
         try {
-            const encodedApiKey = typeof window !== 'undefined'
-                ? btoa(ACCESS_TOKEN)
-                : Buffer.from(ACCESS_TOKEN).toString('base64');
-
-            const response = await apiClient.put(`/user/mybook/${finalBookId}`, formdata, {
+            const response = await secureProxyClient.put(`/user/mybook/${finalBookId}`, formdata, {
                 headers: {
-                    'X-API-Key': encodedApiKey,
-                    // Content-Type for FormData is usually handled automatically by axios/browser, 
-                    // but apiClient sets 'application/json' by default. 
-                    // We should let axios set the boundary for FormData.
                     'Content-Type': 'multipart/form-data'
                 }
             });
@@ -255,6 +560,8 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
             setSpinLoading(false);
         }
     }
+
+    const safeBookConditionsHtml = sanitizeUserGeneratedHtml(website?.book_conditions);
 
     // --- UI Render (เหมือน NewBook เป๊ะๆ) ---
     return (
@@ -290,6 +597,47 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                                                 <UploadCropBook src={imagePreview} />
                                             </Form.Item>
                                         </div>
+                                        {ENABLE_GIF_UPLOAD && (
+                                        <div className="mt-4">
+                                            <p className='body-text'>ภาพปกแบบ GIF <span className='text-[13px] text-gray-400'>(ไฟล์ GIF)</span></p>
+                                            <Form.Item
+                                                name="img_gif"
+                                                valuePropName="file"
+                                                getValueFromEvent={(e: any) => e?.file?.originFileObj || e?.file || null}
+                                            >
+                                                <Upload
+                                                    accept=".gif,image/gif"
+                                                    showUploadList={false}
+                                                    maxCount={1}
+                                                    beforeUpload={handleGifBeforeUpload}
+                                                >
+                                                    <div className="w-full rounded-lg border border-dashed border-gray-300 bg-white px-3 py-3 cursor-pointer hover:border-red-400 transition-colors">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="h-14 w-10 rounded overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
+                                                                {gifPreview ? (
+                                                                    <img src={gifPreview} alt="GIF preview" className="h-full w-full object-cover" />
+                                                                ) : (
+                                                                    <div className="h-full w-full flex items-center justify-center text-[10px] text-gray-400">GIF</div>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-sm text-gray-600 leading-snug">
+                                                                อัปโหลด GIF แล้วระบบจะดึงเฟรมแรกไปเป็นภาพปกอัตโนมัติ
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </Upload>
+                                            </Form.Item>
+                                            {gifPreview && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleOpenGifFramePicker}
+                                                    className="mt-2 w-full rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors"
+                                                >
+                                                    เลือกเฟรมใหม่
+                                                </button>
+                                            )}
+                                        </div>
+                                        )}
                                     </div>
                                     <div className="md:col-span-5">
                                         <div>
@@ -411,6 +759,43 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                                     </div>
                                 </div>
 
+                                {(permissions.set_content_type || permissions.set_fast_ticket || permissions.set_fast_coin) && (
+                                    <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mt-1'>
+                                        {permissions.set_content_type && (
+                                            <div>
+                                                <span className='body-text'>รูปแบบการอ่าน</span>
+                                                <Form.Item name='content_type'>
+                                                    <Select
+                                                        placeholder="Select content type"
+                                                        onChange={(value: string) => applySuggestConfig(value)}
+                                                    >
+                                                        <Select.Option value='novel'>รายตอน</Select.Option>
+                                                        <Select.Option value='novel_pack'>มัดแพ็ค</Select.Option>
+                                                    </Select>
+                                                </Form.Item>
+                                            </div>
+                                        )}
+
+                                        {permissions.set_fast_ticket && (
+                                            <div>
+                                                <span className='body-text'>ราคาปลดล็อคตอนล่วงหน้าด้วยตั๋ว</span>
+                                                <Form.Item name='fast_ticket'>
+                                                    <Input type='number' min={0} className='input' />
+                                                </Form.Item>
+                                            </div>
+                                        )}
+
+                                        {permissions.set_fast_coin && (
+                                            <div>
+                                                <span className='body-text'>ราคาตอนปลดล็อคตอนล่วงหน้าด้วยเหรียญ</span>
+                                                <Form.Item name='fast_coin'>
+                                                    <Input type='number' min={0} className='input' />
+                                                </Form.Item>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 <div className=' gap-4'>
                                     <div>
                                         <span className='body-text'>เรื่องย่อ</span>
@@ -451,9 +836,57 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                         )}
                     </Form>
 
+                    {ENABLE_GIF_UPLOAD && (
+                    <Modal
+                        title="เลือกเฟรมจาก GIF"
+                        open={gifFramePickerOpen}
+                        onCancel={closeGifFramePicker}
+                        onOk={handleApplySelectedGifFrame}
+                        okText="ใช้เฟรมนี้เป็นภาพปก"
+                        cancelText="ยกเลิก"
+                        confirmLoading={gifFramePickerLoading}
+                    >
+                        <div className="space-y-4">
+                            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                                <div className="mx-auto w-[180px] aspect-[330/467] rounded overflow-hidden bg-white border border-gray-200 flex items-center justify-center">
+                                    {gifFramePreview ? (
+                                        <img src={gifFramePreview} alt="Selected frame preview" className="h-full w-full object-cover" />
+                                    ) : (
+                                        <div className="text-xs text-gray-400">กำลังโหลดตัวอย่างเฟรม</div>
+                                    )}
+                                </div>
+                                <p className="mt-2 text-center text-xs text-gray-500">
+                                    เฟรมที่เลือก {gifFrameIndex + 1} / {gifFrameCount}
+                                </p>
+                            </div>
+
+                            <div>
+                                <Slider
+                                    min={0}
+                                    max={Math.max(0, gifFrameCount - 1)}
+                                    step={1}
+                                    value={gifFrameIndex}
+                                    disabled={gifFramePickerLoading || gifFrameCount <= 1}
+                                    onChange={(value) => setGifFrameIndex(Array.isArray(value) ? value[0] : value)}
+                                />
+                                <p className="text-xs text-gray-500">
+                                    เลื่อนเลือกเฟรมที่ต้องการ แล้วกดปุ่ม "ใช้เฟรมนี้เป็นภาพปก"
+                                </p>
+                            </div>
+
+                            {gifFramePickerLoading && (
+                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                    <Spin size="small" />
+                                    <span>กำลังประมวลผลเฟรม...</span>
+                                </div>
+                            )}
+                        </div>
+                    </Modal>
+                    )}
+
                     <Modal title='' footer='' open={openModal} onCancel={() => setOpenModal(false)}>
                         <div>
-                            <div dangerouslySetInnerHTML={{ __html: website?.book_conditions || '' }} />
+                            <div dangerouslySetInnerHTML={{ __html: safeBookConditionsHtml }} />
                         </div>
                     </Modal>
                 </>

@@ -47,7 +47,7 @@ const MyBookStatsTab: React.FC<MyBookStatsTabProps> = ({ myBooks, token }) => {
     setStatsSearched(false);
   }, [statsSelectedBooks, statsCategory, dateRange]);
 
-  const { data: bookStatsResponse = null, isLoading: isLoadingBookStats, refetch: refetchBookStats } = useQuery({
+  const { data: bookStatsResponse = null, isLoading: isLoadingBookStats, isFetching: isFetchingBookStats, refetch: refetchBookStats } = useQuery({
     queryKey: ['bookStats', bookIdsParam, metricParam, formattedStatsRange[0], formattedStatsRange[1]],
     queryFn: async () => {
       if (!bookIdsParam) return null;
@@ -130,6 +130,7 @@ const MyBookStatsTab: React.FC<MyBookStatsTabProps> = ({ myBooks, token }) => {
         <Button
           type="primary"
           danger
+          loading={isLoadingBookStats || isFetchingBookStats}
           style={{
             backgroundColor: '#E31C3D',
             borderColor: '#E31C3D',
@@ -149,7 +150,7 @@ const MyBookStatsTab: React.FC<MyBookStatsTabProps> = ({ myBooks, token }) => {
             } catch {
             }
           }}
-          disabled={isLoadingBookStats}
+          disabled={isLoadingBookStats || isFetchingBookStats}
         >
           ค้นหา
         </Button>

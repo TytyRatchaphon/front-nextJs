@@ -3,10 +3,23 @@
  * Centralized to avoid duplication across components
  */
 
+import { readGifModePreference } from '@/utils/gifPreference';
+
 export interface ImageLoaderParams {
   src: string;
   width?: number;
   quality?: number;
+}
+
+export interface BookCoverSource {
+  img?: string | null;
+  img_full?: string | null;
+  imgtn?: string | null;
+  thumb?: string | null;
+  image?: string | null;
+  cover?: string | null;
+  img_gif?: string | null;
+  img_gif_full?: string | null;
 }
 
 const INVALID_IMAGE_VALUES = new Set(['', 'null', 'undefined']);
@@ -36,6 +49,76 @@ const appendImageParams = (src: string, width?: number, quality?: number): strin
 
   const separator = src.includes('?') ? '&' : '?';
   return `${src}${separator}w=${requestedWidth}&q=${requestedQuality}`;
+};
+
+const isGifAsset = (src: string): boolean => {
+  if (!src) return false;
+  if (src.startsWith('data:image/gif')) return true;
+  try {
+    const parsed = new URL(src, 'https://enjoybook.local');
+    return /\.gif$/i.test(parsed.pathname);
+  } catch {
+    return /\.gif($|\?)/i.test(src);
+  }
+};
+
+const toStaticGifFrameSrc = (src: string): string => {
+  if (!isGifAsset(src)) return src;
+  if (src.startsWith('data:') || src.startsWith('blob:')) return src;
+
+  try {
+    if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('//')) {
+      const url = new URL(src.startsWith('//') ? `https:${src}` : src);
+      url.searchParams.set('frame', '1');
+      url.searchParams.set('still', '1');
+      url.searchParams.set('fm', 'webp');
+      return url.toString();
+    }
+
+    const hashIndex = src.indexOf('#');
+    const path = hashIndex >= 0 ? src.slice(0, hashIndex) : src;
+    const hash = hashIndex >= 0 ? src.slice(hashIndex) : '';
+    const separator = path.includes('?') ? '&' : '?';
+    return `${path}${separator}frame=1&still=1&fm=webp${hash}`;
+  } catch {
+    return src;
+  }
+};
+
+const applyBookGifPreference = (src: string): string => {
+  if (!isGifAsset(src)) return src;
+  const showGif = readGifModePreference(true);
+  return showGif ? src : toStaticGifFrameSrc(src);
+};
+
+const pickValidBookCoverSource = (...candidates: Array<string | null | undefined>): string | undefined => {
+  for (const candidate of candidates) {
+    if (typeof candidate !== 'string') continue;
+    const trimmed = candidate.trim();
+    if (INVALID_IMAGE_VALUES.has(trimmed)) continue;
+    return trimmed;
+  }
+  return undefined;
+};
+
+export const resolveBookCoverImageSrc = (
+  book: BookCoverSource | null | undefined,
+  fallback = '/images/ejb.png',
+  variant: 'tn' | 'thumbnail' | 'book' = 'tn',
+): string => {
+  const showGif = readGifModePreference(true);
+  const gifSource = pickValidBookCoverSource(book?.img_gif_full, book?.img_gif);
+  const staticSource = pickValidBookCoverSource(
+    book?.img,
+    book?.img_full,
+    book?.imgtn,
+    book?.cover,
+    book?.thumb,
+    book?.image,
+  );
+
+  const selectedSource = showGif ? (gifSource || staticSource) : (staticSource || gifSource);
+  return resolveBookImageSrc(selectedSource, fallback, variant);
 };
 
 export const resolveImageSrc = (
@@ -77,7 +160,8 @@ export const resolveBookImageSrc = (
     book: 'https://img.enjoybook.co/img/book',
   } as const;
 
-  return resolveImageSrc(src, fallback, bookBaseMap[variant]);
+  const resolved = resolveImageSrc(src, fallback, bookBaseMap[variant]);
+  return applyBookGifPreference(resolved);
 };
 
 export const resolveBannerImageSrc = (

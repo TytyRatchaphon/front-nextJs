@@ -7,10 +7,15 @@ type DescriptorBackup = {
   textContentDesc?: PropertyDescriptor;
 };
 
-export function useContentProtection(episodeData: any, onBlur?: () => void) {
+export function useContentProtection(episodeData: any, onBlur?: () => void, enabled = true) {
   const [isFocused, setIsFocused] = useState(true);
 
   useEffect(() => {
+    if (!enabled) {
+      setIsFocused(true);
+      return;
+    }
+
     const disableRightClick = (e: MouseEvent) => {
       e.preventDefault();
     };
@@ -157,10 +162,15 @@ export function useContentProtection(episodeData: any, onBlur?: () => void) {
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      const key = (event.key || "").toLowerCase();
+      const withModifier = event.ctrlKey || event.metaKey;
+      const isDevtoolsShortcut =
+        (withModifier && event.shiftKey && (key === "i" || key === "j" || key === "c")) ||
+        (withModifier && key === "u");
+
       if (
         event.key === "F12" ||
-        event.ctrlKey ||
-        event.metaKey ||
+        isDevtoolsShortcut ||
         event.key === "PrintScreen" ||
         event.keyCode === 44
       ) {
@@ -205,7 +215,7 @@ export function useContentProtection(episodeData: any, onBlur?: () => void) {
       restoreDescriptors();
       restorePatchedApis();
     };
-  }, [episodeData, onBlur]);
+  }, [episodeData, onBlur, enabled]);
 
   return { isFocused, setIsFocused };
 }

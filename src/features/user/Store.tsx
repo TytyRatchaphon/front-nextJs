@@ -231,6 +231,30 @@ function Store() {
       }
 
       if (res.status === 'success' || res.code === 200) {
+        const rpEarned = Number(
+          res?.data?.rp_earned
+          ?? res?.data?.data?.rp_earned
+          ?? res?.rp_earned
+          ?? 0
+        );
+
+        if (rpEarned > 0) {
+          api.success({
+            message: 'ยินดีด้วย!',
+            description: (
+              <div className="flex items-center gap-1">
+                <span>คุณได้รับ {rpEarned}</span>
+                {settings?.rp ? (
+                  <Image src={settings.rp} alt="RP" width={16} height={16} unoptimized className="object-contain" />
+                ) : (
+                  <span>RP</span>
+                )}
+              </div>
+            ),
+            icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+            placement: 'topRight',
+          });
+        }
         api.success({
           message: `ซื้อ ${selectedPack.name} สำเร็จ`,
           description: `ได้รับสินค้าจำนวน ${selectedQty} ชิ้น เรียบร้อยแล้ว`,

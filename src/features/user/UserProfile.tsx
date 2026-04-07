@@ -14,6 +14,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { copyCollection } from "@/services/api/collectionApi";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
+import FrameOverlayImage from "@/components/ui/FrameOverlayImage";
 
 function UserProfileContent({ userId }: { userId: string }) {
     const router = useRouter();
@@ -137,13 +138,7 @@ function UserProfileContent({ userId }: { userId: string }) {
                             />
                             {profile.frame && (
                                 <div className="absolute inset-0 pointer-events-none z-10">
-                                    <Image 
-                                        src={profile.frame.img}
-                                        alt={profile.frame.name}
-                                        fill
-                                        className="object-cover"
-                                        unoptimized
-                                    />
+                                    <FrameOverlayImage src={profile.frame.img} alt={profile.frame.name} className="object-cover" />
                                 </div>
                             )}
                         </div>

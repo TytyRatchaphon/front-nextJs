@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { postPinnedReview } from '@/services/api/commentApi';      
 import SelectNovelModal from './SelectNovelModal';
 import { useQueryClient } from '@tanstack/react-query';
+import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 const { TextArea } = Input;
 
@@ -73,10 +74,7 @@ export default function WriteReviewModal({ isOpen, onClose, initialBook, lockBoo
   };
 
   const getBookImg = (book: any) => {
-    const raw = book.img || book.imgtn || book.thumb || '';
-    if (!raw) return '/images/ejb.png';
-    if (typeof raw === 'string' && raw.startsWith('http')) return raw;
-    return `https://img.enjoybook.co/img/book/tn/${raw}`;
+    return resolveBookCoverImageSrc(book, '/images/ejb.png');
   };
 
   return (

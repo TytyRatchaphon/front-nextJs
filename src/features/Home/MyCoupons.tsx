@@ -13,6 +13,7 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/th';
 import { useAuthStore } from '@/stores/authStore';
 import { useWebsiteStore } from '@/stores/websiteStore';
+import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 const MyCoupons = () => {
     const queryClient = useQueryClient();
@@ -108,11 +109,11 @@ const MyCoupons = () => {
                          label = `ส่วนลด ${config?.percent || 0}%`;
                          subLabel = 'ส่วนลด';
                      } else if (rewardType === 'NOVEL_WHOLE') {
-                         if (r.book) {
-                             label = r.book.title;
-                             subLabel = 'นิยายอ่านฟรี';
-                             img = r.book.img; 
-                         } else {
+                          if (r.book) {
+                              label = r.book.title;
+                              subLabel = 'นิยายอ่านฟรี';
+                              img = resolveBookCoverImageSrc(r.book, '/images/ejb.png');
+                          } else {
                              // Fallback: Try to find details in selectedCoupon
                              let originalReward = selectedCoupon?.rewards?.find((or: any) => {
                                  let orConfig: any = {};
@@ -126,11 +127,11 @@ const MyCoupons = () => {
                                 originalReward = selectedCoupon?.rewards?.find((or: any) => or.rewardType === 'NOVEL_WHOLE');
                              }
 
-                             if (originalReward && originalReward.book) {
-                                 label = originalReward.book.title;
-                                 subLabel = 'นิยายอ่านฟรี';
-                                 img = originalReward.book.img;
-                             } else {
+                              if (originalReward && originalReward.book) {
+                                  label = originalReward.book.title;
+                                  subLabel = 'นิยายอ่านฟรี';
+                                  img = resolveBookCoverImageSrc(originalReward.book, '/images/ejb.png');
+                              } else {
                                  label = `นิยายวรยุทธ`;
                                  // Only show ID if present
                                  subLabel = config?.book_id ? `เรื่อง ID: ${config.book_id}` : '';
@@ -228,11 +229,6 @@ const MyCoupons = () => {
              }
         }
              
-        console.log('Using Coupon Payload:', {
-            userCouponId: selectedCoupon.id,
-            selectedRewardIds
-        });
-
         useCouponMutation.mutate({
             userCouponId: selectedCoupon.id, // Using the UserCoupon ID directly
             selectedRewardIds
@@ -411,7 +407,7 @@ const MyCoupons = () => {
                                                      <div className={`flex items-center justify-center border border-gray-100 shadow-sm ${iconColor} overflow-hidden ${reward.rewardType === 'NOVEL_WHOLE' && reward.book ? 'w-12 h-16 rounded-md' : 'w-8 h-8 rounded-full bg-white'}`}>
                                                         {reward.book ? (
                                                             <AntImage 
-                                                                src={reward.book.img} 
+                                                                src={resolveBookCoverImageSrc(reward.book, '/images/ejb.png')} 
                                                                 alt={reward.book.title} 
                                                                 className="w-full h-full object-cover" 
                                                                 preview={{ mask: false, zIndex: 3100 }} // Click to preview, no mask

@@ -82,15 +82,17 @@ function PromotionBlockDetail() {
 
         {/* Banner */}
         {displayBanner && (
-          <div className="relative w-full mb-8 rounded-xl overflow-hidden shadow-sm h-[150px] md:h-[250px]">
-             <Image
-              src={displayBanner}
-              alt="Block Banner"
-              fill
-              sizes="100vw"
-              className="object-fill"
-              unoptimized
-            />
+          <div className="px-4">
+            <div className="relative mb-8 h-[170px] w-full overflow-hidden rounded-[28px] border border-black/5 bg-[#f7f3f0] shadow-[0_18px_48px_rgba(15,23,42,0.08)] md:h-[250px]">
+              <Image
+                src={displayBanner}
+                alt="Block Banner"
+                fill
+                sizes="(max-width: 768px) calc(100vw - 32px), 1070px"
+                className="object-cover object-center"
+                unoptimized
+              />
+            </div>
           </div>
         )}
 

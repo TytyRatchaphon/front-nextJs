@@ -24,6 +24,8 @@ export interface BookData {
   imgtn?: string;
   imgtn_url?: string;
   img_full?: string;
+  img_gif?: string;
+  img_gif_full?: string;
   cover?: string;
   
   // Title/Name fields
@@ -449,6 +451,11 @@ export interface BookDetail {
   remaining_promo_total_discount: number;
   isFollowing: boolean;
   star: number;
+  video: BookDetailVideo;
+}
+
+export interface BookDetailVideo {
+  original: string
 }
 
 export interface BookDetailResponse {

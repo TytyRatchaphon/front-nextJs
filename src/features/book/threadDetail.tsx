@@ -10,6 +10,7 @@ import '@/services/apiServices';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
 import { DeleteOutlined } from '@ant-design/icons';
+import { sanitizeUserGeneratedHtml } from '@/utils/sanitizeHtml';
 
 interface ThreadDetailProps {
   topicId: string | number;
@@ -106,6 +107,7 @@ export default function ThreadDetail({ topicId, initialThread = null }: ThreadDe
   });
 
   const isOwner = currentUserId && Number(currentUserId) === Number(thread.user_id);
+  const safeThreadDetailHtml = sanitizeUserGeneratedHtml(thread.detail || "");
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -165,7 +167,7 @@ export default function ThreadDetail({ topicId, initialThread = null }: ThreadDe
         {/* Thread Content */}
         <div 
             className="prose max-w-none text-gray-800 leading-relaxed mb-6 [&_img]:max-w-full [&_img]:rounded-lg"
-            dangerouslySetInnerHTML={{ __html: thread.detail }}
+            dangerouslySetInnerHTML={{ __html: safeThreadDetailHtml }}
         />
 
         {/* Tags */}

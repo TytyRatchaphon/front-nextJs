@@ -8,6 +8,8 @@ import Image from 'next/image';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Autoplay } from 'swiper/modules';
 import { fetchHomeData, PopupItem } from '@/services/apiServices';
+import { useRouter } from 'next/navigation';
+import { navigateSafely } from '@/utils/navigationUtils';
 
 import 'swiper/css';
 import 'swiper/css/pagination';
@@ -31,8 +33,31 @@ interface PromoItem {
 }
 
 const DailyPromoPopup: React.FC = () => {
+  const router = useRouter();
   const { isDailyPopupOpen, openDailyPopup, closeDailyPopup, setDailyPopupProcessComplete } = useUIStore();
   const [promoItems, setPromoItems] = useState<PromoItem[]>([]);
+
+  const resolveInternalPath = (rawUrl: string): string | null => {
+    const raw = typeof rawUrl === 'string' ? rawUrl.trim() : '';
+    if (!raw || raw === '#') return null;
+    if (raw.startsWith('/')) return raw;
+
+    if (raw.startsWith('http://') || raw.startsWith('https://')) {
+      try {
+        const parsed = new URL(raw);
+        const isEnjoybookDomain =
+          parsed.hostname === 'enjoybook.co' ||
+          parsed.hostname.endsWith('.enjoybook.co');
+        if (isEnjoybookDomain) {
+          return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+        }
+      } catch {
+        return null;
+      }
+    }
+
+    return `/${raw.replace(/^\/+/, '')}`;
+  };
 
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -105,6 +130,18 @@ const DailyPromoPopup: React.FC = () => {
     closeDailyPopup();
   };
 
+  const handlePromoClick = (linkUrl: string) => {
+    const internalPath = resolveInternalPath(linkUrl);
+    closeDailyPopup();
+    if (internalPath) {
+      router.push(internalPath);
+      return;
+    }
+    if (linkUrl && linkUrl !== '#') {
+      navigateSafely(linkUrl, { allowExternal: true });
+    }
+  };
+
   if (promoItems.length === 0) return null;
 
   return (
@@ -151,7 +188,14 @@ const DailyPromoPopup: React.FC = () => {
           >
             {promoItems.map((item) => (
               <SwiperSlide key={item.id} className="relative w-full h-full group">
-                <a href={item.linkUrl} className="block w-full h-full relative overflow-hidden">
+                <a
+                  href={item.linkUrl || '#'}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    handlePromoClick(item.linkUrl);
+                  }}
+                  className="block w-full h-full relative overflow-hidden"
+                >
                   <Image
                     src={item.imageUrl}
                     alt={`Promotion`}

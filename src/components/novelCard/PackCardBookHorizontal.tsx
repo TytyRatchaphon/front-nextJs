@@ -3,6 +3,7 @@ import Image from 'next/image';
 import React from 'react'
 import { UniversalBook } from '../../types/api';
 import SaleGroupSVG from './SaleGroupSvg';
+import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 
 
@@ -27,13 +28,7 @@ function PackCardBookHorizontal({ book, onClick, action, className = "" }: PackC
         return num;
     }
 
-    // สร้าง URL รูปภาพ
-    const imgSource = book.img;
-    const imageUrl = imgSource
-        ? (typeof imgSource === 'string' && imgSource.startsWith('https')
-            ? imgSource
-            : `https://img.enjoybook.co/img/book/tn/${imgSource}`)
-        : "/images/ejb.png";
+    const imageUrl = resolveBookCoverImageSrc(book, '/images/ejb.png');
 
     const isEndedValue = (v: any) => {
         if (v === true) return true;

@@ -101,8 +101,10 @@ function AllNovel({ initialData }: { initialData?: any }) {
     }
 
     const normalized = apiResponse.items.map((b: any) => {
-      const imageRaw = b.img_full || b.imgtn || b.img || b.thumb || b.image || "";
+      const imageRaw = b.img || b.img_full || b.imgtn || b.thumb || b.image || "";
+      const gifRaw = b.img_gif || b.img_gif_full || "";
       const imageUrl = imageRaw;
+      const gifUrl = typeof gifRaw === 'string' && gifRaw.startsWith('http') ? gifRaw : gifRaw || undefined;
 
       const book_id = b.book_id ?? (b.bookID ? Number(b.bookID) : 0);
       const bookID = b.bookID?.toString() || (book_id ? String(book_id) : "");
@@ -116,6 +118,9 @@ function AllNovel({ initialData }: { initialData?: any }) {
         bookID: String(bookID || ""),
         type: b.type || "",
         img: imageUrl,
+        img_gif: gifUrl,
+        img_gif_full: b.img_gif_full || undefined,
+        img_full: b.img_full || undefined,
         name,
         title: name,
         tag: b.tag || '',

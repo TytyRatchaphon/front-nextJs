@@ -165,6 +165,7 @@ export const fetchBookPromotionOptions = async (bookId: number): Promise<BookPro
 export interface NovelPackCheckData {
   btn_novel: number | null;
   btn_novel_pack: number | null;
+  btn_novel_pack_show_lead_label: boolean;
   content_type: 'novel' | 'novel_pack' | string;
 }
 
@@ -176,6 +177,7 @@ export const fetchNovelPackCheck = async (bookId: string | number): Promise<Nove
     return {
       btn_novel: payload.btn_novel ?? null,
       btn_novel_pack: payload.btn_novel_pack ?? null,
+      btn_novel_pack_show_lead_label: payload.btn_novel_pack_show_lead_label ?? false,
       content_type: payload.content_type ?? 'novel',
     };
   } catch {

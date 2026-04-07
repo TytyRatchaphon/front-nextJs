@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, type MouseEvent as ReactMouseEvent } from "react";
+import { useState, useEffect, useRef, useMemo, type ClipboardEvent as ReactClipboardEvent, type MouseEvent as ReactMouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Alert, Button, Popover, Modal, Slider, Switch, Select, ConfigProvider, App, Input, Space } from "antd";
@@ -10,8 +10,7 @@ import Link from "next/link";
 import GifLoader from '@/components/utility/GifLoader';
 import EpisodeCommentSection from "@/components/bookdetail/EpisodeCommentSection";
 import Image from "next/image";
-import { modifiedHtml, addParagraphIndexes } from "@/utils/htmlUtils";
-import { decryptContent } from "@/utils/securityUtils";
+import { modifiedHtml, addParagraphIndexes, obfuscateClipboardText, obfuscateHtmlTextNodes } from "@/utils/htmlUtils";
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { fetchBookDetail, fetchHasPaymentHistory } from "@/services/apiServices";
 import apiClient from '@/services/apiClient';
@@ -22,12 +21,14 @@ import '@/utils/imageUtils';
 // Hooks
 import { useContentProtection } from "@/hooks/reader/useContentProtection";
 import { useReadingProgress } from "@/hooks/reader/useReadingProgress";
-import { useReadingTheme } from "@/hooks/reader/useReadingTheme";
+import { useReadingTheme, type ReadingThemeFontOption } from "@/hooks/reader/useReadingTheme";
 import { useEpisodeNavigation } from "@/hooks/reader/useEpisodeNavigation";
 import { useReadFreeQuota } from "@/hooks/reader/useReadFreeQuota";
 import { useLogger } from "@/hooks/useLogger";
 import { CheckCircleOutlined } from "@ant-design/icons";
 import { buildReadBuyPayload, getReadConfirmButtonLabel, getReadEpisodePurchaseState, getRegularEpisodePrices, type ReadFastPayMethod, type ReadPayMethod } from "./purchaseUtils";
+import AES from "crypto-js/aes";
+import encUtf8 from "crypto-js/enc-utf8";
 
 type Props = {
   bookId: string;
@@ -42,18 +43,125 @@ type EpisodeBookmark = {
   created_at?: string;
 };
 
+type ReaderConfigFont = {
+  key: string;
+  label: string;
+  fontFamily: string;
+};
+
+type ReaderConfigPayload = {
+  defaultFontKey?: string;
+  cssUrl?: string;
+  fonts?: ReaderConfigFont[];
+};
+
+const BANGKOK_TIME_ZONE = "Asia/Bangkok";
+const READ_EPISODE_SECRET_KEY = process.env.NEXT_PUBLIC_SECRET_KEY || "";
+const READER_OBFUSCATION_CSS_ID = "reader-obfuscation-css";
+
+const formatScheduledPublishDate = (value: Date) =>
+  new Intl.DateTimeFormat("th-TH", {
+    timeZone: BANGKOK_TIME_ZONE,
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(value);
+
+const formatScheduledPublishTime = (value: Date) =>
+  new Intl.DateTimeFormat("th-TH", {
+    timeZone: BANGKOK_TIME_ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(value);
+
+const formatScheduledPublishCountdown = (value: Date, nowMs: number) => {
+  const diffMs = value.getTime() - nowMs;
+  if (diffMs <= 0) return null;
+
+  const totalMinutes = Math.ceil(diffMs / 60000);
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days} วัน`);
+  if (hours > 0) parts.push(`${hours} ชั่วโมง`);
+  if (minutes > 0 || parts.length === 0) parts.push(`${minutes} นาที`);
+
+  return `อีก ${parts.slice(0, 2).join(" ")}`;
+};
+
+const decryptEpisodePayloadOnClient = (payload: unknown): Record<string, unknown> | null => {
+  if (payload && typeof payload === "object") {
+    return payload as Record<string, unknown>;
+  }
+
+  if (typeof payload !== "string" || !READ_EPISODE_SECRET_KEY) {
+    return null;
+  }
+
+  try {
+    const bytes = AES.decrypt(payload, READ_EPISODE_SECRET_KEY);
+    const decrypted = bytes.toString(encUtf8);
+    if (!decrypted) return null;
+
+    const parsed = JSON.parse(decrypted);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+const isReaderConfigFont = (value: unknown): value is ReaderConfigFont => {
+  if (!value || typeof value !== "object") return false;
+  const data = value as Partial<ReaderConfigFont>;
+  return typeof data.key === "string"
+    && typeof data.label === "string"
+    && typeof data.fontFamily === "string";
+};
+
+const resolveReaderCssUrl = (cssUrl: string) => {
+  const trimmed = cssUrl.trim();
+  if (!trimmed) return "";
+
+  let normalizedPath = trimmed;
+  if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith("//")) {
+    try {
+      const absoluteUrl = trimmed.startsWith("//") ? `https:${trimmed}` : trimmed;
+      normalizedPath = new URL(absoluteUrl).pathname;
+    } catch {
+      return "";
+    }
+  }
+
+  if (!normalizedPath.startsWith("/")) normalizedPath = `/${normalizedPath}`;
+
+  const marker = "/reader-assets/";
+  const markerIndex = normalizedPath.indexOf(marker);
+  const relativeAssetPath = markerIndex >= 0
+    ? normalizedPath.slice(markerIndex + marker.length)
+    : normalizedPath.replace(/^\/+/, "");
+
+  if (!relativeAssetPath) return "";
+  return `/api/read/reader-assets/${relativeAssetPath}`;
+};
+
 // API function
 const fetchEpisodeContent = async (ep_id: string) => {
   try {
-    const res = await apiClient.get(`/readep/${ep_id}`);
-    const data = res.data;
+    const response = await fetch(`/api/read/episode/${encodeURIComponent(ep_id)}`, {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "no-store",
+    });
+    const data = await response.json();
 
     if (data?.code === 200 && data.data) {
-      if (typeof data.data === 'string') {
-        const decrypted = decryptContent(data.data);
-        if (decrypted) return decrypted;
+      const resolvedPayload = decryptEpisodePayloadOnClient(data.data);
+      if (resolvedPayload) {
+        return resolvedPayload;
       }
-      return data.data;
+      throw new Error("Failed to decrypt episode content");
     }
 
     if (data?.code === 401) {
@@ -88,6 +196,8 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   const [editingBookmarkId, setEditingBookmarkId] = useState<number | null>(null);
   const [selectedParagraphIndex, setSelectedParagraphIndex] = useState<number | null>(null);
   const [trackedParagraphIndex, setTrackedParagraphIndex] = useState<number | null>(null);
+  const [showTrackedParagraphLabel, setShowTrackedParagraphLabel] = useState(true);
+  const [showTrackedParagraphArrow, setShowTrackedParagraphArrow] = useState(true);
 
   // --- 1. Fetch Data ---
   const {
@@ -190,9 +300,42 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     if (innerContentRef.current) {
       setContentHeight(innerContentRef.current.clientHeight);
     }
-  });
+  }, false);
 
   const { contentRef, showNav, setShowNav } = useReadingProgress(bookId, episodeId, user);
+
+  const readerConfig = useMemo<ReaderConfigPayload | null>(() => {
+    const config = (episode as any)?.readerConfig;
+    if (!config || typeof config !== "object") return null;
+    return config as ReaderConfigPayload;
+  }, [episode]);
+
+  const readerFontFamilies = useMemo<ReadingThemeFontOption[]>(() => {
+    if (!Array.isArray(readerConfig?.fonts)) return [];
+    return readerConfig.fonts
+      .filter(isReaderConfigFont)
+      .map((font) => ({
+        key: font.key,
+        label: font.label,
+        family: font.fontFamily,
+      }));
+  }, [readerConfig]);
+
+  const readerDefaultFontKey = useMemo(() => {
+    if (readerFontFamilies.length === 0) return "sarabun";
+    const candidate = readerConfig?.defaultFontKey;
+    if (typeof candidate === "string" && readerFontFamilies.some((font) => font.key === candidate)) {
+      return candidate;
+    }
+    return readerFontFamilies[0].key;
+  }, [readerConfig, readerFontFamilies]);
+
+  const readerCssHref = useMemo(() => {
+    if (!readerConfig?.cssUrl || typeof readerConfig.cssUrl !== "string") return "";
+    return resolveReaderCssUrl(readerConfig.cssUrl);
+  }, [readerConfig]);
+
+  const hasReaderObfuscationConfig = readerFontFamilies.length > 0 && Boolean(readerCssHref);
 
   const {
     fontSize, setFontSize,
@@ -204,14 +347,53 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     scrollSpeed, setScrollSpeed,
     currentBg, currentFontFamily,
     fontFamilies, bgColors
-  } = useReadingTheme(contentRef);
+  } = useReadingTheme(contentRef, {
+    fontFamilies: hasReaderObfuscationConfig ? readerFontFamilies : undefined,
+    defaultFontKey: hasReaderObfuscationConfig ? readerDefaultFontKey : undefined,
+  });
 
   const renderedEpisodeHtml = useMemo(() => {
-    const rawHtml = episode?.des || episode?.content || '';
+    const rawDes = episode?.des;
+    const rawContent = episode?.content;
+    const rawHtml = typeof rawDes === "string"
+      ? rawDes
+      : (typeof rawContent === "string" ? rawContent : "");
     if (!rawHtml) return '';
+    if (hasReaderObfuscationConfig) {
+      return addParagraphIndexes(rawHtml).html;
+    }
     const normalizedHtml = modifiedHtml(rawHtml, currentFontFamily?.family || "var(--font-sarabun), sans-serif", user);
-    return addParagraphIndexes(normalizedHtml).html;
-  }, [episode?.des, episode?.content, currentFontFamily?.family, user]);
+    const indexedHtml = addParagraphIndexes(normalizedHtml).html;
+    return obfuscateHtmlTextNodes(indexedHtml);
+  }, [episode?.des, episode?.content, hasReaderObfuscationConfig, currentFontFamily?.family, user]);
+
+  useEffect(() => {
+    const oldNode = document.getElementById(READER_OBFUSCATION_CSS_ID) as HTMLLinkElement | null;
+
+    if (!readerCssHref) {
+      oldNode?.remove();
+      return;
+    }
+
+    if (oldNode?.href === readerCssHref) return;
+    oldNode?.remove();
+
+    const link = document.createElement("link");
+    link.id = READER_OBFUSCATION_CSS_ID;
+    link.rel = "stylesheet";
+    link.href = readerCssHref;
+    document.head.appendChild(link);
+
+    return () => {
+      const currentNode = document.getElementById(READER_OBFUSCATION_CSS_ID);
+      if (currentNode === link) currentNode.remove();
+    };
+  }, [readerCssHref]);
+
+  useEffect(() => {
+    if (!hasReaderObfuscationConfig) return;
+    setFontFamily(readerDefaultFontKey);
+  }, [episodeId, hasReaderObfuscationConfig, readerDefaultFontKey, setFontFamily]);
 
   const bookmarkedParagraphIndexes = useMemo(
     () => new Set(bookmarks.map((b) => b.paragraph_index).filter((n) => Number.isFinite(n) && n > 0)),
@@ -264,6 +446,17 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   const shouldIgnoreReaderToggle = (target: EventTarget | null) => {
     if (!(target instanceof Element)) return false;
     return Boolean(target.closest(readerToggleIgnoreSelector));
+  };
+
+  const handleProtectedCopy = (event: ReactClipboardEvent<HTMLDivElement>) => {
+    const selectedText = window.getSelection()?.toString() || '';
+    if (!selectedText.trim()) {
+      event.preventDefault();
+      return;
+    }
+
+    event.preventDefault();
+    event.clipboardData.setData('text/plain', obfuscateClipboardText(selectedText));
   };
 
   const handleReaderSurfaceClick = (event: ReactMouseEvent<HTMLElement>) => {
@@ -480,10 +673,10 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     const nodes = Array.from(root.querySelectorAll('[data-paragraph-index]')) as HTMLElement[];
     nodes.forEach((node) => node.classList.remove('paragraph-tracked-current'));
 
-    if (!trackedParagraphIndex) return;
+    if (!trackedParagraphIndex || !showTrackedParagraphArrow) return;
     const target = root.querySelector(`[data-paragraph-index="${trackedParagraphIndex}"]`) as HTMLElement | null;
     if (target) target.classList.add('paragraph-tracked-current');
-  }, [trackedParagraphIndex, renderedEpisodeHtml]);
+  }, [trackedParagraphIndex, renderedEpisodeHtml, showTrackedParagraphArrow]);
 
   useEffect(() => {
     const root = innerContentRef.current;
@@ -511,6 +704,22 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     }
     return null;
   }, [episodesData, episodeId]);
+
+  const [scheduleNowMs, setScheduleNowMs] = useState(() => Date.now());
+  const scheduledPublishAt = useMemo(() => {
+    const rawValue = (episode as any)?.publish_datetime ?? (currentEpisodeMeta as any)?.publish_datetime;
+    if (!rawValue) return null;
+
+    const parsedDate = new Date(rawValue);
+    return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+  }, [(episode as any)?.publish_datetime, (currentEpisodeMeta as any)?.publish_datetime]);
+  const isScheduledReleasePending = Boolean(
+    scheduledPublishAt && scheduledPublishAt.getTime() > scheduleNowMs
+  );
+  const scheduledReleaseCountdown = useMemo(
+    () => (scheduledPublishAt ? formatScheduledPublishCountdown(scheduledPublishAt, scheduleNowMs) : null),
+    [scheduledPublishAt, scheduleNowMs]
+  );
 
   const isCurrentEpisodeOwned = Boolean((currentEpisodeMeta as any)?.isBuy ?? (episode as any)?.isBuy);
   const canTrackFreeReadQuota = Boolean(episode && renderedEpisodeHtml);
@@ -550,11 +759,8 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
       const bookTitle = (bookDetail as any)?.title || '';
       const startTime = Date.now();
 
-      console.log('[LOG] read_page tracking started =>', { bookId, episodeId, epName });
-
       return () => {
         const duration = Math.round((Date.now() - startTime) / 1000 * 10) / 10;
-        console.log('[LOG] read_page =>', { bookId, episodeId, epName, duration: `${duration}s` });
         log('read_page', 'book', bookId, {
           name: epName,
           book_title: bookTitle,
@@ -631,6 +837,32 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     }
   }, [episodesData, episodeId]);
 
+  useEffect(() => {
+    if (!scheduledPublishAt || scheduledPublishAt.getTime() <= Date.now()) return;
+
+    setScheduleNowMs(Date.now());
+    const intervalId = window.setInterval(() => {
+      setScheduleNowMs(Date.now());
+    }, 60000);
+
+    return () => window.clearInterval(intervalId);
+  }, [scheduledPublishAt]);
+
+  useEffect(() => {
+    if (!scheduledPublishAt) return;
+
+    const remainingMs = scheduledPublishAt.getTime() - Date.now();
+    if (remainingMs <= 0) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setScheduleNowMs(Date.now());
+      queryClient.invalidateQueries({ queryKey: ["episodeContent", episodeId] });
+      queryClient.invalidateQueries({ queryKey: ["bookEpisodes", bookId] });
+    }, Math.min(remainingMs + 1000, 2147483647));
+
+    return () => window.clearTimeout(timeoutId);
+  }, [scheduledPublishAt, queryClient, episodeId, bookId]);
+
   // Effect to Scroll to Active Episode when Popover opens
   useEffect(() => {
     if (isListPopoverOpen) {
@@ -680,15 +912,11 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     }
   }, []);
 
-  const expandAllGroups = () => {
+  const collapseAllGroups = () => {
     if (!episodesData?.groups) return;
     const map: Record<number, boolean> = {};
-    episodesData.groups.forEach((g: any) => { map[g.group_id] = true; });
+    episodesData.groups.forEach((g: any) => { map[g.group_id] = false; });
     setExpandedGroups(map);
-  };
-
-  const collapseAllGroups = () => {
-    setExpandedGroups({});
   };
 
   // --- 5. Actions ---
@@ -737,8 +965,6 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
       if (res?.data?.code === 200) {
         const respMsg = res.data?.message || "ซื้อสำเร็จ! กำลังอัปเดตเนื้อหา...";
 
-        // Log buy_episode
-        console.log('[LOG] buy_episode =>', { bookId, episodeId: epId, method, price: priceToDeduct });
         log('buy_episode', 'book', bookId, {
           episode_id: epId,
           method,
@@ -816,8 +1042,167 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   };
 
   // --- 6. Render Helpers ---
+  function ScheduledReleaseNotice({ compact = false }: { compact?: boolean }) {
+    if (!scheduledPublishAt) return null;
+
+    const scheduledPanelTheme = currentBg?.key === "dark"
+      ? {
+          panelBg: "linear-gradient(180deg, rgba(32,32,36,0.98) 0%, rgba(24,24,28,0.98) 100%)",
+          panelBorder: "rgba(255,255,255,0.08)",
+          chipBg: "rgba(227,28,61,0.14)",
+          chipText: "#fda4af",
+          text: "#f9fafb",
+          muted: "#a1a1aa",
+          accentBg: "rgba(255,255,255,0.04)",
+          accentBorder: "rgba(255,255,255,0.08)",
+        }
+      : currentBg?.key === "sepia"
+        ? {
+            panelBg: "linear-gradient(180deg, rgba(248,242,230,0.98) 0%, rgba(243,235,219,0.98) 100%)",
+            panelBorder: "#e7d9bf",
+            chipBg: "#f8e2d7",
+            chipText: "#b45309",
+            text: "#5b4636",
+            muted: "#8b735c",
+            accentBg: "rgba(255,255,255,0.45)",
+            accentBorder: "#eadbc2",
+          }
+        : {
+            panelBg: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,248,248,0.98) 100%)",
+            panelBorder: "#f3d4d7",
+            chipBg: "#fff1f2",
+            chipText: "#be123c",
+            text: "#1f2937",
+            muted: "#6b7280",
+            accentBg: "#fff8f8",
+            accentBorder: "#f7d7db",
+          };
+
+    if (compact) {
+      return (
+        <div
+          className="mx-auto max-w-md rounded-2xl border px-4 py-4 text-left shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
+          style={{
+            background: scheduledPanelTheme.panelBg,
+            borderColor: scheduledPanelTheme.panelBorder,
+          }}
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div
+                className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em]"
+                style={{
+                  backgroundColor: scheduledPanelTheme.chipBg,
+                  color: scheduledPanelTheme.chipText,
+                }}
+              >
+                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                กำหนดเผยแพร่
+              </div>
+              <p className="mt-3 text-sm font-semibold" style={{ color: scheduledPanelTheme.text }}>
+                เปิดอ่าน {formatScheduledPublishDate(scheduledPublishAt)} เวลา {formatScheduledPublishTime(scheduledPublishAt)} น.
+              </p>
+              <p className="mt-1 text-xs" style={{ color: scheduledPanelTheme.muted }}>
+                ตอนนี้ยังไม่ถึงเวลาเผยแพร่ แต่สามารถปลดล็อกแบบตอนล่วงหน้าได้
+              </p>
+            </div>
+            {scheduledReleaseCountdown && (
+              <div
+                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold"
+                style={{
+                  backgroundColor: scheduledPanelTheme.chipBg,
+                  color: scheduledPanelTheme.chipText,
+                }}
+              >
+                <span className="h-2 w-2 rounded-full bg-current" />
+                {scheduledReleaseCountdown}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="py-12">
+        <div
+          className="mx-auto max-w-xl rounded-[28px] border px-6 py-7 text-center shadow-[0_20px_60px_rgba(15,23,42,0.08)]"
+          style={{
+            background: scheduledPanelTheme.panelBg,
+            borderColor: scheduledPanelTheme.panelBorder,
+          }}
+        >
+          <div
+            className="mx-auto inline-flex items-center gap-2 rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em]"
+            style={{
+              backgroundColor: scheduledPanelTheme.chipBg,
+              color: scheduledPanelTheme.chipText,
+            }}
+          >
+            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            กำหนดเผยแพร่
+          </div>
+
+          <div className="mt-5">
+            <p className="text-sm font-medium" style={{ color: scheduledPanelTheme.muted }}>
+              ตอนนี้ยังไม่เปิดให้อ่าน
+            </p>
+            <div className="mt-3 flex items-end justify-center gap-2">
+              <span className="text-[2rem] font-semibold leading-none" style={{ color: scheduledPanelTheme.text }}>
+                {formatScheduledPublishTime(scheduledPublishAt)}
+              </span>
+              <span className="pb-1 text-sm font-medium" style={{ color: scheduledPanelTheme.muted }}>
+                น.
+              </span>
+            </div>
+            <p className="mt-2 text-sm" style={{ color: scheduledPanelTheme.muted }}>
+              เผยแพร่วันที่ {formatScheduledPublishDate(scheduledPublishAt)} เวลาไทย
+            </p>
+          </div>
+
+          <div
+            className="mt-5 rounded-2xl border px-4 py-4"
+            style={{
+              backgroundColor: scheduledPanelTheme.accentBg,
+              borderColor: scheduledPanelTheme.accentBorder,
+            }}
+          >
+            <p className="text-sm font-medium" style={{ color: scheduledPanelTheme.text }}>
+              ระบบจะเปิดตอนนี้ให้อ่านอัตโนมัติเมื่อถึงเวลา
+            </p>
+            {scheduledReleaseCountdown && (
+              <div
+                className="mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold"
+                style={{
+                  backgroundColor: scheduledPanelTheme.chipBg,
+                  color: scheduledPanelTheme.chipText,
+                }}
+              >
+                <span className="h-2 w-2 rounded-full bg-current" />
+                {scheduledReleaseCountdown}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function ScheduledReleaseFallback() {
+    return <ScheduledReleaseNotice />;
+  }
+
   function PurchaseFallback() {
     const ep = episode as any;
+    const showScheduledReleaseNotice = isScheduledReleasePending;
+
+    if (showScheduledReleaseNotice && !purchaseState.isEarlyAccess) {
+      return <ScheduledReleaseFallback />;
+    }
 
     if (isQuotaHardBlocked) {
       const isGuestLimit = true;
@@ -873,12 +1258,21 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
 
     return (
       <div className="text-center py-12">
+        {showScheduledReleaseNotice && purchaseState.isEarlyAccess && (
+          <div className="mb-5">
+            <ScheduledReleaseNotice compact />
+          </div>
+        )}
         <Image src={settings?.img_buyep || '/images/unlock.png'} alt="No Content" width={100} height={100} unoptimized className="justify-center mx-auto" />
-        <p className="text-sm text-gray-500 mb-4">ตอนนี้ยังไม่มีเนื้อหา หากต้องการอ่าน กรุณาซื้อ</p>
+        <p className="text-sm text-gray-500 mb-4">
+          {showScheduledReleaseNotice && purchaseState.isEarlyAccess
+            ? 'ตอนนี้ยังไม่ถึงเวลาเผยแพร่ แต่สามารถปลดล็อกเพื่ออ่านก่อนใครได้'
+            : 'ตอนนี้ยังไม่มีเนื้อหา หากต้องการอ่าน กรุณาซื้อ'}
+        </p>
         {isEarlyAccess && (
           <div className={`mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${isFastLocked ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-700'}`}>
             <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={16} height={16} unoptimized />
-            {isFastLocked ? 'ตอนล่วงหน้า ยังไม่เปิดให้ซื้อ' : canFastTicket && canFastCoin ? 'ตอนล่วงหน้า เลือกจ่าย FastTicket / เหรียญ' : canFastTicket ? 'ตอนล่วงหน้า จ่ายด้วย FastTicket' : 'ตอนล่วงหน้า จ่ายด้วยเหรียญ'}
+            {isFastLocked ? 'ซื้อตอนก่อนหน้า เพื่อปลดล็อค' : canFastTicket && canFastCoin ? 'ตอนล่วงหน้า เลือกจ่าย FastTicket / เหรียญ' : canFastTicket ? 'ตอนล่วงหน้า จ่ายด้วย FastTicket' : 'ตอนล่วงหน้า จ่ายด้วยเหรียญ'}
           </div>
         )}
         <div className="flex items-center justify-center gap-3">
@@ -949,20 +1343,31 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
         ? (settings?.freecoin || '/images/money-bag.png')
         : (settings?.coin || '/images/e-coin.png');
       const regularPaymentAmount = confirmMethod === 'freecoin' ? freecoinPrice : coinPrice;
+      const isCombinedCoinSummary = confirmFastMethod === 'coin' && confirmMethod === 'coin';
+      const combinedCoinAmount = Number(fastCoinPrice ?? 0) + Number(regularPaymentAmount ?? 0);
 
       return (
         <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-center">
           <div className="text-xs font-medium text-gray-500 mb-2">สรุปราคา</div>
           <div className="flex flex-wrap items-center justify-center gap-2 text-base font-semibold text-red-600">
-            <div className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 border border-amber-100 text-amber-700">
-              <Image src={confirmFastMethod === 'fast_ticket' ? (settings?.fast_ticket || '/images/fast_ticket.png') : (settings?.coin || '/images/e-coin.png')} alt="early payment" width={16} height={16} unoptimized />
-              <span>{confirmFastMethod === 'fast_ticket' ? fastTicketPrice : fastCoinPrice}</span>
-            </div>
-            <span className="text-gray-400">+</span>
-            <div className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 border border-orange-100 text-orange-600">
-              <Image src={regularPaymentIcon} alt="regular payment" width={16} height={16} unoptimized />
-              <span>{regularPaymentAmount}</span>
-            </div>
+            {isCombinedCoinSummary ? (
+              <div className="inline-flex items-center gap-1 rounded-full border border-amber-100 bg-white px-4 py-1.5 text-amber-700 shadow-sm">
+                <Image src={settings?.coin || '/images/e-coin.png'} alt="combined coin payment" width={16} height={16} unoptimized />
+                <span>{combinedCoinAmount}</span>
+              </div>
+            ) : (
+              <>
+                <div className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 border border-amber-100 text-amber-700">
+                  <Image src={confirmFastMethod === 'fast_ticket' ? (settings?.fast_ticket || '/images/fast_ticket.png') : (settings?.coin || '/images/e-coin.png')} alt="early payment" width={16} height={16} unoptimized />
+                  <span>{confirmFastMethod === 'fast_ticket' ? fastTicketPrice : fastCoinPrice}</span>
+                </div>
+                <span className="text-gray-400">+</span>
+                <div className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 border border-orange-100 text-orange-600">
+                  <Image src={regularPaymentIcon} alt="regular payment" width={16} height={16} unoptimized />
+                  <span>{regularPaymentAmount}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       );
@@ -980,13 +1385,48 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     );
   };
 
+  const readerMenuTheme = currentBg?.key === "dark"
+    ? {
+        panelBg: "#1a1a1a",
+        panelBorder: "#333333",
+        text: "#f3f4f6",
+        muted: "#9ca3af",
+        hoverBg: "hover:bg-white/5",
+        activeBg: "#2b2224",
+        activeText: "#fca5a5",
+        subtleBg: "#242426",
+      }
+    : currentBg?.key === "sepia"
+      ? {
+          panelBg: "#f4efe3",
+          panelBorder: "#e6dbc4",
+          text: "#5b4636",
+          muted: "#8b735c",
+          hoverBg: "hover:bg-[#ede5d5]",
+          activeBg: "#efe2d0",
+          activeText: "#8c2f39",
+          subtleBg: "#efe6d6",
+        }
+      : {
+          panelBg: "#ffffff",
+          panelBorder: "#e5e7eb",
+          text: "#1f2937",
+          muted: "#6b7280",
+          hoverBg: "hover:bg-gray-50",
+          activeBg: "#fef2f2",
+          activeText: "#dc2626",
+          subtleBg: "#f3f4f6",
+        };
+  const readerPopoverZIndex = 1200;
+
   const renderEpisodesList = () => {
     if (!episodesData?.groups) return <div className="p-4">ไม่พบรายการตอน</div>;
     return (
       <div id="episode-list-container" className="max-h-64 w-72 overflow-auto">
-        <div className="px-3 py-2 flex gap-2">
-          <button onClick={expandAllGroups} className="text-xs px-2 py-1 bg-gray-100 rounded">แสดงทั้งหมด</button>
-          <button onClick={collapseAllGroups} className="text-xs px-2 py-1 bg-gray-100 rounded">ย่อทั้งหมด</button>
+        <div className="px-3 py-2 flex justify-end">
+          <button type="button" onClick={collapseAllGroups} className="text-xs px-2 py-1 bg-gray-100 rounded">
+            ย่อทั้งหมด
+          </button>
         </div>
         {episodesData.groups.map((group: any, groupIndex: number) => {
           const isExpanded = expandedGroups[group.group_id] ?? groupIndex === 0;
@@ -1077,7 +1517,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     <div
       className={`min-h-screen ${currentBg?.bg} ${currentBg?.text} transition-colors duration-300 select-none ${currentBg?.key === 'dark' ? 'reader-theme-dark' : 'reader-theme-light'}`}
       style={{ userSelect: "none", minHeight: "100vh" }}
-      onCopy={(e) => e.preventDefault()}
+      onCopy={handleProtectedCopy}
       onCut={(e) => e.preventDefault()}
       onContextMenu={(e) => e.preventDefault()}
     >
@@ -1165,14 +1605,14 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
               }}>
               <div className="flex items-center justify-between px-2 py-2">
                 <div className="flex items-center gap-1">
-                  <Link href={bookId ? `/book/${bookId}` : "/"} className={`p-2 rounded-full transition-colors ${currentBg?.text} ${currentBg?.key === "dark" ? "hover:bg-white/10" : "hover:bg-black/5"}`} style={{ color: currentBg?.key === "dark" ? "white" : undefined }}>
-                    <div className="flex items-center gap-1 text-xs font-medium" style={{ color: currentBg?.key === "dark" ? "white" : undefined }}>
+                  <Link href={bookId ? `/book/${bookId}` : "/"} className={`p-2 rounded-full transition-colors ${currentBg?.key === "dark" ? "hover:bg-white/10" : "hover:bg-black/5"}`} style={{ color: readerMenuTheme.text }}>
+                    <div className="flex items-center gap-1 text-xs font-medium" style={{ color: readerMenuTheme.text }}>
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
                       <span className="hidden sm:inline">หน้าหลัก</span>
                     </div>
                   </Link>
-                  <Popover placement="bottomLeft" zIndex={900} title={<div className="text-sm font-semibold">สารบัญ</div>} content={renderEpisodesList()} trigger="click" open={isListPopoverOpen} onOpenChange={(open) => setIsListPopoverOpen(open)}>
-                    <button className={`p-2 rounded-full transition-colors ${currentBg?.text} ${currentBg?.key === "dark" ? "hover:bg-white/10" : "hover:bg-black/5"}`} title="สารบัญ" style={{ color: currentBg?.key === "dark" ? "white" : undefined }}>
+                  <Popover placement="bottomLeft" zIndex={readerPopoverZIndex} overlayClassName="reader-episode-popover" title={<div className="text-sm font-semibold">สารบัญ</div>} content={renderEpisodesList()} trigger="click" open={isListPopoverOpen} onOpenChange={(open) => setIsListPopoverOpen(open)}>
+                    <button className={`p-2 rounded-full transition-colors ${currentBg?.key === "dark" ? "hover:bg-white/10" : "hover:bg-black/5"}`} title="สารบัญ" style={{ color: readerMenuTheme.text }}>
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
                     </button>
                   </Popover>
@@ -1182,38 +1622,75 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
 
                 <Popover
                   placement="bottomRight"
-                  zIndex={900}
-                  title={
-                    <div className="flex items-center justify-between border-b pb-2 mb-2">
-                      <span className="text-base font-semibold">ตั้งค่าการอ่าน</span>
-                      <button onClick={() => {
-                        setFontSize(20); setFontFamily("sarabun"); setBgColor("sepia"); setIsBold(false); setTextAlign("left"); setIsAutoScroll(false); setScrollSpeed(0.3);
-                      }} className="text-xs !text-red-500 !hover:text-red-700 font-medium cursor-pointer">
-                        ค่าเริ่มต้น
-                      </button>
-                    </div>
-                  }
+                  zIndex={readerPopoverZIndex}
+                  classNames={{ root: "reader-settings-popover" }}
+                  styles={{ body: { padding: 0 } }}
                   content={
-                    <div className="w-72 flex flex-col gap-4 p-1 bg-white text-gray-900">
+                    <div
+                      className="reader-settings-panel w-72 flex flex-col gap-4 p-1"
+                      style={{ backgroundColor: readerMenuTheme.panelBg, color: readerMenuTheme.text }}
+                    >
+                      <div
+                        className="reader-settings-title flex items-center justify-between border-b px-3 pt-3 pb-2"
+                        style={{ borderBottomColor: readerMenuTheme.panelBorder, color: readerMenuTheme.text }}
+                      >
+                        <span className="text-base font-semibold">ตั้งค่าการอ่าน</span>
+                        <button onClick={() => {
+                          setFontSize(20); setFontFamily(readerDefaultFontKey); setBgColor("sepia"); setIsBold(false); setTextAlign("left"); setIsAutoScroll(false); setScrollSpeed(0.3); setShowTrackedParagraphLabel(true); setShowTrackedParagraphArrow(true);
+                        }} className="text-xs !text-red-500 !hover:text-red-700 font-medium cursor-pointer">
+                          ค่าเริ่มต้น
+                        </button>
+                      </div>
                       {/* Alignment */}
-                      <div className="grid grid-cols-3 gap-2">
-                        {['left', 'center', 'justify'].map((align) => (
-                          <button key={align} onClick={() => setTextAlign(align as any)} className={`flex items-center justify-center p-2 rounded border transition-all ${textAlign === align ? 'border-[#E31C3D] bg-[#FFF0F2] text-[#E31C3D]' : 'border-gray-200 hover:border-gray-300 text-gray-500'}`}>
-                            {align === 'left' && <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h10M4 18h16" /></svg>}
-                            {align === 'center' && <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M7 12h10M4 18h16" /></svg>}
-                            {align === 'justify' && <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>}
+                      <div className="grid grid-cols-3 gap-2 px-3">
+                        {[
+                          { key: 'left', label: 'ชิดซ้าย' },
+                          { key: 'center', label: 'กึ่งกลาง' },
+                          { key: 'justify', label: 'เต็มบรรทัด' },
+                        ].map(({ key, label }) => (
+                          <button
+                            key={key}
+                            onClick={() => setTextAlign(key as any)}
+                            title={label}
+                            aria-label={label}
+                            className="reader-settings-neutral-button flex min-h-[48px] items-center justify-center rounded border px-2 py-2 transition-all"
+                            style={{
+                              borderColor: textAlign === key ? '#E31C3D' : readerMenuTheme.panelBorder,
+                              backgroundColor: textAlign === key ? readerMenuTheme.activeBg : readerMenuTheme.subtleBg,
+                              color: textAlign === key ? readerMenuTheme.activeText : readerMenuTheme.text,
+                              boxShadow: textAlign === key ? 'inset 0 0 0 1px rgba(227,28,61,0.12)' : 'none',
+                            }}
+                          >
+                            {key === 'left' && <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.6} d="M4 6h16M4 12h10M4 18h16" /></svg>}
+                            {key === 'center' && <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.6} d="M4 6h16M7 12h10M4 18h16" /></svg>}
+                            {key === 'justify' && <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.6} d="M4 6h16M4 12h16M4 18h16" /></svg>}
                           </button>
                         ))}
                       </div>
                       {/* Font Size */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <button onClick={() => setFontSize(prev => Math.max(12, prev - 2))} className="flex items-center justify-center p-2 rounded border border-gray-200 hover:border-gray-300 text-gray-600 active:scale-95 transition-transform"><span className="text-sm">A-</span></button>
-                        <button onClick={() => setFontSize(prev => Math.min(64, prev + 2))} className="flex items-center justify-center p-2 rounded border border-gray-200 hover:border-gray-300 text-gray-600 active:scale-95 transition-transform"><span className="text-lg">A+</span></button>
+                      <div className="grid grid-cols-2 gap-3 px-3">
+                        <button
+                          onClick={() => setFontSize(prev => Math.max(12, prev - 2))}
+                          className="reader-settings-neutral-button flex items-center justify-center p-2 rounded border active:scale-95 transition-transform"
+                          style={{ borderColor: readerMenuTheme.panelBorder, backgroundColor: readerMenuTheme.subtleBg, color: readerMenuTheme.text }}
+                        >
+                          <span className="text-sm">A-</span>
+                        </button>
+                        <button
+                          onClick={() => setFontSize(prev => Math.min(64, prev + 2))}
+                          className="reader-settings-neutral-button flex items-center justify-center p-2 rounded border active:scale-95 transition-transform"
+                          style={{ borderColor: readerMenuTheme.panelBorder, backgroundColor: readerMenuTheme.subtleBg, color: readerMenuTheme.text }}
+                        >
+                          <span className="text-lg">A+</span>
+                        </button>
                       </div>
                       {/* Auto Scroll */}
-                      <div className="flex flex-col gap-2 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                      <div
+                        className="reader-settings-card mx-3 flex flex-col gap-2 p-3 rounded-lg border"
+                        style={{ backgroundColor: readerMenuTheme.subtleBg, borderColor: readerMenuTheme.panelBorder }}
+                      >
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-gray-700">เลื่อนอัตโนมัติ</span>
+                          <span className="reader-settings-label text-sm font-medium" style={{ color: readerMenuTheme.text }}>เลื่อนอัตโนมัติ</span>
                           <Switch checked={isAutoScroll} onChange={setIsAutoScroll} size="small" className="bg-gray-300" style={{ backgroundColor: isAutoScroll ? '#E31C3D' : undefined }} />
                         </div>
                         <div className="flex items-center gap-3">
@@ -1227,11 +1704,17 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                         </div>
                       </div>
                       {/* Font Family */}
-                      <div>
-                        <Select value={fontFamily} onChange={setFontFamily} style={{ width: '100%' }} options={fontFamilies.map(f => ({ value: f.key, label: <span style={{ fontFamily: f.family }}>ฟอนต์ {f.label}</span> }))} className="h-10" />
+                      <div className="px-3">
+                        <Select
+                          value={fontFamily}
+                          onChange={setFontFamily}
+                          style={{ width: '100%' }}
+                          options={fontFamilies.map(f => ({ value: f.key, label: <span style={hasReaderObfuscationConfig ? undefined : { fontFamily: f.family }}>ฟอนต์ {f.label}</span> }))}
+                          className="reader-settings-select h-10"
+                        />
                       </div>
                       {/* Theme Colors */}
-                      <div className="flex items-center justify-center gap-4 mt-1">
+                      <div className="mt-1 flex items-center justify-center gap-4 px-3">
                         {bgColors.map((bg) => (
                           <button key={bg.key} onClick={() => setBgColor(bg.key)} className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${bg.key === bgColor ? 'border-[#E31C3D] scale-110' : 'border-transparent hover:scale-105'}`} title={bg.label}>
                             <div className={`w-8 h-8 rounded-full border ${bg.bg} ${bg.border !== 'transparent' ? 'border shadow-sm' : ''}`} style={{ borderColor: bg.border }}></div>
@@ -1239,9 +1722,17 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                         ))}
                       </div>
                       {/* Bold Toggle */}
-                      <div className="flex items-center justify-between px-1">
-                        <span className="text-sm text-gray-600">ตัวหนา</span>
+                      <div className="flex items-center justify-between px-4">
+                        <span className="reader-settings-label text-sm" style={{ color: readerMenuTheme.muted }}>ตัวหนา</span>
                         <Switch checked={isBold} onChange={setIsBold} size="small" style={{ backgroundColor: isBold ? '#E31C3D' : undefined }} />
+                      </div>
+                      <div className="flex items-center justify-between px-4">
+                        <span className="reader-settings-label text-sm" style={{ color: readerMenuTheme.muted }}>แสดงย่อหน้า</span>
+                        <Switch checked={showTrackedParagraphLabel} onChange={setShowTrackedParagraphLabel} size="small" style={{ backgroundColor: showTrackedParagraphLabel ? '#E31C3D' : undefined }} />
+                      </div>
+                      <div className="flex items-center justify-between px-4 pb-3">
+                        <span className="reader-settings-label text-sm" style={{ color: readerMenuTheme.muted }}>แสดง &gt;</span>
+                        <Switch checked={showTrackedParagraphArrow} onChange={setShowTrackedParagraphArrow} size="small" style={{ backgroundColor: showTrackedParagraphArrow ? '#E31C3D' : undefined }} />
                       </div>
                     </div>
                   }
@@ -1255,33 +1746,48 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
 
                 <Popover
                   placement="bottomRight"
-                  zIndex={900}
+                  zIndex={readerPopoverZIndex}
+                  classNames={{ root: "reader-bookmark-popover" }}
+                  styles={{ body: { padding: 0 } }}
                   trigger="click"
                   open={isBookmarkPopoverOpen}
                   onOpenChange={setIsBookmarkPopoverOpen}
-                  title={<div className="text-sm font-semibold">ตำแหน่งที่บุ๊กมาร์กไว้</div>}
                   content={
-                    <div className="w-80 bg-white text-gray-900">
-                      <div className="mb-2 flex items-center justify-end">
+                    <div
+                      className="reader-bookmark-panel w-80"
+                      style={{ backgroundColor: readerMenuTheme.panelBg, color: readerMenuTheme.text }}
+                    >
+                      <div
+                        className="reader-bookmark-title flex items-center justify-between border-b px-3 pt-3 pb-2"
+                        style={{ borderBottomColor: readerMenuTheme.panelBorder, color: readerMenuTheme.text }}
+                      >
+                        <div className="text-sm font-semibold">ตำแหน่งที่บุ๊กมาร์กไว้</div>
+                        <div />
+                      </div>
+                      <div className="mb-2 flex items-center justify-end px-3 pt-3">
                         <Button size="small" type="primary" onClick={openCreateBookmarkModal}>
                           เพิ่มจากตำแหน่งปัจจุบัน
                         </Button>
                       </div>
                       <div className="max-h-72 overflow-auto">
                         {isFetchingBookmarks ? (
-                          <div className="py-4 text-center text-xs text-gray-500">กำลังโหลด...</div>
+                          <div className="reader-bookmark-empty py-4 text-center text-xs" style={{ color: readerMenuTheme.muted }}>กำลังโหลด...</div>
                         ) : bookmarks.length === 0 ? (
-                          <div className="py-4 text-center text-xs text-gray-500">ยังไม่มีบุ๊กมาร์กในตอนนี้</div>
+                          <div className="reader-bookmark-empty py-4 text-center text-xs" style={{ color: readerMenuTheme.muted }}>ยังไม่มีบุ๊กมาร์กในตอนนี้</div>
                         ) : (
                           <div className="space-y-1">
                             {bookmarks.map((bookmark) => (
-                              <div key={bookmark.id} className="w-full px-3 py-2 rounded-lg transition-colors hover:bg-gray-100">
+                              <div
+                                key={bookmark.id}
+                                className="reader-bookmark-item w-full px-3 py-2 rounded-lg transition-colors"
+                                style={{ borderColor: readerMenuTheme.panelBorder }}
+                              >
                                 <button
                                   onClick={() => scrollToParagraph(bookmark.paragraph_index)}
                                   className="w-full text-left"
                                 >
-                                  <div className="text-sm font-medium text-gray-800">ย่อหน้า {bookmark.paragraph_index}</div>
-                                  {bookmark.note && <div className="text-xs truncate text-gray-500">{bookmark.note}</div>}
+                                  <div className="reader-bookmark-heading text-sm font-medium" style={{ color: readerMenuTheme.text }}>ย่อหน้า {bookmark.paragraph_index}</div>
+                                  {bookmark.note && <div className="reader-bookmark-note text-xs truncate" style={{ color: readerMenuTheme.muted }}>{bookmark.note}</div>}
                                 </button>
                                 <div className="mt-2 flex items-center justify-end gap-2">
                                   <button
@@ -1321,17 +1827,23 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
             {/* Content */}
             <article
               ref={contentRef}
-              className="episode-content-wrapper relative mt-5 select-none leading-loose lg:px-11 px-6 text-wrap whitespace-normal overflow-hidden main-read cursor-pointer"
+              className="episode-content episode-content-wrapper relative mt-5 select-none leading-loose lg:px-11 px-6 text-wrap whitespace-normal overflow-x-hidden main-read cursor-pointer"
               style={{ userSelect: "none", WebkitUserSelect: "none", MozUserSelect: "none", msUserSelect: "none" }}
             >
               <div
                 ref={innerContentRef}
+                className={renderedEpisodeHtml && !isQuotaHardBlocked ? "reader-font-surface" : undefined}
                 style={{
                   fontSize: `${fontSize}px`,
                   lineHeight: "1.8",
-                  fontFamily: currentFontFamily?.family || "var(--font-sarabun), sans-serif",
+                  fontFamily: renderedEpisodeHtml && !isQuotaHardBlocked
+                    ? (currentFontFamily?.family || "var(--font-sarabun), sans-serif")
+                    : "var(--font-sarabun), sans-serif",
                   fontWeight: isBold ? 'bold' : 'normal',
                   textAlign: textAlign,
+                  whiteSpace: "normal",
+                  overflowWrap: "anywhere",
+                  wordBreak: "break-word",
                   minHeight: !isFocused ? contentHeight : undefined,
                   opacity: isFocused ? 1 : 0,
                   transition: 'opacity 0.1s ease',
@@ -1370,7 +1882,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
               </div>
             )}
 
-            {isFocused && trackedParagraphIndex && (
+            {isFocused && showTrackedParagraphLabel && trackedParagraphIndex && (
               <div className="fixed bottom-24 left-6 z-[840] px-3 py-1.5 rounded-full bg-black/60 text-white text-xs font-medium pointer-events-none">
                 ย่อหน้า {trackedParagraphIndex.toLocaleString('th-TH')}
               </div>
@@ -1384,7 +1896,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                 style={{ borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)" }}>
                 <div className={`group w-full p-4 flex flex-row gap-2 items-center justify-center border-r hover:bg-black/5 transition-all ${!prevEpId ? "opacity-30 cursor-not-allowed" : "cursor-pointer active:scale-[0.98]"}`}
                   style={{ borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)" }}
-                  onClick={(e) => { e.stopPropagation(); if (prevEpId && bookId) { console.log('[LOG] prev_episode =>', { bookId, from: episodeId, to: prevEpId }); log('prev_episode', 'book', bookId, { from_episode: episodeId, to_episode: prevEpId }); router.push(`/read/${bookId}/${prevEpId}`); } }}>
+                  onClick={(e) => { e.stopPropagation(); if (prevEpId && bookId) { log('prev_episode', 'book', bookId, { from_episode: episodeId, to_episode: prevEpId }); router.push(`/read/${bookId}/${prevEpId}`); } }}>
                   <svg className={`w-5 h-5 transition-transform group-hover:-translate-x-1`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                   <div className="flex flex-col items-start leading-none gap-0.5">
                     <span className="text-[10px] opacity-60 font-normal">ตอนก่อนหน้า</span>
@@ -1392,7 +1904,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                   </div>
                 </div>
                 <div className={`group w-full p-4 flex flex-row gap-2 items-center justify-center hover:bg-black/5 transition-all ${!nextEpId ? "opacity-30 cursor-not-allowed" : "cursor-pointer active:scale-[0.98]"}`}
-                  onClick={(e) => { e.stopPropagation(); window.scrollTo(0, 0); if (nextEpId && bookId) { console.log('[LOG] next_episode =>', { bookId, from: episodeId, to: nextEpId }); log('next_episode', 'book', bookId, { from_episode: episodeId, to_episode: nextEpId }); router.push(`/read/${bookId}/${nextEpId}`); } }}>
+                  onClick={(e) => { e.stopPropagation(); window.scrollTo(0, 0); if (nextEpId && bookId) { log('next_episode', 'book', bookId, { from_episode: episodeId, to_episode: nextEpId }); router.push(`/read/${bookId}/${nextEpId}`); } }}>
                   <div className="flex flex-col items-end leading-none gap-0.5">
                     <span className="text-[10px] opacity-60 font-normal">ตอนต่อไป</span>
                     <span className="font-semibold text-sm">ถัดไป</span>
@@ -1582,6 +2094,38 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
         </div>
       </Modal>
       <style jsx global>{`
+        .reader-font-surface p,
+        .reader-font-surface li,
+        .reader-font-surface blockquote,
+        .reader-font-surface pre {
+          white-space: normal;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+          max-width: 100%;
+        }
+        .reader-font-surface p {
+          margin: 0 0 1.1em;
+          text-indent: 2.1em;
+        }
+        .reader-font-surface p:last-child {
+          margin-bottom: 0;
+        }
+        .reader-font-surface p:empty {
+          margin: 0;
+          text-indent: 0;
+          min-height: 1em;
+        }
+        .reader-font-surface p > br:only-child {
+          display: block;
+          content: "";
+          margin: 0.5em 0;
+        }
+        .reader-font-surface img,
+        .reader-font-surface video,
+        .reader-font-surface iframe {
+          max-width: 100%;
+          height: auto;
+        }
         .bookmark-highlight {
           background: rgba(227, 28, 61, 0.14);
           transition: background-color 0.25s ease;

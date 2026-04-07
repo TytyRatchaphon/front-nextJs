@@ -26,11 +26,11 @@ export default function SpoilerCardWrapper({
 
   const visibleCardClass = isHomeVariant
     ? 'bg-white rounded-2xl border border-[#f5cac6] p-3.5 sm:p-4 h-[236px] sm:h-[248px] md:h-[258px] flex flex-col cursor-pointer relative shadow-[0_10px_30px_rgba(227,53,39,0.08)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(227,53,39,0.14)] hover:border-[#efb8b2]'
-    : 'bg-white rounded-xl shadow-sm border border-red-200 p-4 h-[240px] flex flex-col hover:shadow-md transition-shadow cursor-pointer relative';
+    : 'bg-white rounded-xl shadow-sm border border-red-200 p-4 min-h-[240px] flex flex-col hover:shadow-md transition-shadow cursor-pointer relative';
 
   const spoilerCardClass = isHomeVariant
     ? 'bg-white/85 rounded-2xl border border-[#f0c5bf] h-[236px] sm:h-[248px] md:h-[258px] flex flex-col items-center justify-center cursor-pointer relative overflow-hidden group p-3.5 sm:p-4 shadow-[0_10px_28px_rgba(227,53,39,0.10)] backdrop-blur-[2px]'
-    : 'bg-[#FFE5E5] rounded-xl shadow-sm border border-[#E33527]/30 h-[240px] flex flex-col items-center justify-center cursor-pointer relative overflow-hidden group p-4';
+    : 'bg-[#FFE5E5] rounded-xl shadow-sm border border-[#E33527]/30 min-h-[240px] flex flex-col items-center justify-center cursor-pointer relative overflow-hidden group p-4';
 
   if (!isSpoiler || isRevealed) {
     return (

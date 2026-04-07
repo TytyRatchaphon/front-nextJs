@@ -93,7 +93,6 @@ const LoginFacebook = () => {
   const handleFacebookLogin = () => {
     // ถ้า SDK ยังไม่มา ให้ return หรือแจ้งเตือน (แต่ปกติปุ่มจะ disable หรือรอโหลดอยู่แล้ว)
     if (!isSdkLoaded || !(window as any).FB) {
-      console.warn('Facebook SDK not ready yet');
       return;
     }
 
@@ -165,8 +164,6 @@ const LoginFacebook = () => {
           login(userInfo, token);
           updateToken(token);
 
-          // Log login event
-          console.log('[LOG] login =>', { method: 'facebook' });
           logActivity('login', 'user', userInfo.userId || '', { method: 'facebook' });
           notification.success({
             message: 'เข้าสู่ระบบสำเร็จ',

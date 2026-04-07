@@ -3,9 +3,32 @@ import apiClient from "../apiClient";
 import type { CommentResponse, CommentData, CommentEpData } from "@/types/api";
 
 // --- Pinned Reviews (Home page) ---
-export const fetchPinnedReviews = async (): Promise<{ reviews: any[], pagination?: any }> => {
+export type ReviewFeedSort = "all" | "latest" | "liked" | "commented";
+
+interface FetchPinnedReviewsParams {
+  sort?: ReviewFeedSort;
+  limit?: number;
+  page?: number;
+}
+
+export const fetchPinnedReviews = async (
+  params: FetchPinnedReviewsParams = {}
+): Promise<{ reviews: any[], pagination?: any }> => {
+  const {
+    sort = "liked",
+    limit = 12,
+    page = 1,
+  } = params;
+
   try {
-    const response = await apiClient.get(`/review/feed?sort=liked`);
+    const response = await apiClient.get("/review/feed", {
+      params: {
+        sort,
+        limit,
+        page,
+      },
+    });
+
     if (response.data && response.data.data) {
       return {
         reviews: response.data.data.reviews || [],
@@ -110,7 +133,6 @@ export const deleteUserReview = async (reviewId: string | number) => {
 export const fetchReviewById = async (reviewId: string | number): Promise<any> => {
   try {
     const response = await apiClient.get(`/review/${reviewId}`);
-    console.log('[fetchReviewById] response:', JSON.stringify(response.data, null, 2));
     // Try multiple response shapes
     const d = response.data;
     if (d?.data?.review) return d.data.review;

@@ -3,9 +3,11 @@
 import React from 'react';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { Skeleton } from 'antd';
+import { sanitizeUserGeneratedHtml } from '@/utils/sanitizeHtml';
 
 export default function PrivacyPolicyContent() {
     const { settings, isLoading } = useWebsiteStore();
+    const safePrivacyHtml = sanitizeUserGeneratedHtml(settings?.policy || settings?.privacy_policy || '');
 
     return (
         <div className="min-h-screen bg-[#FDFDFD]">
@@ -35,7 +37,7 @@ export default function PrivacyPolicyContent() {
                     ) : settings?.policy || settings?.privacy_policy ? (
                         <div
                             className="prose prose-lg prose-red max-w-none prose-headings:font-primary prose-headings:font-bold prose-headings:text-gray-900 prose-p:text-gray-600 prose-p:leading-loose prose-a:text-red-600 hover:prose-a:text-red-700 prose-li:text-gray-600 fonts-sarabun"
-                            dangerouslySetInnerHTML={{ __html: settings.policy || settings.privacy_policy || '' }}
+                            dangerouslySetInnerHTML={{ __html: safePrivacyHtml }}
                         />
                     ) : (
                         <div className="flex flex-col items-center justify-center py-20 text-gray-400">

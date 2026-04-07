@@ -8,11 +8,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/th';
-import parse from 'html-react-parser';
 import { Edit2, Trash2, Heart, Share2, MessageCircle, Flag, Send, Ellipsis } from 'lucide-react';
 import { likeReview, shareReview, postReviewComment, fetchReviewComments, deleteReviewComment, reportReviewOrComment } from '@/services/api/commentApi';
 import { useAuthStore } from '@/stores/authStore';
 import ProfileAvatarLink, { extractFrameSrc, normalizeProfileAssetSrc } from '@/components/ui/ProfileAvatarLink';
+import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
+import { sanitizeUserGeneratedHtml } from '@/utils/sanitizeHtml';
 
 dayjs.extend(relativeTime);
 dayjs.locale('th');
@@ -258,11 +259,14 @@ export default function ReviewModal({
   const userFrame = extractFrameSrc(review.user);
   const userName = review.user?.fullname || 'Unknown';
   const timeAgo = dayjs(review.created_at).fromNow();
-  const bookCover = review.book?.img || review.book?.img_full || '/images/default-cover.png';
+  const bookCover = resolveBookCoverImageSrc(review.book, '/images/default-cover.png');
   const bookTitle = review.book?.name || 'Unknown Book';
   const bookTag = review.book?.tag?.[0] || 'นิยาย';
   const writerName = review.book?.writer_name || 'Unknown Writer';
   const reviewId = review.review_id || review.id;
+  const safeReviewContentHtml = sanitizeUserGeneratedHtml(
+    String(review.content || '').replace(/\[\/?\s*SPOILER\s*\]/gi, ''),
+  );
 
   return (
     <Modal
@@ -327,12 +331,15 @@ export default function ReviewModal({
         <div className="mb-4 flex items-center gap-2">
           <Rate disabled defaultValue={review.rating} allowHalf className="text-base text-yellow-500" />
           <span className="rounded-full bg-gray-100 px-2 py-0.5 text-sm text-gray-500">
-            อ่านถึงตอนที่ {review.ep_read || 0}
+            อ่านแล้ว {review.ep_read || 0} ตอน
           </span>
         </div>
 
         <div className="mb-4 min-h-[100px] whitespace-pre-wrap rounded-xl border border-gray-100 bg-gray-50 p-4 text-base leading-relaxed text-gray-700">
-          {parse((review.content || '').replace(/\[\/?\s*SPOILER\s*\]/gi, ''))}
+          <div
+            className="prose prose-sm max-w-none text-gray-700"
+            dangerouslySetInnerHTML={{ __html: safeReviewContentHtml }}
+          />
         </div>
 
         <div className="mb-4 flex items-center gap-6 border-y border-gray-100 py-2">

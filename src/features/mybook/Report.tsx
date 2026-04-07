@@ -11,7 +11,7 @@ import dayjs from 'dayjs';
 import { fetchBookStats, fetchBookAnalytics, fetchBookEpisodesStats, EpisodeStats, PurchaseItem } from '@/services/apiServices';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { useShallow } from 'zustand/react/shallow';
-import '@/utils/imageUtils';
+import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 const { RangePicker } = DatePicker;
 
@@ -108,7 +108,16 @@ export default function Report({ bookId }: { bookId: string }) {
                     title: data.name,
                     author: data.writer_name,
                     description: data.title, // Using title as description based on screenshot mapping
-                    cover: data.img,
+                    cover: resolveBookCoverImageSrc(
+                        {
+                            img: data.img,
+                            img_full: data.img_full,
+                            img_gif: (data as any).img_gif,
+                            img_gif_full: (data as any).img_gif_full,
+                        },
+                        '/images/book.png',
+                        'book',
+                    ),
                     views: data.total_views,
                     chapters: data.total_episodes,
                     bookmarks: data.shelve_count
@@ -240,7 +249,7 @@ export default function Report({ bookId }: { bookId: string }) {
                             <div className="flex-1 space-y-2">
                                 <div className="flex justify-between items-start">
                                     <h1 className="text-2xl font-bold text-gray-900">{bookInfo.title}</h1>
-                                    <Button href={`/w/b/${bookId}`} target="_blank">ดูข้อมูล</Button>
+                                    <Button href={`/w/b/${bookId}`} target="_blank" rel="noopener noreferrer">ดูข้อมูล</Button>
                                 </div>
                                 <p className="text-gray-600">โดย : <span className="text-black font-semibold">{bookInfo.author}</span></p>
                                 <p className="text-gray-500">{bookInfo.description}</p>

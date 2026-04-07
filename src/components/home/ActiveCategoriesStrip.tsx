@@ -1,6 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Grid } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/grid";
 import type { ActiveCategory } from "@/services/apiServices";
 
 interface ActiveCategoriesStripProps {
@@ -34,7 +38,7 @@ export default function ActiveCategoriesStrip({ categories }: ActiveCategoriesSt
         </Link>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 hidden flex-wrap gap-2 sm:flex">
         {categories.map((category, index) => (
           <Link
             key={`${category.id}-${category.name}`}
@@ -44,6 +48,35 @@ export default function ActiveCategoriesStrip({ categories }: ActiveCategoriesSt
             {category.name}
           </Link>
         ))}
+      </div>
+
+      <div className="mt-3 sm:hidden">
+        <Swiper
+          modules={[Grid]}
+          grid={{ rows: 2, fill: "row" }}
+          slidesPerView={3.25}
+          spaceBetween={8}
+          className="w-full"
+          breakpoints={{
+            420: {
+              slidesPerView: 3.6,
+            },
+            560: {
+              slidesPerView: 4.2,
+            },
+          }}
+        >
+          {categories.map((category, index) => (
+            <SwiperSlide key={`${category.id}-${category.name}`} className="!h-auto pb-2">
+              <Link
+                href={`/cat/${category.id}?type=all&tab=new&page=1&name=${encodeURIComponent(category.name)}`}
+                className={`flex min-h-8 w-full items-center justify-center rounded-md px-2 py-1.5 text-center text-[11px] font-semibold leading-none no-underline transition duration-200 ${pillThemes[index % pillThemes.length]}`}
+              >
+                <span className="line-clamp-1">{category.name}</span>
+              </Link>
+            </SwiperSlide>
+          ))}
+        </Swiper>
       </div>
     </section>
   );

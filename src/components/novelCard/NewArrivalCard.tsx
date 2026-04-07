@@ -3,6 +3,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookTrans } from '@/types/api';
+import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 interface NewArrivalCardProps {
   book: BookTrans;
@@ -30,7 +31,7 @@ export default function NewArrivalCard({ book }: NewArrivalCardProps) {
             className="absolute top-0 right-0 z-10 w-9 h-auto object-contain"
           />
           <Image
-            src={book.img.startsWith('http') ? book.img : `https://img.enjoybook.co/img/book/${book.img}`}
+            src={resolveBookCoverImageSrc(book, '/images/ejb.png', 'book')}
             alt={book.name}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"

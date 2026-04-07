@@ -157,12 +157,12 @@ export const BookEpisodesTab = ({ episodesData, bookId, bookDetail, settings, is
                                                             </span>
                                                         )}
                                                         {isFastLocked && (
-                                                            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600 whitespace-nowrap">
-                                                                ตอนล่วงหน้า
+                                                            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 translate-y-[-6px] text-[11px] font-semibold text-gray-600 whitespace-nowrap">
+                                                                เผยแพร่ วันที่ {new Date(episode.publish_datetime).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })} น.
                                                             </span>
                                                         )}
                                                         {isFastBuyable && (
-                                                            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600 whitespace-nowrap">
+                                                            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 translate-y-[-6px] text-[11px] font-semibold text-gray-600 whitespace-nowrap">
                                                                 ตอนล่วงหน้า
                                                             </span>
                                                         )}
@@ -224,7 +224,7 @@ export const BookEpisodesTab = ({ episodesData, bookId, bookDetail, settings, is
                                                                         );
                                                                     })(settings)}
                                                                     {isFastLocked ? (
-                                                                        <span className="text-xs font-semibold text-gray-500">ยังซื้อไม่ได้</span>
+                                                                        <span className="text-xs font-semibold text-gray-500">ซื้อตอนก่อนหน้าเพื่อปลดล็อก</span>
                                                                     ) : episode.isBuy ? (
                                                                         <span className="text-sm font-semibold text-gray-400 line-through">{regularPrice}</span>
                                                                     ) : hasEarlyAccess && isFastBuyable ? (

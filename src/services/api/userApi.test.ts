@@ -36,7 +36,16 @@ describe('userApi - fetchRankProfile', () => {
     expect(apiClient.get).toHaveBeenCalledWith('/rank/profile', {
       headers: { Authorization: 'mock-token' },
     });
-    expect(result).toEqual(mockData.data);
+    expect(result).toMatchObject({
+      ...mockData.data,
+      current_rank: {
+        ...mockData.data.current_rank,
+        rank_img: 'https://image.enjoybook.co/mock-img-url',
+      },
+      next_rank: {
+        rank_img: '/images/user.png',
+      },
+    });
   });
 
   it('should fetch rank profile without token header when token is not provided', async () => {
@@ -63,7 +72,16 @@ describe('userApi - fetchRankProfile', () => {
     const result = await fetchRankProfile();
 
     expect(apiClient.get).toHaveBeenCalledWith('/rank/profile', {});
-    expect(result).toEqual(mockData.data);
+    expect(result).toMatchObject({
+      ...mockData.data,
+      current_rank: {
+        ...mockData.data.current_rank,
+        rank_img: 'https://image.enjoybook.co/mock-img-url',
+      },
+      next_rank: {
+        rank_img: '/images/user.png',
+      },
+    });
   });
 
   it('should return null if API call fails', async () => {

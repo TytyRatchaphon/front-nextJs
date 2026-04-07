@@ -7,6 +7,7 @@ import { SearchOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchUserShelve, fetchUserShelveContinue, fetchUserShelveBuy, addBooksToCollection } from '@/services/apiServices';
 import apiClient from '@/services/apiClient';
+import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 interface AddBookToCollectionModalProps {
   open: boolean;
@@ -60,10 +61,7 @@ function BookRow({
   onToggle: () => void;
 }) {
   const imgSrc = (() => {
-    const raw = book.img || book.imgtn || book.thumb || '';
-    if (!raw) return '/images/ejb.png';
-    if (typeof raw === 'string' && raw.startsWith('http')) return raw;
-    return `https://img.enjoybook.co/img/book/tn/${raw}`;
+    return resolveBookCoverImageSrc(book, '/images/ejb.png');
   })();
 
   const name = book.name || book.title || book.bookname || 'ไม่มีชื่อ';

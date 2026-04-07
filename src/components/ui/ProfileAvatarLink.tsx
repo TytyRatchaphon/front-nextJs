@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import ImageWithFallback from '@/components/ui/ImageWithFallback';
+import FrameOverlayImage from '@/components/ui/FrameOverlayImage';
 
 const DEFAULT_AVATAR = '/images/default-avatar.png';
 
@@ -68,13 +69,7 @@ export default function ProfileAvatarLink({
       </div>
       {normalizedFrame && (
         <div className={`pointer-events-none absolute ${frameScaleClassName} z-10`}>
-          <Image
-            src={normalizedFrame}
-            alt={`${name || 'User'} frame`}
-            fill
-            className="object-contain"
-            unoptimized={normalizedFrame.endsWith('.gif')}
-          />
+          <FrameOverlayImage src={normalizedFrame} alt={`${name || 'User'} frame`} className="object-contain" />
         </div>
       )}
     </div>

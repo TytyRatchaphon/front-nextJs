@@ -5,6 +5,7 @@ import React from 'react'
 import '@/services/apiServices';
 import SaleGroupSVG from './SaleGroupSvg';
 import { UniversalBook } from '../../types/api';
+import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 
 
@@ -27,14 +28,7 @@ function PackCardBook({ book, onClick }: PackCardBookProps) {
         return num;
     }
 
-    // สร้าง URL รูปภาพ
-    // Support both full URLs and filename keys from the API.
-    const imgSource = book.img;
-    const imageUrl = imgSource
-        ? (typeof imgSource === 'string' && imgSource.startsWith('https')
-            ? imgSource
-            : `https://img.enjoybook.co/img/book/tn/${imgSource}`)
-        : "/images/ejb.png";
+    const imageUrl = resolveBookCoverImageSrc(book, '/images/ejb.png');
 
     // Normalize and detect various "ended" values from different APIs
     const isEndedValue = (v: any) => {

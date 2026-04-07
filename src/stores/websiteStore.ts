@@ -20,6 +20,7 @@ export const WEBSITE_SETTINGS_CACHE_TTL_MS = 5 * 60 * 1000;
 // Add new keys here if a future feature needs them to be available before fetch completes.
 const PERSISTED_SETTINGS_KEYS: Array<keyof WebsiteSettingsData> = [
   'logo',
+  'redeembg',
   'img_error',
   'img_footer',
   'coin',
@@ -44,9 +45,14 @@ const PERSISTED_SETTINGS_KEYS: Array<keyof WebsiteSettingsData> = [
   'seo_title',
   'seo_keyword',
   'seo_description',
+  '7D_Checkin',
   'app_store',
   'play_store',
   'book_conditions',
+];
+
+const RUNTIME_REQUIRED_SETTINGS_KEYS: Array<keyof WebsiteSettingsData> = [
+  '7D_Checkin',
 ];
 
 const pickPersistedSettings = (settings: WebsiteSettingsData | null): WebsiteSettingsData | null => {
@@ -63,6 +69,11 @@ const pickPersistedSettings = (settings: WebsiteSettingsData | null): WebsiteSet
   return Object.keys(reduced).length > 0 ? reduced : null;
 };
 
+const hasRequiredSettingsKeys = (settings: WebsiteSettingsData | null): boolean => {
+  if (!settings) return false;
+  return RUNTIME_REQUIRED_SETTINGS_KEYS.every((key) => Object.prototype.hasOwnProperty.call(settings, key));
+};
+
 export const useWebsiteStore = create<WebsiteStore>()(
   persist(
     (set, get) => ({
@@ -75,9 +86,11 @@ export const useWebsiteStore = create<WebsiteStore>()(
       fetchSettings: async (force = false) => {
         const { settings, lastFetched, fetchPromise } = get();
         const now = Date.now();
+        const isCacheFresh = Boolean(settings && now - lastFetched < WEBSITE_SETTINGS_CACHE_TTL_MS);
+        const hasRequiredKeys = hasRequiredSettingsKeys(settings);
 
         // 1. Check cache freshness
-        if (!force && (settings && now - lastFetched < WEBSITE_SETTINGS_CACHE_TTL_MS)) {
+        if (!force && isCacheFresh && hasRequiredKeys) {
           return;
         }
 

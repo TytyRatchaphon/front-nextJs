@@ -34,6 +34,7 @@ const mockSettings = {
   seo_title: 'Test',
   seo_keyword: 'test',
   seo_description: 'test desc',
+  '7D_Checkin': 'enabled',
 }
 
 describe('websiteStore', () => {
@@ -136,6 +137,25 @@ describe('websiteStore', () => {
     expect(mockFetchWebsiteSettings).toHaveBeenCalledOnce()
   })
 
+  it('refetches even with fresh cache when required keys are missing', async () => {
+    const incompleteSettings = { ...mockSettings } as any
+    delete incompleteSettings['7D_Checkin']
+
+    useWebsiteStore.setState({
+      settings: incompleteSettings,
+      lastFetched: Date.now(),
+    })
+
+    mockFetchWebsiteSettings.mockResolvedValueOnce({
+      status: 'success',
+      data: mockSettings,
+    })
+
+    await useWebsiteStore.getState().fetchSettings()
+
+    expect(mockFetchWebsiteSettings).toHaveBeenCalledOnce()
+  })
+
   // -------------------------------------------------------------------
   // fetchSettings - error handling
   // -------------------------------------------------------------------
@@ -158,6 +178,19 @@ describe('websiteStore', () => {
     expect(state.isLoading).toBe(false)
     // No error should be set for null response
     expect(state.settings).toBeNull()
+  })
+
+  it('sets default error for non-success response payload', async () => {
+    mockFetchWebsiteSettings.mockResolvedValueOnce({
+      status: 'warning',
+      data: null,
+    })
+
+    await useWebsiteStore.getState().fetchSettings(true)
+
+    const state = useWebsiteStore.getState()
+    expect(state.isLoading).toBe(false)
+    expect(state.error).toBe('Failed to fetch settings')
   })
 
   // -------------------------------------------------------------------
@@ -190,4 +223,5 @@ describe('websiteStore', () => {
 
     expect(useWebsiteStore.getState().fetchPromise).toBeNull()
   })
+
 })

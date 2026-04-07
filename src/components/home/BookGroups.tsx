@@ -18,7 +18,7 @@ export default function BookGroups({ groupBookHome }: BookGroupsProps) {
   return (
     <div className="w-full mb-8">
       {groupBookHome
-        .filter((group: any) => group.type !== 'spotlight')
+        .filter((group: any) => group.type !== 'spotlight' && group.type !== 'recommend_admin')
         .sort((a: any, b: any) => {
           const orderA = Number(a?.order_by);
           const orderB = Number(b?.order_by);

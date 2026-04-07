@@ -386,6 +386,15 @@ export const fetchUserMyBooks = async (params: MyBookSearchParams = {}) => {
   }
 };
 
+export const fetchUserMyBookListNames = async () => {
+  try {
+    const response = await apiClient.get('/user/mybook/list-names');
+    return response.data;
+  } catch {
+    return null;
+  }
+};
+
 export const fetchUserMyBookInfo = async (token?: string | null) => {
   try {
     const config = token ? { headers: { Authorization: token } } : {};

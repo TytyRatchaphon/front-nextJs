@@ -15,12 +15,17 @@ import { useUIStore } from "@/stores/uiStore";
 import { FacebookShareButton, TwitterShareButton, LineShareButton } from "react-share";
 import { TagSwiper } from "@/components/swiper/ImageSlider";
 import { useWebsiteStore } from '@/stores/websiteStore';
+import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 interface BookDetailHeaderProps {
   book: {
     id?: number | string;
     isAddedToShelf?: boolean;
     cover: string;
+    img?: string;
+    img_full?: string;
+    img_gif?: string;
+    img_gif_full?: string;
     title: string;
     tag: string;
     cat1?: number;
@@ -208,11 +213,7 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
     }
   };
 
-  const coverImageUrl = book.cover
-    ? book.cover.trim().startsWith("http")
-      ? book.cover
-      : `https://img.enjoybook.co/img/book/thumbnail/${book.cover.trim()}`
-    : "/images/book.png";
+  const coverImageUrl = resolveBookCoverImageSrc(book, "/images/book.png", "book");
 
   const handleTrackShare = (platform: 'facebook' | 'twitter' | 'line') => {
     // Track share

@@ -4,6 +4,7 @@ import { SearchOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
+import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 interface SelectNovelModalProps {
   isOpen: boolean;
@@ -67,10 +68,7 @@ export default function SelectNovelModal({ isOpen, onClose, onSelect, selectedBo
 
   const getBookId = (book: any) => Number(book.book_id || book.bookID || book.id);
   const getBookImg = (book: any) => {
-    const raw = book.img || book.imgtn || book.thumb || '';
-    if (!raw) return '/images/ejb.png';
-    if (typeof raw === 'string' && raw.startsWith('http')) return raw;
-    return `https://img.enjoybook.co/img/book/tn/${raw}`;
+    return resolveBookCoverImageSrc(book, '/images/ejb.png');
   };
 
   return (

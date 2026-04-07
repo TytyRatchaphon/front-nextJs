@@ -55,7 +55,7 @@ const resolveDiscount = (episode: PurchaseEpisode) => {
 
 export const getRegularEpisodePrices = (episode: PurchaseEpisode) => {
   const originalCoinPrice = Number(episode?.coin ?? 0);
-  const originalFreecoinPrice = Number(episode?.freecoin ?? originalCoinPrice);
+  const originalFreecoinPrice = originalCoinPrice;
   const { discountPrice, discountEndDate } = resolveDiscount(episode);
   if (
     discountPrice !== undefined &&

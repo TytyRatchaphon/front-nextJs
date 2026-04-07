@@ -17,6 +17,8 @@ describe('normalizeBookData', () => {
       book_id: 123,
       bookID: 'BK123',
       img: 'cover.jpg',
+      img_gif: 'cover.gif',
+      img_gif_full: 'cover-full.gif',
       name: 'Test Book',
       title: 'Test Book Title',
       writer_name: 'Author A',
@@ -32,6 +34,8 @@ describe('normalizeBookData', () => {
     expect(result.book_id).toBe(123)
     expect(result.bookID).toBe('BK123')
     expect(result.img).toBe('cover.jpg')
+    expect(result.img_gif).toBe('cover.gif')
+    expect(result.img_gif_full).toBe('cover-full.gif')
     expect(result.name).toBe('Test Book')
     expect(result.title).toBe('Test Book Title')
     expect(result.author).toBe('Author A')
@@ -64,6 +68,18 @@ describe('normalizeBookData', () => {
     expect(result.view).toBe(0)
     expect(result.chapter).toBe(0)
     expect(result.shelve_count).toBe(0)
+  })
+
+  it('falls back to img_full when thumbnail image fields are missing', () => {
+    const raw: BookData = {
+      book_id: 99,
+      img_full: 'full-cover.webp',
+    } as any
+
+    const result = normalizeBookData(raw)
+
+    expect(result.img).toBe('full-cover.webp')
+    expect(result.img_full).toBe('full-cover.webp')
   })
 
   it('handles completely empty object gracefully', () => {

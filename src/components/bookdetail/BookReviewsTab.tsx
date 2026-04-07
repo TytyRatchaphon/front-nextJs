@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchBookReviewsNew, deleteUserReview } from '@/services/api/commentApi';
 import ImageWithFallback from '@/components/ui/ImageWithFallback';
-import Image from 'next/image';
+import FrameOverlayImage from '@/components/ui/FrameOverlayImage';
 import Link from 'next/link';
 import { Rate, Select, App } from 'antd';
 import dayjs from 'dayjs';
@@ -17,6 +17,7 @@ import SpoilerCardWrapper from '@/components/ui/SpoilerCardWrapper';
 import { useAuthStore } from '@/stores/authStore';
 import { Dropdown } from 'antd';
 import { MoreVertical, Edit2, Trash2, Heart, Share2, MessageCircle } from 'lucide-react';
+import { toSafeReviewPreviewHtml } from '@/utils/reviewText';
 
 dayjs.extend(relativeTime);
 dayjs.locale('th');
@@ -60,6 +61,7 @@ export default function BookReviewsTab({ bookId, book }: BookReviewsTabProps) {
       book: {
         book_id: book?.id || book?.book_id || bookId,
         img: book?.cover || book?.img || book?.img_full,
+        img_gif: book?.img_gif || book?.img_gif_full,
         name: book?.title || book?.name,
         tag: book?.tags || (book?.tag ? [book.tag] : ['นิยาย']),
         writer_name: book?.writer?.writer_name || book?.writer_name,
@@ -183,11 +185,7 @@ export default function BookReviewsTab({ bookId, book }: BookReviewsTabProps) {
               const userFrame = review.user?.frame;
               const timeAgo = dayjs(review.created_at).fromNow();
 
-              let cleanContent = review.content || '';
-              if (cleanContent.startsWith('<p>')) {
-                cleanContent = cleanContent.replace(/<[^>]+>/g, '');
-              }
-              cleanContent = cleanContent.replace(/\[\/?\s*SPOILER\s*\]/gi, '');
+              const cleanContentHtml = toSafeReviewPreviewHtml(review.content);
               const isSpoilerCard = !!review.is_spoiler;
 
               const cardContent = (
@@ -205,7 +203,7 @@ export default function BookReviewsTab({ bookId, book }: BookReviewsTabProps) {
                         </div>
                         {userFrame && (
                           <div className="absolute -inset-1">
-                            <Image src={userFrame.img} alt={userFrame.name} fill className="object-contain" unoptimized />
+                            <FrameOverlayImage src={userFrame.img} alt={userFrame.name} className="object-contain" />
                           </div>
                         )}
                       </Link>
@@ -266,13 +264,17 @@ export default function BookReviewsTab({ bookId, book }: BookReviewsTabProps) {
                   <div className="flex items-center gap-2 mb-2">
                     <Rate disabled defaultValue={review.rating} allowHalf className="text-sm text-yellow-500" />
                     {review.ep_read > 0 && (
-                      <span className="text-xs text-gray-500">อ่านถึง #{review.ep_read}</span>
+                      <span className="text-xs text-gray-500">อ่านแล้ว {review.ep_read} ตอน</span>
                     )}
                   </div>
 
                   {/* Content */}
-                  <div className="text-sm text-gray-700 line-clamp-3 mb-3 break-words leading-relaxed">
-                    {cleanContent}
+                  <div className="text-sm text-gray-700 line-clamp-3 mb-3 break-words leading-relaxed [&_a]:pointer-events-none">
+                    {cleanContentHtml ? (
+                      <span dangerouslySetInnerHTML={{ __html: cleanContentHtml }} />
+                    ) : (
+                      'รีวิวนี้ยังไม่มีข้อความเพิ่มเติม'
+                    )}
                   </div>
 
                   {/* Interaction Stats */}
@@ -345,6 +347,7 @@ export default function BookReviewsTab({ bookId, book }: BookReviewsTabProps) {
         initialBook={book ? {
           book_id: book.id || book.book_id,
           img: book.cover || book.img || book.img_full,
+          img_gif: book.img_gif || book.img_gif_full,
           name: book.title || book.name,
         } : null}
         lockBook={true}

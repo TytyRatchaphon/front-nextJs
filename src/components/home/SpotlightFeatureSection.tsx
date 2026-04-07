@@ -6,6 +6,7 @@ import Link from "next/link";
 import { AlignJustify, Eye, Heart } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { FreeMode, Navigation, Pagination } from "swiper/modules";
+import { resolveBookCoverImageSrc } from "@/utils/imageUtils";
 
 interface SpotlightFeatureSectionProps {
   selectedSpotlight: any;
@@ -17,10 +18,7 @@ interface SpotlightFeatureSectionProps {
   editorNoteLabeltag?: string | null;
 }
 
-const coverSrc = (img?: string) => {
-  if (!img) return "/images/ejb.png";
-  return img.startsWith("http") ? img : `https://img.enjoybook.co/img/book/${img}`;
-};
+const coverSrc = (book?: any) => resolveBookCoverImageSrc(book, '/images/ejb.png', 'book');
 
 const formatCount = (num: number) => {
   if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -73,7 +71,7 @@ export default function SpotlightFeatureSection({
           }`}
         >
           <Image
-            src={coverSrc(book.img || book.img_full)}
+            src={coverSrc(book)}
             alt={book.name}
             fill
             className={`object-cover transition duration-300 ${
@@ -103,7 +101,7 @@ export default function SpotlightFeatureSection({
         >
           <div className="relative h-[126px] w-full sm:h-[168px]">
             <Image
-              src={coverSrc(item?.img || item?.img_full)}
+              src={coverSrc(item)}
               alt={item?.name || "Editor note"}
               fill
               className="object-cover object-center transition duration-300 group-hover:scale-[1.03]"
@@ -188,7 +186,7 @@ export default function SpotlightFeatureSection({
                 >
                   <div className="relative aspect-[5/7] w-full">
                     <Image
-                      src={coverSrc(selectedSpotlight.img || selectedSpotlight.img_full)}
+                      src={coverSrc(selectedSpotlight)}
                       alt={selectedSpotlight.name}
                       fill
                       className="object-cover"

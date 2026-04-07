@@ -13,6 +13,7 @@ import StampPill from "@/components/utility/StampPill";
 import RPPill from "@/components/utility/RPPill";
 import ProfileAchievements from "@/components/achievement/ProfileAchievements";
 import UserRankShowcase from "@/features/user/components/UserRankShowcase";
+import FrameOverlayImage from "@/components/ui/FrameOverlayImage";
 
 function MyProfileContent() {
   const { user, isLoggedIn, hasMounted } = useAuthStore();
@@ -108,7 +109,7 @@ function MyProfileContent() {
               />
               {frame?.img && (
                 <div className="pointer-events-none absolute inset-0 z-10">
-                  <Image src={frame.img} alt="Frame" fill className="object-contain" unoptimized />
+                  <FrameOverlayImage src={frame.img} alt="Frame" className="object-contain" />
                 </div>
               )}
             </div>

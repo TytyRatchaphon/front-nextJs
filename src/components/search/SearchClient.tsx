@@ -95,11 +95,6 @@ export default function SearchClient() {
     if (hasLoggedRef.current === logKey) return;
     hasLoggedRef.current = logKey;
 
-    console.log('[LOG] search =>', {
-      query: searchParams.query,
-      categories: searchParams.categories,
-      filters: { types: searchParams.types, status: searchParams.status, end: searchParams.end },
-    });
     log('search', 'book', '', {
       query: searchParams.query,
       categories: searchParams.categories,
@@ -154,12 +149,16 @@ export default function SearchClient() {
 
     // Normalize each item into the canonical shape CardBook expects
     const normalized = apiResponse.items.map((b: any) => {
-      const imageRaw = b.imgtn || b.img || b.thumb || b.image || "";
+      const imageRaw = b.img || b.imgtn || b.img_full || b.thumb || b.image || "";
+      const gifRaw = b.img_gif || b.img_gif_full || "";
       const imageUrl = typeof imageRaw === 'string' && imageRaw.startsWith('http')
         ? imageRaw
         : imageRaw
           ? imageRaw
           : "https://img.enjoybook.co/img/avatar/avatar-default.png";
+      const gifUrl = typeof gifRaw === 'string' && gifRaw.startsWith('http')
+        ? gifRaw
+        : gifRaw || undefined;
 
       const book_id = b.book_id ?? (b.bookID ? Number(b.bookID) : 0);
       const bookID = b.bookID?.toString() || (book_id ? String(book_id) : "");
@@ -173,6 +172,9 @@ export default function SearchClient() {
         bookID: String(bookID || ""),
         type: b.type || "",
         img: imageUrl,
+        img_gif: gifUrl,
+        img_gif_full: b.img_gif_full || undefined,
+        img_full: b.img_full || undefined,
         name,
         title: name,
         tag: b.tag || '',

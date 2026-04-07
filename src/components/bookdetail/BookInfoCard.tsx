@@ -253,8 +253,6 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
           const res = await apiClient.post(`/buy/groupPromotion`, payload);
           if (res?.data?.code === 200) {
 
-            // Log buy_promotion
-            console.log('[LOG] buy_promotion =>', { bookId, promotion_id: book.promotion?.id, price: book.promotion?.price, title: book.promotion?.title });
             log('buy_promotion', 'book', String(bookId), { promotion_id: book.promotion?.id, price: book.promotion?.price, promotion_title: book.promotion?.title, book_title: book?.title });
 
             setShowSuccess(true);
@@ -1407,8 +1405,6 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                         const res = await apiClient.post(`/buy/eps`, payload);
                         if (res?.data?.code === 200) {
 
-                          // Log buy_episode
-                          console.log('[LOG] buy_episode =>', { bookId, episodes: selectedEpisodeIds.length, payWith });
                           log('buy_episode', 'book', String(bookId), { episodes_count: selectedEpisodeIds.length, total: selectedSummary.total, method: payWith, book_title: book?.title });
                           setShowSuccess(true);
 
@@ -1541,8 +1537,6 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                         const res = await apiClient.post(`/buy/eps`, payload);
                         if (res?.data?.code === 200) {
 
-                          // Log buy_episode (buy all)
-                          console.log('[LOG] buy_episode (all) =>', { bookId, episodes: buyAllIds.length, total: buyAllTotal, payWith });
                           log('buy_episode', 'book', String(bookId), { episodes_count: buyAllIds.length, total: buyAllTotal, method: payWith, buy_all: true, book_title: book?.title });
 
                           setShowSuccess(true);

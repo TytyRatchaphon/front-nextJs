@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import 'antd';
+import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 interface Book {
   book_id?: number;
@@ -23,12 +24,7 @@ interface MyBookCardNewProps {
 const MyBookCardNew: React.FC<MyBookCardNewProps> = ({ book }) => {
   const router = useRouter();
 
-  // 1. Image URL Logic
-  const imageUrl = book.img
-    ? (typeof book.img === 'string' && book.img.startsWith('http')
-      ? book.img
-      : `https://image.enjoybook.co/enjoybook.image/book_thumbnail/${book.img}`)
-    : "/images/ejb.png";
+  const imageUrl = resolveBookCoverImageSrc(book, '/images/ejb.png');
 
   // 2. Format Numbers
   const formatNumber = (num: number) => {
@@ -73,6 +69,7 @@ const MyBookCardNew: React.FC<MyBookCardNewProps> = ({ book }) => {
       <Link
         href={destination}
         target="_blank"
+        rel="noopener noreferrer"
         onClick={onLinkClick}
         className="absolute inset-0 z-[1]"
       />

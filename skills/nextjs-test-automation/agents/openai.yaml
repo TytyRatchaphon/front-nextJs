@@ -1,0 +1,4 @@
+interface:
+  display_name: "Next.js Test Automation"
+  short_description: "Create automated tests for Next.js apps"
+  default_prompt: "Use $nextjs-test-automation to add or update automated tests for this Next.js app."

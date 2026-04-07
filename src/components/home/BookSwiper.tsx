@@ -121,7 +121,10 @@ export default function BookSwiper({ books, title, icon, link }: BookSwiperProps
       >
         {books && books.length > 0 ? (
           books.map((book, index) => (
-            <SwiperSlide key={book.book_id || book.id || index} className="!w-auto">
+            <SwiperSlide
+              key={`${book.book_id ?? book.id ?? 'book'}-${book.parent_book_id ?? 'root'}-${book.content_type ?? 'novel'}-${index}`}
+              className="!w-auto"
+            >
               <CardBook book={book} />
             </SwiperSlide>
           ))

@@ -7,7 +7,7 @@ import type { TabsProps } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
-import { fetchUserMyBookInfo, fetchUserMyBooks, fetchWriterCheck } from '@/services/apiServices';
+import { fetchUserMyBookInfo, fetchUserMyBookListNames, fetchUserMyBooks, fetchWriterCheck } from '@/services/apiServices';
 import Cookies from 'js-cookie';
 
 import MyBookHeader from '../../components/myBook/MyBookHeader';
@@ -144,6 +144,13 @@ function MyBook() {
     enabled: !!token,
   });
 
+  // Fetch all books for stats dropdown from dedicated endpoint
+  const { data: myBooksStatsResponse = null } = useQuery({
+    queryKey: ['myBooksForStats', token],
+    queryFn: fetchUserMyBookListNames,
+    enabled: !!token,
+  });
+
   // Derive items array and total count from the API response (handle common shapes)
   const myBooks: any[] = useMemo(() => {
     const d = myBooksResponse;
@@ -162,6 +169,23 @@ function MyBook() {
     if (!d) return null;
     return d.data?.total ?? d.total ?? d.count ?? d.data?.total_items ?? d.data?.total_count ?? d.data?.totalBooks ?? null;
   }, [myBooksResponse]);
+
+  const myBooksForStats: any[] = useMemo(() => {
+    const d = myBooksStatsResponse as any;
+    if (!d) return [];
+    if (Array.isArray(d)) return d;
+    if (d.data && Array.isArray(d.data.data)) return d.data.data;
+    if (d.data && Array.isArray(d.data.items)) return d.data.items;
+    if (d.data && Array.isArray(d.data.names)) return d.data.names;
+    if (d.data && Array.isArray(d.data.list)) return d.data.list;
+    if (Array.isArray(d.data)) return d.data;
+    if (d.data && Array.isArray(d.data.books)) return d.data.books;
+    if (Array.isArray(d.items)) return d.items;
+    if (Array.isArray(d.names)) return d.names;
+    if (Array.isArray(d.list)) return d.list;
+    if (Array.isArray(d.books)) return d.books;
+    return [];
+  }, [myBooksStatsResponse]);
 
   const tabItems: TabsProps['items'] = useMemo(() => [
     {
@@ -208,7 +232,7 @@ function MyBook() {
           สถิติ
         </div>
       ),
-      children: <MyBookStatsTab myBooks={myBooks} token={token} />,
+      children: <MyBookStatsTab myBooks={myBooksForStats} token={token} />,
     },
     {
       key: '3',
@@ -249,7 +273,7 @@ function MyBook() {
       ),
       children: <MyBookWriterInfoTab user={user} token={token} isWriter={isWriter} updateToken={updateToken} />,
     },
-  ], [myBooks, isLoadingMyBooks, token, coinIncome, setCoinIncome, updateToken, user, isWriter, booksPage, myBooksTotal, filterStatus, filterSortBy, filterOrder, filterEnd, filterQ]);
+  ], [myBooks, myBooksForStats, isLoadingMyBooks, token, coinIncome, setCoinIncome, updateToken, user, isWriter, booksPage, myBooksTotal, filterStatus, filterSortBy, filterOrder, filterEnd, filterQ]);
 
   const { data: writerInfoData } = useQuery({
     queryKey: ['writerInfo', token],

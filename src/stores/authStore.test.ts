@@ -1,11 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Mock all external dependencies BEFORE importing the store
+const { mockCookieGet, mockCookieSet, mockCookieRemove } = vi.hoisted(() => ({
+  mockCookieGet: vi.fn(),
+  mockCookieSet: vi.fn(),
+  mockCookieRemove: vi.fn(),
+}))
+
 vi.mock('js-cookie', () => ({
   default: {
-    get: vi.fn(),
-    set: vi.fn(),
-    remove: vi.fn(),
+    get: mockCookieGet,
+    set: mockCookieSet,
+    remove: mockCookieRemove,
   },
 }))
 
@@ -89,12 +95,18 @@ describe('authStore', () => {
     expect(state.user).toBeTruthy()
   })
 
-  it('login saves to localStorage', () => {
+  it('login clears legacy localStorage and stores token in cookie', () => {
     const user = makeUser()
     useAuthStore.getState().login(user, 'persist-token')
 
-    expect(localStorageMock.setItem).toHaveBeenCalledWith('authToken', expect.any(String))
-    expect(localStorageMock.setItem).toHaveBeenCalledWith('userData', expect.any(String))
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('authToken')
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('userData')
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('token')
+    expect(mockCookieSet).toHaveBeenCalledWith(
+      'token',
+      'persist-token',
+      expect.objectContaining({ sameSite: 'lax', path: '/' }),
+    )
   })
 
   // -------------------------------------------------------------------
@@ -117,6 +129,9 @@ describe('authStore', () => {
 
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('authToken')
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('userData')
+    expect(localStorageMock.removeItem).toHaveBeenCalledWith('token')
+    expect(mockCookieRemove).toHaveBeenCalledWith('token')
+    expect(mockCookieRemove).toHaveBeenCalledWith('tk')
   })
 
   // -------------------------------------------------------------------
@@ -166,9 +181,8 @@ describe('authStore', () => {
     expect(useAuthStore.getState().hasMounted).toBe(true)
   })
 
-  it('setMounted recovers from localStorage backup', () => {
-    localStorageMock.setItem('authToken', 'backup-token')
-    localStorageMock.setItem('userData', JSON.stringify(makeUser({ fullname: 'Backup' })))
+  it('setMounted recovers from token cookie when state is empty', () => {
+    mockCookieGet.mockImplementation((key: string) => (key === 'token' ? 'backup-token' : undefined))
 
     useAuthStore.setState({ user: null, token: null, isLoggedIn: false })
     useAuthStore.getState().setMounted()
@@ -176,6 +190,7 @@ describe('authStore', () => {
     const state = useAuthStore.getState()
     expect(state.hasMounted).toBe(true)
     expect(state.isLoggedIn).toBe(true)
-    expect(state.user?.fullname).toBe('Backup')
+    expect(state.token).toBe('backup-token')
+    expect(state.user?.fullname).toBe('Decoded User')
   })
 })

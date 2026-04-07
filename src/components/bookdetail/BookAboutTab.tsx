@@ -1,4 +1,5 @@
 import React from "react";
+import { sanitizeUserGeneratedHtml } from "@/utils/sanitizeHtml";
 
 type BookDetail = {
     category1?: { name: string } | string;
@@ -19,6 +20,7 @@ type Props = {
 
 export const BookAboutTab = ({ bookDetail }: Props) => {
     if (!bookDetail) return null;
+    const safeDescriptionHtml = sanitizeUserGeneratedHtml(bookDetail.des);
 
     return (
         <div className="text-left px-2 sm:px-4 lg:px-6">
@@ -75,7 +77,7 @@ export const BookAboutTab = ({ bookDetail }: Props) => {
                 </p>
                 <div
                     className="text-xs sm:text-sm text-gray-700 leading-relaxed prose prose-sm sm:prose max-w-none"
-                    dangerouslySetInnerHTML={{ __html: bookDetail.des }}
+                    dangerouslySetInnerHTML={{ __html: safeDescriptionHtml }}
                 />
             </div>
         </div>

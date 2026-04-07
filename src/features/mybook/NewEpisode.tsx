@@ -5,11 +5,9 @@ import { Form, Input, Select, DatePicker, notification, Modal } from "antd"; // 
 import type { Dayjs } from "dayjs";
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import "axios";
-import Cookies from "js-cookie";
 import { useRouter } from "next/navigation"; // ✨ เพิ่ม useRouter
 import { fetchGroupEpisodes } from "@/services/apiServices";
-import apiClient from '@/services/apiClient';
+import secureProxyClient from "@/services/secureProxyClient";
 
 // Import TextEditor
 import TextEditorTiny from "@/components/editor/TextEditorTiny";
@@ -37,9 +35,6 @@ interface ChapterFormValues {
     bookID: string | number;
 }
 
-// Configs
-const ACCESS_TOKEN = process.env.NEXT_PUBLIC_ACCESS_TOKEN || '';
-
 // --- Constants ---
 const priceCoin = Array.from({ length: 11 }, (_, i) => ({
     label: i === 0 ? 'อ่านฟรี' : `${i} เหรียญ`,
@@ -63,19 +58,6 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
     const inputStyle = 'input';
 
     // --- Helper: สร้าง Headers ---
-    const getHeaders = () => {
-        const token = Cookies.get('token');
-        const cleanToken = token ? token.replace(/^['"]+|['"]+$/g, '') : '';
-
-        const encodedApiKey = typeof window !== 'undefined'
-            ? btoa(ACCESS_TOKEN)
-            : Buffer.from(ACCESS_TOKEN).toString('base64');
-
-        return {
-            'Authorization': cleanToken || '',
-            'X-API-Key': encodedApiKey
-        };
-    };
 
     // --- Fetch Group Data ---
     useEffect(() => {
@@ -83,9 +65,7 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
             if (epID) {
                 setSpinLoading(true);
                 try {
-                    const response = await apiClient.get(`/user/mybook/ep/${epID}`, {
-                        headers: getHeaders()
-                    });
+                    const response = await secureProxyClient.get(`/user/mybook/ep/${epID}`);
                     const resData = response.data;
 
                     if (resData.code === 200 && resData.data) {
@@ -166,9 +146,7 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
                 publish: values.publish || 'publish', // Default to publish as requested
             };
 
-            const response = await apiClient.post(`/user/mybook/ep`, payload, {
-                headers: getHeaders()
-            });
+            const response = await secureProxyClient.post(`/user/mybook/ep`, payload);
 
             const resData = response.data;
 

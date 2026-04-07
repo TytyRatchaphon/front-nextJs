@@ -132,8 +132,6 @@ const LoginApple = () => {
                     login(userInfo, token);
                     updateToken(token);
 
-                    // Log login event
-                    console.log('[LOG] login =>', { method: 'apple' });
                     logActivity('login', 'user', userInfo.userId || '', { method: 'apple' });
                     notification.success({
                         message: 'เข้าสู่ระบบสำเร็จ',

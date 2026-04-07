@@ -3,6 +3,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookTrans } from '@/types/api';
+import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 interface SpotlightCardProps {
   book: BookTrans;
@@ -22,7 +23,7 @@ export default function SpotlightCard({ book }: SpotlightCardProps) {
       <div className="flex flex-col w-full h-auto group bg-transparent">
         <div className="relative shadow-md rounded-lg overflow-hidden bg-white aspect-[168/237]">
           <Image 
-            src={book.img.startsWith('http') ? book.img : `https://img.enjoybook.co/img/book/${book.img}`}
+            src={resolveBookCoverImageSrc(book, '/images/ejb.png', 'book')}
             alt={book.name}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"

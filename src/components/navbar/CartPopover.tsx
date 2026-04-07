@@ -86,9 +86,9 @@ const CartPopover: React.FC<CartPopoverProps> = ({ onClose }) => {
     }
 
     return (
-        <div className="w-[85vw] max-w-[350px] sm:w-[400px] flex flex-col bg-white rounded-xl overflow-hidden font-bai-jamjuree shadow-2xl border border-gray-100 ring-1 ring-black/5">
+        <div className="reader-cart-popover-panel w-[85vw] max-w-[350px] sm:w-[400px] flex flex-col bg-white rounded-xl overflow-hidden font-bai-jamjuree shadow-2xl border border-gray-100 ring-1 ring-black/5">
             {/* Header */}
-            <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-20 shadow-sm">
+            <div className="reader-cart-popover-header px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-20 shadow-sm">
                 <div className="flex items-center gap-3">
                     <div className="relative">
                         <ShoppingCartOutlined className="text-2xl text-gray-700" />
@@ -104,19 +104,19 @@ const CartPopover: React.FC<CartPopoverProps> = ({ onClose }) => {
 
             {/* List */}
             {!Array.isArray(cartStores) || cartStores.length === 0 ? (
-                <div className="w-full h-[300px] flex flex-col justify-center items-center gap-3 text-gray-400">
-                     <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mb-2">
+                <div className="reader-cart-popover-empty w-full h-[300px] flex flex-col justify-center items-center gap-3 text-gray-400">
+                     <div className="reader-cart-popover-empty-icon w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mb-2">
                         <ShoppingCartOutlined className="text-xl opacity-30" />
                     </div>
                     <p className="m-0 text-sm">ไม่มีสินค้าในตะกร้า</p>
                 </div>
             ) : (
-                <div className="max-h-[60vh] sm:max-h-[400px] overflow-y-auto bg-white">
+                <div className="reader-cart-popover-list max-h-[60vh] sm:max-h-[400px] overflow-y-auto bg-white">
                     <Collapse 
                         defaultActiveKey={cartStores.map(s => s.store_id)} 
                         ghost 
                         expandIconPosition="end"
-                        className="[&_.ant-collapse-header]:!px-4 [&_.ant-collapse-header]:!py-3 [&_.ant-collapse-header]:!bg-gray-50 [&_.ant-collapse-content-box]:!p-0"
+                        className="reader-cart-popover-collapse [&_.ant-collapse-header]:!px-4 [&_.ant-collapse-header]:!py-3 [&_.ant-collapse-header]:!bg-gray-50 [&_.ant-collapse-content-box]:!p-0"
                         items={cartStores.map((store) => ({
                             key: store.store_id,
                             label: (
@@ -134,7 +134,7 @@ const CartPopover: React.FC<CartPopoverProps> = ({ onClose }) => {
                                         const itemTotal = Number(price) * item.quantity;
 
                                         return (
-                                        <div key={item.cart_item_id} className="p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors flex gap-4 last:border-0 pl-6">
+                                        <div key={item.cart_item_id} className="reader-cart-popover-item p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors flex gap-4 last:border-0 pl-6">
                                              {/* Cover Image */}
                                              <div className="relative w-[60px] h-[90px] flex-shrink-0 rounded-md overflow-hidden shadow-sm border border-gray-200">
                                                 {item.book_cover ? (
@@ -213,7 +213,7 @@ const CartPopover: React.FC<CartPopoverProps> = ({ onClose }) => {
             )}
             
             {/* Footer */}
-            <div className="p-4 bg-gray-50 border-t border-gray-200">
+            <div className="reader-cart-popover-footer p-4 bg-gray-50 border-t border-gray-200">
                 {Object.keys(totals).length > 0 && (
                     <div className="flex justify-between items-center mb-3">
                         <span className="text-gray-500 font-bold text-sm">ยอดรวมทั้งหมด</span>

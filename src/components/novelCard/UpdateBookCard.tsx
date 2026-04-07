@@ -61,7 +61,8 @@ const UpdateBookCard = ({ book }: UpdateBookCardProps) => {
       <div className="relative w-[130px] sm:w-[180px] h-full flex-shrink-0 bg-gray-200">
         {/* Using a placeholder div or Image if src exists */}
         {data.cover ? (
-             <div className="relative w-full h-full">
+          <Link href={`/book/${data.book_id}`}>
+             <div className="relative w-full h-full hover:cursor-pointer hover:scale-105 transition-transform">
                 {/* Note: In a real app, use a valid src. Using a colored div for structure if image fails */}
                 <Image 
                   src={data.cover} 
@@ -79,6 +80,7 @@ const UpdateBookCard = ({ book }: UpdateBookCardProps) => {
                     <div className="mt-auto">BOOK</div>
                 </div>
              </div>
+          </Link>
         ) : (
             <div className="w-full h-full bg-red-500 flex flex-col items-center justify-center text-white font-bold text-3xl p-4">
                 <span>ENJOY</span>

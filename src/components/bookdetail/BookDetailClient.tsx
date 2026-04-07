@@ -65,25 +65,15 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
   useEffect(() => {
     if (!hasMounted || !book) return;
 
-    console.log("Age Check Debug:", {
-        bookRate: book.rate,
-        user: user,
-        birthday: user?.birthday,
-        hasMounted
-    });
-
     // Check strict 18+ (rate === 1)
     if (Number(book.rate) === 1) {
       if (!user) {
-        console.log("User not logged in -> Login Required");
         setAgeModal({ open: true, type: "login_required" });
       } else if (!user.birthday) {
-        console.log("User has no birthday -> Birthday Missing");
         setAgeModal({ open: true, type: "birthday_missing" });
       } else {
         const birthDate = new Date(user.birthday);
         if (isNaN(birthDate.getTime())) {
-            console.log("Invalid birthday format -> Birthday Missing");
             setAgeModal({ open: true, type: "birthday_missing" });
             return;
         }
@@ -95,13 +85,9 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
           age--;
         }
 
-        console.log("Calculated Age:", age);
-
         if (isNaN(age) || age < 18) {
-             console.log("Underage or NaN -> Open Modal");
           setAgeModal({ open: true, type: "underage" });
         } else {
-             console.log("Age OK -> Close Modal");
           setAgeModal({ open: false, type: "login_required" });
         }
       }
@@ -121,11 +107,9 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
   useEffect(() => {
     if (book?.id && book?.title) {
        const startTime = Date.now();
-       console.log('[LOG] page_view tracking started =>', { bookId: String(book.id), name: book.title });
 
        return () => {
          const duration = Math.round((Date.now() - startTime) / 1000 * 10) / 10;
-         console.log('[LOG] page_view =>', { bookId: String(book.id), name: book.title, duration: `${duration}s` });
          log('page_view', 'book', String(book.id), {
             name: book.title,
          }, duration);
@@ -146,6 +130,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
         subLabel: 'อ่านแบบมัดแพ็ค',
         icon: <Package2 className="h-5 w-5" />,
         targetBookId: novelPackCheck.btn_novel_pack,
+        showLeadLabel: novelPackCheck.btn_novel_pack_show_lead_label,
       },
       {
         key: 'novel' as const,
@@ -153,6 +138,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
         subLabel: 'อ่านแบบรายตอน',
         icon: <List className="h-5 w-5" />,
         targetBookId: novelPackCheck.btn_novel,
+        showLeadLabel: false,
       },
     ];
 
@@ -165,23 +151,31 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
             .map((mode) => {
               const isActive = activeReadingContentType === mode.key;
               return (
-                <button
-                  key={mode.key}
-                  type="button"
-                  onClick={() => router.push(`/book/${mode.targetBookId}`)}
-                  className={`w-full rounded-xl border px-4 py-3 text-left transition ${isActive
-                    ? 'border-red-400 bg-red-50'
-                    : 'border-gray-100 bg-gray-50 hover:border-gray-200'
-                    }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={isActive ? 'text-red-600' : 'text-gray-400'}>{mode.icon}</div>
-                    <div className="min-w-0">
-                      <div className={`text-base font-semibold ${isActive ? 'text-gray-900' : 'text-gray-800'}`}>{mode.label}</div>
-                      <div className={`text-xs ${isActive ? 'text-red-600' : 'text-gray-500'}`}>{mode.subLabel}</div>
+                <div key={mode.key} className="relative pt-2">
+                  {mode.showLeadLabel ? (
+                    <div className="pointer-events-none absolute right-3 top-0 z-10 -translate-y-1/2">
+                      <span className="inline-flex items-center rounded-full border border-white/90 bg-[#ff5a5f] px-2.5 py-1 text-[11px] font-semibold leading-none text-white shadow-[0_10px_24px_rgba(227,28,61,0.22)]">
+                        ตอนนำ
+                      </span>
                     </div>
-                  </div>
-                </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/book/${mode.targetBookId}`)}
+                    className={`w-full rounded-xl border px-4 py-3 text-left transition ${isActive
+                      ? 'border-red-400 bg-red-50'
+                      : 'border-gray-100 bg-gray-50 hover:border-gray-200'
+                      }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={isActive ? 'text-red-600' : 'text-gray-400'}>{mode.icon}</div>
+                      <div className="min-w-0">
+                        <div className={`text-base font-semibold ${isActive ? 'text-gray-900' : 'text-gray-800'}`}>{mode.label}</div>
+                        <div className={`text-xs ${isActive ? 'text-red-600' : 'text-gray-500'}`}>{mode.subLabel}</div>
+                      </div>
+                    </div>
+                  </button>
+                </div>
               );
             })}
         </div>

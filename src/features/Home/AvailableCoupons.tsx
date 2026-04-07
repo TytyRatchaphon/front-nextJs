@@ -9,6 +9,7 @@ import { processCoupons, CouponUI } from '@/utils/couponUtils';
 import dayjs from 'dayjs';
 import 'dayjs/locale/th';
 import { useWebsiteStore } from '@/stores/websiteStore';
+import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 const AvailableCoupons = () => {
     const queryClient = useQueryClient();
@@ -201,8 +202,8 @@ const AvailableCoupons = () => {
                                                  >
                                                      <div className={`flex-shrink-0 flex items-center justify-center border border-gray-100 shadow-sm ${iconColor} overflow-hidden ${reward.rewardType === 'NOVEL_WHOLE' && reward.book ? 'w-12 h-16 rounded-md' : 'w-8 h-8 rounded-full bg-white'}`}>
                                                         {reward.book ? (
-                                                            <AntImage 
-                                                                src={reward.book.img} 
+                                                         <AntImage 
+                                                                src={resolveBookCoverImageSrc(reward.book, '/images/ejb.png')} 
                                                                 alt={reward.book.title} 
                                                                 className="w-full h-full object-cover" 
                                                                 preview={{ mask: false, zIndex: 3100 }} 

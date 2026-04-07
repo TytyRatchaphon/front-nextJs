@@ -96,11 +96,6 @@ const LoginGoogle = () => {
     // Trigger the Google Sign-In prompt
     window.google.accounts.id.prompt((notificationObj: any) => {
       if (notificationObj.isNotDisplayed() || notificationObj.isSkippedMoment()) {
-        console.log('Google Prompt Error:', {
-          notDisplayedReason: notificationObj.getNotDisplayedReason(),
-          skippedReason: notificationObj.getSkippedReason()
-        });
-
         // Fallback: Show error if One Tap doesn't work
         setLoading(false);
         notification.info({
@@ -194,8 +189,6 @@ const LoginGoogle = () => {
           // Update user data from token payload immediately
           updateToken(token);
 
-          // Log login event
-          console.log('[LOG] login =>', { method: 'google' });
           logActivity('login', 'user', userInfo.userId || '', { method: 'google' });
 
           notification.success({

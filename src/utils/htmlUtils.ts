@@ -69,6 +69,142 @@ export const modifiedHtml = (detailData: string, currentFont: string, userData: 
     return newDetail;
 }
 
+const CONTENT_OBFUSCATION_CHARS = ['\u2060', '\u200B', '\u200C'];
+const CONTENT_NOISE_CLASS = 'inspect-noise no-select';
+const CONTENT_NOISE_STYLE = 'display:none;color:transparent;font-size:0;line-height:0;';
+
+const segmentForObfuscation = (text: string) => {
+    if (typeof Intl !== 'undefined' && 'Segmenter' in Intl) {
+        const segmenter = new Intl.Segmenter('th', { granularity: 'grapheme' });
+        return Array.from(segmenter.segment(text), (part) => part.segment);
+    }
+
+    return Array.from(text);
+};
+
+const buildNoiseToken = (index: number) => `n${(index * 17).toString(36)}${(index * 29).toString(36)}`;
+
+const obfuscateVisibleText = (text: string) => {
+    if (!text.trim()) return text;
+
+    const segments = segmentForObfuscation(text);
+    let visibleCount = 0;
+    let markerIndex = 0;
+
+    return segments.map((segment) => {
+        if (!segment.trim()) return segment;
+
+        visibleCount += 1;
+        if (visibleCount % 3 !== 0) return segment;
+
+        const marker = CONTENT_OBFUSCATION_CHARS[markerIndex % CONTENT_OBFUSCATION_CHARS.length];
+        markerIndex += 1;
+        return `${segment}${marker}`;
+    }).join('');
+};
+
+export const obfuscateClipboardText = (text: string) => {
+    if (!text) return '';
+    return obfuscateVisibleText(text);
+};
+
+const obfuscateVisibleTextToHtml = (text: string) => {
+    if (!text.trim()) return text;
+
+    const segments = segmentForObfuscation(text);
+    let visibleCount = 0;
+    let markerIndex = 0;
+
+    return segments.map((segment) => {
+        if (!segment.trim()) return segment;
+
+        visibleCount += 1;
+        const marker = visibleCount % 3 === 0
+            ? CONTENT_OBFUSCATION_CHARS[markerIndex++ % CONTENT_OBFUSCATION_CHARS.length]
+            : '';
+        const noise = visibleCount % 4 === 0
+            ? `<span class="${CONTENT_NOISE_CLASS}" hidden aria-hidden="true" data-noise="${buildNoiseToken(visibleCount)}" style="${CONTENT_NOISE_STYLE}">${buildNoiseToken(visibleCount)}</span>`
+            : '';
+
+        return `${segment}${marker}${noise}`;
+    }).join('');
+};
+
+export const obfuscateHtmlTextNodes = (html: string) => {
+    if (!html) return '';
+
+    if (typeof window === 'undefined' || typeof DOMParser === 'undefined') {
+        return html.replace(/>([^<>]+)</g, (_, text: string) => `>${obfuscateVisibleTextToHtml(text)}<`);
+    }
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const textNodes: Text[] = [];
+
+    const walker = doc.createTreeWalker(
+        doc.body,
+        NodeFilter.SHOW_TEXT,
+        {
+            acceptNode: (node) => {
+                const parent = node.parentElement;
+                const rawText = node.textContent || '';
+
+                if (!parent || !rawText.trim()) return NodeFilter.FILTER_REJECT;
+                if (parent.closest('script, style, noscript, .inspect-noise')) return NodeFilter.FILTER_REJECT;
+
+                const parentStyle = parent.getAttribute('style') || '';
+                if (parentStyle.includes('color:transparent') || parentStyle.includes('font-size:0')) {
+                    return NodeFilter.FILTER_REJECT;
+                }
+
+                return NodeFilter.FILTER_ACCEPT;
+            }
+        }
+    );
+
+    while (walker.nextNode()) {
+        textNodes.push(walker.currentNode as Text);
+    }
+
+    textNodes.forEach((textNode) => {
+        const rawText = textNode.textContent || '';
+        const segments = segmentForObfuscation(rawText);
+        let visibleCount = 0;
+        let markerIndex = 0;
+        const fragment = doc.createDocumentFragment();
+
+        segments.forEach((segment) => {
+            fragment.appendChild(doc.createTextNode(segment));
+
+            if (!segment.trim()) return;
+
+            visibleCount += 1;
+
+            if (visibleCount % 3 === 0) {
+                fragment.appendChild(
+                    doc.createTextNode(CONTENT_OBFUSCATION_CHARS[markerIndex++ % CONTENT_OBFUSCATION_CHARS.length])
+                );
+            }
+
+            if (visibleCount % 4 === 0) {
+                const noiseSpan = doc.createElement('span');
+                const noiseToken = buildNoiseToken(visibleCount);
+                noiseSpan.className = CONTENT_NOISE_CLASS;
+                noiseSpan.hidden = true;
+                noiseSpan.setAttribute('aria-hidden', 'true');
+                noiseSpan.setAttribute('data-noise', noiseToken);
+                noiseSpan.setAttribute('style', CONTENT_NOISE_STYLE);
+                noiseSpan.textContent = noiseToken;
+                fragment.appendChild(noiseSpan);
+            }
+        });
+
+        textNode.parentNode?.replaceChild(fragment, textNode);
+    });
+
+    return doc.body.innerHTML;
+}
+
 export const addParagraphIndexes = (html: string) => {
     if (!html) return { html: '', paragraphCount: 0 };
 
@@ -92,6 +228,8 @@ export const addParagraphIndexes = (html: string) => {
         return (clone.textContent || '')
             .replace(/\u00a0/g, ' ')
             .replace(/\u200b/g, '')
+            .replace(/\u200c/g, '')
+            .replace(/\u2060/g, '')
             .trim();
     };
 
