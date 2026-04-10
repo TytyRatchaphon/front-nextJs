@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { Tabs, Spin, Modal, notification, Input, Image as AntdImage } from 'antd'
 import { CheckCircleOutlined } from '@ant-design/icons'
+import { useSearchParams } from 'next/navigation'
 import { fetchStoreData, updateUserAddress } from '@/services/apiServices';
 import { useAuthStore } from '@/stores/authStore'
 import type { StoreCategory, StorePack } from '@/types/api'
@@ -23,10 +24,12 @@ import StampPill from '@/components/utility/StampPill';
 import RPPill from '@/components/utility/RPPill';
 import { imageLoader, resolveStoreImageSrc } from '@/utils/imageUtils';
 import UserRankShowcase from '@/features/user/components/UserRankShowcase';
+import FastTicketPill from '@/components/utility/FastTicketPill';
 
 
 function Store() {
   const { user, updateToken, token } = useAuthStore(); // Added token
+  const searchParams = useSearchParams()
   const [storeData, setStoreData] = useState<StoreCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [bannerError, setBannerError] = useState(false)
@@ -40,7 +43,8 @@ function Store() {
     stamp: user?.stamp ?? 0,
     exp_point: user?.exp ?? 0,
     free_coin: user?.freecoin ?? 0,
-    rp: user?.current_rp ?? 0
+    rp: user?.current_rp ?? 0,
+    fast_ticket: user?.fast_ticket ?? 0
   }
 
   const [selectedPack, setSelectedPack] = useState<StorePack | null>(null)
@@ -305,6 +309,67 @@ function Store() {
     setBannerError(false)
   }, [activeStoreTab, storeData])
 
+  useEffect(() => {
+    if (!storeData.length) return;
+
+    const requestedTab = searchParams.get('tab')?.trim().toLowerCase();
+    if (!requestedTab) return;
+
+    const normalizedRequestedTab = requestedTab.replace(/[-_\s]+/g, '');
+    const findCategoryByAlias = () => {
+      if (/^\d+$/.test(requestedTab)) {
+        return storeData.find((category) => String(category.store_id) === requestedTab) ?? null;
+      }
+
+      if (normalizedRequestedTab === 'all') {
+        return null;
+      }
+
+      return (
+        storeData.find((category) => {
+          const normalizedName = category.name
+            .toLowerCase()
+            .replace(/[-_\s]+/g, '');
+
+          if (normalizedName.includes(normalizedRequestedTab)) {
+            return true;
+          }
+
+          if (normalizedRequestedTab === 'points') {
+            return (
+              category.name.includes('แต้ม')
+              || category.StorePacks.some((pack) =>
+                [
+                  pack.name,
+                  pack.detail,
+                  pack.type,
+                  pack.type_use,
+                ]
+                  .filter(Boolean)
+                  .some((value) => String(value).toLowerCase().includes('fast'))
+              )
+            );
+          }
+
+          return false;
+        }) ?? null
+      );
+    };
+
+    const matchedCategory = findCategoryByAlias();
+    if (!matchedCategory) {
+      if (normalizedRequestedTab === 'all') {
+        setActiveStoreTab('all');
+      }
+      return;
+    }
+
+    const nextTab = String(matchedCategory.store_id);
+    if (activeStoreTab !== nextTab) {
+      setActiveStoreTab(nextTab);
+    }
+  }, [activeStoreTab, searchParams, storeData])
+
   // Generate Tab Items
   const tabItems = storeData.map((category) => ({
     key: String(category.store_id),
@@ -452,6 +517,7 @@ function Store() {
                 <FreeCoinPill amount={balance.free_coin} />
                 <StampPill amount={balance.stamp} />
                 <RPPill amount={balance.rp} />
+                <FastTicketPill amount={balance.fast_ticket} />
               </div>
             </div>
           </div>

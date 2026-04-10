@@ -180,8 +180,7 @@ const LoginGoogle = () => {
 
 
         if (token) {
-          // Set cookies
-          setCookie('token', token, 365);
+          // Set non-auth cookies only (auth token is managed centrally in authStore)
           setCookie('closePopupPolicy', '', 365);
 
           login(userInfo, token);

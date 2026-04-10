@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, type ClipboardEvent as ReactClipboardEvent, type MouseEvent as ReactMouseEvent } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, type ClipboardEvent as ReactClipboardEvent, type MouseEvent as ReactMouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Alert, Button, Popover, Modal, Slider, Switch, Select, ConfigProvider, App, Input, Space } from "antd";
@@ -47,17 +47,41 @@ type ReaderConfigFont = {
   key: string;
   label: string;
   fontFamily: string;
+  file?: string;
 };
 
 type ReaderConfigPayload = {
   defaultFontKey?: string;
   cssUrl?: string;
-  fonts?: ReaderConfigFont[];
+  sharedCharacters?: number;
+  fonts?: unknown[];
 };
 
 const BANGKOK_TIME_ZONE = "Asia/Bangkok";
-const READ_EPISODE_SECRET_KEY = process.env.NEXT_PUBLIC_SECRET_KEY || "";
+const READ_EPISODE_PUBLIC_SECRET_KEY = process.env.NEXT_PUBLIC_SECRET_KEY || "";
+const READ_EPISODE_API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/+$/, "");
 const READER_OBFUSCATION_CSS_ID = "reader-obfuscation-css";
+const READER_OBFUSCATION_CSS_PRELOAD_ID = "reader-obfuscation-css-preload";
+const READER_TEMP_DISABLED_FONT_KEYS = ["baijamjuree", "trirong", "maitree"] as const;
+const READER_PREFERRED_DEFAULT_FONT_KEYS = ["chakrapetch", "sarabun", "thsarabunnew"] as const;
+const READER_SAFE_OBFUSCATION_FONT_KEYS = [
+  "sarabun",
+  "thsarabunnew",
+  "mali",
+  "trirong",
+  "maitree",
+] as const;
+const READER_FONT_FAMILY_BY_KEY: Record<string, string> = {
+  sarabun: "contentENJOYSarabun",
+  thsarabunnew: "contentENJOYTHSarabunNew",
+  mali: "contentENJOYMali",
+  trirong: "contentENJOYTrirong",
+  maitree: "contentENJOYMaitree",
+  taviraj: "contentENJOYTaviraj",
+  kodchasan: "contentENJOYKodchasan",
+  chakrapetch: "contentENJOYChakraPetch",
+  baijamjuree: "contentENJOYBaiJamjuree",
+};
 
 const formatScheduledPublishDate = (value: Date) =>
   new Intl.DateTimeFormat("th-TH", {
@@ -96,44 +120,105 @@ const decryptEpisodePayloadOnClient = (payload: unknown): Record<string, unknown
     return payload as Record<string, unknown>;
   }
 
-  if (typeof payload !== "string" || !READ_EPISODE_SECRET_KEY) {
+  if (typeof payload !== "string") {
     return null;
   }
 
   try {
-    const bytes = AES.decrypt(payload, READ_EPISODE_SECRET_KEY);
-    const decrypted = bytes.toString(encUtf8);
-    if (!decrypted) return null;
-
-    const parsed = JSON.parse(decrypted);
+    const parsed = JSON.parse(payload);
     return parsed && typeof parsed === "object" ? parsed : null;
   } catch {
-    return null;
-  }
-};
+    if (!READ_EPISODE_PUBLIC_SECRET_KEY) return null;
 
-const isReaderConfigFont = (value: unknown): value is ReaderConfigFont => {
-  if (!value || typeof value !== "object") return false;
-  const data = value as Partial<ReaderConfigFont>;
-  return typeof data.key === "string"
-    && typeof data.label === "string"
-    && typeof data.fontFamily === "string";
-};
-
-const resolveReaderCssUrl = (cssUrl: string) => {
-  const trimmed = cssUrl.trim();
-  if (!trimmed) return "";
-
-  let normalizedPath = trimmed;
-  if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith("//")) {
     try {
-      const absoluteUrl = trimmed.startsWith("//") ? `https:${trimmed}` : trimmed;
-      normalizedPath = new URL(absoluteUrl).pathname;
+      const bytes = AES.decrypt(payload, READ_EPISODE_PUBLIC_SECRET_KEY);
+      const decrypted = bytes.toString(encUtf8);
+      if (!decrypted) return null;
+
+      const parsed = JSON.parse(decrypted);
+      return parsed && typeof parsed === "object" ? parsed : null;
     } catch {
-      return "";
+      return null;
     }
   }
+};
 
+const normalizeReaderConfigFont = (value: unknown): ReaderConfigFont | null => {
+  if (!value || typeof value !== "object") return null;
+  const data = value as {
+    key?: unknown;
+    label?: unknown;
+    fontFamily?: unknown;
+    family?: unknown;
+    file?: unknown;
+  };
+
+  const key = typeof data.key === "string" ? data.key.trim().toLowerCase() : "";
+  const label = typeof data.label === "string" ? data.label.trim() : "";
+  if (!key || !label) return null;
+
+  const candidateFamilies = [
+    typeof data.fontFamily === "string" ? data.fontFamily.trim() : "",
+    typeof data.family === "string" ? data.family.trim() : "",
+    READER_FONT_FAMILY_BY_KEY[key] || "",
+  ];
+  const resolvedFamily = candidateFamilies.find((item) => item.length > 0) || "";
+  if (!resolvedFamily) return null;
+
+  const file = typeof data.file === "string" && data.file.trim().length > 0
+    ? data.file.trim()
+    : undefined;
+
+  return {
+    key,
+    label,
+    fontFamily: resolvedFamily,
+    file,
+  };
+};
+
+const appendCacheVersion = (url: string, cacheVersion?: string) => {
+  if (!cacheVersion) return url;
+  const encodedVersion = encodeURIComponent(cacheVersion);
+  const hashIndex = url.indexOf("#");
+
+  if (hashIndex >= 0) {
+    const baseUrl = url.slice(0, hashIndex);
+    const hash = url.slice(hashIndex);
+    const separator = baseUrl.includes("?") ? "&" : "?";
+    return `${baseUrl}${separator}v=${encodedVersion}${hash}`;
+  }
+
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}v=${encodedVersion}`;
+};
+
+const resolveReaderAssetUrl = (assetUrl: string, cacheVersion?: string) => {
+  const trimmed = assetUrl.trim();
+  if (!trimmed) return "";
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const parsed = new URL(trimmed);
+      const marker = "/reader-assets/";
+      const markerIndex = parsed.pathname.indexOf(marker);
+      if (markerIndex >= 0) {
+        const relativeAssetPath = parsed.pathname.slice(markerIndex + marker.length);
+        if (relativeAssetPath) {
+          return appendCacheVersion(`/api/read/reader-assets/${relativeAssetPath}`, cacheVersion);
+        }
+      }
+    } catch {
+      // fall through
+    }
+    return appendCacheVersion(trimmed, cacheVersion);
+  }
+
+  if (trimmed.startsWith("//")) {
+    return appendCacheVersion(`https:${trimmed}`, cacheVersion);
+  }
+
+  let normalizedPath = trimmed;
   if (!normalizedPath.startsWith("/")) normalizedPath = `/${normalizedPath}`;
 
   const marker = "/reader-assets/";
@@ -143,18 +228,25 @@ const resolveReaderCssUrl = (cssUrl: string) => {
     : normalizedPath.replace(/^\/+/, "");
 
   if (!relativeAssetPath) return "";
-  return `/api/read/reader-assets/${relativeAssetPath}`;
+
+  return appendCacheVersion(`/api/read/reader-assets/${relativeAssetPath}`, cacheVersion);
 };
+
+const resolveReaderCssUrl = (cssUrl: string, cacheVersion?: string) =>
+  resolveReaderAssetUrl(cssUrl, cacheVersion);
 
 // API function
 const fetchEpisodeContent = async (ep_id: string) => {
   try {
-    const response = await fetch(`/api/read/episode/${encodeURIComponent(ep_id)}`, {
+    let data: any;
+    const encodedEpisodeId = encodeURIComponent(ep_id);
+
+    const response = await fetch(`/api/read/episode/${encodedEpisodeId}`, {
       method: "GET",
       credentials: "same-origin",
       cache: "no-store",
     });
-    const data = await response.json();
+    data = await response.json();
 
     if (data?.code === 200 && data.data) {
       const resolvedPayload = decryptEpisodePayloadOnClient(data.data);
@@ -180,9 +272,10 @@ const fetchEpisodeContent = async (ep_id: string) => {
   }
 };
 
-export default function ReadEpisodePage({ bookId, episodeId }: Props) {
+export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: Props) {
   const { settings } = useWebsiteStore();
   const router = useRouter();
+  const [episodeId, setEpisodeId] = useState(routeEpisodeId);
   const { user } = useAuthStore();
   const isLoggedIn = useAuthStore((s: AuthState) => s.isLoggedIn);
   const openLoginModal = useUIStore((s: any) => s.openLoginModal);
@@ -210,6 +303,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     queryFn: () => fetchEpisodeContent(episodeId),
     enabled: !!episodeId,
     staleTime: 10 * 60 * 1000,
+    placeholderData: (previousData) => previousData,
   });
 
   const { data: bookDetail } = useQuery({
@@ -296,11 +390,13 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   const innerContentRef = useRef<HTMLDivElement>(null);
   const [contentHeight, setContentHeight] = useState<number | undefined>(undefined);
 
-  const { isFocused, setIsFocused } = useContentProtection(episode, () => {
+  const handleProtectionBlur = useCallback(() => {
     if (innerContentRef.current) {
       setContentHeight(innerContentRef.current.clientHeight);
     }
-  }, false);
+  }, []);
+
+  const { isFocused, setIsFocused } = useContentProtection(episode, handleProtectionBlur, true);
 
   const { contentRef, showNav, setShowNav } = useReadingProgress(bookId, episodeId, user);
 
@@ -310,32 +406,93 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     return config as ReaderConfigPayload;
   }, [episode]);
 
-  const readerFontFamilies = useMemo<ReadingThemeFontOption[]>(() => {
+  const normalizedReaderFonts = useMemo<ReaderConfigFont[]>(() => {
     if (!Array.isArray(readerConfig?.fonts)) return [];
-    return readerConfig.fonts
-      .filter(isReaderConfigFont)
-      .map((font) => ({
-        key: font.key,
-        label: font.label,
-        family: font.fontFamily,
-      }));
+
+    const uniqueByKey = new Map<string, ReaderConfigFont>();
+    readerConfig.fonts.forEach((item) => {
+      const normalized = normalizeReaderConfigFont(item);
+      if (!normalized) return;
+      if (READER_TEMP_DISABLED_FONT_KEYS.includes(normalized.key as (typeof READER_TEMP_DISABLED_FONT_KEYS)[number])) {
+        return;
+      }
+      if (!uniqueByKey.has(normalized.key)) {
+        uniqueByKey.set(normalized.key, normalized);
+      }
+    });
+
+    return Array.from(uniqueByKey.values());
   }, [readerConfig]);
+
+  const readerFontFamilies = useMemo<ReadingThemeFontOption[]>(() => {
+    return normalizedReaderFonts.map((font) => ({
+      key: font.key,
+      label: font.label,
+      family: font.fontFamily,
+    }));
+  }, [normalizedReaderFonts]);
 
   const readerDefaultFontKey = useMemo(() => {
     if (readerFontFamilies.length === 0) return "sarabun";
     const candidate = readerConfig?.defaultFontKey;
-    if (typeof candidate === "string" && readerFontFamilies.some((font) => font.key === candidate)) {
+    if (
+      typeof candidate === "string"
+      && readerFontFamilies.some((font) => font.key === candidate)
+      && !READER_TEMP_DISABLED_FONT_KEYS.includes(candidate as (typeof READER_TEMP_DISABLED_FONT_KEYS)[number])
+      && READER_SAFE_OBFUSCATION_FONT_KEYS.includes(candidate as (typeof READER_SAFE_OBFUSCATION_FONT_KEYS)[number])
+    ) {
       return candidate;
     }
+
+    const preferredDefault = READER_PREFERRED_DEFAULT_FONT_KEYS.find((preferredKey) =>
+      readerFontFamilies.some((font) => font.key === preferredKey)
+    );
+    if (preferredDefault) return preferredDefault;
+
+    const safeFallback = READER_SAFE_OBFUSCATION_FONT_KEYS.find((safeKey) =>
+      readerFontFamilies.some((font) => font.key === safeKey)
+    );
+    if (safeFallback) return safeFallback;
+
     return readerFontFamilies[0].key;
   }, [readerConfig, readerFontFamilies]);
 
-  const readerCssHref = useMemo(() => {
-    if (!readerConfig?.cssUrl || typeof readerConfig.cssUrl !== "string") return "";
-    return resolveReaderCssUrl(readerConfig.cssUrl);
+  const readerAssetCacheVersion = useMemo(() => {
+    if (!readerConfig) return episodeId;
+
+    const sharedCharacters = Number.isFinite(readerConfig.sharedCharacters)
+      ? String(readerConfig.sharedCharacters)
+      : "";
+    const defaultFontKey = typeof readerConfig.defaultFontKey === "string"
+      ? readerConfig.defaultFontKey.trim().toLowerCase()
+      : "";
+    const fontSignature = Array.isArray(readerConfig.fonts)
+      ? readerConfig.fonts
+        .map((font) => {
+          const data = font as { key?: unknown; file?: unknown; source?: unknown };
+          const key = typeof data.key === "string" ? data.key.trim().toLowerCase() : "";
+          const file = typeof data.file === "string" ? data.file.trim() : "";
+          const source = typeof data.source === "string" ? data.source.trim() : "";
+          if (!key && !file && !source) return "";
+          return `${key}:${file || source}`;
+        })
+        .filter(Boolean)
+        .join("|")
+      : "";
+
+    return [sharedCharacters, defaultFontKey, fontSignature]
+      .filter(Boolean)
+      .join(":");
   }, [readerConfig]);
 
+  const readerCssHref = useMemo(() => {
+    if (!readerConfig?.cssUrl || typeof readerConfig.cssUrl !== "string") return "";
+    return resolveReaderCssUrl(readerConfig.cssUrl, readerAssetCacheVersion);
+  }, [readerConfig, readerAssetCacheVersion]);
+
   const hasReaderObfuscationConfig = readerFontFamilies.length > 0 && Boolean(readerCssHref);
+  const [isReaderCssReady, setIsReaderCssReady] = useState(false);
+  const [isReaderAssetsReady, setIsReaderAssetsReady] = useState(false);
 
   const {
     fontSize, setFontSize,
@@ -352,6 +509,32 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     defaultFontKey: hasReaderObfuscationConfig ? readerDefaultFontKey : undefined,
   });
 
+  const readerFontFileByKey = useMemo(() => {
+    const fileByKey = new Map<string, string>();
+    normalizedReaderFonts.forEach((font) => {
+      if (!font.file) return;
+      fileByKey.set(font.key, font.file);
+    });
+    return fileByKey;
+  }, [normalizedReaderFonts]);
+
+  const activeReaderFontFile = useMemo(() => {
+    if (readerFontFileByKey.size === 0) return "";
+    const selectedKey = typeof fontFamily === "string" && fontFamily.trim().length > 0
+      ? fontFamily.trim().toLowerCase()
+      : "";
+    if (selectedKey && readerFontFileByKey.has(selectedKey)) {
+      return readerFontFileByKey.get(selectedKey) || "";
+    }
+    return readerFontFileByKey.get(readerDefaultFontKey) || "";
+  }, [fontFamily, readerDefaultFontKey, readerFontFileByKey]);
+
+  const readerFontAssetHrefs = useMemo(() => {
+    if (!activeReaderFontFile) return [];
+    const href = resolveReaderAssetUrl(activeReaderFontFile);
+    return href ? [href] : [];
+  }, [activeReaderFontFile]);
+
   const renderedEpisodeHtml = useMemo(() => {
     const rawDes = episode?.des;
     const rawContent = episode?.content;
@@ -367,33 +550,145 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     return obfuscateHtmlTextNodes(indexedHtml);
   }, [episode?.des, episode?.content, hasReaderObfuscationConfig, currentFontFamily?.family, user]);
 
+  const shouldDelayObfuscatedRender = hasReaderObfuscationConfig
+    && Boolean(renderedEpisodeHtml)
+    && !isReaderAssetsReady;
+
   useEffect(() => {
     const oldNode = document.getElementById(READER_OBFUSCATION_CSS_ID) as HTMLLinkElement | null;
+    const oldPreloadNode = document.getElementById(READER_OBFUSCATION_CSS_PRELOAD_ID) as HTMLLinkElement | null;
 
     if (!readerCssHref) {
       oldNode?.remove();
+      oldPreloadNode?.remove();
+      setIsReaderCssReady(false);
       return;
     }
 
-    if (oldNode?.href === readerCssHref) return;
+    setIsReaderCssReady(false);
+
+    if (oldPreloadNode?.href !== readerCssHref) {
+      oldPreloadNode?.remove();
+      const preload = document.createElement("link");
+      preload.id = READER_OBFUSCATION_CSS_PRELOAD_ID;
+      preload.rel = "preload";
+      preload.as = "style";
+      preload.href = readerCssHref;
+      document.head.appendChild(preload);
+    }
+
+    if (oldNode?.href === readerCssHref) {
+      setIsReaderCssReady(true);
+      return;
+    }
     oldNode?.remove();
 
     const link = document.createElement("link");
     link.id = READER_OBFUSCATION_CSS_ID;
     link.rel = "stylesheet";
     link.href = readerCssHref;
+    const handleLoad = () => setIsReaderCssReady(true);
+    const handleError = () => setIsReaderCssReady(false);
+    link.addEventListener("load", handleLoad);
+    link.addEventListener("error", handleError);
     document.head.appendChild(link);
 
     return () => {
+      link.removeEventListener("load", handleLoad);
+      link.removeEventListener("error", handleError);
       const currentNode = document.getElementById(READER_OBFUSCATION_CSS_ID);
       if (currentNode === link) currentNode.remove();
+      const currentPreloadNode = document.getElementById(READER_OBFUSCATION_CSS_PRELOAD_ID);
+      if (currentPreloadNode) currentPreloadNode.remove();
     };
   }, [readerCssHref]);
 
   useEffect(() => {
-    if (!hasReaderObfuscationConfig) return;
-    setFontFamily(readerDefaultFontKey);
-  }, [episodeId, hasReaderObfuscationConfig, readerDefaultFontKey, setFontFamily]);
+    if (readerFontAssetHrefs.length === 0) return;
+
+    const createdLinks: HTMLLinkElement[] = [];
+    readerFontAssetHrefs.forEach((href) => {
+      const existing = document.querySelector(`link[rel="preload"][as="font"][href="${href}"]`) as HTMLLinkElement | null;
+      if (existing) return;
+
+      const preload = document.createElement("link");
+      preload.rel = "preload";
+      preload.as = "font";
+      preload.href = href;
+      preload.crossOrigin = "anonymous";
+
+      const lowerHref = href.toLowerCase();
+      if (lowerHref.endsWith(".woff2")) preload.type = "font/woff2";
+      else if (lowerHref.endsWith(".woff")) preload.type = "font/woff";
+      else if (lowerHref.endsWith(".ttf")) preload.type = "font/ttf";
+      else if (lowerHref.endsWith(".otf")) preload.type = "font/otf";
+
+      document.head.appendChild(preload);
+      createdLinks.push(preload);
+    });
+
+    return () => {
+      createdLinks.forEach((link) => link.remove());
+    };
+  }, [readerFontAssetHrefs]);
+
+  useEffect(() => {
+    if (!hasReaderObfuscationConfig) {
+      setIsReaderAssetsReady(true);
+      return;
+    }
+
+    setIsReaderAssetsReady(false);
+    if (!isReaderCssReady) return;
+
+    const activeFontFamily = currentFontFamily?.family
+      || readerFontFamilies.find((font) => font.key === readerDefaultFontKey)?.family
+      || "";
+    if (!activeFontFamily) {
+      setIsReaderAssetsReady(true);
+      return;
+    }
+
+    let cancelled = false;
+    const markReady = () => {
+      if (!cancelled) setIsReaderAssetsReady(true);
+    };
+
+    const loadActiveFont = async () => {
+      try {
+        const fontApi = (document as any).fonts;
+        if (!fontApi?.load) {
+          markReady();
+          return;
+        }
+
+        try {
+          await Promise.race([
+            fontApi.load(`1em ${activeFontFamily}`),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("font-load-timeout")), 2500)),
+          ]);
+        } catch {
+          // best effort
+        }
+
+        try {
+          await Promise.race([
+            fontApi.ready,
+            new Promise((resolve) => setTimeout(resolve, 700)),
+          ]);
+        } catch {
+          // ignore
+        }
+      } finally {
+        markReady();
+      }
+    };
+
+    loadActiveFont();
+    return () => {
+      cancelled = true;
+    };
+  }, [hasReaderObfuscationConfig, isReaderCssReady, currentFontFamily?.family, readerFontFamilies, readerDefaultFontKey, episodeId]);
 
   const bookmarkedParagraphIndexes = useMemo(
     () => new Set(bookmarks.map((b) => b.paragraph_index).filter((n) => Number.isFinite(n) && n > 0)),
@@ -784,18 +1079,58 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
   const [cancelHover, setCancelHover] = useState(false);
   const [quotaLoginModalOpen, setQuotaLoginModalOpen] = useState(false);
   const [firstTopupModalOpen, setFirstTopupModalOpen] = useState(false);
+  const allowTemporaryTextSelection = false;
 
   // --- 4. Effects ---
   useEffect(() => {
-    try {
-      const reloadKey = "read_forced_reload_v1";
-      if (typeof window === "undefined") return;
-      if (!sessionStorage.getItem(reloadKey)) {
-        sessionStorage.setItem(reloadKey, "1");
-        router.replace(window.location.pathname + window.location.search);
+    if (routeEpisodeId) {
+      setEpisodeId(routeEpisodeId);
+    }
+  }, [routeEpisodeId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const onPopState = () => {
+      const pathMatch = window.location.pathname.match(/^\/read\/([^/]+)\/([^/?#]+)/);
+      if (!pathMatch) return;
+
+      const [, pathBookId, pathEpisodeId] = pathMatch;
+      const normalizedBookId = decodeURIComponent(pathBookId);
+      if (normalizedBookId !== String(bookId)) return;
+
+      const normalizedEpisodeId = decodeURIComponent(pathEpisodeId);
+      setEpisodeId((prev) => (prev === normalizedEpisodeId ? prev : normalizedEpisodeId));
+      window.scrollTo({ top: 0, behavior: "auto" });
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [bookId]);
+
+  const navigateToEpisode = useCallback(
+    (nextEpisodeId: string | number, options?: { closeList?: boolean; closeSidebar?: boolean }) => {
+      if (!nextEpisodeId || !bookId) return;
+
+      const normalizedEpisodeId = String(nextEpisodeId);
+      if (normalizedEpisodeId === String(episodeId)) {
+        if (options?.closeList) setIsListPopoverOpen(false);
+        if (options?.closeSidebar) setIsSidebarOpen(false);
+        return;
       }
-    } catch { }
-  }, [router]);
+
+      const nextPath = `/read/${bookId}/${normalizedEpisodeId}`;
+      if (typeof window !== "undefined" && window.location.pathname !== nextPath) {
+        window.history.pushState({ bookId, episodeId: normalizedEpisodeId }, "", nextPath);
+      }
+
+      if (options?.closeList) setIsListPopoverOpen(false);
+      if (options?.closeSidebar) setIsSidebarOpen(false);
+      setEpisodeId(normalizedEpisodeId);
+      window.scrollTo({ top: 0, behavior: "auto" });
+    },
+    [bookId, episodeId]
+  );
 
   useEffect(() => {
     if (isQuotaHardBlocked && !isLoggedIn) {
@@ -1449,8 +1784,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                         key={ep.ep_id ?? ep.epID}
                         id={isCurrent ? 'active-episode-item' : undefined}
                         onClick={() => {
-                          setIsListPopoverOpen(false);
-                          router.push(`/read/${bookId}/${String(ep.ep_id ?? ep.epID)}`);
+                          navigateToEpisode(String(ep.ep_id ?? ep.epID), { closeList: true });
                         }}
                         className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${isCurrent ? 'bg-red-50 text-red-600 font-medium' : 'text-gray-700'}`}
                       >
@@ -1475,7 +1809,7 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
     );
   };
 
-  if (isLoading) {
+  if (isLoading && !episode) {
     return (
       <div className={`min-h-screen ${currentBg?.bg || "bg-white"}`}>
         <GifLoader />
@@ -1515,8 +1849,8 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
 
   return (
     <div
-      className={`min-h-screen ${currentBg?.bg} ${currentBg?.text} transition-colors duration-300 select-none ${currentBg?.key === 'dark' ? 'reader-theme-dark' : 'reader-theme-light'}`}
-      style={{ userSelect: "none", minHeight: "100vh" }}
+      className={`min-h-screen ${currentBg?.bg} ${currentBg?.text} transition-colors duration-300 ${allowTemporaryTextSelection ? '' : 'select-none'} ${currentBg?.key === 'dark' ? 'reader-theme-dark' : 'reader-theme-light'}`}
+      style={{ userSelect: allowTemporaryTextSelection ? "text" : "none", minHeight: "100vh" }}
       onCopy={handleProtectedCopy}
       onCut={(e) => e.preventDefault()}
       onContextMenu={(e) => e.preventDefault()}
@@ -1552,7 +1886,9 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                             return (
                               <button
                                 key={ep.ep_id}
-                                onClick={() => { setIsSidebarOpen(false); router.push(`/read/${bookId}/${String(ep.ep_id ?? ep.epID)}`); }}
+                                onClick={() => {
+                                  navigateToEpisode(String(ep.ep_id ?? ep.epID), { closeSidebar: true });
+                                }}
                                 className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors text-left ${isCurrentEpisode ? "bg-red-50/50 border-l-2 border-red-500" : ""}`}>
                                 <div className="flex-1 min-w-0 pr-3">
                                   <p className={`text-sm truncate ${isCurrentEpisode ? "text-red-600 font-medium" : "text-gray-700"}`}>{ep.name.trim()}</p>
@@ -1827,8 +2163,13 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
             {/* Content */}
             <article
               ref={contentRef}
-              className="episode-content episode-content-wrapper relative mt-5 select-none leading-loose lg:px-11 px-6 text-wrap whitespace-normal overflow-x-hidden main-read cursor-pointer"
-              style={{ userSelect: "none", WebkitUserSelect: "none", MozUserSelect: "none", msUserSelect: "none" }}
+              className={`episode-content episode-content-wrapper relative mt-5 ${allowTemporaryTextSelection ? '' : 'select-none'} leading-loose lg:px-11 px-6 text-wrap whitespace-normal overflow-x-hidden main-read cursor-pointer`}
+              style={{
+                userSelect: allowTemporaryTextSelection ? "text" : "none",
+                WebkitUserSelect: allowTemporaryTextSelection ? "text" : "none",
+                MozUserSelect: allowTemporaryTextSelection ? "text" : "none",
+                msUserSelect: allowTemporaryTextSelection ? "text" : "none",
+              }}
             >
               <div
                 ref={innerContentRef}
@@ -1844,12 +2185,14 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                   whiteSpace: "normal",
                   overflowWrap: "anywhere",
                   wordBreak: "break-word",
-                  minHeight: !isFocused ? contentHeight : undefined,
-                  opacity: isFocused ? 1 : 0,
+                  minHeight: !isFocused
+                    ? contentHeight
+                    : (shouldDelayObfuscatedRender ? 240 : undefined),
+                  opacity: (isFocused && !shouldDelayObfuscatedRender) ? 1 : 0,
                   transition: 'opacity 0.1s ease',
-                  pointerEvents: isFocused ? 'auto' : 'none',
+                  pointerEvents: (isFocused && !shouldDelayObfuscatedRender) ? 'auto' : 'none',
                 }}>
-                {isFocused ? (
+                {(isFocused && !shouldDelayObfuscatedRender) ? (
                   renderedEpisodeHtml && !isQuotaHardBlocked ? (
                     parse(renderedEpisodeHtml)
                   ) : (
@@ -1858,9 +2201,23 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                 ) : null}
               </div>
 
+              {isFocused && shouldDelayObfuscatedRender && (
+                <div
+                  className="absolute inset-x-0 top-0 px-6 lg:px-11 py-4 pointer-events-none"
+                  aria-hidden="true"
+                >
+                  <div className="animate-pulse space-y-4">
+                    <div className="h-4 rounded bg-white/10 w-11/12" />
+                    <div className="h-4 rounded bg-white/10 w-full" />
+                    <div className="h-4 rounded bg-white/10 w-10/12" />
+                    <div className="h-4 rounded bg-white/10 w-9/12" />
+                  </div>
+                </div>
+              )}
+
               {!isFocused && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
-                  <div className={`text-3xl font-bold p-8 text-center ${currentBg?.text} opacity-50 bg-black/5 rounded-xl backdrop-blur-sm pointer-events-auto`}>
+                <div className="fixed inset-0 z-[5000] bg-white pointer-events-none">
+                  <div className="hidden" aria-hidden="true">
                     คลิกที่นี่เพื่ออ่านต่อ
                   </div>
                 </div>
@@ -1896,7 +2253,13 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                 style={{ borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)" }}>
                 <div className={`group w-full p-4 flex flex-row gap-2 items-center justify-center border-r hover:bg-black/5 transition-all ${!prevEpId ? "opacity-30 cursor-not-allowed" : "cursor-pointer active:scale-[0.98]"}`}
                   style={{ borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)" }}
-                  onClick={(e) => { e.stopPropagation(); if (prevEpId && bookId) { log('prev_episode', 'book', bookId, { from_episode: episodeId, to_episode: prevEpId }); router.push(`/read/${bookId}/${prevEpId}`); } }}>
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (prevEpId && bookId) {
+                      log('prev_episode', 'book', bookId, { from_episode: episodeId, to_episode: prevEpId });
+                      navigateToEpisode(prevEpId);
+                    }
+                  }}>
                   <svg className={`w-5 h-5 transition-transform group-hover:-translate-x-1`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                   <div className="flex flex-col items-start leading-none gap-0.5">
                     <span className="text-[10px] opacity-60 font-normal">ตอนก่อนหน้า</span>
@@ -1904,7 +2267,13 @@ export default function ReadEpisodePage({ bookId, episodeId }: Props) {
                   </div>
                 </div>
                 <div className={`group w-full p-4 flex flex-row gap-2 items-center justify-center hover:bg-black/5 transition-all ${!nextEpId ? "opacity-30 cursor-not-allowed" : "cursor-pointer active:scale-[0.98]"}`}
-                  onClick={(e) => { e.stopPropagation(); window.scrollTo(0, 0); if (nextEpId && bookId) { log('next_episode', 'book', bookId, { from_episode: episodeId, to_episode: nextEpId }); router.push(`/read/${bookId}/${nextEpId}`); } }}>
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (nextEpId && bookId) {
+                      log('next_episode', 'book', bookId, { from_episode: episodeId, to_episode: nextEpId });
+                      navigateToEpisode(nextEpId);
+                    }
+                  }}>
                   <div className="flex flex-col items-end leading-none gap-0.5">
                     <span className="text-[10px] opacity-60 font-normal">ตอนต่อไป</span>
                     <span className="font-semibold text-sm">ถัดไป</span>

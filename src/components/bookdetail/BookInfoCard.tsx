@@ -22,6 +22,7 @@ import '@/utils/imageUtils';
 import type { DiscountReward, EpisodeGroup, BookEpisodesResponse } from '@/types/api';
 import '@/types/errors';
 import { useLogger } from '@/hooks/useLogger';
+import { normalizeEpisodeEarlyAccess } from '@/utils/earlyAccessUtils';
 
 
 type Book = {
@@ -471,20 +472,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   };
 
   const getEarlyAccess = (episode: any) => {
-    const early = episode?.early_access || {};
-    const fastTicket = Boolean(early?.fast_ticket ?? episode?.isFastTicket);
-    const fastCoin = Boolean(early?.fast_coin);
-    const isBuyable = Boolean(early?.isFast_buyable ?? episode?.isFast_buyable);
-    const rawTicketPrice = Number(early?.fastTicketPrice);
-    const rawCoinPrice = Number(early?.fastCoinPrice ?? episode?.coin ?? 0);
-    return {
-      fastTicket,
-      fastCoin,
-      isBuyable,
-      fastTicketPrice: Number.isFinite(rawTicketPrice) && rawTicketPrice > 0 ? rawTicketPrice : null,
-      fastCoinPrice: Number.isFinite(rawCoinPrice) && rawCoinPrice >= 0 ? rawCoinPrice : Number(episode?.coin ?? 0),
-      isEarlyAccess: fastTicket || fastCoin,
-    };
+    return normalizeEpisodeEarlyAccess(episode);
   };
 
   const isEpisodeFastTicket = (episode: any) => getEarlyAccess(episode).isEarlyAccess;
@@ -493,6 +481,11 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     return early.isEarlyAccess && !early.isBuyable && !Boolean(episode?.isBuy);
   };
   const canEpisodePayWithCoin = (_episode: any) => true;
+  const canEpisodePayWithFastCoin = (episode: any) => {
+    const early = getEarlyAccess(episode);
+    if (!early.isEarlyAccess) return true;
+    return Boolean(early.fastCoin);
+  };
   const canEpisodePayWithFastTicket = (episode: any) => {
     const early = getEarlyAccess(episode);
     return early.isEarlyAccess && Boolean(early.fastTicket);
@@ -544,7 +537,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   };
 
   const selectedSummary = useMemo(() => {
-    if (!episodesData?.groups) return { count: 0, total: 0, hasEarlyAccess: false, fastTicketCount: 0, fastTicketRequiredTotal: 0, earlyAccessCoinTotal: 0, baseCoinTotal: 0, coinTotal: 0, freecoinTotal: 0, fastTicketTotal: 0, canUseCoin: true, canUseFreecoin: false, canUseFastTicket: false };
+    if (!episodesData?.groups) return { count: 0, total: 0, hasEarlyAccess: false, fastTicketCount: 0, fastTicketRequiredTotal: 0, earlyAccessCoinTotal: 0, baseCoinTotal: 0, coinTotal: 0, freecoinTotal: 0, fastTicketTotal: 0, canUseCoin: true, canUseFreecoin: false, canUseFastTicket: false, canUseFastCoin: false };
     const episodeMap = new Map<number, any>();
     for (const g of episodesData.groups) {
       for (const ep of g.list) {
@@ -556,7 +549,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       .filter(Boolean) as any[];
 
     if (selectedEpisodes.length === 0) {
-      return { count: 0, total: 0, hasEarlyAccess: false, fastTicketCount: 0, fastTicketRequiredTotal: 0, earlyAccessCoinTotal: 0, baseCoinTotal: 0, coinTotal: 0, freecoinTotal: 0, fastTicketTotal: 0, canUseCoin: true, canUseFreecoin: false, canUseFastTicket: false };
+      return { count: 0, total: 0, hasEarlyAccess: false, fastTicketCount: 0, fastTicketRequiredTotal: 0, earlyAccessCoinTotal: 0, baseCoinTotal: 0, coinTotal: 0, freecoinTotal: 0, fastTicketTotal: 0, canUseCoin: true, canUseFreecoin: false, canUseFastTicket: false, canUseFastCoin: false };
     }
 
     let coinTotal = 0;
@@ -568,6 +561,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     let canUseCoin = true;
     let canUseFreecoin = true;
     let canUseFastTicket = true;
+    let canUseFastCoin = true;
     let fastTicketRequiredTotal = 0;
     for (const ep of selectedEpisodes) {
       const early = getEarlyAccess(ep);
@@ -575,7 +569,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       coinTotal += getEpisodePriceByMethod(ep, 'coin');
       freecoinTotal += getEpisodePriceByMethod(ep, 'freecoin');
       fastTicketTotal += getEpisodePriceByMethod(ep, 'fast_ticket');
-      if (early.isEarlyAccess) earlyAccessCoinTotal += getEpisodePriceByMethod(ep, 'coin');
+      if (early.isEarlyAccess && canEpisodePayWithFastCoin(ep)) {
+        earlyAccessCoinTotal += getEpisodePriceByMethod(ep, 'coin');
+      }
       baseCoinTotal += finalPrice;
       if (canEpisodePayWithFastTicket(ep)) {
         fastTicketCount += 1;
@@ -584,6 +580,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       canUseCoin = canUseCoin && canEpisodePayWithCoin(ep);
       canUseFreecoin = canUseFreecoin && canEpisodePayWithFreecoin(ep);
       canUseFastTicket = canUseFastTicket && canEpisodePayWithFastTicket(ep);
+      canUseFastCoin = canUseFastCoin && canEpisodePayWithFastCoin(ep);
     }
     const totalByMethod = payWith === 'freecoin'
       ? freecoinTotal + (fastPayWith === 'coin' ? earlyAccessCoinTotal : 0)
@@ -602,6 +599,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       canUseCoin,
       canUseFreecoin,
       canUseFastTicket,
+      canUseFastCoin,
     };
   }, [selectedEpisodeIds, episodesData, payWith, fastPayWith]);
 
@@ -683,7 +681,18 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       return;
     }
     if (fastPayWith === 'fast_ticket' && !selectedSummary.canUseFastTicket) {
-      setFastPayWith('coin');
+      if (selectedSummary.canUseFastCoin) {
+        setFastPayWith('coin');
+      }
+      return;
+    }
+    if (
+      fastPayWith === 'coin'
+      && selectedSummary.hasEarlyAccess
+      && !selectedSummary.canUseFastCoin
+      && selectedSummary.canUseFastTicket
+    ) {
+      setFastPayWith('fast_ticket');
     }
   }, [selectedSummary, payWith, fastPayWith]);
 
@@ -721,20 +730,28 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     earlyAccessCoinTotal: number;
     baseCoinTotal: number;
     canUseFreecoin: boolean;
+    canUseFastCoin: boolean;
   }) => {
-    if (summary.fastTicketRequiredTotal <= 0) return null;
+    const showFastTicket = summary.fastTicketRequiredTotal > 0;
+    const showFastCoin = summary.canUseFastCoin && summary.earlyAccessCoinTotal > 0;
+
+    if (!showFastTicket && !showFastCoin) return null;
 
     return (
       <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-gray-700">
-        <div className="flex items-center gap-1 text-amber-700">
-          <span>{summary.fastTicketRequiredTotal}</span>
-          <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={14} height={14} unoptimized />
-        </div>
-        <span className="text-gray-400">/</span>
-        <div className="flex items-center gap-1 text-orange-600">
-          <span>{summary.earlyAccessCoinTotal}</span>
-          <Image src={settings?.coin || '/images/e-coin.png'} alt="coin" width={14} height={14} unoptimized />
-        </div>
+        {showFastTicket && (
+          <div className="flex items-center gap-1 text-amber-700">
+            <span>{summary.fastTicketRequiredTotal}</span>
+            <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={14} height={14} unoptimized />
+          </div>
+        )}
+        {showFastTicket && showFastCoin && <span className="text-gray-400">/</span>}
+        {showFastCoin && (
+          <div className="flex items-center gap-1 text-orange-600">
+            <span>{summary.earlyAccessCoinTotal}</span>
+            <Image src={settings?.coin || '/images/e-coin.png'} alt="coin" width={14} height={14} unoptimized />
+          </div>
+        )}
         {summary.baseCoinTotal > 0 && (
           <>
             <span className="text-gray-400">+</span>
@@ -756,18 +773,30 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     earlyAccessCoinTotal: number;
     baseCoinTotal: number;
     canUseFreecoin: boolean;
+    canUseFastCoin: boolean;
   }) => {
-    if (summary.fastTicketRequiredTotal <= 0) return null;
+    const showFastTicket = summary.fastTicketRequiredTotal > 0;
+    const showFastCoin = summary.canUseFastCoin && summary.earlyAccessCoinTotal > 0;
+
+    if (!showFastTicket && !showFastCoin) return null;
 
     return (
       <div className="flex flex-wrap items-center justify-center gap-2 text-base font-semibold">
         <div className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-amber-700">
           <span>(</span>
-          <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={16} height={16} unoptimized />
-          <span>{summary.fastTicketRequiredTotal}</span>
-          <span className="text-gray-400">/</span>
-          <Image src={settings?.coin || '/images/e-coin.png'} alt="fast coin" width={16} height={16} unoptimized />
-          <span>{summary.earlyAccessCoinTotal}</span>
+          {showFastTicket && (
+            <>
+              <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={16} height={16} unoptimized />
+              <span>{summary.fastTicketRequiredTotal}</span>
+            </>
+          )}
+          {showFastTicket && showFastCoin && <span className="text-gray-400">/</span>}
+          {showFastCoin && (
+            <>
+              <Image src={settings?.coin || '/images/e-coin.png'} alt="fast coin" width={16} height={16} unoptimized />
+              <span>{summary.earlyAccessCoinTotal}</span>
+            </>
+          )}
           <span>)</span>
         </div>
         {summary.baseCoinTotal > 0 && (
@@ -797,6 +826,10 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     }
 
     const useFastTicket = fastPayWith === 'fast_ticket';
+    const fastPaymentTotal = useFastTicket
+      ? selectedSummary.fastTicketRequiredTotal
+      : selectedSummary.earlyAccessCoinTotal;
+
     return (
       <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-center">
         <div className="text-xs font-medium text-gray-500 mb-2">สรุปราคา</div>
@@ -805,12 +838,12 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
             <Image src={payWith === 'freecoin' ? (settings?.freecoin || '/images/money-bag.png') : (settings?.coin || '/images/e-coin.png')} alt="payment type" width={16} height={16} unoptimized />
             <span>{selectedSummary.baseCoinTotal}</span>
           </div>
-          {selectedSummary.baseCoinTotal > 0 && (
+          {selectedSummary.baseCoinTotal > 0 && fastPaymentTotal > 0 && (
             <>
               <span className="text-gray-400">+</span>
               <div className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-amber-700 border border-amber-100">
                 <Image src={useFastTicket ? (settings?.fast_ticket || '/images/fast_ticket.png') : (settings?.coin || '/images/e-coin.png')} alt="early method" width={16} height={16} unoptimized />
-                <span>{selectedSummary.fastTicketRequiredTotal}</span>
+                <span>{fastPaymentTotal}</span>
               </div>
             </>
           )}
@@ -1055,7 +1088,11 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                             return;
                           }
                           setPayWith('coin');
-                          setFastPayWith(selectedSummary.hasEarlyAccess && selectedSummary.canUseFastTicket ? 'fast_ticket' : 'coin');
+                          setFastPayWith(
+                            selectedSummary.hasEarlyAccess
+                              ? (selectedSummary.canUseFastTicket ? 'fast_ticket' : 'coin')
+                              : 'coin'
+                          );
                           setManualBuyConfirmModalOpen(true);
                         }}>
                           ยืนยัน
@@ -1227,9 +1264,13 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                                                         <span className="text-sm font-semibold">{fastTicketDisplayPrice}</span>
                                                       </>
                                                     )}
-                                                    {early.fastTicket && <span className="text-gray-400">/</span>}
-                                                    <Image src={settings?.coin || '/images/e-coin.png'} alt="fast coin" width={14} height={14} unoptimized />
-                                                    <span className="text-sm font-semibold">{early.fastCoinPrice}</span>
+                                                    {early.fastTicket && early.fastCoin && <span className="text-gray-400">/</span>}
+                                                    {early.fastCoin && (
+                                                      <>
+                                                        <Image src={settings?.coin || '/images/e-coin.png'} alt="fast coin" width={14} height={14} unoptimized />
+                                                        <span className="text-sm font-semibold">{early.fastCoinPrice}</span>
+                                                      </>
+                                                    )}
                                                     <span>)</span>
                                                   </div>
                                                   <span className="text-gray-400">+</span>
@@ -1372,7 +1413,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                         <div className="mb-2 text-center text-xs font-medium text-gray-500">ชำระส่วนตอนล่วงหน้า</div>
                         <div className="flex justify-center">
                           <Radio.Group value={fastPayWith} onChange={(e) => setFastPayWith(e.target.value)} buttonStyle="solid">
-                            <Radio.Button value="coin" disabled={!selectedSummary.canUseCoin}>
+                            <Radio.Button value="coin" disabled={!selectedSummary.canUseFastCoin}>
                               <div className="flex items-center gap-1">เหรียญ <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={14} height={14} unoptimized /></div>
                             </Radio.Button>
                             <Radio.Button value="fast_ticket" disabled={!selectedSummary.canUseFastTicket}>

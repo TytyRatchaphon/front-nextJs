@@ -154,6 +154,21 @@ export default function EpisodeCommentSection({ episodeId, theme }: EpisodeComme
         }
     };
 
+    const createStickerImageElement = (imgUrl: string) => {
+        const img = document.createElement("img");
+        img.src = imgUrl;
+        img.alt = "sticker";
+        img.style.width = "90px";
+        img.style.height = "90px";
+        img.style.display = "inline-block";
+        img.style.verticalAlign = "middle";
+        img.style.margin = "4px 2px";
+        img.contentEditable = "false";
+        img.style.pointerEvents = "none";
+        img.draggable = false;
+        return img;
+    };
+
     const handleAddSticker = (imgUrl: string) => {
         const editor = editorRef.current;
         if (!editor) return;
@@ -174,13 +189,7 @@ export default function EpisodeCommentSection({ episodeId, theme }: EpisodeComme
             if (editor.contains(range.commonAncestorContainer)) {
                 range.deleteContents();
 
-                const img = document.createElement("img");
-                img.src = imgUrl;
-                img.style.width = "90px";
-                img.style.height = "90px";
-                img.style.verticalAlign = "bottom";
-                img.contentEditable = "false";
-                img.style.pointerEvents = "none";
+                const img = createStickerImageElement(imgUrl);
 
                 range.insertNode(img);
 
@@ -190,23 +199,11 @@ export default function EpisodeCommentSection({ episodeId, theme }: EpisodeComme
                 selection.removeAllRanges();
                 selection.addRange(range);
             } else {
-                const img = document.createElement("img");
-                img.src = imgUrl;
-                img.style.width = "90px";
-                img.style.height = "90px";
-                img.style.verticalAlign = "bottom";
-                img.contentEditable = "false";
-                img.style.pointerEvents = "none";
+                const img = createStickerImageElement(imgUrl);
                 editor.appendChild(img);
             }
         } else {
-            const img = document.createElement("img");
-            img.src = imgUrl;
-            img.style.width = "90px";
-            img.style.height = "90px";
-            img.style.verticalAlign = "bottom";
-            img.contentEditable = "false";
-            img.style.pointerEvents = "none";
+            const img = createStickerImageElement(imgUrl);
             editor.appendChild(img);
         }
 

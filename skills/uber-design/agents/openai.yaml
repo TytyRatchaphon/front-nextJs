@@ -1,0 +1,4 @@
+interface:
+  display_name: "Uber Design"
+  short_description: "Apply Uber-inspired interface design"
+  default_prompt: "Use $uber-design to design or restyle this UI with the Uber-inspired system for this repo."

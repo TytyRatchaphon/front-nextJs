@@ -97,14 +97,17 @@ function Redeem() {
     // Derived values based on API response structure (e.g. { type: 'getcoin', unit: 100 })
     const unitAmount = getRewardValue('unit');
     const type = rewardData?.type || '';
+    const fastTicketIcon = settings?.fast_ticket || '/images/fast_ticket.png';
 
     // Check if we have any reward to show
     const hasCoin = (type === 'getcoin') || getRewardValue('coin') > 0 || getRewardValue('gold_coin') > 0 || getRewardValue('amount') > 0;
     const hasFreeCoin = (type === 'getfreecoin' || type === 'freecoin') || getRewardValue('freecoin') > 0 || getRewardValue('red_coin') > 0 || getRewardValue('point') > 0;
+    const hasFastTicket = (type === 'getfast_ticket' || type === 'fast_ticket') || getRewardValue('fast_ticket') > 0 || getRewardValue('fastTicket') > 0;
 
     // Calculate final amounts to display
     const coinAmount = (type === 'getcoin' ? unitAmount : 0) || getRewardValue('coin') || getRewardValue('gold_coin') || getRewardValue('amount');
     const freeCoinAmount = (type === 'getfreecoin' || type === 'freecoin' ? unitAmount : 0) || getRewardValue('freecoin') || getRewardValue('red_coin') || getRewardValue('point');
+    const fastTicketAmount = (type === 'getfast_ticket' || type === 'fast_ticket' ? unitAmount : 0) || getRewardValue('fast_ticket') || getRewardValue('fastTicket');
 
     return (
         <div className='min-h-screen' style={{ backgroundColor: '#FFF7F7' }}>
@@ -223,7 +226,11 @@ function Redeem() {
                     {/* Icon/Image */}
                     <div className="w-24 h-24 mb-4 mt-2 animate-bounce-slow">
                         <Image
-                            src={(hasFreeCoin && !hasCoin) ? (settings?.freecoin || '/images/money-bag.png') : (settings?.coin || '/images/e-coin.png')}
+                            src={(hasFastTicket && !hasCoin && !hasFreeCoin)
+                                ? fastTicketIcon
+                                : (hasFreeCoin && !hasCoin)
+                                    ? (settings?.freecoin || '/images/money-bag.png')
+                                    : (settings?.coin || '/images/e-coin.png')}
                             width={96} height={96}
                             alt="Success"
                             className="object-contain drop-shadow-lg"
@@ -236,7 +243,7 @@ function Redeem() {
 
                     {/* Reward Details */}
                     <div className="w-full bg-gray-50 rounded-xl p-4 mb-6 border border-gray-100">
-                        {hasCoin || hasFreeCoin ? (
+                        {hasCoin || hasFreeCoin || hasFastTicket ? (
                             <div className="flex flex-col gap-2">
                                 {hasCoin && (
                                     <div className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border border-orange-100">
@@ -257,6 +264,17 @@ function Redeem() {
                                         </div>
                                         <span className="font-bold text-red-500">
                                             +{freeCoinAmount.toLocaleString()}
+                                        </span>
+                                    </div>
+                                )}
+                                {hasFastTicket && (
+                                    <div className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border border-blue-100">
+                                        <div className="flex items-center gap-2">
+                                            <Image src={fastTicketIcon} width={24} height={24} alt="Fast Ticket" unoptimized />
+                                            <span className="font-bold text-gray-700">Fast Ticket</span>
+                                        </div>
+                                        <span className="font-bold text-blue-500">
+                                            +{fastTicketAmount.toLocaleString()}
                                         </span>
                                     </div>
                                 )}

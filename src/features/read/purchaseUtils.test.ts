@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { getReadEpisodePurchaseState, getRegularEpisodePrices } from './purchaseUtils';
 
 describe('getRegularEpisodePrices', () => {
@@ -59,5 +59,101 @@ describe('getReadEpisodePurchaseState', () => {
     expect(state.hasDiscount).toBe(true);
     expect(state.isDiscountFree).toBe(true);
     expect(state.discountEndDate).toBe('2026-09-09T09:09:00.000Z');
+  });
+
+  it('supports structured early_access methods and daily_increase pricing', () => {
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(new Date('2026-04-09T00:00:00.000Z').getTime());
+
+    try {
+      const state = getReadEpisodePurchaseState(
+        {
+          coin: 30,
+          publish_datetime: '2026-04-11T00:00:00.000Z',
+          early_access: {
+            fast_ticket: {
+              price: 1,
+              daily_increase: 1,
+              use: false,
+            },
+            fast_coin: {
+              price: 3,
+              daily_increase: 2,
+              use: true,
+            },
+            isFast_buyable: false,
+          },
+        },
+        1,
+      );
+
+      expect(state.isEarlyAccess).toBe(true);
+      expect(state.canFastTicket).toBe(false);
+      expect(state.canFastCoin).toBe(true);
+      expect(state.isFastBuyable).toBe(true);
+      expect(state.fastTicketPrice).toBe(3);
+      expect(state.fastCoinPrice).toBe(7);
+      expect(state.isFastLocked).toBe(false);
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
+
+  it('keeps structured episodes locked when both method use flags are false', () => {
+    const state = getReadEpisodePurchaseState(
+      {
+        coin: 30,
+        publish_datetime: '2026-04-11T00:00:00.000Z',
+        early_access: {
+          fast_ticket: {
+            price: 1,
+            daily_increase: 1,
+            use: false,
+          },
+          fast_coin: {
+            price: 3,
+            daily_increase: 1,
+            use: false,
+          },
+          isFast_buyable: true,
+        },
+      },
+      1,
+    );
+
+    expect(state.isEarlyAccess).toBe(true);
+    expect(state.canFastTicket).toBe(false);
+    expect(state.canFastCoin).toBe(false);
+    expect(state.isFastBuyable).toBe(false);
+    expect(state.isFastLocked).toBe(true);
+  });
+
+  it('treats structured early_access as normal episode after publish_datetime has passed', () => {
+    const state = getReadEpisodePurchaseState(
+      {
+        coin: 30,
+        publish_datetime: '2021-04-16T07:55:00.000Z',
+        early_access: {
+          fast_ticket: {
+            price: 1,
+            daily_increase: 1,
+            use: false,
+          },
+          fast_coin: {
+            price: 3,
+            daily_increase: 1,
+            use: false,
+          },
+          isFast_buyable: false,
+        },
+      },
+      1,
+    );
+
+    expect(state.isEarlyAccess).toBe(false);
+    expect(state.canFastTicket).toBe(false);
+    expect(state.canFastCoin).toBe(false);
+    expect(state.isFastBuyable).toBe(false);
+    expect(state.isFastLocked).toBe(false);
+    expect(state.fastCoinPrice).toBe(3);
   });
 });

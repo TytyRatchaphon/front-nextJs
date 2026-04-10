@@ -2,21 +2,40 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { Plus } from 'lucide-react';
+import { Tooltip } from 'antd';
+
+import { navigateSafely } from '@/utils/navigationUtils';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import '@/utils/imageUtils';
 
 interface FastTicketPillProps {
   amount: number;
+  onAddClick?: () => void;
   className?: string;
 }
 
-function FastTicketPill({ amount, className = "" }: FastTicketPillProps) {
+function FastTicketPill({ amount, onAddClick, className = "" }: FastTicketPillProps) {
   const { settings } = useWebsiteStore();
   const iconSrc = settings?.fast_ticket || '/images/fast_ticket.png';
+  const formattedAmount = amount > 9999
+    ? Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(amount)
+    : amount.toLocaleString();
+
+  const handleClick = () => {
+    if (onAddClick) {
+      onAddClick();
+      return;
+    }
+
+    navigateSafely('/store');
+  };
 
   return (
-    <div className={`min-w-[80px] h-[32px] bg-white rounded-full flex items-center justify-center px-3 gap-2 shadow-sm border border-gray-100 select-none ${className}`}>
-      <div className="w-5 h-5 relative flex-shrink-0">
+    <div
+      className={`fast-ticket-pill w-[108px] h-[32px] bg-white rounded-full flex items-center justify-between p-1 shadow-sm border border-gray-100 select-none ${className}`}
+    >
+      <div className="fast-ticket-pill-icon w-5 h-5 relative flex-shrink-0">
         <Image
           src={iconSrc}
           alt="Fast Ticket"
@@ -25,9 +44,22 @@ function FastTicketPill({ amount, className = "" }: FastTicketPillProps) {
           unoptimized
         />
       </div>
-      <span className="text-gray-800 font-medium text-sm leading-none pt-[1px]">
-        {amount.toLocaleString()}
-      </span>
+
+      <div className="flex-1 text-center mx-1 overflow-hidden cursor-pointer">
+        <Tooltip title={amount.toLocaleString()} trigger={['click', 'hover']} placement="bottom">
+          <span className="fast-ticket-pill-text text-sm font-medium text-gray-800 truncate block leading-none">
+            {formattedAmount}
+          </span>
+        </Tooltip>
+      </div>
+
+      <button
+        onClick={handleClick}
+        className="fast-ticket-pill-add w-6 h-6 rounded-full bg-[#7AC142] hover:bg-[#68a635] flex items-center justify-center !text-white transition-colors flex-shrink-0 active:scale-95"
+        aria-label="ไปที่ร้านค้าแต้ม"
+      >
+        <Plus size={16} strokeWidth={3} />
+      </button>
     </div>
   );
 }

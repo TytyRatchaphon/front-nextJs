@@ -14,6 +14,7 @@ import RPPill from "@/components/utility/RPPill";
 import ProfileAchievements from "@/components/achievement/ProfileAchievements";
 import UserRankShowcase from "@/features/user/components/UserRankShowcase";
 import FrameOverlayImage from "@/components/ui/FrameOverlayImage";
+import FastTicketPill from "@/components/utility/FastTicketPill";
 
 function MyProfileContent() {
   const { user, isLoggedIn, hasMounted } = useAuthStore();
@@ -57,6 +58,7 @@ function MyProfileContent() {
     coin = 0,
     freecoin = 0,
     current_rp = 0,
+    fast_ticket = 0,
   } = user as any;
 
   return (
@@ -128,6 +130,7 @@ function MyProfileContent() {
               <FreeCoinPill amount={Number(freecoin) || 0} />
               <StampPill amount={Number(stamp) || 0} />
               <RPPill amount={Number(current_rp) || 0} />
+              <FastTicketPill amount={Number(fast_ticket) || 0} />
             </div>
           </div>
 

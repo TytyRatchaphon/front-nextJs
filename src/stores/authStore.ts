@@ -4,13 +4,55 @@ import '@/stores/formStore';
 import Cookies from 'js-cookie'
 import { parseJwtToken, decodeAndMapUserFromToken } from '@/utils/jwtParser';
 
+const DEFAULT_TOKEN_COOKIE_DAYS = 365;
+
+const getTokenCookieExpireDays = () => {
+  const raw = Number(process.env.NEXT_PUBLIC_TOKEN_COOKIE_DAYS);
+  if (Number.isFinite(raw) && raw > 0) {
+    return raw;
+  }
+  return DEFAULT_TOKEN_COOKIE_DAYS;
+};
+
+const getTokenCookieDomain = () => {
+  const configuredDomain = process.env.NEXT_PUBLIC_TOKEN_COOKIE_DOMAIN?.trim();
+  if (configuredDomain) {
+    return configuredDomain;
+  }
+
+  if (typeof window === 'undefined') return undefined;
+  const hostname = window.location.hostname.toLowerCase();
+  const isIpv4Host = /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname);
+
+  if (hostname === 'localhost' || isIpv4Host) {
+    return undefined;
+  }
+
+  if (hostname === 'enjoybook.co' || hostname.endsWith('.enjoybook.co')) {
+    return '.enjoybook.co';
+  }
+
+  return undefined;
+};
+
 const getTokenCookieOptions = () => {
-  const isProduction = process.env.NODE_ENV === 'production';
   const isSecureContext = typeof window !== 'undefined' && window.location.protocol === 'https:';
+  const domain = getTokenCookieDomain();
+
   return {
     sameSite: 'lax' as const,
-    secure: isProduction || isSecureContext,
+    secure: isSecureContext,
     path: '/',
+    expires: getTokenCookieExpireDays(),
+    ...(domain ? { domain } : {}),
+  };
+};
+
+const getTokenCookieRemoveOptions = () => {
+  const domain = getTokenCookieDomain();
+  return {
+    path: '/',
+    ...(domain ? { domain } : {}),
   };
 };
 
@@ -21,6 +63,65 @@ const clearLegacyLocalAuthStorage = () => {
     localStorage.removeItem('userData');
     localStorage.removeItem('token');
   } catch { }
+};
+
+const clearAuthTokenCookies = () => {
+  if (typeof window === 'undefined') return;
+
+  const cookieNames = ['token', 'tk'];
+  const removeOptions = getTokenCookieRemoveOptions();
+  const hostname = window.location.hostname.toLowerCase();
+  const isIpv4Host = /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname);
+  const domainCandidates = new Set<string>();
+
+  if (typeof removeOptions.domain === 'string' && removeOptions.domain.trim()) {
+    domainCandidates.add(removeOptions.domain.trim());
+  }
+
+  if (hostname && hostname !== 'localhost' && !isIpv4Host) {
+    domainCandidates.add(hostname);
+
+    const parts = hostname.split('.');
+    if (parts.length >= 2) {
+      const rootDomain = parts.slice(-2).join('.');
+      domainCandidates.add(rootDomain);
+      domainCandidates.add(`.${rootDomain}`);
+    }
+  }
+
+  const removeCookieSafely = (name: string, options?: Record<string, unknown>) => {
+    try {
+      if (options) {
+        Cookies.remove(name, options as never);
+      } else {
+        Cookies.remove(name);
+      }
+    } catch { }
+  };
+
+  cookieNames.forEach((cookieName) => {
+    // Host-only / default path variants
+    removeCookieSafely(cookieName);
+    removeCookieSafely(cookieName, { path: '/' });
+    removeCookieSafely(cookieName, removeOptions as Record<string, unknown>);
+
+    // Domain-bound variants
+    domainCandidates.forEach((domain) => {
+      removeCookieSafely(cookieName, { path: '/', domain });
+    });
+  });
+
+  if (typeof document === 'undefined') return;
+
+  const expires = 'Thu, 01 Jan 1970 00:00:00 GMT';
+  cookieNames.forEach((cookieName) => {
+    // Host-only
+    document.cookie = `${cookieName}=; expires=${expires}; path=/`;
+    // Domain-bound
+    domainCandidates.forEach((domain) => {
+      document.cookie = `${cookieName}=; expires=${expires}; path=/; domain=${domain}`;
+    });
+  });
 };
 
 // ✅ อัปเดต Interface ให้ครบถ้วนตามที่ใช้จริงใน Sprofile และ Token
@@ -102,6 +203,7 @@ export const useAuthStore = create<AuthState>()(
         set({ user: userData, token: token, isLoggedIn: true });
         const cleaned = parseJwtToken(token);
         if (cleaned) {
+          clearAuthTokenCookies();
           Cookies.set('token', cleaned, getTokenCookieOptions());
         }
         
@@ -111,8 +213,7 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         clearLegacyLocalAuthStorage();
-        Cookies.remove('token');
-        Cookies.remove('tk');
+        clearAuthTokenCookies();
         set({ user: null, token: null, isLoggedIn: false });
         window.location.reload();
       },
@@ -130,6 +231,7 @@ export const useAuthStore = create<AuthState>()(
         if (!cleaned) return;
 
         clearLegacyLocalAuthStorage();
+        clearAuthTokenCookies();
         set({ token: cleaned, isLoggedIn: true });
         Cookies.set('token', cleaned, getTokenCookieOptions());
 

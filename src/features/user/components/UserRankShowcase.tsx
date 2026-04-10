@@ -47,6 +47,13 @@ export default function UserRankShowcase({
     return false;
   }, [allRanks, currentRankIndex, rankData]);
 
+  const activeRank = useMemo(() => {
+    if (!Array.isArray(allRanks) || allRanks.length === 0) return null;
+    return allRanks[activeSlideIndex] ?? allRanks[currentRankIndex] ?? null;
+  }, [activeSlideIndex, allRanks, currentRankIndex]);
+
+  const activeRankRewards = activeRank?.rewards ?? [];
+
   useEffect(() => {
     const loadRankData = async () => {
       if (!isLoggedIn) return;
@@ -291,6 +298,18 @@ export default function UserRankShowcase({
                             : `${rank.min_rp.toLocaleString()}+ RP`}
                         </p>
 
+                        <div className="mt-auto flex min-h-[22px] items-center justify-center">
+                          {rank.rewards && rank.rewards.length > 0 ? (
+                            <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-semibold text-amber-700">
+                              ของรางวัล {rank.rewards.length} รายการ
+                            </span>
+                          ) : (
+                            <span className="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1 text-[10px] font-medium text-stone-500">
+                              ไม่มีของรางวัล
+                            </span>
+                          )}
+                        </div>
+
                         {rank.is_current_rank && (
                           <span
                             className={`rounded-full px-3.5 py-1 text-[11px] font-semibold text-white ${
@@ -305,6 +324,72 @@ export default function UserRankShowcase({
                   );
                 })}
               </Swiper>
+
+              <div className="mt-4 min-h-[148px] rounded-[28px] border border-red-100 bg-[linear-gradient(180deg,_#ffffff,_#fff6f6)] px-4 py-4 shadow-[0_18px_38px_-30px_rgba(239,68,68,0.2)]">
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-red-400">
+                      Reward Set
+                    </p>
+                    <h3 className="mt-1 text-base font-bold text-stone-900">
+                      {activeRank ? `ของรางวัลแรงก์ ${activeRank.name}` : 'ของรางวัลของแรงก์'}
+                    </h3>
+                  </div>
+
+                  <div className="shrink-0 rounded-full border border-red-200 bg-white px-3 py-1 text-[11px] font-semibold text-red-500">
+                    {activeRankRewards.length > 0
+                      ? `${activeRankRewards.length} รางวัล`
+                      : 'ยังไม่มีรางวัล'}
+                  </div>
+                </div>
+
+                {activeRankRewards.length > 0 ? (
+                  <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+                    {activeRankRewards.map((reward, index) => (
+                      <div
+                        key={reward.id ?? `${activeRank?.rank_id ?? 'rank'}-reward-${index}`}
+                        className="flex min-w-[136px] max-w-[156px] shrink-0 flex-col rounded-[22px] border border-red-100 bg-white p-3 shadow-[0_14px_24px_-22px_rgba(239,68,68,0.55)]"
+                      >
+                        <div className="relative mb-3 flex h-14 w-14 items-center justify-center overflow-hidden rounded-[18px] bg-red-50 ring-1 ring-red-100">
+                          {reward.img ? (
+                            <Image
+                              src={reward.img}
+                              alt={reward.name || 'Reward'}
+                              fill
+                              className="object-contain p-2"
+                              unoptimized
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-lg">🎁</div>
+                          )}
+
+                          {reward.amount && reward.amount > 1 && (
+                            <span className="absolute -right-1 -top-1 rounded-full bg-red-500 px-1.5 py-[2px] text-[10px] font-bold text-white shadow-sm">
+                              x{reward.amount}
+                            </span>
+                          )}
+                        </div>
+
+                        <p className="line-clamp-2 text-sm font-semibold leading-snug text-stone-800">
+                          {reward.name || 'ของรางวัล'}
+                        </p>
+
+                        {reward.description ? (
+                          <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-stone-500">
+                            {reward.description}
+                          </p>
+                        ) : (
+                          <div className="mt-1 h-[32px]" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex min-h-[72px] items-center justify-center rounded-[22px] border border-dashed border-red-200 bg-white/80 px-4 text-center text-sm text-stone-500">
+                    แรงก์นี้ยังไม่มีของรางวัลเพิ่มเติมในตอนนี้
+                  </div>
+                )}
+              </div>
 
               <div className="mt-4 flex h-10 justify-center">
                 <button

@@ -305,7 +305,7 @@ export default function CommentItem({
 
                     {/* Comment Text */}
                     <div
-                        className={`text-sm leading-relaxed break-words mb-3 [&>p]:mb-2 [&>p:last-child]:mb-0 [&_img]:max-w-full [&_img]:h-auto [&_img]:inline-block [&_img]:align-middle ${theme ? theme.text : 'text-gray-800'}`}
+                        className={`comment-rich-content text-sm leading-relaxed break-words mb-3 [&>p]:mb-2 [&>p:last-child]:mb-0 [&_img]:max-w-full [&_img]:h-auto [&_img]:inline-block [&_img]:align-middle ${theme ? theme.text : 'text-gray-800'}`}
                         dangerouslySetInnerHTML={{ __html: safeReviewComment }}
                     />
 
@@ -450,7 +450,7 @@ export default function CommentItem({
                                     </div>
                                     {/* Reply content sends HTML */}
                                     <div
-                                        className={`text-xs sm:text-sm leading-relaxed prose prose-sm max-w-none ${theme ? theme.text : 'text-gray-700'}`}
+                                        className={`comment-rich-content text-xs sm:text-sm leading-relaxed prose prose-sm max-w-none ${theme ? theme.text : 'text-gray-700'}`}
                                         dangerouslySetInnerHTML={{ __html: safeReplyComment }}
                                     />
                                 </div>

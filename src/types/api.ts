@@ -232,6 +232,12 @@ export interface BookTrans {
   isFollowing: boolean;
 }
 
+export interface EpisodeEarlyAccessMethod {
+  price?: number;
+  daily_increase?: number;
+  use?: boolean;
+}
+
 export interface Episode {
   ep_id: number;
   epID: string;
@@ -241,8 +247,8 @@ export interface Episode {
   isFastTicket?: boolean;
   isFast_buyable?: boolean;
   early_access?: {
-    fast_ticket?: boolean;
-    fast_coin?: boolean;
+    fast_ticket?: boolean | EpisodeEarlyAccessMethod;
+    fast_coin?: boolean | EpisodeEarlyAccessMethod;
     isFast_buyable?: boolean;
     fastTicketPrice?: number;
     fastCoinPrice?: number;

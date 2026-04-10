@@ -249,7 +249,7 @@ export default function CollectionCommentItem({
 
                     {/* Comment Text */}
                     <div
-                        className="text-sm leading-relaxed break-words mb-3 text-gray-800 [&>p]:mb-2 [&>p:last-child]:mb-0 [&_img]:max-w-full [&_img]:h-auto [&_img]:inline-block [&_img]:align-middle"
+                        className="comment-rich-content text-sm leading-relaxed break-words mb-3 text-gray-800 [&>p]:mb-2 [&>p:last-child]:mb-0 [&_img]:max-w-full [&_img]:h-auto [&_img]:inline-block [&_img]:align-middle"
                         dangerouslySetInnerHTML={{ __html: safeCommentHtml }}
                     />
 
@@ -381,7 +381,7 @@ export default function CollectionCommentItem({
                                     </div>
                                     {/* Reply content sends HTML */}
                                     <div
-                                        className="text-xs sm:text-sm leading-relaxed prose prose-sm max-w-none text-gray-700"
+                                        className="comment-rich-content text-xs sm:text-sm leading-relaxed prose prose-sm max-w-none text-gray-700"
                                         dangerouslySetInnerHTML={{ __html: safeReplyComment }}
                                     />
                                 </div>

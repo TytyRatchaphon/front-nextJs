@@ -158,6 +158,39 @@
   color: #1d4ed8;
 }
 
+.comment-rich-content {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.comment-rich-content img {
+  width: auto !important;
+  height: auto !important;
+  max-width: min(80px, 28vw) !important;
+  max-height: 80px !important;
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0.25rem 0.125rem;
+  object-fit: contain;
+}
+
+.comment-rich-content p,
+.comment-rich-content div {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.comment-rich-content p:last-child,
+.comment-rich-content div:last-child {
+  margin-bottom: 0;
+}
+
+.comment-rich-content p:has(img),
+.comment-rich-content div:has(img) {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
 /* Hover effect for specific elements only */
 .hover-red:hover {
   color: red !important;
@@ -671,6 +704,7 @@ a[href="/notifications"]:hover {
 .spotlight-thai-clamp-title {
   display: -webkit-box;
   -webkit-box-orient: vertical;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   overflow: clip;
   line-height: 1.26;
@@ -684,6 +718,7 @@ a[href="/notifications"]:hover {
 .spotlight-thai-clamp-body {
   display: -webkit-box;
   -webkit-box-orient: vertical;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   overflow: clip;
   line-height: 1.6;

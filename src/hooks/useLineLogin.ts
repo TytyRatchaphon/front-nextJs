@@ -227,7 +227,7 @@ export const useLineLogin = () => {
           }
 
           if (token) {
-            setCookie('token', token, 365);
+            // Set non-auth cookies only (auth token is managed centrally in authStore)
             setCookie('closePopupPolicy', '', 365);
 
             login(userInfo, token);

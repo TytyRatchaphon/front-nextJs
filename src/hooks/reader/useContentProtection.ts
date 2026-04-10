@@ -37,6 +37,10 @@ export function useContentProtection(episodeData: any, onBlur?: () => void, enab
     let extensionObserver: MutationObserver | undefined;
     let focusRestoreTimeout: number | null = null;
 
+    const setFocusStateSafely = (next: boolean) => {
+      setIsFocused((prev) => (prev === next ? prev : next));
+    };
+
     const restoreDescriptors = () => {
       descriptorBackups.forEach(({ element, innerTextDesc, textContentDesc }) => {
         try {
@@ -152,59 +156,33 @@ export function useContentProtection(episodeData: any, onBlur?: () => void, enab
       });
     };
 
-    const handleWindowBlur = () => {
-      if (onBlur) onBlur();
-      setIsFocused(false);
-    };
-
-    const handleWindowFocus = () => {
-      setIsFocused(true);
-    };
-
     const handleKeyDown = (event: KeyboardEvent) => {
       const key = (event.key || "").toLowerCase();
-      const withModifier = event.ctrlKey || event.metaKey;
-      const isDevtoolsShortcut =
-        (withModifier && event.shiftKey && (key === "i" || key === "j" || key === "c")) ||
-        (withModifier && key === "u");
+      const isOsKey = key === "meta" || key === "os" || event.keyCode === 91 || event.keyCode === 92;
 
-      if (
-        event.key === "F12" ||
-        isDevtoolsShortcut ||
-        event.key === "PrintScreen" ||
-        event.keyCode === 44
-      ) {
-        event.preventDefault();
-        handleWindowBlur();
+      if (isOsKey) {
+        if (onBlur) onBlur();
+        setFocusStateSafely(false);
+        if (focusRestoreTimeout) {
+          window.clearTimeout(focusRestoreTimeout);
+        }
         focusRestoreTimeout = window.setTimeout(() => {
-          handleWindowFocus();
+          setFocusStateSafely(true);
         }, 2000);
+        return;
       }
     };
 
-    const handleRightClick = (event: Event) => {
-      event.preventDefault();
-    };
-
-    window.addEventListener("blur", handleWindowBlur);
-    window.addEventListener("focus", handleWindowFocus);
     window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("contextmenu", handleRightClick);
-
     document.addEventListener("contextmenu", disableRightClick);
 
     const timer = window.setTimeout(() => {
       protectContent();
     }, 1000);
-
     extensionObserver = detectExtension();
 
     return () => {
-      window.removeEventListener("blur", handleWindowBlur);
-      window.removeEventListener("focus", handleWindowFocus);
       window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("contextmenu", handleRightClick);
-
       document.removeEventListener("contextmenu", disableRightClick);
       window.clearTimeout(timer);
       if (focusRestoreTimeout) {

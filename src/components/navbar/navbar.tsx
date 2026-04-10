@@ -27,6 +27,9 @@ import CartSvg from '@/components/utility/CartSvg';
 import { resolveSettingsImageSrc } from '@/utils/imageUtils';
 import { readGifModePreference, writeGifModePreference } from '@/utils/gifPreference';
 import FrameOverlayImage from '@/components/ui/FrameOverlayImage';
+import FastTicketPill from '@/components/utility/FastTicketPill';
+import StampPill from '../utility/StampPill';
+
 
 
 
@@ -296,16 +299,22 @@ function Navbar() {
         </div>
 
         {/* Coins Section */}
-        <div className="flex items-center justify-between px-2">
-          {/* Free Coin Pill */}
-          <FreeCoinPill amount={Number(user?.freecoin || 0)} className="reader-user-popover-pill reader-user-popover-pill-freecoin" />
-
-          {/* Gold Coin Card with Plus Button - Combined in white background */}
-          {/* Gold Coin Card with Plus Button - Custom Component */}
-          <AmountPill
-            amount={Number(user?.coin || 0)}
-            className="reader-user-popover-pill reader-user-popover-pill-amount"
-          />
+        <div className="grid grid-cols-2 gap-x-2 gap-y-2 px-2">
+          <div className="w-full">
+            <FreeCoinPill amount={Number(user?.freecoin || 0)} className="reader-user-popover-pill reader-user-popover-pill-freecoin w-full" />
+          </div>
+          <div className="w-full">
+            <AmountPill
+              amount={Number(user?.coin || 0)}
+              className="reader-user-popover-pill reader-user-popover-pill-amount w-full"
+            />
+          </div>
+          <div className="w-full">
+            <FastTicketPill amount={Number(user?.fast_ticket || 0)} className="reader-user-popover-pill reader-user-popover-pill-fastticket w-full" />
+          </div>
+          <div className="w-full">
+            <StampPill amount={Number(user?.stamp || 0)} className="reader-user-popover-pill reader-user-popover-pill-stamp w-full" />
+          </div>
         </div>
 
         {/* Rank Badge */}
@@ -349,8 +358,9 @@ function Navbar() {
       <div className='flex justify-center my-2'>
         <div className='reader-user-popover-divider h-[1px] bg-gray-300 w-[250px]'></div>
       </div>
-      <div className="w-[274px]">
-        <Link href="/store" onClick={() => setIsUserMenuOpen(false)} className="reader-user-popover-link group flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
+      <div className="w-[274px] grid grid-cols-2 gap-x-2 auto-rows-fr">
+        <div className="contents">
+        <Link href="/store" onClick={() => setIsUserMenuOpen(false)} className="reader-user-popover-link group flex h-full items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path d="M3.00977 11.22V15.71C3.00977 20.2 4.80977 22 9.29977 22H14.6898C19.1798 22 20.9798 20.2 20.9798 15.71V11.22" fill="white" />
             <path d="M3.00977 11.22V15.71C3.00977 20.2 4.80977 22 9.29977 22H14.6898C19.1798 22 20.9798 20.2 20.9798 15.71V11.22" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -359,40 +369,42 @@ function Navbar() {
             <path d="M5.64037 12C7.29037 12 8.78037 10.66 8.94037 9.01L9.16037 6.8L9.64037 2H6.59037C3.97037 2 2.97037 3 2.61037 5.6L2.34037 8.35C2.14037 10.36 3.62037 12 5.64037 12Z" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M12 17C10.33 17 9.5 17.83 9.5 19.5V22H14.5V19.5C14.5 17.83 13.67 17 12 17Z" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <span className="font-primary text-black group-hover:text-red-600 transition-colors">ร้านค้า</span>
+          <span className="font-primary text-sm whitespace-nowrap text-black group-hover:text-red-600 transition-colors">ร้านค้า</span>
         </Link>
-        <Link href="/wallet/history" onClick={() => setIsUserMenuOpen(false)} className="reader-user-popover-link group flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <Link href="/wallet/history" onClick={() => setIsUserMenuOpen(false)} className="reader-user-popover-link group flex h-full items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
             <path d="M22 12C22 17.52 17.52 22 12 22C6.48 22 2 17.52 2 12C2 6.48 6.48 2 12 2C17.52 2 22 6.48 22 12Z" stroke="#B01F1F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M15.7099 15.18L12.6099 13.33C12.0699 13.01 11.6299 12.24 11.6299 11.61V7.51001" stroke="#B01F1F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <span className="font-primary text-black group-hover:text-red-600 transition-colors">ประวัติ</span>
+          <span className="font-primary text-sm whitespace-nowrap text-black group-hover:text-red-600 transition-colors">ประวัติ</span>
         </Link>
-        <Link href="/shelve" onClick={() => setIsUserMenuOpen(false)} className="reader-user-popover-link group flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
+        <Link href="/shelve" onClick={() => setIsUserMenuOpen(false)} className="reader-user-popover-link group flex h-full items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="19" viewBox="0 0 24 19" fill="none">
             <path d="M23.1429 9.77693e-07H17.0143C15.6991 9.77693e-07 14.4134 0.377679 13.3071 1.09018L12 1.92857L10.6929 1.09018C9.58771 0.377816 8.30056 -0.000702109 6.98571 9.77693e-07H0.857143C0.383036 9.77693e-07 0 0.383037 0 0.857144V16.0714C0 16.5455 0.383036 16.9286 0.857143 16.9286H6.98571C8.30089 16.9286 9.58661 17.3063 10.6929 18.0188L11.8821 18.7848C11.917 18.8063 11.9571 18.8196 11.9973 18.8196C12.0375 18.8196 12.0777 18.8089 12.1125 18.7848L13.3018 18.0188C14.4107 17.3063 15.6991 16.9286 17.0143 16.9286H23.1429C23.617 16.9286 24 16.5455 24 16.0714V0.857144C24 0.383037 23.617 9.77693e-07 23.1429 9.77693e-07ZM6.98571 15H1.92857V1.92857H6.98571C7.93393 1.92857 8.85536 2.19911 9.65089 2.71072L10.958 3.54911L11.1429 3.66964V16.0446C9.86786 15.3589 8.44286 15 6.98571 15ZM22.0714 15H17.0143C15.5571 15 14.1321 15.3589 12.8571 16.0446V3.66964L13.042 3.54911L14.3491 2.71072C15.1446 2.19911 16.0661 1.92857 17.0143 1.92857H22.0714V15ZM8.91696 5.35714H3.94018C3.83571 5.35714 3.75 5.44821 3.75 5.55804V6.76339C3.75 6.87321 3.83571 6.96429 3.94018 6.96429H8.91429C9.01875 6.96429 9.10446 6.87321 9.10446 6.76339V5.55804C9.10714 5.44821 9.02143 5.35714 8.91696 5.35714ZM14.8929 5.55804V6.76339C14.8929 6.87321 14.9786 6.96429 15.083 6.96429H20.0571C20.1616 6.96429 20.2473 6.87321 20.2473 6.76339V5.55804C20.2473 5.44821 20.1616 5.35714 20.0571 5.35714H15.083C14.9786 5.35714 14.8929 5.44821 14.8929 5.55804ZM8.91696 9.10714H3.94018C3.83571 9.10714 3.75 9.19821 3.75 9.30804V10.5134C3.75 10.6232 3.83571 10.7143 3.94018 10.7143H8.91429C9.01875 10.7143 9.10446 10.6232 9.10446 10.5134V9.30804C9.10714 9.19821 9.02143 9.10714 8.91696 9.10714ZM20.0598 9.10714H15.083C14.9786 9.10714 14.8929 9.19821 14.8929 9.30804V10.5134C14.8929 10.6232 14.9786 10.7143 15.083 10.7143H20.0571C20.1616 10.7143 20.2473 10.6232 20.2473 10.5134V9.30804C20.25 9.19821 20.1643 9.10714 20.0598 9.10714Z" fill="#B01F1F" />
           </svg>
-          <span className="font-primary text-black group-hover:text-red-600 transition-colors">ชั้นหนังสือ</span>
+          <span className="font-primary text-sm whitespace-nowrap text-black group-hover:text-red-600 transition-colors">ชั้นหนังสือ</span>
         </Link>
-        <Link href="/w/mybook" onClick={() => setIsUserMenuOpen(false)} className="reader-user-popover-link group flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <Link href="/w/mybook" onClick={() => setIsUserMenuOpen(false)} className="reader-user-popover-link group flex h-full items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" className="shrink-0">
             <path d="M3.5 18V7C3.5 3 4.5 2 8.5 2H15.5C19.5 2 20.5 3 20.5 7V17C20.5 17.14 20.5 17.28 20.49 17.42" fill="white" />
             <path d="M3.5 18V7C3.5 3 4.5 2 8.5 2H15.5C19.5 2 20.5 3 20.5 7V17C20.5 17.14 20.5 17.28 20.49 17.42" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M6.35 15H20.5V18.5C20.5 20.43 18.93 22 17 22H7C5.07 22 3.5 20.43 3.5 18.5V17.85C3.5 16.28 4.78 15 6.35 15Z" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M8 7H16" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M8 10.5H13" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <span className="font-primary text-black group-hover:text-red-600 transition-colors">นิยายของฉัน</span>
+          <span className="font-primary text-sm whitespace-nowrap text-black group-hover:text-red-600 transition-colors">นิยายของฉัน</span>
         </Link>
-        <Link href="/event" onClick={() => setIsUserMenuOpen(false)} className="reader-user-popover-link group flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
+        </div>
+        <div className="contents">
+        <Link href="/event" onClick={() => setIsUserMenuOpen(false)} className="reader-user-popover-link group flex h-full items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path d="M4.25977 11.0199V15.9899C4.25977 17.8099 4.25977 17.8099 5.97977 18.9699L10.7098 21.6999C11.4198 22.1099 12.5798 22.1099 13.2898 21.6999L18.0198 18.9699C19.7398 17.8099 19.7398 17.8099 19.7398 15.9899V11.0199C19.7398 9.19994 19.7398 9.19994 18.0198 8.03994L13.2898 5.30994C12.5798 4.89994 11.4198 4.89994 10.7098 5.30994L5.97977 8.03994C4.25977 9.19994 4.25977 9.19994 4.25977 11.0199Z" fill="white" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M17.5 7.63V5C17.5 3 16.5 2 14.5 2H9.5C7.5 2 6.5 3 6.5 5V7.56" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M12.6298 10.99L13.1998 11.88C13.2898 12.02 13.4898 12.16 13.6398 12.2L14.6598 12.46C15.2898 12.62 15.4598 13.16 15.0498 13.66L14.3798 14.47C14.2798 14.6 14.1998 14.83 14.2098 14.99L14.2698 16.04C14.3098 16.69 13.8498 17.02 13.2498 16.78L12.2698 16.39C12.1198 16.33 11.8698 16.33 11.7198 16.39L10.7398 16.78C10.1398 17.02 9.67978 16.68 9.71978 16.04L9.77978 14.99C9.78978 14.83 9.70978 14.59 9.60978 14.47L8.93978 13.66C8.52978 13.16 8.69978 12.62 9.32978 12.46L10.3498 12.2C10.5098 12.16 10.7098 12.01 10.7898 11.88L11.3598 10.99C11.7198 10.45 12.2798 10.45 12.6298 10.99Z" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <span className="font-primary text-black group-hover:text-red-600 transition-colors">กิจกรรม</span>
+          <span className="font-primary text-sm whitespace-nowrap text-black group-hover:text-red-600 transition-colors">กิจกรรม</span>
         </Link>
-        <Link href="/achievement" onClick={() => setIsUserMenuOpen(false)} className="reader-user-popover-link group flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
+        <Link href="/achievement" onClick={() => setIsUserMenuOpen(false)} className="reader-user-popover-link group flex h-full items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <path d="M12.1504 16.5V18.6" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M7.15039 22H17.1504V21C17.1504 19.9 16.2504 19 15.1504 19H9.15039C8.05039 19 7.15039 19.9 7.15039 21V22V22Z" stroke="#B01F1F" strokeWidth="1.5" strokeMiterlimit="10"/>
@@ -401,24 +413,27 @@ function Navbar() {
                 <path d="M5.47004 11.65C4.72004 11.41 4.06004 10.97 3.54004 10.45C2.64004 9.44998 2.04004 8.24998 2.04004 6.84998C2.04004 5.44998 3.14004 4.34998 4.54004 4.34998H5.19004C4.99004 4.80998 4.89004 5.31998 4.89004 5.84998V8.84998C4.89004 9.84998 5.10004 10.79 5.47004 11.65Z" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M18.5303 11.65C19.2803 11.41 19.9403 10.97 20.4603 10.45C21.3603 9.44998 21.9603 8.24998 21.9603 6.84998C21.9603 5.44998 20.8603 4.34998 19.4603 4.34998H18.8103C19.0103 4.80998 19.1103 5.31998 19.1103 5.84998V8.84998C19.1103 9.84998 18.9003 10.79 18.5303 11.65Z" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-          <span className="font-primary text-black group-hover:text-red-600 transition-colors">ความสำเร็จ</span>
+          <span className="font-primary text-sm whitespace-nowrap text-black group-hover:text-red-600 transition-colors">ความสำเร็จ</span>
         </Link>
-        <Link href="/redeem" onClick={() => setIsUserMenuOpen(false)} className="reader-user-popover-link group flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
+        <Link href="/redeem" onClick={() => setIsUserMenuOpen(false)} className="reader-user-popover-link group flex h-full items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path d="M19.5 12.5C19.5 11.12 20.62 10 22 10V9C22 5 21 4 17 4H7C3 4 2 5 2 9V9.5C3.38 9.5 4.5 10.62 4.5 12C4.5 13.38 3.38 14.5 2 14.5V15C2 19 3 20 7 20H17C21 20 22 19 22 15C20.62 15 19.5 13.88 19.5 12.5Z" fill="white" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M9 14.75L15 8.75" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M14.9945 14.75H15.0035" stroke="#B01F1F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M8.99451 9.25H9.00349" stroke="#B01F1F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <span className="font-primary text-black group-hover:text-red-600 transition-colors">กรอกโค๊ด</span>
+          <span className="font-primary text-sm whitespace-nowrap text-black group-hover:text-red-600 transition-colors">กรอกโค๊ด</span>
         </Link>
-        <Link href="/coupon" onClick={() => setIsUserMenuOpen(false)} className="reader-user-popover-link group flex items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
+        <Link href="/coupon" onClick={() => setIsUserMenuOpen(false)} className="reader-user-popover-link group flex h-full items-center gap-3 px-4 py-3 hover:bg-gray-100 transition-all duration-200 rounded-lg">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path d="M19.5 12.5C19.5 11.12 20.62 10 22 10V9C22 5 21 4 17 4H7C3 4 2 5 2 9V9.5C3.38 9.5 4.5 10.62 4.5 12C4.5 13.38 3.38 14.5 2 14.5V15C2 19 3 20 7 20H17C21 20 22 19 22 15C20.62 15 19.5 13.88 19.5 12.5Z" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M10 4L10 20" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="5 5"/>
           </svg>
-          <span className="font-primary text-black group-hover:text-red-600 transition-colors">คูปอง</span>
+          <span className="font-primary text-sm whitespace-nowrap text-black group-hover:text-red-600 transition-colors">คูปอง</span>
         </Link>
+        </div>
+      </div>
+      <div className="w-[274px]">
         {ENABLE_GIF_MODE_TOGGLE && (<div className="px-4 py-2">
           <div className="reader-user-popover-toggle flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
             <div className="flex flex-col">
@@ -705,52 +720,47 @@ function Navbar() {
               <Link
                 href="/"
                 onClick={closeMobileNavDrawer}
-                className={`reader-mobile-nav-link flex items-center justify-between rounded-2xl px-4 py-3 text-[15px] font-medium transition-colors ${
+                className={`reader-mobile-nav-link flex items-center rounded-2xl px-4 py-3 text-[15px] font-medium transition-colors ${
                   pathname === '/' ? 'bg-[#f7f3f2] !text-[#111111]' : '!text-[#111111] hover:bg-[#f8f4f2]'
                 }`}
               >
                 <span>หน้าหลัก</span>
-                <ChevronRight className="h-4 w-4 opacity-55" />
               </Link>
               <Link
                 href="/novel-pack"
                 onClick={closeMobileNavDrawer}
-                className={`reader-mobile-nav-link flex items-center justify-between rounded-2xl px-4 py-3 text-[15px] font-medium transition-colors ${
+                className={`reader-mobile-nav-link flex items-center rounded-2xl px-4 py-3 text-[15px] font-medium transition-colors ${
                   pathname === '/novel-pack' ? 'bg-[#f7f3f2] !text-[#111111]' : '!text-[#111111] hover:bg-[#f8f4f2]'
                 }`}
               >
                 <span>มัดแพ็ค</span>
-                <ChevronRight className="h-4 w-4 opacity-55" />
               </Link>
               <Link
                 href="/ranking"
                 onClick={closeMobileNavDrawer}
-                className={`reader-mobile-nav-link flex items-center justify-between rounded-2xl px-4 py-3 text-[15px] font-medium transition-colors ${
+                className={`reader-mobile-nav-link flex items-center rounded-2xl px-4 py-3 text-[15px] font-medium transition-colors ${
                   pathname.startsWith('/ranking') ? 'bg-[#f7f3f2] !text-[#111111]' : '!text-[#111111] hover:bg-[#f8f4f2]'
                 }`}
               >
                 <span>จัดอันดับ</span>
-                <ChevronRight className="h-4 w-4 opacity-55" />
               </Link>
               <Link
                 href="/article"
                 onClick={closeMobileNavDrawer}
-                className={`reader-mobile-nav-link flex items-center justify-between rounded-2xl px-4 py-3 text-[15px] font-medium transition-colors ${
+                className={`reader-mobile-nav-link flex items-center rounded-2xl px-4 py-3 text-[15px] font-medium transition-colors ${
                   pathname.startsWith('/article') ? 'bg-[#f7f3f2] !text-[#111111]' : '!text-[#111111] hover:bg-[#f8f4f2]'
                 }`}
               >
                 <span>บทความ</span>
-                <ChevronRight className="h-4 w-4 opacity-55" />
               </Link>
               {promotingGroups?.map((group) => (
                 <Link
                   key={group.id}
                   href={`/promotion/${group.id}`}
                   onClick={closeMobileNavDrawer}
-                  className="reader-mobile-nav-link flex items-center justify-between rounded-2xl px-4 py-3 text-[15px] font-medium !text-[#111111] transition-colors hover:bg-[#f8f4f2]"
+                  className="reader-mobile-nav-link flex items-center rounded-2xl px-4 py-3 text-[15px] font-medium !text-[#111111] transition-colors hover:bg-[#f8f4f2]"
                 >
                   <span className="truncate">{group.name}</span>
-                  <ChevronRight className="h-4 w-4 opacity-55" />
                 </Link>
               ))}
             </div>
@@ -859,6 +869,8 @@ function Navbar() {
             <div className="flex items-center justify-between px-1 gap-2">
               <FreeCoinPill amount={Number(user?.freecoin || 0)} className="flex-1" />
               <AmountPill amount={Number(user?.coin || 0)} className="flex-1" />
+              <FastTicketPill amount={Number(user?.fast_ticket || 0)} className="flex-1" />
+              <StampPill amount={Number(user?.stamp || 0)} className="flex-1" />
             </div>
 
             {/* Mobile Rank Badge */}

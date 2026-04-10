@@ -226,7 +226,8 @@ describe("useLineLogin", () => {
     );
     expect(mocks.updateTokenMock).toHaveBeenCalledWith("jwt-token-123");
     expect(mocks.locationMock.replace).toHaveBeenCalledWith("/");
-    expect(mocks.cookies.some((c: string) => c.startsWith("token=jwt-token-123"))).toBe(true);
+    expect(mocks.cookies.some((c: string) => c.startsWith("token=jwt-token-123"))).toBe(false);
+    expect(mocks.cookies.some((c: string) => c.startsWith("closePopupPolicy="))).toBe(true);
     expect(mocks.localStorageMock.removeItem).toHaveBeenCalledWith(LINE_LOGIN_PROCESSING_KEY);
   });
 

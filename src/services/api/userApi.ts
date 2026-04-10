@@ -440,6 +440,15 @@ export interface RankItem {
   max_rp: number | null;
   rank_img: string;
   is_current_rank: boolean;
+  rewards?: {
+    id?: number | string;
+    name?: string;
+    img?: string | null;
+    amount?: number | null;
+    description?: string | null;
+    type?: string | null;
+  }[];
+  reward_note?: string | null;
 }
 
 export interface AllRanksResponse {
@@ -463,6 +472,12 @@ export const fetchAllRanks = async (token?: string | null): Promise<RankItem[] |
     return ranks.map((rank) => ({
       ...rank,
       rank_img: normalizeRankImage(rank.rank_img),
+      rewards: Array.isArray(rank.rewards)
+        ? rank.rewards.map((reward) => ({
+            ...reward,
+            img: normalizeRankImage(reward?.img || null),
+          }))
+        : [],
     }));
   } catch {
     return null;

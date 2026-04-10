@@ -335,7 +335,7 @@ export default function ReviewModal({
           </span>
         </div>
 
-        <div className="mb-4 min-h-[100px] whitespace-pre-wrap rounded-xl border border-gray-100 bg-gray-50 p-4 text-base leading-relaxed text-gray-700">
+        <div className="comment-rich-content mb-4 min-h-[100px] whitespace-pre-wrap rounded-xl border border-gray-100 bg-gray-50 p-4 text-base leading-relaxed text-gray-700">
           <div
             className="prose prose-sm max-w-none text-gray-700"
             dangerouslySetInnerHTML={{ __html: safeReviewContentHtml }}

@@ -61,17 +61,10 @@ interface BookFormValues {
     
 }
 
-interface MyBookPermissionSuggestConfig {
-    content_type: 'novel' | 'novel_pack' | string;
-    fast_ticket?: number;
-    fast_coin?: number;
-}
-
 interface MyBookPermissionData {
     set_content_type: boolean;
     set_fast_ticket: boolean;
     set_fast_coin: boolean;
-    suggest_configs: MyBookPermissionSuggestConfig[];
 }
 
 const isGifArrayBuffer = (arrayBuffer: ArrayBuffer): boolean => {
@@ -132,27 +125,8 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
         set_content_type: false,
         set_fast_ticket: false,
         set_fast_coin: false,
-        suggest_configs: [],
     });
     const { settings: website, fetchSettings } = useWebsiteStore();
-
-    const applySuggestConfig = (contentType: string, permissionData?: MyBookPermissionData) => {
-        const source = permissionData || permissions;
-        const matched = source.suggest_configs?.find((item) => item.content_type === contentType);
-        if (!matched) return;
-
-        const nextValues: Record<string, any> = {};
-        if (source.set_fast_ticket && typeof matched.fast_ticket === 'number') {
-            nextValues.fast_ticket = matched.fast_ticket;
-        }
-        if (source.set_fast_coin && typeof matched.fast_coin === 'number') {
-            nextValues.fast_coin = matched.fast_coin;
-        }
-
-        if (Object.keys(nextValues).length > 0) {
-            formNewBook.setFieldsValue(nextValues);
-        }
-    };
 
     // --- Fetch Data (Logic ของ EditBook) ---
     useEffect(() => {
@@ -174,9 +148,6 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                     set_content_type: Boolean(permissionRes.data?.data?.set_content_type),
                     set_fast_ticket: Boolean(permissionRes.data?.data?.set_fast_ticket),
                     set_fast_coin: Boolean(permissionRes.data?.data?.set_fast_coin),
-                    suggest_configs: Array.isArray(permissionRes.data?.data?.suggest_configs)
-                        ? permissionRes.data.data.suggest_configs
-                        : [],
                 };
                 setPermissions(permissionData);
 
@@ -247,21 +218,10 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                         rate: bookData.rate,
                         end: bookData.end,
                         status: bookData.status,
-                        ...(permissionData.set_content_type ? { content_type: bookData.content_type || permissionData.suggest_configs?.[0]?.content_type || 'novel' } : {}),
+                        ...(permissionData.set_content_type ? { content_type: bookData.content_type || 'novel' } : {}),
                         ...(permissionData.set_fast_ticket ? { fast_ticket: bookData.fast_ticket } : {}),
                         ...(permissionData.set_fast_coin ? { fast_coin: bookData.fast_coin } : {}),
                     });
-
-                    if (
-                        permissionData.suggest_configs.length > 0 &&
-                        (bookData.fast_ticket === null || bookData.fast_ticket === undefined) &&
-                        (bookData.fast_coin === null || bookData.fast_coin === undefined)
-                    ) {
-                        const currentContentType = bookData.content_type || permissionData.suggest_configs?.[0]?.content_type;
-                        if (currentContentType) {
-                            applySuggestConfig(currentContentType, permissionData);
-                        }
-                    }
 
                     // Filter หมวดหมู่ตาม Type ของหนังสือที่ดึงมา
                     if (bookData.type === 'tran') {
@@ -767,7 +727,6 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                                                 <Form.Item name='content_type'>
                                                     <Select
                                                         placeholder="Select content type"
-                                                        onChange={(value: string) => applySuggestConfig(value)}
                                                     >
                                                         <Select.Option value='novel'>รายตอน</Select.Option>
                                                         <Select.Option value='novel_pack'>มัดแพ็ค</Select.Option>

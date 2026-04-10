@@ -269,7 +269,7 @@ export default function BookReviewsTab({ bookId, book }: BookReviewsTabProps) {
                   </div>
 
                   {/* Content */}
-                  <div className="text-sm text-gray-700 line-clamp-3 mb-3 break-words leading-relaxed [&_a]:pointer-events-none">
+                  <div className="comment-rich-content text-sm text-gray-700 line-clamp-3 mb-3 break-words leading-relaxed [&_a]:pointer-events-none">
                     {cleanContentHtml ? (
                       <span dangerouslySetInnerHTML={{ __html: cleanContentHtml }} />
                     ) : (

@@ -8,10 +8,15 @@ export type ReadingThemeFontOption = {
 
 const defaultFontFamilies: ReadingThemeFontOption[] = [
     { key: "sarabun", label: "Sarabun", family: "var(--font-sarabun), sans-serif" },
+    // Keep legacy and new keys together to avoid font key reset while episode data is reloading.
     { key: "thsarabun", label: "THSarabunNew", family: "THSarabunNew, sans-serif" },
+    { key: "thsarabunnew", label: "THSarabunNew", family: "THSarabunNew, sans-serif" },
     { key: "mali", label: "Mali", family: "var(--font-mali), cursive" },
     { key: "trirong", label: "Trirong", family: "var(--font-trirong), serif" },
     { key: "maitree", label: "Maitree", family: "var(--font-maitree), serif" },
+    { key: "garuda", label: "Garuda", family: "var(--font-sarabun), sans-serif" },
+    { key: "thaifont", label: "ThaiFont", family: "var(--font-sarabun), sans-serif" },
+    { key: "jsjindara", label: "JSJindara", family: "var(--font-sarabun), sans-serif" },
     { key: "taviraj", label: "Taviraj", family: "var(--font-taviraj), serif" },
     { key: "kodchasan", label: "Kodchasan", family: "var(--font-kodchasan), sans-serif" },
     { key: "chakrapetch", label: "ChakraPetch", family: "var(--font-chakra-petch), sans-serif" },
@@ -145,6 +150,8 @@ export function useReadingTheme(
          .reader-user-popover .reader-user-popover-toggle,
          .reader-user-popover .reader-user-popover-avatar-shell,
          .reader-user-popover .reader-user-popover-pill,
+         .reader-user-popover .reader-user-popover-pill.fast-ticket-pill,
+         .reader-user-popover .reader-user-popover-pill.stamp-pill,
          .reader-user-popover .reader-user-popover-rp-pill,
          .reader-user-popover .reader-user-popover-rank-image-shell {
             background: ${colors.bg} !important;
@@ -161,9 +168,19 @@ export function useReadingTheme(
          .reader-user-popover .reader-user-popover-rank span,
          .reader-user-popover .reader-user-popover-pill .amount-pill-text,
          .reader-user-popover .reader-user-popover-pill .freecoin-pill-text,
+         .reader-user-popover .reader-user-popover-pill .fast-ticket-pill-text,
+         .reader-user-popover .reader-user-popover-pill .stamp-pill-text,
          .reader-user-popover .reader-user-popover-rp-value,
          .reader-user-popover .reader-user-popover-rank-name {
             color: ${colors.text} !important;
+          }
+         .reader-user-popover .reader-user-popover-pill.fast-ticket-pill .fast-ticket-pill-add {
+            background-color: #7AC142 !important;
+            color: #ffffff !important;
+            border-color: transparent !important;
+         }
+         .reader-user-popover .reader-user-popover-pill.fast-ticket-pill .fast-ticket-pill-add:hover {
+            background-color: #68a635 !important;
          }
          .reader-user-popover .reader-user-popover-link:hover,
          .reader-user-popover .reader-user-popover-dots:hover {

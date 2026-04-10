@@ -25,6 +25,7 @@ export interface PopupItem {
   type_link: string;
   txt: string;
   ref_id?: number | string;
+  position?: "center" | "bottom_right" | string;
 }
 
 export interface GroupBookHomeItem {

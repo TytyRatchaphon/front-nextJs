@@ -42,7 +42,14 @@ Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock })
 
 // Mock window.location.reload
 Object.defineProperty(globalThis, 'window', {
-  value: { location: { reload: vi.fn() }, localStorage: localStorageMock },
+  value: {
+    location: {
+      reload: vi.fn(),
+      protocol: 'http:',
+      hostname: 'localhost',
+    },
+    localStorage: localStorageMock,
+  },
   writable: true,
 })
 
@@ -130,8 +137,14 @@ describe('authStore', () => {
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('authToken')
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('userData')
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('token')
-    expect(mockCookieRemove).toHaveBeenCalledWith('token')
-    expect(mockCookieRemove).toHaveBeenCalledWith('tk')
+    expect(mockCookieRemove).toHaveBeenCalledWith(
+      'token',
+      expect.objectContaining({ path: '/' }),
+    )
+    expect(mockCookieRemove).toHaveBeenCalledWith(
+      'tk',
+      expect.objectContaining({ path: '/' }),
+    )
   })
 
   // -------------------------------------------------------------------

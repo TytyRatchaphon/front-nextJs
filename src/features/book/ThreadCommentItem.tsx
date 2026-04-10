@@ -225,7 +225,7 @@ export default function ThreadCommentItem({
 
           {/* Comment Text */}
           <div 
-            className="text-sm text-gray-800 leading-relaxed break-words mb-3 [&>p]:mb-2 [&>p:last-child]:mb-0 [&_img]:max-w-full [&_img]:h-auto [&_img]:inline-block [&_img]:align-middle"
+            className="comment-rich-content text-sm text-gray-800 leading-relaxed break-words mb-3 [&>p]:mb-2 [&>p:last-child]:mb-0 [&_img]:max-w-full [&_img]:h-auto [&_img]:inline-block [&_img]:align-middle"
             dangerouslySetInnerHTML={{ __html: safeReviewComment }}
           />
 
@@ -392,7 +392,7 @@ function ReplyItem({ reply, api, currentUserId, onReload }: { reply: any, api: a
             </div>
         </div>
         <div 
-            className="text-xs sm:text-sm text-gray-700 leading-relaxed prose prose-sm max-w-none"
+            className="comment-rich-content text-xs sm:text-sm text-gray-700 leading-relaxed prose prose-sm max-w-none"
             dangerouslySetInnerHTML={{ __html: safeReplyComment }}
         />
     </div>

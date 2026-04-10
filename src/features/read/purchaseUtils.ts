@@ -1,5 +1,13 @@
+import { normalizeEpisodeEarlyAccess } from "@/utils/earlyAccessUtils";
+
 export type ReadPayMethod = 'coin' | 'freecoin';
 export type ReadFastPayMethod = 'coin' | 'fast_ticket';
+
+type EarlyAccessMethod = {
+  price?: number | null;
+  daily_increase?: number | null;
+  use?: boolean | null;
+};
 
 type PurchaseEpisode = {
   coin?: number | null;
@@ -19,8 +27,8 @@ type PurchaseEpisode = {
     end_date?: string | null;
   }> | null;
   early_access?: {
-    fast_ticket?: boolean | null;
-    fast_coin?: boolean | null;
+    fast_ticket?: boolean | EarlyAccessMethod | null;
+    fast_coin?: boolean | EarlyAccessMethod | null;
     isFast_buyable?: boolean | null;
     fastTicketPrice?: number | null;
     fastCoinPrice?: number | null;
@@ -101,19 +109,15 @@ export const getRegularEpisodePrices = (episode: PurchaseEpisode) => {
 
 export const getReadEpisodePurchaseState = (episode: PurchaseEpisode | null | undefined, bookUseFreecoin?: number | null) => {
   const ep = episode ?? {};
-  const early = ep.early_access || {};
-  const isEarlyAccess = Boolean(early?.fast_ticket || early?.fast_coin || ep?.isFastTicket);
-  const canFastTicket = Boolean(early?.fast_ticket ?? ep?.isFastTicket);
-  const canFastCoin = isEarlyAccess;
-  const isFastBuyable = isEarlyAccess && Boolean(early?.isFast_buyable ?? ep?.isFast_buyable);
+  const normalizedEarly = normalizeEpisodeEarlyAccess(ep as Record<string, unknown>);
+  const isEarlyAccess = normalizedEarly.isEarlyAccess;
+  const canFastTicket = normalizedEarly.fastTicket;
+  const canFastCoin = normalizedEarly.fastCoin;
+  const isFastBuyable = normalizedEarly.isBuyable;
   const isFastLocked = isEarlyAccess && !isFastBuyable;
-  const fastTicketPrice = Number.isFinite(Number(early?.fastTicketPrice)) && Number(early?.fastTicketPrice) > 0
-    ? Number(early.fastTicketPrice)
-    : 1;
+  const fastTicketPrice = normalizedEarly.fastTicketPrice;
   const { coinPrice, freecoinPrice, hasDiscount, discountEndDate, isDiscountFree } = getRegularEpisodePrices(ep);
-  const fastCoinPrice = Number.isFinite(Number(early?.fastCoinPrice)) && Number(early?.fastCoinPrice) >= 0
-    ? Number(early.fastCoinPrice)
-    : Number(coinPrice ?? 0);
+  const fastCoinPrice = normalizedEarly.fastCoinPrice;
   const canUseFreecoin = ep.use_freecoin !== undefined && ep.use_freecoin !== null
     ? Number(ep.use_freecoin) === 1
     : (bookUseFreecoin !== undefined && bookUseFreecoin !== null ? Number(bookUseFreecoin) === 1 : true);

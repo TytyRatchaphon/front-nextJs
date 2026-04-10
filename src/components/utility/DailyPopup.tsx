@@ -1,20 +1,31 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { Modal } from 'antd';
-import { CloseOutlined } from '@ant-design/icons';
-import { useUIStore } from '@/stores/uiStore';
-import Image from 'next/image';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Pagination, Autoplay } from 'swiper/modules';
-import { fetchHomeData, PopupItem } from '@/services/apiServices';
-import { useRouter } from 'next/navigation';
-import { navigateSafely } from '@/utils/navigationUtils';
+import React, { useEffect, useState } from "react";
+import { Modal } from "antd";
+import { CloseOutlined } from "@ant-design/icons";
+import { useUIStore } from "@/stores/uiStore";
+import Image from "next/image";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Pagination, Autoplay } from "swiper/modules";
+import { fetchHomeData, PopupItem } from "@/services/apiServices";
+import { useRouter } from "next/navigation";
+import { navigateSafely } from "@/utils/navigationUtils";
+import { useAuthStore } from "@/stores/authStore";
+import { parseJwtToken } from "@/utils/jwtParser";
+import Cookies from "js-cookie";
 
-import 'swiper/css';
-import 'swiper/css/pagination';
+import "swiper/css";
+import "swiper/css/pagination";
 
-// Helper: Check if dates are same day
+const STORAGE_KEY = "enjoybook_promo_popup_closed_date";
+
+interface PromoItem {
+  id: number;
+  imageUrl: string;
+  linkUrl: string;
+  position?: "center" | "bottom_right" | string;
+}
+
 const isSameDay = (timestamp1: number, timestamp2: number): boolean => {
   const date1 = new Date(timestamp1);
   const date2 = new Date(timestamp2);
@@ -24,39 +35,105 @@ const isSameDay = (timestamp1: number, timestamp2: number): boolean => {
     date1.getDate() === date2.getDate()
   );
 };
-const STORAGE_KEY = 'enjoybook_promo_popup_closed_date';
 
-interface PromoItem {
-  id: number;
-  imageUrl: string;
-  linkUrl: string;
-}
+const resolvePopupLink = (item: PopupItem): string => {
+  if (item.type_link === "novel") {
+    return item.ref_id ? `/book/${item.ref_id}` : `/book/${item.popup_id}`;
+  }
+
+  if (item.txt && (item.txt.startsWith("http") || item.txt.startsWith("/"))) {
+    return item.txt;
+  }
+
+  if (item.ref_id !== undefined && item.ref_id !== null) {
+    return String(item.ref_id);
+  }
+
+  return "#";
+};
 
 const DailyPromoPopup: React.FC = () => {
   const router = useRouter();
   const { isDailyPopupOpen, openDailyPopup, closeDailyPopup, setDailyPopupProcessComplete } = useUIStore();
-  const [promoItems, setPromoItems] = useState<PromoItem[]>([]);
+  const token = useAuthStore((state) => state.token);
+
+  const [centerPromoItems, setCenterPromoItems] = useState<PromoItem[]>([]);
+  const [floatingPromoItem, setFloatingPromoItem] = useState<PromoItem | null>(null);
+  const [isFloatingVisible, setIsFloatingVisible] = useState(false);
 
   const resolveInternalPath = (rawUrl: string): string | null => {
-    const raw = typeof rawUrl === 'string' ? rawUrl.trim() : '';
-    if (!raw || raw === '#') return null;
-    if (raw.startsWith('/')) return raw;
+    const raw = typeof rawUrl === "string" ? rawUrl.trim() : "";
+    if (!raw || raw === "#") return null;
 
-    if (raw.startsWith('http://') || raw.startsWith('https://')) {
+    // Absolute/protocol-relative URL: only keep internal when it's enjoybook domain.
+    if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("//")) {
       try {
-        const parsed = new URL(raw);
+        const parsed = new URL(
+          raw.startsWith("//") ? `${window.location.protocol}${raw}` : raw,
+          window.location.origin
+        );
+        const isCoinEnjoyDomain =
+          parsed.hostname === "coinenjoy.enjoybook.co" ||
+          parsed.hostname.endsWith(".coinenjoy.enjoybook.co");
+        if (isCoinEnjoyDomain) {
+          return null;
+        }
         const isEnjoybookDomain =
-          parsed.hostname === 'enjoybook.co' ||
-          parsed.hostname.endsWith('.enjoybook.co');
+          parsed.hostname === "enjoybook.co" ||
+          parsed.hostname.endsWith(".enjoybook.co");
         if (isEnjoybookDomain) {
           return `${parsed.pathname}${parsed.search}${parsed.hash}`;
         }
+        return null;
       } catch {
         return null;
       }
     }
 
-    return `/${raw.replace(/^\/+/, '')}`;
+    if (raw.startsWith("/")) return raw;
+
+    return `/${raw.replace(/^\/+/, "")}`;
+  };
+
+  const attachTokenToCoinEnjoyLink = (rawUrl: string): string => {
+    const raw = typeof rawUrl === "string" ? rawUrl.trim() : "";
+    if (!raw || raw === "#") return rawUrl;
+
+    const authToken = parseJwtToken(token) || parseJwtToken(Cookies.get("token"));
+    if (!authToken) return rawUrl;
+
+    if (!(raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("//"))) {
+      return rawUrl;
+    }
+
+    try {
+      const parsed = new URL(
+        raw.startsWith("//") ? `${window.location.protocol}${raw}` : raw,
+        window.location.origin
+      );
+      const isCoinEnjoyDomain =
+        parsed.hostname === "coinenjoy.enjoybook.co" ||
+        parsed.hostname.endsWith(".coinenjoy.enjoybook.co");
+
+      if (!isCoinEnjoyDomain) return rawUrl;
+
+      parsed.searchParams.set("tk", authToken);
+      return parsed.toString();
+    } catch {
+      return rawUrl;
+    }
+  };
+
+  const navigateByLink = (linkUrl: string) => {
+    const targetUrl = attachTokenToCoinEnjoyLink(linkUrl);
+    const internalPath = resolveInternalPath(targetUrl);
+    if (internalPath) {
+      router.push(internalPath);
+      return;
+    }
+    if (targetUrl && targetUrl !== "#") {
+      navigateSafely(targetUrl, { allowExternal: true });
+    }
   };
 
   useEffect(() => {
@@ -66,38 +143,40 @@ const DailyPromoPopup: React.FC = () => {
     const initPopup = async () => {
       try {
         const homeData = await fetchHomeData();
-        if (homeData?.data?.popup && homeData.data.popup.length > 0) {
-          const mappedItems = homeData.data.popup.map((item: PopupItem) => {
-            let link = '#';
-            if (item.type_link === 'novel') {
-              link = item.ref_id ? `/book/${item.ref_id}` : `/book/${item.popup_id}`;
-            } else if (item.txt && (item.txt.startsWith('http') || item.txt.startsWith('/'))) {
-              link = item.txt;
-            } else if (item.type_link === 'link') {
-              link = String(item.ref_id);
-            }
-            return {
-              id: item.popup_id,
-              imageUrl: item.img,
-              linkUrl: link
-            };
-          });
-          setPromoItems(mappedItems);
+        const popupList = homeData?.data?.popup ?? [];
 
-          const lastCloseDate = localStorage.getItem(STORAGE_KEY);
-          if (!lastCloseDate || !isSameDay(parseInt(lastCloseDate, 10), Date.now())) {
-            openDailyPopup();
-            // Don't set complete yet, waiting for user to close
-          } else {
-            // Suppressed by local storage
-            setDailyPopupProcessComplete(true);
-          }
-        } else {
-             // No popup data found
-             setDailyPopupProcessComplete(true);
+        if (popupList.length === 0) {
+          setDailyPopupProcessComplete(true);
+          return;
         }
+
+        const mappedItems: PromoItem[] = popupList.map((item) => ({
+          id: item.popup_id,
+          imageUrl: item.img,
+          linkUrl: resolvePopupLink(item),
+          position: item.position,
+        }));
+
+        const centerItems = mappedItems.filter((item) => item.position !== "bottom_right");
+        const bottomRightItem = mappedItems.find((item) => item.position === "bottom_right") ?? null;
+
+        setCenterPromoItems(centerItems);
+        setFloatingPromoItem(bottomRightItem);
+        setIsFloatingVisible(Boolean(bottomRightItem));
+
+        if (centerItems.length === 0) {
+          setDailyPopupProcessComplete(true);
+          return;
+        }
+
+        const lastCloseDate = localStorage.getItem(STORAGE_KEY);
+        if (!lastCloseDate || !isSameDay(Number.parseInt(lastCloseDate, 10), Date.now())) {
+          openDailyPopup();
+          return;
+        }
+
+        setDailyPopupProcessComplete(true);
       } catch {
-        // Error fetching
         setDailyPopupProcessComplete(true);
       }
     };
@@ -106,128 +185,150 @@ const DailyPromoPopup: React.FC = () => {
       void initPopup();
     };
 
-    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-      idleId = (window as Window & { requestIdleCallback: (callback: IdleRequestCallback) => number })
-        .requestIdleCallback(() => runInit());
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      idleId = (
+        window as Window & { requestIdleCallback: (callback: IdleRequestCallback) => number }
+      ).requestIdleCallback(() => runInit());
     } else {
       timeoutId = setTimeout(runInit, 1500);
     }
 
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
-      if (typeof window !== 'undefined' && idleId && 'cancelIdleCallback' in window) {
+      if (typeof window !== "undefined" && idleId && "cancelIdleCallback" in window) {
         (window as Window & { cancelIdleCallback: (handle: number) => void }).cancelIdleCallback(idleId);
       }
     };
   }, [openDailyPopup, setDailyPopupProcessComplete]);
 
-  const handleNormalClose = () => {
+  const handleCenterClose = () => {
     closeDailyPopup();
   };
 
-  const handleDisableToday = () => {
+  const handleCenterDisableToday = () => {
     localStorage.setItem(STORAGE_KEY, Date.now().toString());
     closeDailyPopup();
   };
 
-  const handlePromoClick = (linkUrl: string) => {
-    const internalPath = resolveInternalPath(linkUrl);
+  const handleCenterPromoClick = (linkUrl: string) => {
     closeDailyPopup();
-    if (internalPath) {
-      router.push(internalPath);
-      return;
-    }
-    if (linkUrl && linkUrl !== '#') {
-      navigateSafely(linkUrl, { allowExternal: true });
-    }
+    navigateByLink(linkUrl);
   };
 
-  if (promoItems.length === 0) return null;
+  const handleFloatingClose = () => {
+    setIsFloatingVisible(false);
+  };
+
+  const handleFloatingPromoClick = (linkUrl: string) => {
+    setIsFloatingVisible(false);
+    navigateByLink(linkUrl);
+  };
+
+  if (centerPromoItems.length === 0 && (!floatingPromoItem || !isFloatingVisible)) return null;
 
   return (
-    <Modal
-      open={isDailyPopupOpen}
-      onCancel={handleNormalClose}
-      centered
-      footer={null}
-      width={400}
-      zIndex={5000}
-      closeIcon={null}
-      styles={{
-        content: { padding: 0, borderRadius: '16px', overflow: 'hidden', background: 'transparent', boxShadow: 'none' },
-        mask: { backdropFilter: 'blur(4px)', backgroundColor: 'rgba(0,0,0,0.6)' }
-      }}
-      className="custom-daily-popup"
-    >
-      <div className="relative w-full max-w-[400px] flex flex-col items-center">
-
-        {/* Main Card Content */}
-        <div className="w-full bg-white rounded-2xl overflow-hidden shadow-2xl relative">
-
-          {/* Close Button - Floating top right */}
-          <button
-            onClick={handleNormalClose}
-            className="absolute top-3 right-3 z-30 w-8 h-8 rounded-full bg-black/20 hover:bg-black/40 backdrop-blur-sm text-white flex items-center justify-center transition-all duration-200"
-            aria-label="Close"
-          >
-            <CloseOutlined style={{ fontSize: '14px' }} />
-          </button>
-
-          <Swiper
-            modules={[Pagination, Autoplay]}
-            pagination={{
-              clickable: true,
-              dynamicBullets: true,
-            }}
-            loop={true}
-            autoplay={{
-              delay: 4000,
-              disableOnInteraction: false,
-            }}
-            className="w-full aspect-[3/4]"
-          >
-            {promoItems.map((item) => (
-              <SwiperSlide key={item.id} className="relative w-full h-full group">
-                <a
-                  href={item.linkUrl || '#'}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    handlePromoClick(item.linkUrl);
-                  }}
-                  className="block w-full h-full relative overflow-hidden"
-                >
-                  <Image
-                    src={item.imageUrl}
-                    alt={`Promotion`}
-                    fill
-                    className="object-cover transition-transform duration-700 group-hover:scale-105"
-                    sizes="(max-width: 400px) 100vw, 400px"
-                  />
-                  {/* Interactive Overlay */}
-                  <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
-                    <span className="text-white font-medium px-4 py-1.5 border border-white/50 rounded-full text-sm backdrop-blur-sm bg-white/10 hover:bg-white/20 transition-colors">
-                      ดูรายละเอียด
-                    </span>
-                  </div>
-                </a>
-              </SwiperSlide>
-            ))}
-          </Swiper>
-
-          {/* Footer Action */}
-          <div className="bg-white py-3 px-4 flex justify-between items-center border-t border-gray-100">
-            <span className="text-gray-500 text-sm font-primary">แนะนำวันนี้</span>
+    <>
+      <Modal
+        open={isDailyPopupOpen && centerPromoItems.length > 0}
+        onCancel={handleCenterClose}
+        centered
+        footer={null}
+        width={400}
+        zIndex={5000}
+        closeIcon={null}
+        styles={{
+          content: {
+            padding: 0,
+            borderRadius: "16px",
+            overflow: "hidden",
+            background: "transparent",
+            boxShadow: "none",
+          },
+          mask: { backdropFilter: "blur(4px)", backgroundColor: "rgba(0,0,0,0.6)" },
+        }}
+        className="custom-daily-popup"
+      >
+        <div className="relative w-full max-w-[400px]">
+          <div className="relative w-full overflow-hidden rounded-2xl bg-white shadow-2xl">
             <button
-              onClick={handleDisableToday}
-              className="text-xs text-gray-400 hover:!text-red-500 transition-colors flex items-center gap-1 font-primary underline decoration-dotted"
+              onClick={handleCenterClose}
+              className="absolute right-3 top-3 z-30 flex h-8 w-8 items-center justify-center rounded-full bg-black/20 text-white backdrop-blur-sm transition-all duration-200 hover:bg-black/40"
+              aria-label="Close"
             >
-              ไม่ต้องแสดงวันนี้
+              <CloseOutlined style={{ fontSize: "14px" }} />
+            </button>
+
+            <Swiper
+              modules={[Pagination, Autoplay]}
+              pagination={{ clickable: true, dynamicBullets: true }}
+              loop={centerPromoItems.length > 1}
+              autoplay={{ delay: 4000, disableOnInteraction: false }}
+              className="aspect-[3/4] w-full"
+            >
+              {centerPromoItems.map((item) => (
+                <SwiperSlide key={item.id} className="group relative h-full w-full">
+                  <a
+                    href={item.linkUrl || "#"}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      handleCenterPromoClick(item.linkUrl);
+                    }}
+                    className="relative block h-full w-full overflow-hidden"
+                  >
+                    <Image
+                      src={item.imageUrl}
+                      alt="Promotion"
+                      fill
+                      className="object-cover transition-transform duration-700 group-hover:scale-105"
+                      sizes="(max-width: 400px) 100vw, 400px"
+                    />
+                  </a>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+
+            <div className="flex items-center justify-between border-t border-gray-100 bg-white px-4 py-3">
+              <span className="font-primary text-sm text-gray-500">แนะนำวันนี้</span>
+              <button
+                onClick={handleCenterDisableToday}
+                className="font-primary text-xs text-gray-400 underline decoration-dotted transition-colors hover:!text-red-500"
+              >
+                ไม่ต้องแสดงวันนี้
+              </button>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {floatingPromoItem && isFloatingVisible ? (
+        <div className="fixed bottom-40 right-4 z-[910]">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={handleFloatingClose}
+              className="absolute -right-2 -top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white shadow-md transition-colors hover:bg-black/80"
+              aria-label="Close floating promotion"
+            >
+              <CloseOutlined style={{ fontSize: "12px" }} />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleFloatingPromoClick(floatingPromoItem.linkUrl)}
+              className="relative h-16 w-16 overflow-hidden rounded-full border border-white/80 bg-white shadow-xl transition-transform hover:scale-105 sm:h-20 sm:w-20"
+              aria-label="Open promotion"
+            >
+              <Image
+                src={floatingPromoItem.imageUrl}
+                alt="Floating promotion"
+                fill
+                className="object-cover"
+                sizes="80px"
+              />
             </button>
           </div>
         </div>
-
-      </div>
-    </Modal>
+      ) : null}
+    </>
   );
 };
 
