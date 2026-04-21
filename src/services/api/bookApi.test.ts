@@ -5,6 +5,7 @@ import {
   buyGroupPromotion,
   fetchBookDetail,
   fetchBookEpisodes,
+  fetchNewNovels,
   fetchBookPromotionOptions,
   fetchBookPromotions,
   fetchBookPurchaseDetails,
@@ -49,6 +50,92 @@ describe("bookApi", () => {
 
       mockedApiClient.get.mockRejectedValueOnce(new Error("book-trans-failed"));
       await expect(fetchBookTrans()).resolves.toEqual([]);
+    });
+  });
+
+  describe("fetchNewNovels", () => {
+    it("uses strict /books/new contract when available", async () => {
+      mockedApiClient.get.mockResolvedValueOnce({
+        data: {
+          code: 200,
+          data: {
+            books: [{ book_id: 11 }],
+            pagination: {
+              page: 1,
+              limit: 20,
+              total: 1,
+              totalPages: 1,
+              nextPage: null,
+              prevPage: null,
+            },
+          },
+        },
+      });
+
+      await expect(fetchNewNovels(1, 20, "all")).resolves.toEqual({
+        books: [{ book_id: 11 }],
+        pagination: {
+          page: 1,
+          limit: 20,
+          total: 1,
+          totalPages: 1,
+          nextPage: null,
+          prevPage: null,
+        },
+        degradedMode: false,
+        source: "books_new",
+      });
+      expect(mockedApiClient.get).toHaveBeenCalledWith("/books/new", {
+        params: { page: 1, limit: 20, content_type: "all" },
+      });
+    });
+
+    it("falls back only when /books/new is unavailable (404/405)", async () => {
+      mockedApiClient.get
+        .mockRejectedValueOnce({ response: { status: 404 } })
+        .mockResolvedValueOnce({
+          data: {
+            data: {
+              books: [
+                { book_id: 1, content_type: "novel" },
+                { book_id: 2, content_type: "novel_pack" },
+              ],
+              pagination: { page: 1, limit: 20, total: 2, totalPages: 1 },
+            },
+          },
+        });
+
+      await expect(fetchNewNovels(1, 20, "novel_pack")).resolves.toEqual({
+        books: [{ book_id: 2, content_type: "novel_pack" }],
+        pagination: {
+          page: 1,
+          limit: 20,
+          total: 1,
+          totalPages: 1,
+          nextPage: null,
+          prevPage: null,
+        },
+        degradedMode: true,
+        source: "book_search_fallback",
+      });
+      expect(mockedApiClient.get).toHaveBeenNthCalledWith(1, "/books/new", {
+        params: { page: 1, limit: 20, content_type: "novel_pack" },
+      });
+      expect(mockedApiClient.get).toHaveBeenNthCalledWith(2, "/book/search", {
+        params: {
+          page: 1,
+          limit: 20,
+          content_type: "novel_pack",
+          sortBy: "date_at",
+          order: "DESC",
+        },
+      });
+    });
+
+    it("does not fallback for non-404/405 errors", async () => {
+      mockedApiClient.get.mockRejectedValueOnce({ response: { status: 500 } });
+      await expect(fetchNewNovels(1, 20, "all")).resolves.toBeNull();
+      expect(mockedApiClient.get).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -205,6 +292,7 @@ describe("bookApi", () => {
       await expect(fetchNovelPackCheck(8)).resolves.toEqual({
         btn_novel: 10,
         btn_novel_pack: null,
+        btn_novel_pack_show_lead_label: false,
         content_type: "novel",
       });
       expect(mockedApiClient.get).toHaveBeenCalledWith("/check-novel-pack/8");
@@ -213,6 +301,7 @@ describe("bookApi", () => {
       await expect(fetchNovelPackCheck(8)).resolves.toEqual({
         btn_novel: null,
         btn_novel_pack: null,
+        btn_novel_pack_show_lead_label: false,
         content_type: "novel",
       });
 

@@ -41,7 +41,7 @@
         "socket.io-client": "^4.8.1",
         "swiper": "^12.0.2",
         "tailwind-scrollbar-hide": "^4.0.0",
-        "zustand": "^5.0.8",
+        "zustand": "^5.0.8"
       },
       "devDependencies": {
         "@eslint/eslintrc": "^3",
@@ -57,9 +57,9 @@
         "eslint-config-next": "16.1.0",
         "tailwindcss": "^4.1.14",
         "typescript": "^5",
-        "vitest": "^4.0.18",
-      },
-    },
+        "vitest": "^4.0.18"
+      }
+    }
   },
   "packages": {
     "@alloc/quick-lru": ["@alloc/quick-lru@5.2.0", "", {}, "sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw=="],
@@ -1610,6 +1610,6 @@
 
     "jsonp/debug/ms": ["ms@2.0.0", "", {}, "sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A=="],
 
-    "@typescript-eslint/typescript-estree/minimatch/brace-expansion/balanced-match": ["balanced-match@4.0.4", "", {}, "sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA=="],
+    "@typescript-eslint/typescript-estree/minimatch/brace-expansion/balanced-match": ["balanced-match@4.0.4", "", {}, "sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA=="]
   }
 }

@@ -7,6 +7,7 @@ import FlashSaleSVG from './FlashSaleSvg';
 import SaleGroupSVG from './SaleGroupSvg';
 import { UniversalBook } from '../../types/api';
 import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
+import { normalizeBookForCard } from '@/utils/normalizeBookForCard';
 
 
 
@@ -17,7 +18,9 @@ interface CardBookProps {
 
 
 
-function CardBook({ book }: CardBookProps) {
+function CardBook({ book: rawBook }: CardBookProps) {
+
+  const book = React.useMemo(() => normalizeBookForCard(rawBook), [rawBook]);
 
   const [imgError, setImgError] = React.useState(false);
 

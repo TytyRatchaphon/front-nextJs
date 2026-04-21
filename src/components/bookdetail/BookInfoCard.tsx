@@ -23,6 +23,7 @@ import type { DiscountReward, EpisodeGroup, BookEpisodesResponse } from '@/types
 import '@/types/errors';
 import { useLogger } from '@/hooks/useLogger';
 import { normalizeEpisodeEarlyAccess } from '@/utils/earlyAccessUtils';
+import { requestNavbarRankRefresh } from '@/utils/rankRefresh';
 
 
 type Book = {
@@ -171,6 +172,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   };
   const { log } = useLogger();
   const [buyLoading, setBuyLoading] = useState(false);
+  const refreshNavbarRank = () => {
+    void requestNavbarRankRefresh(queryClient);
+  };
   // Removed redundant local state for coins/flowers/hearts - using auth store directly
   // const [userCoinCount, setUserCoinCount] = useState<number | null>(null);
   // const [userFlowerCount, setUserFlowerCount] = useState<number | null>(null);
@@ -257,6 +261,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
             log('buy_promotion', 'book', String(bookId), { promotion_id: book.promotion?.id, price: book.promotion?.price, promotion_title: book.promotion?.title, book_title: book?.title });
 
             setShowSuccess(true);
+            refreshNavbarRank();
 
             if (res.data?.data?.token) {
               const newToken = res.data.data.token;
@@ -1307,9 +1312,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                                           </div>
                                         ) : (
                                           <div className="flex flex-col items-end">
-                                            <span className="text-sm font-semibold text-emerald-600">{'\u0e15\u0e2d\u0e19\u0e1f\u0e23\u0e35'}</span>
+                        <span className="text-sm font-semibold text-emerald-600">ตอนฟรี</span>
                                             {freeUntilLabel && (
-                                              <span className="text-[11px] text-emerald-700">{`\u0e2d\u0e48\u0e32\u0e19\u0e1f\u0e23\u0e35\u0e16\u0e36\u0e07 ${freeUntilLabel}`}</span>
+                          <span className="text-[11px] text-emerald-700">{`อ่านฟรีถึง ${freeUntilLabel}`}</span>
                                             )}
                                           </div>
                                         )}
@@ -1448,6 +1453,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
 
                           log('buy_episode', 'book', String(bookId), { episodes_count: selectedEpisodeIds.length, total: selectedSummary.total, method: payWith, book_title: book?.title });
                           setShowSuccess(true);
+                          refreshNavbarRank();
 
                           if (res.data?.data?.rp_earned && res.data.data.rp_earned > 0) {
                             notification.success({
@@ -1581,6 +1587,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                           log('buy_episode', 'book', String(bookId), { episodes_count: buyAllIds.length, total: buyAllTotal, method: payWith, buy_all: true, book_title: book?.title });
 
                           setShowSuccess(true);
+                          refreshNavbarRank();
 
                           if (res.data?.data?.rp_earned && res.data.data.rp_earned > 0) {
                             notification.success({
@@ -1667,6 +1674,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
         setShowSuccess(false);
         await queryClient.invalidateQueries({ queryKey: ["bookEpisodes", String(bookId ?? "")] });
         await queryClient.invalidateQueries({ queryKey: ["bookDetail", String(bookId ?? "")] });
+        refreshNavbarRank();
       }} />}
 
       <style>{`

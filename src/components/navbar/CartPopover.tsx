@@ -1,19 +1,28 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchCartItems, updateCartItem, removeCartItem } from '@/services/cartService';
-import { Button, Collapse, App } from 'antd';
-import { ShoppingCartOutlined, BookOutlined, DeleteOutlined, MinusOutlined, PlusOutlined, ShopOutlined } from '@ant-design/icons';
+import { Button, Collapse, App, Image as AntImage } from 'antd';
+import { ShoppingCartOutlined, DeleteOutlined, MinusOutlined, PlusOutlined, ShopOutlined } from '@ant-design/icons';
 import Image from 'next/image';
 import Link from 'next/link';
 import GifLoader from '@/components/utility/GifLoader';
 import { CartItem } from '@/interfaces/cart.interface';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { CheckCircleOutlined } from '@ant-design/icons';
+import { resolveStoreImageSrc } from '@/utils/imageUtils';
 
 
 interface CartPopoverProps {
     onClose?: () => void;
 }
+
+const DEFAULT_STORE_IMAGE = '/images/ejb.png';
+
+const isMissingImageSrc = (src: string | null | undefined) => {
+    if (typeof src !== 'string') return true;
+    const trimmed = src.trim();
+    return !trimmed || trimmed === 'null' || trimmed === 'undefined';
+};
 
 const CartPopover: React.FC<CartPopoverProps> = ({ onClose }) => {
     const { settings } = useWebsiteStore();
@@ -63,6 +72,11 @@ const CartPopover: React.FC<CartPopoverProps> = ({ onClose }) => {
         if (!cartStores) return 0;
         return cartStores.reduce((acc, store) => acc + (store.items?.length || 0), 0);
     }, [cartStores]);
+
+    const getCartItemCover = React.useCallback((item: CartItem) => {
+        const selectedOption = item.store_pack?.selectable_options?.find((option) => option.selected && option.item_img);
+        return selectedOption?.item_img || item.book_cover || item.store_pack?.img || null;
+    }, []);
     
     // Calculate totals by currency type
     const totals = React.useMemo(() => {
@@ -132,25 +146,27 @@ const CartPopover: React.FC<CartPopoverProps> = ({ onClose }) => {
                                         const type = item.store_pack?.type_use || 'coin';
                                         const price = item.store_pack?.price || item.price || 0;
                                         const itemTotal = Number(price) * item.quantity;
+                                        const coverSrc = getCartItemCover(item);
+                                        const isDefaultCover = isMissingImageSrc(coverSrc);
+                                        const displayCoverSrc = isDefaultCover
+                                            ? DEFAULT_STORE_IMAGE
+                                            : resolveStoreImageSrc(coverSrc, DEFAULT_STORE_IMAGE);
 
                                         return (
                                         <div key={item.cart_item_id} className="reader-cart-popover-item p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors flex gap-4 last:border-0 pl-6">
                                              {/* Cover Image */}
-                                             <div className="relative w-[60px] h-[90px] flex-shrink-0 rounded-md overflow-hidden shadow-sm border border-gray-200">
-                                                {item.book_cover ? (
-                                                    <Image
-                                                        src={(item.book_cover || '').startsWith('http') ? (item.book_cover || '') : `https://img.enjoybook.co/img/book/thumbnail/${item.book_cover}`}
-                                                        alt={item.book_name || 'Item'}
-                                                        fill
-                                                        className="object-cover"
-                                                        unoptimized
-                                                    />
-                                                ) : (
-                                                    <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-300">
-                                                        <BookOutlined />
-                                                    </div>
-                                                )}
-                                            </div>
+                                             <div className={`relative w-[60px] h-[90px] flex-shrink-0 rounded-md overflow-hidden shadow-sm border border-gray-200 ${isDefaultCover ? 'bg-white p-1.5' : 'bg-gray-50'}`}>
+                                                <AntImage
+                                                    src={displayCoverSrc}
+                                                    fallback={DEFAULT_STORE_IMAGE}
+                                                    alt={item.book_name || 'Item'}
+                                                    width="100%"
+                                                    height="100%"
+                                                    preview={false}
+                                                    className={`!h-full !w-full ${isDefaultCover ? 'object-contain' : 'object-cover'}`}
+                                                    style={{ width: '100%', height: '100%', objectFit: isDefaultCover ? 'contain' : 'cover' }}
+                                                />
+                                             </div>
 
                                             {/* Info */}
                                             <div className="flex-1 min-w-0 flex flex-col justify-between py-1">

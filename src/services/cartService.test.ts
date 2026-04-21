@@ -64,6 +64,32 @@ describe('cartService', () => {
     });
   });
 
+  it('passes selected_store_pack_list_ids when fetching cart items', async () => {
+    (apiClient.get as any).mockResolvedValueOnce({
+      data: { data: { stores: [] } },
+    });
+
+    await expect(fetchCartItems([230, 231])).resolves.toEqual([]);
+    expect(apiClient.get).toHaveBeenCalledWith('/user/store/cart', {
+      params: {
+        selected_store_pack_list_ids: [230, 231],
+      },
+    });
+  });
+
+  it('supports react-query query context input for selected_store_pack_list_ids', async () => {
+    (apiClient.get as any).mockResolvedValueOnce({
+      data: { data: { stores: [] } },
+    });
+
+    await expect(fetchCartItems({ queryKey: ['cartItems', [900, 901]] } as any)).resolves.toEqual([]);
+    expect(apiClient.get).toHaveBeenCalledWith('/user/store/cart', {
+      params: {
+        selected_store_pack_list_ids: [900, 901],
+      },
+    });
+  });
+
   it('returns empty array when stores payload is invalid', async () => {
     (apiClient.get as any).mockResolvedValueOnce({ data: { data: { stores: null } } });
     await expect(fetchCartItems()).resolves.toEqual([]);
@@ -97,7 +123,11 @@ describe('cartService', () => {
   });
 
   it('updateCartItem patches payload and returns response data', async () => {
-    const payload = { cart_item_id: 8, quantity: 3 } as any;
+    const payload = {
+      cart_item_id: 8,
+      quantity: 3,
+      selected_store_pack_list_ids: [230],
+    } as any;
     (apiClient.patch as any).mockResolvedValueOnce({ data: { ok: true } });
     await expect(updateCartItem(payload)).resolves.toEqual({ ok: true });
     expect(apiClient.patch).toHaveBeenCalledWith('/user/store/cart/item', payload);
@@ -150,4 +180,3 @@ describe('cartService', () => {
     expect(apiClient.post).toHaveBeenCalledWith('/user/store');
   });
 });
-

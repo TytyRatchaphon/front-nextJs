@@ -1,0 +1,4 @@
+interface:
+  display_name: "Architect Reviewer"
+  short_description: "Review architecture boundaries, coupling, contracts, and rollout risk."
+  default_prompt: "Review the architecture of the scoped feature or diff. Focus on coupling, system boundaries, API contracts, failure isolation, maintainability, rollout risk, and the smallest actionable mitigations."

@@ -39,6 +39,27 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
     return item ? item.quantity : 0;
   }, [cartStores, pack.store_pack_id]);
 
+  const getInitialSelectedStorePackListIds = React.useCallback((): Array<number | string> => {
+    if (!pack.is_selection || !Array.isArray(pack.selectable_options)) {
+      return [];
+    }
+
+    const limit = typeof pack.selection_limit === 'number' && pack.selection_limit > 0
+      ? pack.selection_limit
+      : 1;
+
+    const selectableOptions = pack.selectable_options.filter((option) => option.can_select !== false);
+    const preSelectedIds = selectableOptions
+      .filter((option) => option.selected)
+      .map((option) => option.store_pack_list_id);
+
+    if (preSelectedIds.length > 0) {
+      return preSelectedIds.slice(0, limit);
+    }
+
+    return selectableOptions.slice(0, limit).map((option) => option.store_pack_list_id);
+  }, [pack.is_selection, pack.selectable_options, pack.selection_limit]);
+
   React.useMemo(() => {
     // 1. Check Remaining Count (from BE) which handles day/month limits
     if (typeof pack.remaining_count === 'number') {
@@ -95,7 +116,23 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
       });
         return;
     }
-    addToCartMutation.mutate({ store_pack_id: pack.store_pack_id, quantity: 1 });
+
+    const selectedStorePackListIds = getInitialSelectedStorePackListIds();
+    if (pack.is_selection && selectedStorePackListIds.length === 0) {
+      notification.warning({
+        message: 'ไม่สามารถเพิ่มลงตะกร้าได้',
+        description: 'ไม่พบรายการที่สามารถเลือกได้สำหรับแพ็กนี้',
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        placement: 'topRight',
+      });
+      return;
+    }
+
+    addToCartMutation.mutate({
+      store_pack_id: pack.store_pack_id,
+      quantity: 1,
+      ...(pack.is_selection ? { selected_store_pack_list_ids: selectedStorePackListIds } : {}),
+    });
   };
 
   return (
