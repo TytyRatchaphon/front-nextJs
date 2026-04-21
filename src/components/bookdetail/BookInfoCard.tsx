@@ -22,7 +22,7 @@ import '@/utils/imageUtils';
 import type { DiscountReward, EpisodeGroup, BookEpisodesResponse } from '@/types/api';
 import '@/types/errors';
 import { useLogger } from '@/hooks/useLogger';
-import { normalizeEpisodeEarlyAccess } from '@/utils/earlyAccessUtils';
+import { isEpisodeOwnedOrFree, isEpisodeSequentiallyUnlockable, normalizeEpisodeEarlyAccess } from '@/utils/earlyAccessUtils';
 
 
 type Book = {
@@ -388,9 +388,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   const toggleGroupSelect = (group: any) => {
     // select all selectable episodes in group, or deselect if all already selected
     const selectionList = getEpisodesForSelectionMode(group);
-    const selectable = selectionList
-      .filter((ep: any, index: number) => isEpisodeSequentiallyUnlocked(ep, index, selectionList))
-      .map((ep: any) => Number(ep.ep_id));
+    const selectable = getProgressiveSelectableIds(selectionList, selectedEpisodeIds);
     const allSelected = selectable.every((id: number) => selectedEpisodeIds.includes(id));
     if (allSelected) {
       setSelectedEpisodeIds((prev) => prev.filter((id) => !selectable.includes(id)));
@@ -475,20 +473,32 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     return normalizeEpisodeEarlyAccess(episode);
   };
 
-  const isEpisodeFastTicket = (episode: any) => getEarlyAccess(episode).isEarlyAccess;
-  const isEpisodeFastLocked = (episode: any) => {
-    const early = getEarlyAccess(episode);
-    return early.isEarlyAccess && !early.isBuyable && !Boolean(episode?.isBuy);
+  const getEpisodeEarlyMethodConfig = (episode: any) => {
+    const rawEarly = episode?.early_access ?? {};
+    const hasTicketConfig =
+      typeof rawEarly?.fast_ticket === 'object'
+        ? rawEarly.fast_ticket !== null
+        : Boolean(rawEarly?.fast_ticket);
+    const hasCoinConfig =
+      typeof rawEarly?.fast_coin === 'object'
+        ? rawEarly.fast_coin !== null
+        : Boolean(rawEarly?.fast_coin);
+
+    return { hasTicketConfig, hasCoinConfig };
   };
+
   const canEpisodePayWithCoin = (_episode: any) => true;
   const canEpisodePayWithFastCoin = (episode: any) => {
     const early = getEarlyAccess(episode);
     if (!early.isEarlyAccess) return true;
-    return Boolean(early.fastCoin);
+    const { hasTicketConfig, hasCoinConfig } = getEpisodeEarlyMethodConfig(episode);
+    return Boolean(early.fastCoin || hasCoinConfig || (!hasTicketConfig && !hasCoinConfig));
   };
   const canEpisodePayWithFastTicket = (episode: any) => {
     const early = getEarlyAccess(episode);
-    return early.isEarlyAccess && Boolean(early.fastTicket);
+    if (!early.isEarlyAccess) return false;
+    const { hasTicketConfig } = getEpisodeEarlyMethodConfig(episode);
+    return Boolean(early.fastTicket || hasTicketConfig);
   };
   const canEpisodePayWithFreecoin = (episode: any) => {
     const epUseFreecoin = episode?.use_freecoin;
@@ -513,22 +523,70 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     const { finalPrice } = resolveEpisodePrice(episode);
     const hasNormalCoin = Number(finalPrice) > 0;
     const early = getEarlyAccess(episode);
-    const hasEarlyPayMethod = early.isEarlyAccess && early.isBuyable && (early.fastTicket || early.fastCoin);
+    const rawEarly = episode?.early_access ?? {};
+    const hasEarlyMethodConfig =
+      Boolean(rawEarly?.fast_ticket)
+      || Boolean(rawEarly?.fast_coin)
+      || Boolean(episode?.isFastTicket);
+    const hasEarlyPayMethod = early.isEarlyAccess && (early.fastTicket || early.fastCoin || hasEarlyMethodConfig);
     return hasNormalCoin || hasEarlyPayMethod;
   };
-  const isEpisodeSelectable = (episode: any) => isEpisodeBaseSelectable(episode) && !isEpisodeFastLocked(episode);
-  const isPrevEpisodeUnlocking = (prevEpisode: any) => {
-    if (!prevEpisode) return false;
-    const { finalPrice } = resolveEpisodePrice(prevEpisode);
-    return Boolean(prevEpisode?.isBuy)
-      || Number(finalPrice) <= 0
-      || selectedEpisodeIds.includes(Number(prevEpisode?.ep_id));
+  const hasEpisodeSelected = (
+    selectionContext: ReadonlySet<number> | readonly number[],
+    episodeId: number,
+  ) => {
+    if (selectionContext instanceof Set) return selectionContext.has(episodeId);
+    if (Array.isArray(selectionContext)) return selectionContext.includes(episodeId);
+    return false;
   };
-  const isEpisodeSequentiallyUnlocked = (episode: any, index: number, groupList: any[]) => {
+  const isEpisodeSequentiallyUnlocked = (
+    episode: any,
+    index: number,
+    groupList: any[],
+    selectionContext: ReadonlySet<number> | readonly number[] = selectedEpisodeIds,
+  ) => {
     if (!isEpisodeBaseSelectable(episode)) return false;
-    if (!isEpisodeFastLocked(episode)) return true;
-    const prevEpisode = groupList[index - 1];
-    return isPrevEpisodeUnlocking(prevEpisode);
+    const early = getEarlyAccess(episode);
+    if (!early.isEarlyAccess) return true;
+    if (isEpisodeSequentiallyUnlockable(episode, index, groupList)) return true;
+
+    let previousEarlyEpisode: any = null;
+    for (let i = index - 1; i >= 0; i -= 1) {
+      const candidate = groupList[i];
+      if (getEarlyAccess(candidate).isEarlyAccess) {
+        previousEarlyEpisode = candidate;
+        break;
+      }
+    }
+
+    if (!previousEarlyEpisode) return true;
+    if (isEpisodeOwnedOrFree(previousEarlyEpisode)) return true;
+
+    const previousEpisodeId = Number(previousEarlyEpisode?.ep_id);
+    return Number.isFinite(previousEpisodeId) && hasEpisodeSelected(selectionContext, previousEpisodeId);
+  };
+
+  const getProgressiveSelectableIds = (
+    episodes: any[],
+    seedSelection: readonly number[] = selectedEpisodeIds,
+  ) => {
+    const unlockContext = new Set(
+      seedSelection
+        .map((id) => Number(id))
+        .filter((id) => Number.isFinite(id)),
+    );
+    const selectableIds: number[] = [];
+
+    for (let index = 0; index < episodes.length; index += 1) {
+      const episode = episodes[index];
+      const episodeId = Number(episode?.ep_id);
+      if (!Number.isFinite(episodeId)) continue;
+      if (!isEpisodeSequentiallyUnlocked(episode, index, episodes, unlockContext)) continue;
+      selectableIds.push(episodeId);
+      unlockContext.add(episodeId);
+    }
+
+    return selectableIds;
   };
 
   const getEpisodesForSelectionMode = (group: any) => {
@@ -608,12 +666,9 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     const ids: number[] = [];
     for (const g of episodesData.groups) {
       const selectableList = getEpisodesForSelectionMode(g);
-      for (let index = 0; index < selectableList.length; index += 1) {
-        const ep = selectableList[index];
-        if (isEpisodeSequentiallyUnlocked(ep, index, selectableList)) ids.push(ep.ep_id);
-      }
+      ids.push(...getProgressiveSelectableIds(selectableList, selectedEpisodeIds));
     }
-    return ids;
+    return Array.from(new Set(ids.map((id) => Number(id)).filter((id) => Number.isFinite(id))));
   }, [episodesData, selectedEpisodeIds, selectionModalMode]);
 
   const allSelected = allSelectableIds.length > 0 && allSelectableIds.every((id) => selectedEpisodeIds.includes(id));
@@ -705,11 +760,12 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
 
     const validSelected = new Set<number>();
     for (const group of episodesData.groups) {
-      for (let index = 0; index < group.list.length; index += 1) {
-        const ep = group.list[index];
+      const visibleEpisodes = getEpisodesForSelectionMode(group);
+      for (let index = 0; index < visibleEpisodes.length; index += 1) {
+        const ep = visibleEpisodes[index];
         const epId = Number(ep?.ep_id);
         if (!selectedEpisodeIds.includes(epId)) continue;
-        if (isEpisodeSequentiallyUnlocked(ep, index, group.list)) {
+        if (isEpisodeSequentiallyUnlocked(ep, index, visibleEpisodes)) {
           validSelected.add(epId);
         }
       }
@@ -718,7 +774,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     if (validSelected.size !== selectedEpisodeIds.length) {
       setSelectedEpisodeIds((prev) => prev.filter((id) => validSelected.has(id)));
     }
-  }, [episodesData, selectedEpisodeIds]);
+  }, [episodesData, selectedEpisodeIds, selectionModalMode]);
 
   useEffect(() => {
     if (buyAllIds.length === 0) return;
@@ -1139,9 +1195,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                         if (visibleEpisodes.length === 0) return null;
                         const gid = String(group.group_id);
                         const isExpanded = expandedGroups[gid] ?? false;
-                        const selectableIds = visibleEpisodes
-                          .filter((ep: any, index: number) => isEpisodeSequentiallyUnlocked(ep, index, visibleEpisodes))
-                          .map((ep: any) => ep.ep_id);
+                        const selectableIds = getProgressiveSelectableIds(visibleEpisodes, selectedEpisodeIds);
                         const selectedCountInGroup = selectableIds.filter((id: number) => selectedEpisodeIds.includes(Number(id))).length;
                         const allSelectedInGroup = selectableIds.length > 0 && selectedCountInGroup === selectableIds.length;
 

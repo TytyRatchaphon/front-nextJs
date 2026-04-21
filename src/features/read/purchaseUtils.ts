@@ -107,13 +107,31 @@ export const getRegularEpisodePrices = (episode: PurchaseEpisode) => {
   };
 };
 
-export const getReadEpisodePurchaseState = (episode: PurchaseEpisode | null | undefined, bookUseFreecoin?: number | null) => {
+export const getReadEpisodePurchaseState = (
+  episode: PurchaseEpisode | null | undefined,
+  bookUseFreecoin?: number | null,
+  options?: { isSequentialUnlocked?: boolean },
+) => {
   const ep = episode ?? {};
+  const earlyAccess = ep.early_access ?? {};
+  const rawFastTicket = earlyAccess?.fast_ticket;
+  const rawFastCoin = earlyAccess?.fast_coin;
+  const hasFastTicketConfig =
+    typeof rawFastTicket === "object" ? rawFastTicket !== null : Boolean(rawFastTicket);
+  const hasFastCoinConfig =
+    typeof rawFastCoin === "object" ? rawFastCoin !== null : Boolean(rawFastCoin);
   const normalizedEarly = normalizeEpisodeEarlyAccess(ep as Record<string, unknown>);
   const isEarlyAccess = normalizedEarly.isEarlyAccess;
-  const canFastTicket = normalizedEarly.fastTicket;
-  const canFastCoin = normalizedEarly.fastCoin;
-  const isFastBuyable = normalizedEarly.isBuyable;
+  const canFastTicket = isEarlyAccess && (normalizedEarly.fastTicket || hasFastTicketConfig);
+  const canFastCoin =
+    isEarlyAccess
+    && (
+      normalizedEarly.fastCoin
+      || hasFastCoinConfig
+      || (!hasFastTicketConfig && !hasFastCoinConfig)
+    );
+  const isSequentialUnlocked = options?.isSequentialUnlocked ?? true;
+  const isFastBuyable = isEarlyAccess && isSequentialUnlocked && (canFastTicket || canFastCoin);
   const isFastLocked = isEarlyAccess && !isFastBuyable;
   const fastTicketPrice = normalizedEarly.fastTicketPrice;
   const { coinPrice, freecoinPrice, hasDiscount, discountEndDate, isDiscountFree } = getRegularEpisodePrices(ep);

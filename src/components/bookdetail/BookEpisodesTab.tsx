@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import GifLoader from "@/components/utility/GifLoader";
 import { CountdownTimer } from "@/components/common/CountdownTimer";
-import { normalizeEpisodeEarlyAccess } from "@/utils/earlyAccessUtils";
+import { isEpisodeSequentiallyUnlockable, normalizeEpisodeEarlyAccess } from "@/utils/earlyAccessUtils";
 
 type Props = {
   episodesData: any;
@@ -175,13 +175,13 @@ export const BookEpisodesTab = ({
 
               {isExpanded && (
                 <div className="divide-y divide-gray-50">
-                  {group.list.map((episode: any) => {
+                  {group.list.map((episode: any, index: number) => {
                     const regularPrice = Number(episode.coin ?? 0);
                     const early = normalizeEpisodeEarlyAccess(episode);
                     const hasEarlyAccess = early.isEarlyAccess;
                     const canPayByFastTicket = early.fastTicket;
                     const canPayByFastCoin = early.fastCoin;
-                    const isFastBuyable = early.isBuyable;
+                    const isFastBuyable = hasEarlyAccess && isEpisodeSequentiallyUnlockable(episode, index, group.list);
                     const isFastLocked = hasEarlyAccess && !isFastBuyable && !Boolean(episode?.isBuy);
                     const fastTicketPrice = early.fastTicketPrice;
                     const fastCoinPrice = early.fastCoinPrice;

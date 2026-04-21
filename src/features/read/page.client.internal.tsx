@@ -25,8 +25,9 @@ import { useReadingTheme, type ReadingThemeFontOption } from "@/hooks/reader/use
 import { useEpisodeNavigation } from "@/hooks/reader/useEpisodeNavigation";
 import { useReadFreeQuota } from "@/hooks/reader/useReadFreeQuota";
 import { useLogger } from "@/hooks/useLogger";
-import { CheckCircleOutlined } from "@ant-design/icons";
+import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import { buildReadBuyPayload, getReadConfirmButtonLabel, getReadEpisodePurchaseState, getRegularEpisodePrices, type ReadFastPayMethod, type ReadPayMethod } from "./purchaseUtils";
+import { isEpisodeSequentiallyUnlockable } from "@/utils/earlyAccessUtils";
 import AES from "crypto-js/aes";
 import encUtf8 from "crypto-js/enc-utf8";
 
@@ -695,11 +696,6 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     [bookmarks]
   );
 
-  const purchaseState = useMemo(
-    () => getReadEpisodePurchaseState(episode as any, (bookDetail as any)?.use_freecoin),
-    [episode, bookDetail]
-  );
-
   const formatFreeUntil = (endDate?: string | null) => {
     if (!endDate) return null;
     const parsed = new Date(endDate);
@@ -999,6 +995,29 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     }
     return null;
   }, [episodesData, episodeId]);
+
+  const isCurrentEpisodeSequentiallyUnlocked = useMemo(() => {
+    const groups = episodesData?.groups;
+    if (!Array.isArray(groups)) return true;
+
+    for (const group of groups) {
+      const list = Array.isArray(group?.list) ? group.list : [];
+      const currentIndex = list.findIndex((ep: any) => String(ep?.ep_id ?? ep?.epID) === String(episodeId));
+      if (currentIndex === -1) continue;
+      return isEpisodeSequentiallyUnlockable(list[currentIndex], currentIndex, list);
+    }
+
+    return true;
+  }, [episodesData, episodeId]);
+
+  const purchaseState = useMemo(
+    () => getReadEpisodePurchaseState(
+      episode as any,
+      (bookDetail as any)?.use_freecoin,
+      { isSequentialUnlocked: isCurrentEpisodeSequentiallyUnlocked },
+    ),
+    [episode, bookDetail, isCurrentEpisodeSequentiallyUnlocked]
+  );
 
   const [scheduleNowMs, setScheduleNowMs] = useState(() => Date.now());
   const scheduledPublishAt = useMemo(() => {
@@ -1360,7 +1379,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
         notification.error({
                 message: 'ซื้อไม่สำเร็จ',
                 description: res?.data?.message || "ซื้อไม่สำเร็จ",
-                icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
                 placement: 'topRight',
             });
       }
@@ -1368,7 +1387,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
       notification.error({
                 message: 'ซื้อไม่สำเร็จ',
                 description: "ยอดเหรียญไม่เพียงพอ",
-                icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
                 placement: 'topRight',
             });
     } finally {

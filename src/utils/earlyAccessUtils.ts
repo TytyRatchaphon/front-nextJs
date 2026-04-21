@@ -40,7 +40,8 @@ export const getEarlyAccessDayMultiplier = (publishDatetime: unknown, nowMs = Da
   if (publishTs === null || publishTs <= nowMs) return 0;
 
   const diff = publishTs - nowMs;
-  return Math.max(1, Math.ceil(diff / ONE_DAY_MS));
+  // Increase only after each full 24-hour block remaining.
+  return Math.floor(diff / ONE_DAY_MS);
 };
 
 export type NormalizedEpisodeEarlyAccess = {
@@ -112,4 +113,56 @@ export const normalizeEpisodeEarlyAccess = (
     fastCoinPrice: baseFastCoinPrice + coinDailyIncrease * dayMultiplier,
     dayMultiplier,
   };
+};
+
+const resolveEpisodeUnlockPrice = (episode: AnyRecord): number => {
+  const regularPrice = toNonNegativeNumber(episode?.coin, 0);
+  let promoPrice: number | null = null;
+
+  const discountObjectPrice = toNumber(episode?.Discount?.discount_price);
+  if (discountObjectPrice !== null) {
+    promoPrice = discountObjectPrice;
+  } else if (Array.isArray(episode?.promotions) && episode.promotions.length > 0) {
+    promoPrice = toNumber(episode.promotions[0]?.discount_price);
+  } else {
+    promoPrice = toNumber(episode?.discount_price);
+  }
+
+  if (promoPrice !== null && promoPrice >= 0 && promoPrice < regularPrice) {
+    return promoPrice;
+  }
+
+  const coinDiscount = toNumber(episode?.coin_discount);
+  if (coinDiscount !== null && coinDiscount >= 0 && coinDiscount < regularPrice) {
+    return coinDiscount;
+  }
+
+  return regularPrice;
+};
+
+export const isEpisodeOwnedOrFree = (episode: AnyRecord): boolean => {
+  if (Boolean(episode?.isBuy)) return true;
+  return resolveEpisodeUnlockPrice(episode) <= 0;
+};
+
+export const isEpisodeSequentiallyUnlockable = (
+  episode: AnyRecord,
+  index: number,
+  groupList: AnyRecord[],
+  nowMs = Date.now(),
+): boolean => {
+  const early = normalizeEpisodeEarlyAccess(episode, nowMs);
+  if (!early.isEarlyAccess) return true;
+
+  let previousEarlyEpisode: AnyRecord | null = null;
+  for (let i = index - 1; i >= 0; i -= 1) {
+    const candidate = groupList[i];
+    if (normalizeEpisodeEarlyAccess(candidate, nowMs).isEarlyAccess) {
+      previousEarlyEpisode = candidate;
+      break;
+    }
+  }
+
+  if (!previousEarlyEpisode) return true;
+  return isEpisodeOwnedOrFree(previousEarlyEpisode);
 };

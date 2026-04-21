@@ -87,7 +87,7 @@ describe('getReadEpisodePurchaseState', () => {
       );
 
       expect(state.isEarlyAccess).toBe(true);
-      expect(state.canFastTicket).toBe(false);
+      expect(state.canFastTicket).toBe(true);
       expect(state.canFastCoin).toBe(true);
       expect(state.isFastBuyable).toBe(true);
       expect(state.fastTicketPrice).toBe(3);
@@ -98,33 +98,38 @@ describe('getReadEpisodePurchaseState', () => {
     }
   });
 
-  it('keeps structured episodes locked when both method use flags are false', () => {
-    const state = getReadEpisodePurchaseState(
-      {
-        coin: 30,
-        publish_datetime: '2026-04-11T00:00:00.000Z',
-        early_access: {
-          fast_ticket: {
-            price: 1,
-            daily_increase: 1,
-            use: false,
+  it('still allows early-access methods when configured as objects even if use=false', () => {
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(new Date('2026-04-09T00:00:00.000Z').getTime());
+    try {
+      const state = getReadEpisodePurchaseState(
+        {
+          coin: 30,
+          publish_datetime: '2026-04-11T00:00:00.000Z',
+          early_access: {
+            fast_ticket: {
+              price: 1,
+              daily_increase: 1,
+              use: false,
+            },
+            fast_coin: {
+              price: 3,
+              daily_increase: 1,
+              use: false,
+            },
+            isFast_buyable: true,
           },
-          fast_coin: {
-            price: 3,
-            daily_increase: 1,
-            use: false,
-          },
-          isFast_buyable: true,
         },
-      },
-      1,
-    );
+        1,
+      );
 
-    expect(state.isEarlyAccess).toBe(true);
-    expect(state.canFastTicket).toBe(false);
-    expect(state.canFastCoin).toBe(false);
-    expect(state.isFastBuyable).toBe(false);
-    expect(state.isFastLocked).toBe(true);
+      expect(state.isEarlyAccess).toBe(true);
+      expect(state.canFastTicket).toBe(true);
+      expect(state.canFastCoin).toBe(true);
+      expect(state.isFastBuyable).toBe(true);
+      expect(state.isFastLocked).toBe(false);
+    } finally {
+      nowSpy.mockRestore();
+    }
   });
 
   it('treats structured early_access as normal episode after publish_datetime has passed', () => {
@@ -155,5 +160,31 @@ describe('getReadEpisodePurchaseState', () => {
     expect(state.isFastBuyable).toBe(false);
     expect(state.isFastLocked).toBe(false);
     expect(state.fastCoinPrice).toBe(3);
+  });
+
+  it('locks early-access purchase when sequential unlock flag is false', () => {
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(new Date('2026-04-09T00:00:00.000Z').getTime());
+    try {
+      const state = getReadEpisodePurchaseState(
+        {
+          coin: 30,
+          publish_datetime: '2026-04-11T00:00:00.000Z',
+          early_access: {
+            fast_ticket: { price: 1, use: true },
+            fast_coin: { price: 3, use: true },
+          },
+        },
+        1,
+        { isSequentialUnlocked: false },
+      );
+
+      expect(state.isEarlyAccess).toBe(true);
+      expect(state.canFastTicket).toBe(true);
+      expect(state.canFastCoin).toBe(true);
+      expect(state.isFastBuyable).toBe(false);
+      expect(state.isFastLocked).toBe(true);
+    } finally {
+      nowSpy.mockRestore();
+    }
   });
 });
