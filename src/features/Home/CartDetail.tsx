@@ -3,7 +3,7 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchCartItems, updateCartItem, removeCartItem, clearCart } from '@/services/cartService';
-import { CartItem } from '@/interfaces/cart.interface';
+import { CartItem, SelectableOption } from '@/interfaces/cart.interface';
 import { Table, Checkbox, Button, InputNumber, Image as AntImage, Typography, Popconfirm, App, Empty, Collapse } from 'antd';
 import { DeleteOutlined, ShopOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import Link from 'next/link';
@@ -14,17 +14,23 @@ import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill';
 import StampPill from '@/components/utility/StampPill';
 import RPPill from '@/components/utility/RPPill';
+import { resolveStoreImageSrc } from '@/utils/imageUtils';
 
 
 const { Title, Text } = Typography;
+const DEFAULT_STORE_IMAGE = '/images/ejb.png';
+
+const isMissingImageSrc = (src: string | null | undefined) => {
+    if (typeof src !== 'string') return true;
+    const trimmed = src.trim();
+    return !trimmed || trimmed === 'null' || trimmed === 'undefined';
+};
 
 export default function CartDetail() {
     const queryClient = useQueryClient();
     const { user } = useAuthStore() as any;
     const { settings } = useWebsiteStore();
     const { notification } = App.useApp();
-
-
     const { data: cartStores, isLoading } = useQuery({
         queryKey: ['cartItems'],
         queryFn: fetchCartItems,
@@ -132,6 +138,33 @@ export default function CartDetail() {
         return cartStores.flatMap(store => store.items || []);
     }, [cartStores]);
 
+    const getSelectedStorePackListIds = React.useCallback((item: CartItem): Array<number | string> => {
+        const options = item.store_pack?.selectable_options;
+        if (!Array.isArray(options)) return [];
+
+        return options
+            .filter((option) => option.selected)
+            .map((option) => option.store_pack_list_id);
+    }, []);
+
+    const getSelectionLimit = React.useCallback((item: CartItem): number => {
+        const rawLimit = item.store_pack?.selection_limit;
+        return typeof rawLimit === 'number' && rawLimit > 0 ? rawLimit : 1;
+    }, []);
+
+    const buildSelectionPayload = React.useCallback((item: CartItem, selected: boolean) => {
+        const selectedStorePackListIds = getSelectedStorePackListIds(item);
+        if (selectedStorePackListIds.length === 0) {
+            return { cart_item_id: item.cart_item_id, selected };
+        }
+
+        return {
+            cart_item_id: item.cart_item_id,
+            selected,
+            selected_store_pack_list_ids: selectedStorePackListIds,
+        };
+    }, [getSelectedStorePackListIds]);
+
     // Handle Quantity Change
     const handleQuantityChange = (id: number, quantity: number) => {
         if (quantity < 1) return;
@@ -139,8 +172,41 @@ export default function CartDetail() {
     };
 
     // Handle Item Selection
-    const handleSelectionChange = (id: number, checked: boolean) => {
-        updateMutation.mutate({ cart_item_id: id, selected: checked });
+    const handleSelectionChange = (item: CartItem, checked: boolean) => {
+        updateMutation.mutate(buildSelectionPayload(item, checked));
+    };
+
+    const handleSelectableOptionChange = (item: CartItem, option: SelectableOption, checked: boolean) => {
+        if (option.can_select === false) return;
+
+        const currentSelectedIds = getSelectedStorePackListIds(item);
+        const selectionLimit = getSelectionLimit(item);
+        const optionId = option.store_pack_list_id;
+        let nextSelectedIds: Array<number | string> = currentSelectedIds;
+
+        if (selectionLimit <= 1) {
+            nextSelectedIds = checked ? [optionId] : [];
+        } else if (checked) {
+            if (!currentSelectedIds.includes(optionId) && currentSelectedIds.length >= selectionLimit) {
+                notification.warning({
+                    message: 'เลือกเกินจำนวนที่กำหนด',
+                    description: `แพ็กนี้เลือกได้สูงสุด ${selectionLimit} รายการ`,
+                    placement: 'topRight',
+                });
+                return;
+            }
+
+            nextSelectedIds = currentSelectedIds.includes(optionId)
+                ? currentSelectedIds
+                : [...currentSelectedIds, optionId];
+        } else {
+            nextSelectedIds = currentSelectedIds.filter((id) => id !== optionId);
+        }
+
+        updateMutation.mutate({
+            cart_item_id: item.cart_item_id,
+            selected_store_pack_list_ids: nextSelectedIds,
+        });
     };
 
     // Handle Store Selection
@@ -149,7 +215,7 @@ export default function CartDetail() {
         if (!store || !store.items) return;
 
         const promises = store.items.map(item => 
-            updateCartItem({ cart_item_id: item.cart_item_id, selected: checked })
+            updateCartItem(buildSelectionPayload(item, checked))
         );
 
         Promise.all(promises).then(() => {
@@ -164,7 +230,7 @@ export default function CartDetail() {
     const handleSelectAll = (checked: boolean) => {
         if (!allItems.length) return;
         const promises = allItems.map(item => 
-            updateCartItem({ cart_item_id: item.cart_item_id, selected: checked })
+            updateCartItem(buildSelectionPayload(item, checked))
         );
         
         Promise.all(promises).then(() => {
@@ -175,6 +241,83 @@ export default function CartDetail() {
         });
     };
 
+    const getSelectedOptionCover = React.useCallback((item: CartItem) => {
+        const selectedOption = item.store_pack?.selectable_options?.find((option) => option.selected && option.item_img);
+        return selectedOption?.item_img || item.book_cover || item.store_pack?.img || null;
+    }, []);
+
+    const renderCoverImage = React.useCallback((
+        src: string | null | undefined,
+        alt: string | undefined,
+        className: string,
+        badge?: string,
+    ) => {
+        const isDefaultCover = isMissingImageSrc(src);
+        const displayCoverSrc = isDefaultCover
+            ? DEFAULT_STORE_IMAGE
+            : resolveStoreImageSrc(src, DEFAULT_STORE_IMAGE);
+
+        return (
+            <div className={`${className} relative flex-shrink-0 overflow-hidden rounded-xl border border-gray-200 shadow-sm ${isDefaultCover ? 'bg-white p-2' : 'bg-gray-50'}`}>
+                <AntImage
+                    src={displayCoverSrc}
+                    fallback={DEFAULT_STORE_IMAGE}
+                    alt={alt || 'สินค้า'}
+                    width="100%"
+                    height="100%"
+                    className={`!h-full !w-full ${isDefaultCover ? 'object-contain' : 'object-cover'}`}
+                    style={{ width: '100%', height: '100%', objectFit: isDefaultCover ? 'contain' : 'cover' }}
+                    preview={false}
+                />
+                {badge && !isDefaultCover && (
+                    <div className="absolute inset-x-1 bottom-1 rounded-md bg-black/55 px-1.5 py-0.5 text-center text-[10px] font-semibold text-white backdrop-blur-sm">
+                        {badge}
+                    </div>
+                )}
+            </div>
+        );
+    }, []);
+
+    const renderSelectableOptions = (record: CartItem) => {
+        const options = record.store_pack?.selectable_options;
+        if (!record.store_pack?.is_selection || !Array.isArray(options) || options.length === 0) {
+            return null;
+        }
+
+        const selectionLimit = getSelectionLimit(record);
+
+        return (
+            <div className="mt-3 rounded-xl border border-gray-200 bg-gray-50 p-2.5">
+                <div className="flex items-center justify-between gap-2 text-[11px] text-gray-500">
+                    <Text type="secondary" className="text-[11px]">
+                        เลือกได้สูงสุด {selectionLimit} รายการ
+                    </Text>
+                    <span>เลือกแล้ว {options.filter((option) => option.selected).length}</span>
+                </div>
+                <div className="mt-2 flex flex-col gap-2">
+                    {options.map((option) => {
+                        const disabled = option.can_select === false || updateMutation.isPending;
+                        return (
+                            <label
+                                key={option.store_pack_list_id}
+                                className={`flex items-start gap-3 rounded-lg border px-2.5 py-2 text-xs transition ${option.selected ? 'border-red-200 bg-red-50/80 shadow-sm' : 'border-gray-200 bg-white hover:border-red-100'} ${disabled ? 'opacity-50' : 'cursor-pointer'}`}
+                            >
+                                <Checkbox
+                                    checked={option.selected}
+                                    disabled={disabled}
+                                    onChange={(event) => handleSelectableOptionChange(record, option, event.target.checked)}
+                                    className="[&_.ant-checkbox-checked_.ant-checkbox-inner]:!bg-red-500 [&_.ant-checkbox-checked_.ant-checkbox-inner]:!border-red-500 hover:[&_.ant-checkbox-inner]:!border-red-500"
+                                />
+                                {renderCoverImage(option.item_img, option.item_name, 'h-14 w-11 sm:h-16 sm:w-12')}
+                                <span className="min-w-0 line-clamp-3 pt-1 text-gray-800">{option.item_name}</span>
+                            </label>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    };
+
     const columns = [
         {
             dataIndex: 'is_selected',
@@ -183,7 +326,7 @@ export default function CartDetail() {
             render: (checked: boolean, record: CartItem) => (
                 <Checkbox 
                     checked={checked} 
-                    onChange={(e) => handleSelectionChange(record.cart_item_id, e.target.checked)}
+                    onChange={(e) => handleSelectionChange(record, e.target.checked)}
                     className="[&_.ant-checkbox-checked_.ant-checkbox-inner]:!bg-red-500 [&_.ant-checkbox-checked_.ant-checkbox-inner]:!border-red-500 hover:[&_.ant-checkbox-inner]:!border-red-500"
                 />
             ),
@@ -194,21 +337,16 @@ export default function CartDetail() {
             key: 'book_name',
             width: '45%',
             render: (text: string, record: CartItem) => (
-                <div className="flex gap-4 items-center">
-                    <div className="w-[60px] h-[90px] relative flex-shrink-0 bg-gray-100 rounded overflow-hidden border border-gray-200">
-                         {record.book_cover ? (
-                             <AntImage
-                                src={record.book_cover.startsWith('http') ? record.book_cover : `https://img.enjoybook.co/img/book/thumbnail/${record.book_cover}`}
-                                alt={text}
-                                width="100%"
-                                height="100%"
-                                className="object-cover"
-                                preview={false}
-                             />
-                         ) : <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">No Image</div>}
-                    </div>
-                    <div className="flex flex-col">
+                <div className="flex gap-4 items-start">
+                    {renderCoverImage(
+                        getSelectedOptionCover(record),
+                        text,
+                        'w-[86px] h-[116px]',
+                        record.store_pack?.is_selection ? 'เลือกแล้ว' : undefined,
+                    )}
+                    <div className="flex min-w-0 flex-col">
                         <Text strong className="line-clamp-2">{text}</Text>
+                        {renderSelectableOptions(record)}
                         <Text type="secondary" className="text-xs">รหัสสินค้า: {record.book_id}</Text>
                     </div>
                 </div>
@@ -392,27 +530,21 @@ export default function CartDetail() {
                                                                 <div className="pt-1">
                                                                     <Checkbox 
                                                                         checked={item.is_selected} 
-                                                                        onChange={(e) => handleSelectionChange(item.cart_item_id, e.target.checked)}
+                                                                        onChange={(e) => handleSelectionChange(item, e.target.checked)}
                                                                         className="[&_.ant-checkbox-checked_.ant-checkbox-inner]:!bg-red-500 [&_.ant-checkbox-checked_.ant-checkbox-inner]:!border-red-500 hover:[&_.ant-checkbox-inner]:!border-red-500"
                                                                     />
                                                                 </div>
                                                                 
                                                                 {/* Image */}
-                                                                <div className="w-[70px] h-[105px] relative flex-shrink-0 bg-gray-100 rounded overflow-hidden border border-gray-200">
-                                                                    {item.book_cover ? (
-                                                                        <AntImage
-                                                                            src={item.book_cover.startsWith('http') ? item.book_cover : `https://img.enjoybook.co/img/book/thumbnail/${item.book_cover}`}
-                                                                            alt={item.book_name}
-                                                                            width="100%"
-                                                                            height="100%"
-                                                                            className="object-cover"
-                                                                            preview={false}
-                                                                        />
-                                                                    ) : <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">No Image</div>}
-                                                                </div>
+                                                                {renderCoverImage(
+                                                                    getSelectedOptionCover(item),
+                                                                    item.book_name,
+                                                                    'w-[74px] h-[104px] min-[380px]:w-[82px] min-[380px]:h-[116px]',
+                                                                    item.store_pack?.is_selection ? 'เลือกแล้ว' : undefined,
+                                                                )}
 
                                                                 {/* Info */}
-                                                                <div className="flex-1 flex flex-col justify-between">
+                                                                <div className="min-w-0 flex-1 flex flex-col justify-between">
                                                                     <div>
                                                                         <div className="flex justify-between items-start gap-2">
                                                                             <Text strong className="line-clamp-2 text-sm leading-tight mb-1">{item.book_name}</Text>
@@ -474,6 +606,7 @@ export default function CartDetail() {
                                                                     </div>
                                                                 </div>
                                                             </div>
+                                                            {renderSelectableOptions(item)}
                                                         </div>
                                                     );
                                                 })}

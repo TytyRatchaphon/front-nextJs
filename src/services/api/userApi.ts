@@ -379,6 +379,7 @@ export interface RankProfileResponse {
   data: {
     total_rp: number;
     rp_needed: number;
+    noti_rewards: boolean;
     current_rank: {
       rank_id: number;
       name: string;
@@ -396,16 +397,37 @@ export interface RankProfileResponse {
 const DEFAULT_RANK_IMAGE = "/images/user.png";
 
 const normalizeRankImage = (value: string | null | undefined): string => {
-  const src = typeof value === "string" ? value.trim() : "";
-  if (!src) return DEFAULT_RANK_IMAGE;
-  if (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("data:") || src.startsWith("/")) {
-    return src;
+  const raw = typeof value === "string" ? value.trim().replace(/^['"]+|['"]+$/g, "") : "";
+  if (!raw || raw === "null" || raw === "undefined") return DEFAULT_RANK_IMAGE;
+
+  if (raw.startsWith("data:")) return raw;
+  if (raw.startsWith("//")) return `https:${raw}`;
+
+  if (raw.startsWith("http://")) {
+    // Prevent mixed-content blocking when frontend runs on HTTPS.
+    return raw.replace(/^http:\/\//i, "https://");
   }
-  if (src.startsWith("//")) {
-    return `https:${src}`;
+
+  if (raw.startsWith("https://")) return raw;
+  if (raw.startsWith("/")) return raw;
+
+  // Backend may return host/path without protocol.
+  if (/^[a-z0-9.-]+\.[a-z]{2,}(\/|$)/i.test(raw)) {
+    return `https://${raw}`;
   }
+
   // Backend may return path-only rank image (no protocol/host).
-  return `https://image.enjoybook.co/${src.replace(/^\/+/, "")}`;
+  return `https://image.enjoybook.co/${raw.replace(/^\/+/, "")}`;
+};
+
+const normalizeBooleanFlag = (value: unknown): boolean => {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value === 1;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "1" || normalized === "true" || normalized === "y" || normalized === "yes";
+  }
+  return false;
 };
 
 export const fetchRankProfile = async (token?: string | null): Promise<RankProfileResponse['data'] | null> => {
@@ -414,15 +436,18 @@ export const fetchRankProfile = async (token?: string | null): Promise<RankProfi
     const response = await apiClient.get<RankProfileResponse>('/rank/profile', config);
     const payload = response.data?.data ?? null;
     if (!payload) return null;
+    const nextRankName = payload.next_rank?.name ?? (payload as { next_rank_name?: string })?.next_rank_name ?? "";
 
     return {
       ...payload,
+      noti_rewards: normalizeBooleanFlag(payload.noti_rewards),
       current_rank: {
         ...payload.current_rank,
         rank_img: normalizeRankImage(payload.current_rank?.rank_img),
       },
       next_rank: {
         ...payload.next_rank,
+        name: nextRankName,
         rank_img: normalizeRankImage(payload.next_rank?.rank_img),
       },
     };
@@ -439,14 +464,20 @@ export interface RankItem {
   min_rp: number;
   max_rp: number | null;
   rank_img: string;
+  noti_rewards: boolean;
   is_current_rank: boolean;
+  can_claim?: boolean;
+  grant_id?: number | string | null;
+  reward_claimed?: boolean;
   rewards?: {
     id?: number | string;
+    grant_id?: number | string;
     name?: string;
     img?: string | null;
     amount?: number | null;
     description?: string | null;
     type?: string | null;
+    can_claim?: boolean;
   }[];
   reward_note?: string | null;
 }
@@ -458,29 +489,95 @@ export interface AllRanksResponse {
   data: {
     total_rp: number;
     rp_needed: number;
+    noti_rewards: boolean;
     ranks: RankItem[];
   };
 }
 
-export const fetchAllRanks = async (token?: string | null): Promise<RankItem[] | null> => {
-  try {
-    const config = token ? { headers: { Authorization: token } } : {};
-    const response = await apiClient.get<AllRanksResponse>('/rank/all', config);
-    const ranks = response.data?.data?.ranks ?? null;
-    if (!Array.isArray(ranks)) return null;
+export type AllRanksData = AllRanksResponse["data"];
 
-    return ranks.map((rank) => ({
+const normalizeRankItems = (ranks: RankItem[]): RankItem[] => (
+  ranks.map((rank) => {
+    const rankCanClaim = normalizeBooleanFlag(rank.can_claim);
+    const rankGrantId = rank.grant_id ?? null;
+
+    return {
       ...rank,
       rank_img: normalizeRankImage(rank.rank_img),
+      noti_rewards: normalizeBooleanFlag(rank.noti_rewards),
+      is_current_rank: normalizeBooleanFlag(rank.is_current_rank),
+      can_claim: rankCanClaim,
+      grant_id: rankGrantId,
+      reward_claimed: normalizeBooleanFlag(rank.reward_claimed),
       rewards: Array.isArray(rank.rewards)
         ? rank.rewards.map((reward) => ({
             ...reward,
+            can_claim: normalizeBooleanFlag(reward?.can_claim ?? rankCanClaim),
+            grant_id: reward?.grant_id ?? rankGrantId ?? undefined,
             img: normalizeRankImage(reward?.img || null),
           }))
         : [],
-    }));
+    };
+  })
+);
+
+export const fetchAllRanksData = async (token?: string | null): Promise<AllRanksData | null> => {
+  try {
+    const config = token ? { headers: { Authorization: token } } : {};
+    const response = await apiClient.get<AllRanksResponse>('/rank/all', config);
+    const payload = response.data?.data ?? null;
+    const rawRanks = Array.isArray(payload)
+      ? payload
+      : payload?.ranks;
+    if (!Array.isArray(rawRanks)) return null;
+    const normalizedRanks = normalizeRankItems(rawRanks as RankItem[]);
+    const payloadTotalRp = Number(Array.isArray(payload) ? undefined : payload?.total_rp);
+    const payloadRpNeeded = Number(Array.isArray(payload) ? undefined : payload?.rp_needed);
+    const normalizedNotiRewards = Array.isArray(payload)
+      ? normalizedRanks.some((rank) => rank.noti_rewards)
+      : (
+        normalizeBooleanFlag(payload?.noti_rewards)
+        || normalizedRanks.some((rank) => rank.noti_rewards)
+      );
+
+    const payloadMeta = !Array.isArray(payload) && payload ? payload : {};
+
+    return {
+      ...payloadMeta,
+      total_rp: Number.isFinite(payloadTotalRp) ? Math.max(0, payloadTotalRp) : 0,
+      rp_needed: Number.isFinite(payloadRpNeeded) ? Math.max(0, payloadRpNeeded) : 0,
+      noti_rewards: normalizedNotiRewards,
+      ranks: normalizedRanks,
+    };
   } catch {
     return null;
+  }
+};
+
+export const fetchAllRanks = async (token?: string | null): Promise<RankItem[] | null> => {
+  const payload = await fetchAllRanksData(token);
+  return payload?.ranks ?? null;
+};
+
+// --- Rank Reward Claim ---
+
+export const claimRankReward = async (grantId: number | string, token?: string | null) => {
+  try {
+    const config = token ? { headers: { Authorization: token } } : {};
+    const response = await apiClient.post(`/rank/rewards/${grantId}/claim`, {}, config);
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};
+
+export const claimAllRankRewards = async (token?: string | null) => {
+  try {
+    const config = token ? { headers: { Authorization: token } } : {};
+    const response = await apiClient.post('/rank/rewards/claim-all', {}, config);
+    return response.data;
+  } catch (error: any) {
+    throw error;
   }
 };
 

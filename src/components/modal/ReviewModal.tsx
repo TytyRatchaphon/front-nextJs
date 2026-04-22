@@ -228,25 +228,25 @@ export default function ReviewModal({
   const handleDeleteComment = (commentId: string | number) => {
     if (!review) return;
     if (!user) {
-      notification.warning({ message: '\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e02\u0e49\u0e32\u0e2a\u0e39\u0e48\u0e23\u0e30\u0e1a\u0e1a\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e25\u0e1a\u0e04\u0e27\u0e32\u0e21\u0e04\u0e34\u0e14\u0e40\u0e2b\u0e47\u0e19', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
+      notification.warning({ message: 'กรุณาเข้าสู่ระบบเพื่อลบความคิดเห็น', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
       return;
     }
 
     const reviewId = review.review_id || review.id;
     modal.confirm({
       zIndex: REVIEW_MODAL_Z_INDEX + 10,
-      title: '\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e01\u0e32\u0e23\u0e25\u0e1a',
-      content: '\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e25\u0e1a\u0e04\u0e27\u0e32\u0e21\u0e04\u0e34\u0e14\u0e40\u0e2b\u0e47\u0e19\u0e19\u0e35\u0e49\u0e43\u0e0a\u0e48\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48?',
-      okText: '\u0e25\u0e1a',
+        title: 'ยืนยันการลบ',
+        content: 'ต้องการลบความคิดเห็นนี้ใช่หรือไม่?',
+        okText: 'ลบ',
       okType: 'danger',
-      cancelText: '\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01',
+        cancelText: 'ยกเลิก',
       onOk: async () => {
         try {
           await deleteReviewComment(reviewId, commentId);
-          notification.success({ message: '\u0e25\u0e1a\u0e04\u0e27\u0e32\u0e21\u0e04\u0e34\u0e14\u0e40\u0e2b\u0e47\u0e19\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
+            notification.success({ message: 'ลบความคิดเห็นสำเร็จ', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
           await loadComments();
         } catch (error: any) {
-          notification.error({ message: error?.response?.data?.message || '\u0e40\u0e01\u0e34\u0e14\u0e02\u0e49\u0e2d\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14\u0e43\u0e19\u0e01\u0e32\u0e23\u0e25\u0e1a\u0e04\u0e27\u0e32\u0e21\u0e04\u0e34\u0e14\u0e40\u0e2b\u0e47\u0e19', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
+            notification.error({ message: error?.response?.data?.message || 'เกิดข้อผิดพลาดในการลบความคิดเห็น', placement: 'topRight', style: { zIndex: REVIEW_NOTIFICATION_Z_INDEX } });
         }
       },
     });

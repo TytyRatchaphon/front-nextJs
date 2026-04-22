@@ -1,6 +1,6 @@
 
 import apiClient from "../apiClient";
-import type { BookTrans, BookDetail, BookDetailResponse, BookPurchaseDetailsResponse, LatestReadEpisodeResponse, BookPromotionOption } from "@/types/api";
+import type { BookTrans, BookDetail, BookDetailResponse, BookPurchaseDetailsResponse, LatestReadEpisodeResponse, BookPromotionOption, CategoryPagination, UniversalBook } from "@/types/api";
 
 export const fetchBookTrans = async (): Promise<BookTrans[]> => {
   try {
@@ -13,6 +13,200 @@ export const fetchBookTrans = async (): Promise<BookTrans[]> => {
     return [];
   }
 }
+
+export interface NewNovelListData {
+  pagination: CategoryPagination;
+  books: UniversalBook[];
+  degradedMode?: boolean;
+  source?: 'books_new' | 'book_search_fallback';
+}
+
+export interface NewNovelListResponse {
+  code: number;
+  status: string;
+  message: string;
+  data: NewNovelListData;
+}
+
+export type NewNovelContentType = 'all' | 'novel' | 'novel_pack';
+
+const toFiniteNumber = (value: unknown): number | null => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const toNullablePageNumber = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const createPaginationFallback = (page: number, limit: number, total: number = 0): CategoryPagination => {
+  const safePage = Number.isFinite(page) && page > 0 ? page : 1;
+  const safeLimit = Number.isFinite(limit) && limit > 0 ? limit : 20;
+  const totalPages = total > 0 ? Math.ceil(total / safeLimit) : 0;
+
+  return {
+    page: safePage,
+    limit: safeLimit,
+    total,
+    totalPages,
+    nextPage: totalPages > safePage ? safePage + 1 : null,
+    prevPage: safePage > 1 ? safePage - 1 : null,
+  };
+};
+
+const normalizeContentTypeValue = (value: unknown): NewNovelContentType | '' => {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (normalized === 'novel' || normalized === 'novel_pack') return normalized;
+  return '';
+};
+
+const filterBooksByContentType = (books: UniversalBook[], contentType: NewNovelContentType): UniversalBook[] => {
+  if (contentType === 'all') return books;
+  return books.filter((book) => {
+    const bookContentType = normalizeContentTypeValue(
+      (book as any)?.content_type ?? (book as any)?.contentType ?? (book as any)?.type,
+    );
+    return bookContentType === contentType;
+  });
+};
+
+const normalizeBooksNewResponse = (payload: any): NewNovelListData => {
+  const data = payload?.data;
+  if (!data || typeof data !== 'object') {
+    throw new Error('Invalid /books/new response: missing data object');
+  }
+  if (!Array.isArray(data.books)) {
+    throw new Error('Invalid /books/new response: data.books must be an array');
+  }
+  if (!data.pagination || typeof data.pagination !== 'object') {
+    throw new Error('Invalid /books/new response: data.pagination must be an object');
+  }
+
+  const page = toFiniteNumber(data.pagination.page);
+  const limit = toFiniteNumber(data.pagination.limit);
+  const total = toFiniteNumber(data.pagination.total);
+  const totalPages = toFiniteNumber(data.pagination.totalPages ?? data.pagination.total_pages);
+  const nextPage = toNullablePageNumber(data.pagination.nextPage ?? data.pagination.next_page);
+  const prevPage = toNullablePageNumber(data.pagination.prevPage ?? data.pagination.prev_page);
+
+  if (
+    page === null
+    || limit === null
+    || total === null
+    || totalPages === null
+  ) {
+    throw new Error('Invalid /books/new response: malformed pagination contract');
+  }
+
+  return {
+    books: data.books,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+      nextPage,
+      prevPage,
+    },
+    degradedMode: false,
+    source: 'books_new',
+  };
+};
+
+const normalizeBookSearchFallbackData = (
+  payload: any,
+  page: number,
+  limit: number,
+  contentType: NewNovelContentType,
+): NewNovelListData => {
+  const data = payload?.data ?? payload;
+  const rawBooks = Array.isArray(data?.books)
+    ? data.books
+    : Array.isArray(data?.items)
+      ? data.items
+      : Array.isArray(data?.list)
+        ? data.list
+        : Array.isArray(payload)
+          ? payload
+          : [];
+  const books = filterBooksByContentType(rawBooks, contentType);
+
+  const paginationSource = data?.pagination ?? data?.paginate ?? payload?.pagination ?? payload?.paginate;
+  const total = Number(paginationSource?.total ?? data?.total ?? payload?.total ?? books.length);
+  const safeTotal = Number.isFinite(total) ? total : books.length;
+  const pagination: CategoryPagination = paginationSource
+    ? {
+        page: Number(paginationSource.page ?? page) || page,
+        limit: Number(paginationSource.limit ?? limit) || limit,
+        total: safeTotal,
+        totalPages: Number(paginationSource.totalPages ?? paginationSource.total_pages ?? Math.ceil(safeTotal / limit)),
+        nextPage: paginationSource.nextPage ?? paginationSource.next_page ?? null,
+        prevPage: paginationSource.prevPage ?? paginationSource.prev_page ?? null,
+      }
+    : createPaginationFallback(page, limit, safeTotal);
+
+  // If local content_type filter trimmed results, avoid misleading pagination from fallback endpoint.
+  const filteredByClient = books.length !== rawBooks.length;
+  const safePagination = filteredByClient
+    ? createPaginationFallback(page, limit, books.length)
+    : pagination;
+
+  return {
+    pagination: safePagination,
+    books,
+    degradedMode: true,
+    source: 'book_search_fallback',
+  };
+};
+
+const getHttpStatusFromError = (error: unknown): number | null => {
+  const status = (error as any)?.response?.status;
+  return Number.isFinite(Number(status)) ? Number(status) : null;
+};
+
+const shouldUseBooksNewFallback = (error: unknown): boolean => {
+  const status = getHttpStatusFromError(error);
+  return status === 404 || status === 405;
+};
+
+export const fetchNewNovels = async (
+  page: number = 1,
+  limit: number = 20,
+  contentType: NewNovelContentType = 'all',
+): Promise<NewNovelListData | null> => {
+  try {
+    const response = await apiClient.get<NewNovelListResponse>('/books/new', {
+      params: { page, limit, content_type: contentType },
+    });
+    return normalizeBooksNewResponse(response.data);
+  } catch (primaryError) {
+    if (!shouldUseBooksNewFallback(primaryError)) {
+      return null;
+    }
+
+    try {
+      const fallback = await apiClient.get('/book/search', {
+        params: {
+          page,
+          limit,
+          content_type: contentType,
+          sortBy: 'date_at',
+          order: 'DESC',
+        },
+      });
+      console.warn('[fetchNewNovels] Using degraded fallback /book/search for /books/new', {
+        page,
+        limit,
+        contentType,
+      });
+      return normalizeBookSearchFallbackData(fallback.data, page, limit, contentType);
+    } catch {
+      return null;
+    }
+  }
+};
 
 export const fetchBookTransById = async (id: string): Promise<BookTrans> => {
   try {

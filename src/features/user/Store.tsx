@@ -3,12 +3,12 @@
 import '@/components/home/Banner';
 import React, { useEffect, useState } from 'react'
 import Image from 'next/image'
-import { Tabs, Spin, Modal, notification, Input, Image as AntdImage } from 'antd'
+import { Tabs, Spin, Modal, Input, Image as AntdImage, App, Checkbox } from 'antd'
 import { CheckCircleOutlined } from '@ant-design/icons'
 import { useSearchParams } from 'next/navigation'
 import { fetchStoreData, updateUserAddress } from '@/services/apiServices';
 import { useAuthStore } from '@/stores/authStore'
-import type { StoreCategory, StorePack } from '@/types/api'
+import type { StoreCategory, StorePack, StorePackSelectableOption } from '@/types/api'
 import Link from 'next/link'
 import StoreCard from '@/components/utility/StoreCard'
 import { useWebsiteStore } from '@/stores/websiteStore';
@@ -25,6 +25,7 @@ import RPPill from '@/components/utility/RPPill';
 import { imageLoader, resolveStoreImageSrc } from '@/utils/imageUtils';
 import UserRankShowcase from '@/features/user/components/UserRankShowcase';
 import FastTicketPill from '@/components/utility/FastTicketPill';
+import { requestNavbarRankRefresh } from '@/utils/rankRefresh';
 
 
 function Store() {
@@ -52,9 +53,40 @@ function Store() {
   const [selectedQty, setSelectedQty] = useState(1);
   const [addressInput, setAddressInput] = useState('');
   const [phoneInput, setPhoneInput] = useState('');
+  const [selectedStorePackListIds, setSelectedStorePackListIds] = useState<Array<number | string>>([]);
 
-  const [api, contextHolder] = notification.useNotification();
-  useQueryClient();
+  const { notification: api } = App.useApp();
+  const queryClient = useQueryClient();
+
+  const getSelectionLimit = React.useCallback((pack: StorePack | null) => {
+    if (!pack) return 1;
+    return typeof pack.selection_limit === 'number' && pack.selection_limit > 0
+      ? pack.selection_limit
+      : 1;
+  }, []);
+
+  const getInitialSelectedStorePackListIds = React.useCallback((pack: StorePack): Array<number | string> => {
+    if (!pack.is_selection || !Array.isArray(pack.selectable_options)) {
+      return [];
+    }
+
+    const limit = getSelectionLimit(pack);
+    const selectableOptions = pack.selectable_options.filter((option) => option.can_select !== false);
+    const preSelectedIds = selectableOptions
+      .filter((option) => option.selected)
+      .map((option) => option.store_pack_list_id);
+
+    if (preSelectedIds.length > 0) {
+      return preSelectedIds.slice(0, limit);
+    }
+
+    return selectableOptions.slice(0, limit).map((option) => option.store_pack_list_id);
+  }, [getSelectionLimit]);
+
+  const handleCloseBuyModal = React.useCallback(() => {
+    setSelectedPack(null);
+    setSelectedStorePackListIds([]);
+  }, []);
 
   // Fetch cart items for limit checking
   const { data: cartStores } = useQuery({
@@ -68,6 +100,7 @@ function Store() {
   const handleBuyClick = (pack: StorePack, quantity: number = 1) => {
     setSelectedPack(pack)
     setSelectedQty(quantity)
+    setSelectedStorePackListIds(getInitialSelectedStorePackListIds(pack));
     // Initialize address input if missing
     if (pack.type === 'gift' && !user?.address_main) {
       setAddressInput('');
@@ -110,6 +143,35 @@ function Store() {
     if (selectedQty > 1) {
         setSelectedQty(prev => prev - 1);
     }
+  };
+
+  const handleSelectableOptionChange = (option: StorePackSelectableOption, checked: boolean) => {
+    if (option.can_select === false || !selectedPack) return;
+
+    const selectionLimit = getSelectionLimit(selectedPack);
+    const optionId = option.store_pack_list_id;
+
+    if (selectionLimit <= 1) {
+      setSelectedStorePackListIds(checked ? [optionId] : []);
+      return;
+    }
+
+    if (checked) {
+      if (selectedStorePackListIds.includes(optionId)) return;
+      if (selectedStorePackListIds.length >= selectionLimit) {
+        api.warning({
+          message: 'เลือกเกินจำนวนที่กำหนด',
+          description: `แพ็กนี้เลือกได้สูงสุด ${selectionLimit} รายการ`,
+          placement: 'topRight',
+        });
+        return;
+      }
+
+      setSelectedStorePackListIds((prev) => [...prev, optionId]);
+      return;
+    }
+
+    setSelectedStorePackListIds((prev) => prev.filter((id) => id !== optionId));
   };
 
   const handleConfirmBuy = async () => {
@@ -217,21 +279,41 @@ function Store() {
         }
       }
 
+      if (selectedPack.is_selection) {
+        const selectableOptions = Array.isArray(selectedPack.selectable_options)
+          ? selectedPack.selectable_options.filter((option) => option.can_select !== false)
+          : [];
+
+        if (selectableOptions.length === 0) {
+          api.warning({
+            message: 'ไม่พบตัวเลือกสินค้า',
+            description: 'แพ็กนี้ไม่มีรายการที่เลือกได้ในขณะนี้',
+            placement: 'topRight',
+          });
+          setConfirmLoading(false);
+          return;
+        }
+
+        if (selectedStorePackListIds.length === 0) {
+          api.warning({
+            message: 'กรุณาเลือกสินค้าในแพ็ก',
+            description: 'โปรดเลือกรายการที่ต้องการก่อนยืนยันสั่งซื้อ',
+            placement: 'topRight',
+          });
+          setConfirmLoading(false);
+          return;
+        }
+      }
+
       // 2. Buy Pack
       let res;
-      if (selectedQty > 1) {
-         // Using new buy-now api for quantity > 1 (or always if appropriate, but buyStorePack is for qty=1 usually?)
-         // Actually buyStorePack calls /user/store/buy/:id which implies qty=1 or default. 
-         // Since we implemented buyStorePackNow, let's use it.
-         // Wait, I need to import buyStorePackNow.
-         // Assuming I will add it to imports later or auto-import.
+      {
           const { buyStorePackNow } = await import('@/services/apiServices');
-          res = await buyStorePackNow(selectedPack.store_pack_id, selectedQty);
-      } else {
-          // Keep using existing logic for qty=1 if preferred, or switch consistency?
-          // Let's use buyStorePackNow for consistency if it supports qty=1
-          const { buyStorePackNow } = await import('@/services/apiServices');
-          res = await buyStorePackNow(selectedPack.store_pack_id, selectedQty);
+          res = await buyStorePackNow(
+            selectedPack.store_pack_id,
+            selectedQty,
+            selectedPack.is_selection ? selectedStorePackListIds : undefined
+          );
       }
 
       if (res.status === 'success' || res.code === 200) {
@@ -270,8 +352,9 @@ function Store() {
         if (res.data && res.data.token) {
           updateToken(res.data.token);
         }
+        await requestNavbarRankRefresh(queryClient, user?.user_id);
 
-        setSelectedPack(null);
+        handleCloseBuyModal();
       } else {
         api.error({
           message: 'เกิดข้อผิดพลาด',
@@ -469,7 +552,6 @@ function Store() {
   const selectedPackImageSrc = resolveStoreImageSrc(selectedPack?.img || null, '/images/ejb.png');
   return (
     <div className="pb-20">
-      {contextHolder}
       <div className="max-w-[1128px] mx-auto px-4 mt-6">
         <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
           <div className="relative min-h-[148px] overflow-hidden rounded-[30px] border border-[#f0d9d4] bg-[linear-gradient(135deg,_#ffffff,_#fff9f7_55%,_#fff1ed)] shadow-[0_20px_42px_-34px_rgba(239,68,68,0.22)]">
@@ -613,23 +695,22 @@ function Store() {
       </div>
 
       <Modal
-        title={<div className="text-center text-xl font-bold font-primary">{selectedPack?.name}</div>}
+        title={<div className="px-8 text-center text-base font-bold leading-snug font-primary sm:text-xl">{selectedPack?.name}</div>}
         open={!!selectedPack}
-        onCancel={() => setSelectedPack(null)}
+        onCancel={handleCloseBuyModal}
         footer={null}
         centered
         zIndex={5000}
-        width={380}
-        style={{ maxWidth: '95vw', top: 20 }}
-        closeIcon={null}
+        width={selectedPack?.is_selection ? 560 : 380}
+        style={{ maxWidth: 'calc(100vw - 20px)', top: 12 }}
         className="custom-modal-store font-primary"
       >
-            <div className="flex flex-col items-center pt-2 pb-6 px-2">
+            <div className="flex max-h-[calc(100dvh-96px)] flex-col items-center overflow-y-auto px-0 pb-4 pt-2 sm:px-2 sm:pb-5">
             
             {/* Item Card */}
-            <div className="w-full bg-white border border-gray-100 shadow-sm rounded-2xl p-4 flex items-start gap-4 mb-6 relative overflow-hidden">
+            <div className="w-full bg-white border border-gray-100 shadow-sm rounded-2xl p-3 sm:p-4 flex items-start gap-3 mb-3 relative overflow-hidden">
                <div className="absolute top-0 right-0 w-16 h-16 bg-red-50 rounded-bl-full -mr-8 -mt-8 z-0"></div>
-               <div className="relative w-24 h-24 flex-shrink-0 z-10 bg-gray-50 rounded-xl overflow-hidden border border-gray-100">
+               <div className="relative h-20 w-20 flex-shrink-0 self-start z-10 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shadow-sm sm:h-24 sm:w-24">
                 <Image
                   src={selectedPackImageSrc}
                   alt={selectedPack?.name || 'Pack'}
@@ -637,11 +718,11 @@ function Store() {
                   className="object-contain p-1"
                 />
               </div>
-              <div className="flex-1 z-10 pt-1">
-                <h3 className="font-bold text-lg text-gray-800 mb-1 leading-tight">{selectedPack?.name}</h3>
-                <div className="w-full h-[1px] bg-gray-100 my-2"></div>
+              <div className="min-w-0 flex-1 z-10 pt-0.5">
+                <h3 className="line-clamp-2 font-bold text-base text-gray-800 mb-1 leading-tight sm:text-lg">{selectedPack?.name}</h3>
+                <div className="w-full h-[1px] bg-gray-100 my-1.5"></div>
                 {selectedPack?.items_description ? (
-                  <ul className="text-sm text-gray-500 space-y-1">
+                  <ul className="text-xs text-gray-500 space-y-1 sm:text-sm">
                     {selectedPack.items_description.split(',').map((item, index) => (
                       <li key={index} className="flex items-center gap-1">
                         <span className="w-1 h-1 bg-red-400 rounded-full"></span>
@@ -650,13 +731,57 @@ function Store() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-gray-500 flex items-center gap-1">
+                  <p className="text-xs text-gray-500 flex items-center gap-1 sm:text-sm">
                      <span className="w-1 h-1 bg-red-400 rounded-full"></span>
                      จำนวน x {selectedQty}
                   </p>
                 )}
               </div>
             </div>
+
+            {selectedPack?.is_selection && Array.isArray(selectedPack?.selectable_options) && (
+              <div className="w-full mb-3 rounded-2xl border border-stone-200 bg-stone-50 p-3">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-stone-500">
+                  <span>เลือกได้สูงสุด {getSelectionLimit(selectedPack)} รายการ</span>
+                  <span>เลือกแล้ว {selectedStorePackListIds.length}/{getSelectionLimit(selectedPack)}</span>
+                </div>
+                <div className="grid max-h-64 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+                  {selectedPack.selectable_options.map((option) => {
+                    const checked = selectedStorePackListIds.includes(option.store_pack_list_id);
+                    const disabled = option.can_select === false || confirmLoading;
+                    return (
+                      <label
+                        key={option.store_pack_list_id}
+                        className={`flex min-w-0 items-start gap-2 rounded-xl border bg-white p-2 text-sm transition ${checked ? 'border-red-200 bg-red-50/50 shadow-sm' : 'border-stone-200 hover:border-red-100'} ${disabled ? 'opacity-50' : 'cursor-pointer'}`}
+                      >
+                        <Checkbox
+                          checked={checked}
+                          disabled={disabled}
+                          onChange={(event) => handleSelectableOptionChange(option, event.target.checked)}
+                          className="[&_.ant-checkbox-checked_.ant-checkbox-inner]:!bg-red-500 [&_.ant-checkbox-checked_.ant-checkbox-inner]:!border-red-500 hover:[&_.ant-checkbox-inner]:!border-red-500"
+                        />
+                        <div className="relative h-14 w-11 flex-shrink-0 overflow-hidden rounded-lg border border-stone-200 bg-stone-100 shadow-sm">
+                          <Image
+                            src={resolveStoreImageSrc(option.item_img || null, '/images/ejb.png')}
+                            alt={option.item_name}
+                            fill
+                            sizes="44px"
+                            unoptimized
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="min-w-0 pt-0.5">
+                          <p className="line-clamp-2 text-xs font-medium leading-snug text-stone-800 sm:text-sm">{option.item_name}</p>
+                          {option.can_select === false && (
+                            <p className="text-[11px] text-rose-500">คุณมีรายการนี้ครบแล้ว</p>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Address Input Section */}
             {selectedPack?.type === 'gift' && !user?.address_main && (
@@ -715,28 +840,28 @@ function Store() {
             )}
 
             {/* Price Calculation & Quantity */}
-            <div className="text-center mb-6 relative">
+            <div className="text-center mb-4 relative">
                  {/* Quantity Controls */}
-                 <div className="flex items-center justify-center gap-4 mb-4">
+                  <div className="flex items-center justify-center gap-3 mb-2">
                         <button 
                             onClick={handleDecrement}
-                            className={`w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors ${selectedQty <= 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors ${selectedQty <= 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
                             disabled={selectedQty <= 1}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         </button>
-                        <span className="text-2xl font-bold w-12 text-center text-gray-800">{selectedQty}</span>
+                        <span className="text-xl font-bold w-10 text-center text-gray-800">{selectedQty}</span>
                         <button 
                             onClick={handleIncrement}
-                            className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         </button>
                     </div>
 
                 <div className="inline-block relative">
-                    <span className="text-gray-400 text-sm font-medium block mb-1">ยอดรวมทั้งหมด</span>
-                    <div className="flex items-center justify-center gap-2.5">
+                    <span className="text-gray-400 text-xs font-medium block mb-0.5">ยอดรวมทั้งหมด</span>
+                    <div className="flex items-center justify-center gap-2">
                         {['coin', 'heart', 'flower', 'stamp', 'exp', 'freecoin', 'rp'].includes(selectedPack?.type_use || '') && (
                         <div className="relative">
                             <Image
@@ -749,15 +874,15 @@ function Store() {
                                             selectedPack?.type_use === 'rp' ? (settings?.rp || "/images/rp.png") :
                                                 (settings?.freecoin || "/images/freecoin.png")
                                 }
-                                width={36}
-                                height={36}
+                                width={30}
+                                height={30}
                                 alt={selectedPack?.type_use || 'currency'}
                                 unoptimized
                                 className="object-contain drop-shadow-sm"
                             />
                         </div>
                         )}
-                        <span className="text-3xl font-bold font-primary text-gray-800 tracking-tight">
+                        <span className="text-2xl font-bold font-primary text-gray-800 tracking-tight">
                             {((selectedPack?.price || 0) * selectedQty).toLocaleString()}
                         </span>
                         {!['coin', 'heart', 'flower', 'stamp', 'exp', 'freecoin', 'rp'].includes(selectedPack?.type_use || '') &&
@@ -768,17 +893,17 @@ function Store() {
             </div>
 
             {/* Buttons */}
-            <div className="flex items-center gap-3 w-full">
+            <div className="sticky bottom-0 z-20 flex w-full items-center gap-3 border-t border-transparent bg-white/95 pt-2 backdrop-blur">
               <button
-                onClick={() => setSelectedPack(null)}
-                className="flex-1 border-2 border-gray-200 text-gray-500 py-3 rounded-xl font-bold hover:bg-gray-50 hover:text-gray-700 hover:border-gray-300 transition-all duration-200"
+                onClick={handleCloseBuyModal}
+                className="flex-1 border-2 border-gray-200 text-gray-500 py-2.5 rounded-xl font-bold hover:bg-gray-50 hover:text-gray-700 hover:border-gray-300 transition-all duration-200"
               >
                 ยกเลิก
               </button>
               <button
                 onClick={handleConfirmBuy}
                 disabled={confirmLoading}
-                className="flex-1 bg-[#FF0037] !text-white py-3 rounded-xl font-bold shadow-lg shadow-red-200 hover:shadow-red-300 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex justify-center items-center disabled:opacity-70 disabled:grayscale disabled:pointer-events-none"
+                className="flex-1 bg-[#FF0037] !text-white py-2.5 rounded-xl font-bold shadow-lg shadow-red-200 hover:shadow-red-300 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex justify-center items-center disabled:opacity-70 disabled:grayscale disabled:pointer-events-none"
               >
                 {confirmLoading ? <Spin size="small" className="!mr-2 custom-spin-white" /> : null}
                 { (selectedPack?.type === 'gift' && (!user?.address_main || !user?.phone)) ? 'บันทึกและยืนยัน' : 'ยืนยันสั่งซื้อ' }

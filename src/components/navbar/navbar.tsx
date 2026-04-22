@@ -3,6 +3,7 @@
 import NovelMenu from './NovelMenu';
 import CartPopover from './CartPopover';
 import { Popover, App, Drawer, Switch } from 'antd';
+import { CheckCircleOutlined } from '@ant-design/icons';
 import LoginButtonHeader from './LoginButtonHeader';
 import { ChevronRight, Menu, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -12,13 +13,14 @@ import { useSocket } from '@/providers/SocketProvider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchAllNotifications, fetchActiveTypes, fetchActiveCategories } from '@/services/api/miscApi';
 import { fetchPromotingGroups } from '@/services/api/campaignApi';
-import { fetchRankProfile } from '@/services/api/userApi';
+import { fetchAllRanksData } from '@/services/api/userApi';
 import { fetchCartItems } from '@/services/cartService';
 import { useAuthStore } from '@/stores/authStore';
 import { useWebsiteStore } from '@/stores/websiteStore';
 import { useLineLogin } from '@/hooks/useLineLogin';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Cookies from 'js-cookie';
 import '@/assets/images/icon.png';
 import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill';
@@ -26,6 +28,7 @@ import SmartAppBanner from '@/components/utility/SmartAppBanner';
 import CartSvg from '@/components/utility/CartSvg';
 import { resolveSettingsImageSrc } from '@/utils/imageUtils';
 import { readGifModePreference, writeGifModePreference } from '@/utils/gifPreference';
+import { getNavbarRankQueryKey } from '@/utils/rankRefresh';
 import FrameOverlayImage from '@/components/ui/FrameOverlayImage';
 import FastTicketPill from '@/components/utility/FastTicketPill';
 import StampPill from '../utility/StampPill';
@@ -38,6 +41,7 @@ function Navbar() {
   const { user, isLoggedIn, hasMounted, logout, setMounted, token } = useAuthStore();
   const { initLIFF } = useLineLogin();
   const pathname = usePathname();
+  const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isMobileNovelOpen, setIsMobileNovelOpen] = React.useState(false);
   const [openMobileCategoryId, setOpenMobileCategoryId] = React.useState<string | null>(null);
@@ -101,18 +105,162 @@ function Navbar() {
 
   const unreadCount = notifications.filter((n) => n.readed === 'N').length;
 
-  const { data: rankData } = useQuery({
-    queryKey: ['navbarRankProfile'],
-    queryFn: async () => {
-      const rawToken = token || '';
-      const cleanToken = rawToken.replace(/^['"]+ |['"]+ $/g, '');
-      return fetchRankProfile(cleanToken || undefined);
-    },
-    enabled: !!isLoggedIn && !!token,
-    staleTime: 5 * 60 * 1000,
-  });
+  const rankQueryKey = React.useMemo(
+    () => getNavbarRankQueryKey(user?.user_id),
+    [user?.user_id],
+  );
+  const cleanRankToken = React.useMemo(() => {
+    const rawToken = token || Cookies.get('token') || '';
+    return rawToken.replace(/^['"]+|['"]+$/g, '').trim();
+  }, [token]);
 
-  const rpValue = Number(user?.current_rp ?? rankData?.total_rp ?? 0);
+  const { data: rankData } = useQuery({
+    queryKey: rankQueryKey,
+    queryFn: async () => {
+      if (!cleanRankToken) {
+        throw new Error('Missing rank auth token');
+      }
+      const result = await fetchAllRanksData(cleanRankToken);
+      if (!result) {
+        throw new Error('Failed to fetch /rank/all');
+      }
+      return result;
+    },
+    enabled: !!isLoggedIn && !!cleanRankToken,
+    staleTime: 5 * 60 * 1000,
+    placeholderData: (previousData) => previousData,
+    retry: 1,
+  });
+  const getClaimableRankRewardSnapshot = React.useCallback((data: unknown): { count: number; signature: string; tokens: string[] } => {
+    const ranks = Array.isArray((data as any)?.ranks) ? (data as any).ranks : [];
+
+    const isTruthy = (value: unknown) => {
+      if (typeof value === 'boolean') return value;
+      if (typeof value === 'number') return value === 1;
+      if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        return normalized === '1' || normalized === 'true' || normalized === 'y' || normalized === 'yes';
+      }
+      return false;
+    };
+
+    const claimableTokens = new Set<string>();
+
+    ranks.forEach((rank: any, rankIndex: number) => {
+      const rankCanClaim = isTruthy(rank?.can_claim);
+      const rankGrantId = rank?.grant_id;
+      const normalizedRankGrantId = rankGrantId !== null && rankGrantId !== undefined && String(rankGrantId).trim() !== ''
+        ? String(rankGrantId)
+        : '';
+
+      if (rankCanClaim) {
+        if (normalizedRankGrantId) {
+          claimableTokens.add(`grant:${normalizedRankGrantId}`);
+        } else {
+          claimableTokens.add(`rank:${rank?.rank_id ?? rankIndex}`);
+        }
+      }
+
+      const rewards = Array.isArray(rank?.rewards) ? rank.rewards : [];
+      rewards.forEach((reward: any, rewardIndex: number) => {
+        if (!isTruthy(reward?.can_claim)) return;
+        const rewardGrantId = reward?.grant_id ?? rankGrantId;
+        const normalizedRewardGrantId = rewardGrantId !== null && rewardGrantId !== undefined && String(rewardGrantId).trim() !== ''
+          ? String(rewardGrantId)
+          : '';
+        if (normalizedRewardGrantId) {
+          claimableTokens.add(`grant:${normalizedRewardGrantId}`);
+        } else {
+          claimableTokens.add(`reward:${rank?.rank_id ?? rankIndex}:${reward?.id ?? rewardIndex}`);
+        }
+      });
+
+      if (isTruthy(rank?.noti_rewards) && claimableTokens.size === 0) {
+        claimableTokens.add(`noti-rank:${rank?.rank_id ?? rankIndex}`);
+      }
+    });
+
+    if (isTruthy((data as any)?.noti_rewards) && claimableTokens.size === 0) {
+      claimableTokens.add('noti_rewards');
+    }
+
+    const tokens = Array.from(claimableTokens).sort();
+    const signature = tokens.join('|');
+    return {
+      count: tokens.length,
+      signature,
+      tokens,
+    };
+  }, []);
+  const claimableRankRewardSnapshot = React.useMemo(
+    () => getClaimableRankRewardSnapshot(rankData),
+    [getClaimableRankRewardSnapshot, rankData],
+  );
+  const rankRewardSnapshotStateRef = React.useRef<{ initialized: boolean; tokens: string[] }>({
+    initialized: false,
+    tokens: [],
+  });
+  const lastRankRewardNotificationKeyRef = React.useRef<string>('');
+  const currentRank = React.useMemo(() => {
+    const ranks = Array.isArray(rankData?.ranks) ? rankData.ranks : [];
+    return ranks.find((rank) => rank.is_current_rank) ?? ranks[0] ?? null;
+  }, [rankData]);
+  const hasRankRewardNotification = React.useMemo(() => {
+    const ranks = Array.isArray(rankData?.ranks) ? rankData.ranks : [];
+    const hasNoti = Boolean(rankData?.noti_rewards) || ranks.some((rank) => Boolean(rank.noti_rewards));
+    const hasClaimable = ranks.some((rank) => (
+      Boolean(rank.can_claim) || (Array.isArray(rank.rewards) && rank.rewards.some((reward) => Boolean(reward?.can_claim)))
+    ));
+    return hasNoti || hasClaimable;
+  }, [rankData]);
+
+  const rpValue = Number(rankData?.total_rp ?? user?.current_rp ?? user?.total_rp ?? 0);
+  const navigateToRankRewards = React.useCallback(() => {
+    setIsUserMenuOpen(false);
+    setIsMobileDrawerOpen(false);
+    const targetPath = `/mprofile?openRankShowcase=1&rankRefreshTs=${Date.now()}`;
+    if (pathname === '/mprofile') {
+      router.replace(targetPath, { scroll: false });
+      return;
+    }
+    router.push(targetPath);
+  }, [pathname, router]);
+
+  React.useEffect(() => {
+    if (!isLoggedIn) {
+      rankRewardSnapshotStateRef.current = { initialized: false, tokens: [] };
+      return;
+    }
+
+    const currentTokens = claimableRankRewardSnapshot.tokens;
+    const previousState = rankRewardSnapshotStateRef.current;
+
+    if (!previousState.initialized) {
+      rankRewardSnapshotStateRef.current = { initialized: true, tokens: currentTokens };
+      return;
+    }
+
+    const previousTokenSet = new Set(previousState.tokens);
+    const addedTokens = currentTokens.filter((tokenValue) => !previousTokenSet.has(tokenValue));
+    rankRewardSnapshotStateRef.current = { initialized: true, tokens: currentTokens };
+
+    if (addedTokens.length === 0 || claimableRankRewardSnapshot.count <= 0) return;
+
+    const notificationIdentity = addedTokens.slice().sort().join('|');
+    if (lastRankRewardNotificationKeyRef.current === notificationIdentity) return;
+    lastRankRewardNotificationKeyRef.current = notificationIdentity;
+
+    api.success({
+      key: `rank-profile-refresh-${Date.now()}`,
+      message: 'ยินดีด้วย!',
+      description: `มีของรางวัลใหม่ที่รับได้ ${claimableRankRewardSnapshot.count.toLocaleString()} รายการ (กดเพื่อไปที่หน้าของฉัน)`,
+      placement: 'topRight',
+      duration: 4.5,
+      icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+      style: { cursor: 'pointer' },
+      onClick: navigateToRankRewards,
+    });
+  }, [api, claimableRankRewardSnapshot, isLoggedIn, navigateToRankRewards]);
 
   useEffect(() => {
     if (!socket || !isLoggedIn) return;
@@ -165,7 +313,7 @@ function Navbar() {
     // Periodic check to ensure we are in the room (in case of server restart/silent drop)
     const roomCheckInterval = setInterval(() => {
       if (socket.connected) {
-        socket.emit('join:notifications');
+        joinRoom();
       }
     }, 45000);
 
@@ -318,23 +466,29 @@ function Navbar() {
         </div>
 
         {/* Rank Badge */}
-        {rankData && (
-          <Link href="/mprofile" onClick={() => setIsUserMenuOpen(false)} className="reader-user-popover-rank mt-2 flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl px-3 py-2.5 border border-gray-200 hover:border-gray-300 transition-all duration-200 group">
-          <div className="flex items-center gap-2.5">
+        {rankData && currentRank && (
+          <Link href="/mprofile" onClick={() => setIsUserMenuOpen(false)} className={`reader-user-popover-rank relative mt-2 flex items-center justify-between rounded-xl px-3 py-2.5 border transition-all duration-200 group ${hasRankRewardNotification ? 'border-red-200 bg-gradient-to-r from-red-50 via-white to-gray-50 shadow-[0_8px_20px_rgba(220,38,38,0.10)]' : 'border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 hover:border-gray-300'}`}>
+          {hasRankRewardNotification && (
+            <span className="pointer-events-none absolute right-2 top-2 flex h-3 w-3">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-60" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500 ring-2 ring-white" />
+            </span>
+          )}
+          <div className="flex min-w-0 items-center gap-2.5">
             <div className="reader-user-popover-rank-image-shell w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center p-1 border border-gray-100">
-              <Image src={rankData.current_rank.rank_img || '/images/rank_dummy.png'} alt={rankData.current_rank.name} width={32} height={32} className="object-contain" unoptimized />
+              <Image src={currentRank.rank_img || '/images/rank_dummy.png'} alt={currentRank.name} width={32} height={32} className="object-contain" unoptimized />
             </div>
-            <div className="reader-user-popover-rank-copy">
+            <div className="reader-user-popover-rank-copy min-w-0">
               <p className="text-[10px] text-gray-400 font-medium leading-tight">ระดับปัจจุบัน</p>
-              <p className="text-sm font-bold text-gray-800 leading-tight">{rankData.current_rank.name}</p>
+              <p className="truncate text-sm font-bold text-gray-800 leading-tight">{currentRank.name}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <div className="reader-user-popover-rp-pill flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-gray-100">
               <Image src={settings?.rp || "https://image.enjoybook.co/enjoybook.image/web/20260225154739zflt.png"} alt="RP" width={14} height={14} className="object-contain" unoptimized />
               <span className="reader-user-popover-rp-value text-xs font-bold text-gray-700">{rpValue.toLocaleString()}</span>
             </div>
-            <span className="reader-user-popover-rank-cta text-[10px] text-red-500 font-semibold group-hover:text-red-600 whitespace-nowrap flex items-center gap-0.5">
+            <span className="reader-user-popover-rank-cta text-[10px] text-red-500 font-semibold group-hover:text-red-600 whitespace-nowrap flex items-center gap-1">
               เพิ่มเติม
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </span>
@@ -533,7 +687,7 @@ function Navbar() {
                 <NovelMenu />
               </div>
             </div>
-
+            <Link href="/news" className={getLinkClasses('/news')}>นิยายใหม่</Link>
             <Link href="/ranking" className={getLinkClasses('/ranking')}>จัดอันดับ</Link>
             <Link href="/article" className={getLinkClasses('/article')}>บทความ</Link>
             {/* <Link href="/campaign" className={getLinkClasses('/campaign')}>แคมเปญ</Link> */}
@@ -640,7 +794,10 @@ function Navbar() {
                       styles={{ body: { padding: 0 } }}
                       zIndex={1220}
                     >
-                      <div id="UserProfileDropdownDesktop" className="flex items-center gap-2 px-2 lg:px-4 py-2 border-2 border-transparent hover:bg-gray-200 transition-colors duration-300 lg:border-gray-800 rounded-full h-[48px] outline-none">
+                      <div id="UserProfileDropdownDesktop" className="relative flex items-center gap-2 px-2 lg:px-4 py-2 border-2 border-transparent hover:bg-gray-200 transition-colors duration-300 lg:border-gray-800 rounded-full h-[48px] outline-none">
+                        {hasRankRewardNotification && (
+                          <span className="pointer-events-none absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
+                        )}
                         <span className="font-primary font-medium text-gray-800">
                           {user.fullname || 'User'}
                         </span>
@@ -652,9 +809,12 @@ function Navbar() {
                   <div className="block lg:hidden">
                     <div 
                       id="UserProfileDropdownMobile" 
-                      className="flex items-center gap-2 px-2 py-2 border-2 border-transparent hover:bg-gray-200 transition-colors duration-300 rounded-full h-[48px] outline-none"
+                      className="relative flex items-center gap-2 px-2 py-2 border-2 border-transparent hover:bg-gray-200 transition-colors duration-300 rounded-full h-[48px] outline-none"
                       onClick={() => setIsMobileDrawerOpen(true)}
                     >
+                      {hasRankRewardNotification && (
+                        <span className="pointer-events-none absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
+                      )}
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-[24px] h-[24px]">
                         <path d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z" stroke="#000000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         <path d="M20.5901 22C20.5901 18.13 16.7402 15 12.0002 15C7.26015 15 3.41016 18.13 3.41016 22" stroke="#000000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -874,23 +1034,29 @@ function Navbar() {
             </div>
 
             {/* Mobile Rank Badge */}
-            {rankData && (
-              <Link href="/mprofile" onClick={() => setIsMobileDrawerOpen(false)} className="mt-2 flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl px-3 py-2.5 border border-gray-200 hover:border-gray-300 transition-all duration-200 group">
-                <div className="flex items-center gap-2.5">
+            {rankData && currentRank && (
+              <Link href="/mprofile" onClick={() => setIsMobileDrawerOpen(false)} className={`relative mt-2 flex items-center justify-between rounded-xl px-3 py-2.5 border transition-all duration-200 group ${hasRankRewardNotification ? 'border-red-200 bg-gradient-to-r from-red-50 via-white to-gray-50 shadow-[0_8px_20px_rgba(220,38,38,0.10)]' : 'border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 hover:border-gray-300'}`}>
+                {hasRankRewardNotification && (
+                  <span className="pointer-events-none absolute right-2 top-2 flex h-3 w-3">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-60" />
+                    <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500 ring-2 ring-white" />
+                  </span>
+                )}
+                <div className="flex min-w-0 items-center gap-2.5">
                   <div className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center p-1 border border-gray-100">
-                    <Image src={rankData.current_rank.rank_img || '/images/rank_dummy.png'} alt={rankData.current_rank.name} width={32} height={32} className="object-contain" unoptimized />
+                    <Image src={currentRank.rank_img || '/images/rank_dummy.png'} alt={currentRank.name} width={32} height={32} className="object-contain" unoptimized />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-[10px] text-gray-400 font-medium leading-tight">ระดับปัจจุบัน</p>
-                    <p className="text-sm font-bold text-gray-800 leading-tight">{rankData.current_rank.name}</p>
+                    <p className="truncate text-sm font-bold text-gray-800 leading-tight">{currentRank.name}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center gap-2">
                   <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-gray-100">
                     <Image src={settings?.rp || ''} alt="RP" width={14} height={14} className="object-contain" unoptimized />
                     <span className="text-xs font-bold text-gray-700">{rpValue.toLocaleString()}</span>
                   </div>
-                  <span className="text-[10px] text-red-500 font-semibold group-hover:text-red-600 whitespace-nowrap flex items-center gap-0.5">
+                  <span className="text-[10px] text-red-500 font-semibold group-hover:text-red-600 whitespace-nowrap flex items-center gap-1">
                     เพิ่มเติม
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                   </span>

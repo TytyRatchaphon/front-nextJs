@@ -1,10 +1,33 @@
 import apiClient from './apiClient';
 import { CartStore, AddToCartPayload, UpdateCartItemPayload, CartSummary, CheckoutItemsResponse, CheckoutAddressResponse, CheckoutSummaryResponse } from '../interfaces/cart.interface';
 
+type FetchCartItemsInput = Array<number | string> | { queryKey?: readonly unknown[] } | undefined;
+
+const resolveSelectedStorePackListIds = (input: FetchCartItemsInput): Array<number | string> | undefined => {
+  if (Array.isArray(input)) {
+    return input;
+  }
+
+  if (input && typeof input === 'object' && 'queryKey' in input) {
+    const queryKey = input.queryKey;
+    const maybeSelectedIds = Array.isArray(queryKey) ? queryKey[1] : undefined;
+    if (Array.isArray(maybeSelectedIds)) {
+      return maybeSelectedIds.filter((id): id is number | string => typeof id === 'number' || typeof id === 'string');
+    }
+  }
+
+  return undefined;
+};
+
 // 1. Get items in cart (grouped by store)
-export const fetchCartItems = async (): Promise<CartStore[]> => {
+export const fetchCartItems = async (input?: FetchCartItemsInput): Promise<CartStore[]> => {
   try {
-    const response = await apiClient.get('/user/store/cart');
+    const selectedStorePackListIds = resolveSelectedStorePackListIds(input);
+    const response = await apiClient.get('/user/store/cart', selectedStorePackListIds?.length ? {
+      params: {
+        selected_store_pack_list_ids: selectedStorePackListIds,
+      },
+    } : undefined);
     const stores = response.data?.data?.stores || [];
     
     if (Array.isArray(stores)) {

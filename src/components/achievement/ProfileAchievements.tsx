@@ -257,10 +257,10 @@ export default function ProfileAchievements() {
                   </div>
                   <p className="line-clamp-2 min-h-[48px] text-center text-base font-bold text-gray-800 group-hover:text-[#E33527]">{title}</p>
                   <p className="mt-1 min-h-[20px] line-clamp-1 text-center text-xs text-gray-500">
-                    {completedAtLabel ? `\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08\u0E40\u0E21\u0E37\u0E48\u0E2D ${completedAtLabel}` : ""}
+                        {completedAtLabel ? `สำเร็จเมื่อ ${completedAtLabel}` : ""}
                   </p>
                   <span className="mt-auto inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-                    {"\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08"}
+                          {"สำเร็จ"}
                   </span>
                 </div>
               </Link>

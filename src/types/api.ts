@@ -674,6 +674,23 @@ export interface StorePack {
   limit_unit?: number;
   limit_unit_month?: number;
   limit_unit_day?: number;
+  is_selection?: boolean;
+  selection_limit?: number | null;
+  selectable_options?: StorePackSelectableOption[];
+}
+
+export interface StorePackSelectableOption {
+  store_pack_list_id: number;
+  store_pack_id: number;
+  type: string;
+  refer_id: string;
+  unit: number;
+  status: string;
+  item_name: string;
+  item_img: string;
+  book_id: number;
+  can_select: boolean;
+  selected: boolean;
 }
 
 export interface StoreCategory {
