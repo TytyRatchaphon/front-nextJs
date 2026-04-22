@@ -1,6 +1,5 @@
 "use client";
-
-import React, { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Alert, Pagination } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import CardBook from "@/components/novelCard/CardBook";

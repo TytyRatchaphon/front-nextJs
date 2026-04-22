@@ -1,5 +1,3 @@
-
-import React from 'react';
 import PackCampaign from '@/features/campaign/PackCampaign';
 import { fetchPackCampaignDetail } from '@/services/apiServices';
 import { Metadata } from 'next';

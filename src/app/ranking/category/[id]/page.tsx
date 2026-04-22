@@ -1,4 +1,3 @@
-import React from 'react'
 import CategoryRank from '@/features/Home/CategoryRank'
 
 export const revalidate = 120;

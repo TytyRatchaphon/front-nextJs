@@ -1,6 +1,4 @@
 "use client";
-
-import React from 'react';
 import Image from 'next/image';
 import { Plus } from 'lucide-react';
 import { Tooltip } from 'antd';

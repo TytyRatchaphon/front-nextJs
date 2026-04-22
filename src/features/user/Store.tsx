@@ -1,7 +1,8 @@
-'use client'
+"use client";
+import * as React from "react";
 
 import '@/components/home/Banner';
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { Tabs, Spin, Modal, Input, Image as AntdImage, App, Checkbox } from 'antd'
 import { CheckCircleOutlined } from '@ant-design/icons'
@@ -524,18 +525,6 @@ function Store() {
   const storePromoSrc = !bannerError && selectedStoreBanner
     ? imageLoader({ src: selectedStoreBanner, width: 1400 })
     : '/images/storeBanner.png';
-  const normalizeStoreAsset = (src: string | null | undefined, fallback: string) => {
-    if (!src || src === 'null' || src === 'undefined') {
-      return fallback;
-    }
-    if (src.startsWith('http') || src.startsWith('data:') || src.startsWith('/')) {
-      return src.replace('http:', 'https:');
-    }
-    if (src.startsWith('img/')) {
-      return `https://img.enjoybook.co/${src}`;
-    }
-    return `https://img.enjoybook.co/${src}`;
-  };
   const rawAvatar = user?.img ?? (user as any)?.profileImage ?? '';
   const avatarSrc = (() => {
     if (!rawAvatar || rawAvatar === 'null' || rawAvatar === 'undefined') {

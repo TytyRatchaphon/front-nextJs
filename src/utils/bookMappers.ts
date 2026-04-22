@@ -9,7 +9,7 @@ import { UniversalBook, BookData } from '@/types/api';
  * Normalized book data for continue reading cards
  * Extends UniversalBook with episode-specific fields
  */
-export interface NormalizedContinueBook extends UniversalBook {
+interface NormalizedContinueBook extends UniversalBook {
   ep_id?: string | number;
   epName?: string;
   last_read_at?: string;
@@ -114,6 +114,3 @@ export const normalizeContinueBooksArray = (books: BookData[]): NormalizedContin
  * @param books - Array of raw purchased book data
  * @returns Array of normalized purchased books
  */
-export const normalizePurchasedBooksArray = (books: BookData[]): UniversalBook[] => {
-  return books.map(normalizePurchasedBook);
-};

@@ -1,6 +1,5 @@
 'use client';
-
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Tabs } from 'antd';
 import type { TabsProps } from 'antd';

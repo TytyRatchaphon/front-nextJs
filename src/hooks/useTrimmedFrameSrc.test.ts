@@ -7,7 +7,7 @@ const mockTrimWhiteEdgesFromImageSrc = vi.fn();
 
 vi.mock("react", () => ({
   useState: (initial: string) => mockUseState(initial),
-  useEffect: (effect: () => void | (() => void), _deps: unknown[]) => mockUseEffect(effect),
+  useEffect: (effect: () => void | (() => void)) => mockUseEffect(effect),
 }));
 
 vi.mock("@/utils/frameImageUtils", () => ({

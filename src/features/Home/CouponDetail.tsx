@@ -1,6 +1,5 @@
 "use client"
-
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Ticket } from 'lucide-react';
 import { Tabs, ConfigProvider, Button, Input, notification } from 'antd';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';

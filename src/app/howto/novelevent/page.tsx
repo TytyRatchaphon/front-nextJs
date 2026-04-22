@@ -1,4 +1,3 @@
-import React from 'react'
 import NovelEvent from '@/features/Home/NovelEvent'
 
 function page() {

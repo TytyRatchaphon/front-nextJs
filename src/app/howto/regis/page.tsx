@@ -1,4 +1,3 @@
-import React from 'react'
 import HowToRegis from '@/features/Home/HowToRegis'
 
 function page() {

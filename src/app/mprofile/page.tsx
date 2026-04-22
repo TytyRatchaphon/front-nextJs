@@ -1,4 +1,3 @@
-import React from 'react'
 import MyProfile from '@/features/user/MyProfile'
 
 function page() {

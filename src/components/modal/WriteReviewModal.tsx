@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import * as React from "react";
+import { useState } from 'react';
 import { Modal, Rate, Input, Switch, Button, App } from 'antd';
 import Image from 'next/image';
 import { postPinnedReview } from '@/services/api/commentApi';      

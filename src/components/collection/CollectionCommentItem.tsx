@@ -1,6 +1,6 @@
-"use client"
-
-import React, { useState } from "react";
+"use client";
+import * as React from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { CollectionCommentData, postCollectionReply, deleteCollectionComment, deleteCollectionReply, reportCollectionComment, reportCollectionReply } from "@/services/api/collectionApi";

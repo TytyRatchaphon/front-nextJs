@@ -1,6 +1,8 @@
 "use client"
 
-import React, { useState } from 'react';
+import * as React from "react";
+
+import { useState } from 'react';
 import { Button, Modal, Form, Input, Progress, App } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import type { FormProps } from 'antd';

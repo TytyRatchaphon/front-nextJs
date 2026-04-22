@@ -1,5 +1,3 @@
-import React from 'react'
-
 function HowWithdrawPage() {
   return (
     <div className='min-h-screen py-8'>

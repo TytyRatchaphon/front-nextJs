@@ -1,4 +1,3 @@
-import React from 'react';
 import CampaignDetail from '@/features/campaign/CampaignDetail';
 
 export const revalidate = 60;

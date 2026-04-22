@@ -87,7 +87,6 @@ type ReadEpisodeListGroup = {
 
 const BANGKOK_TIME_ZONE = "Asia/Bangkok";
 const READ_EPISODE_PUBLIC_SECRET_KEY = process.env.NEXT_PUBLIC_SECRET_KEY || "";
-const READ_EPISODE_API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/+$/, "");
 const READER_OBFUSCATION_CSS_ID = "reader-obfuscation-css";
 const READER_OBFUSCATION_CSS_PRELOAD_ID = "reader-obfuscation-css-preload";
 const READER_TEMP_DISABLED_FONT_KEYS = ["baijamjuree", "trirong", "maitree"] as const;
@@ -1062,18 +1061,28 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
   }, [episodeGroups, currentEpisodeId]);
 
   const isCurrentEpisodeSequentiallyUnlocked = useMemo(() => {
-    const groups = episodesData?.groups;
-    if (!Array.isArray(groups)) return true;
+    const groups = Array.isArray(episodesData?.groups) ? episodesData.groups : [];
+    if (groups.length === 0) return true;
 
+    const orderedEpisodes: any[] = [];
     for (const group of groups) {
       const list = Array.isArray(group?.list) ? group.list : [];
-      const currentIndex = list.findIndex((ep: any) => String(ep?.ep_id ?? ep?.epID) === String(episodeId));
-      if (currentIndex === -1) continue;
-      return isEpisodeSequentiallyUnlockable(list[currentIndex], currentIndex, list);
+      orderedEpisodes.push(...list);
+    }
+
+    const currentIndex = orderedEpisodes.findIndex(
+      (ep: any) => String(ep?.ep_id ?? ep?.epID) === String(episodeId),
+    );
+    if (currentIndex !== -1) {
+      return isEpisodeSequentiallyUnlockable(
+        orderedEpisodes[currentIndex],
+        currentIndex,
+        orderedEpisodes,
+      );
     }
 
     return true;
-  }, [episodesData, episodeId]);
+  }, [episodesData?.groups, episodeId]);
 
   const purchaseState = useMemo(
     () => getReadEpisodePurchaseState(
@@ -1204,10 +1213,6 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, [bookId]);
-
-  const closeListPopover = useCallback(() => {
-    setIsListPopoverOpen(false);
-  }, []);
 
   const closeSidebar = useCallback(() => {
     setIsSidebarOpen(false);

@@ -1,6 +1,5 @@
-'use client';
-
-import React from 'react';
+"use client";
+import * as React from "react";
 import Image from 'next/image';
 import { useTrimmedFrameSrc } from '@/hooks/useTrimmedFrameSrc';
 import { resolveImageSrc } from '@/utils/imageUtils';

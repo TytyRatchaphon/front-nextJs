@@ -1,6 +1,6 @@
-'use client'
-
-import React, { useEffect, useState } from "react";
+"use client";
+import * as React from "react";
+import { useEffect, useState } from "react";
 import { Checkbox, Form, Input, Select, Modal, Slider, Spin, Upload, notification } from "antd"; // เพิ่ม notification
 import type { CheckboxChangeEvent } from "antd/es/checkbox";
 import type { RcFile } from 'antd/es/upload/interface';

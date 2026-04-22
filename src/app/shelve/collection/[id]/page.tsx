@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import { Suspense } from 'react';
 import AuthGuard from '@/components/auth/AuthGuard';
 import CollectionDetail from '@/components/collection/CollectionDetail';
 import { Metadata } from 'next';

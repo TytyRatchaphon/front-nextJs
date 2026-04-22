@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import * as React from "react";
+import { useState, useMemo } from 'react';
 import { Button, Table, Pagination, DatePicker, notification } from 'antd';
 import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';

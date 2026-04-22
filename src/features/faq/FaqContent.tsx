@@ -1,6 +1,4 @@
 "use client";
-
-import React from 'react';
 import { Collapse } from 'antd';
 import type { FaqItem } from '@/services/apiServices';
 import { PlusOutlined, MinusOutlined } from '@ant-design/icons';

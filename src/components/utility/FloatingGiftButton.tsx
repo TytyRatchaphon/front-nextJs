@@ -1,6 +1,4 @@
 "use client";
-
-import React from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useWebsiteStore } from '@/stores/websiteStore';

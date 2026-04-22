@@ -1,4 +1,3 @@
-import React from 'react'
 import Threads from '@/features/Home/Threads'
 import { fetchThreads } from '@/services/apiServices';
 

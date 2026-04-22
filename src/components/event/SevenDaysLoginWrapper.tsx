@@ -1,6 +1,4 @@
 "use client";
-
-import React from 'react';
 import SevenDaysLogin from '@/components/event/SevenDaysLogin';
 import { useWebsiteStore } from '@/stores/websiteStore';
 

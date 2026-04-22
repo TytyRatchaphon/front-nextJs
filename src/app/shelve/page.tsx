@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react'
+import { Suspense } from 'react'
 import Shelve from '@/features/user/Shelve'
 import AuthGuard from '@/components/auth/AuthGuard'
 import { Metadata } from 'next'

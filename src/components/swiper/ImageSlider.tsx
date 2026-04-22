@@ -1,6 +1,4 @@
 "use client";
-
-import React from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { FreeMode, Scrollbar, Mousewheel } from 'swiper/modules';
 import 'next/image';
@@ -43,9 +41,4 @@ export function TagSwiper({ tags, classImport = 'inline-block bg-gray-100 text-g
         </div>
     );
 }
-
-export function BannerSwiper(){
-    
-}
-
 

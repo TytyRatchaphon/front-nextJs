@@ -1,4 +1,3 @@
-import React from 'react';
 import AllReview from '@/features/Home/AllReview';
 
 export const metadata = {

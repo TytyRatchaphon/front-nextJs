@@ -1,6 +1,6 @@
 "use client";
-
-import React, { useState, useEffect } from "react";
+import * as React from "react";
+import { useState, useEffect } from "react";
 import { Alert, Collapse, Segmented } from "antd";
 import { ChevronDown, Package2, List } from 'lucide-react';
 import BookDetailHeader from "@/components/bookdetail/BookDetailHeader";

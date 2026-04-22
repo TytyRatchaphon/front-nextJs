@@ -1,6 +1,6 @@
 "use client";
-
-import React, { useEffect, useState } from "react";
+import * as React from "react";
+import { useEffect, useState } from "react";
 import { Modal } from "antd";
 import { CloseOutlined } from "@ant-design/icons";
 import { useUIStore } from "@/stores/uiStore";

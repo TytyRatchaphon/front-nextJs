@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import * as React from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import GifLoader from "@/components/utility/GifLoader";
@@ -115,12 +116,30 @@ export const BookEpisodesTab = ({
   latestUpdate,
 }: Props) => {
   const [expandedGroups, setExpandedGroups] = useState<Record<number, boolean>>({});
+  const episodeGroups = Array.isArray(episodesData?.groups) ? episodesData.groups : [];
+  const orderedEpisodes = React.useMemo(() => {
+    const ordered: any[] = [];
+    for (const group of episodeGroups) {
+      const list = Array.isArray(group?.list) ? group.list : [];
+      ordered.push(...list);
+    }
+    return ordered;
+  }, [episodeGroups]);
+  const orderedEpisodeIndexMap = React.useMemo(() => {
+    const episodeIndexMap = new Map<number, number>();
+    for (let index = 0; index < orderedEpisodes.length; index += 1) {
+      const episodeId = Number(orderedEpisodes[index]?.ep_id);
+      if (!Number.isFinite(episodeId) || episodeIndexMap.has(episodeId)) continue;
+      episodeIndexMap.set(episodeId, index);
+    }
+    return episodeIndexMap;
+  }, [orderedEpisodes]);
 
   if (isLoading) {
     return <GifLoader className="mx-auto h-48 w-48" width={200} height={200} />;
   }
 
-  if (!episodesData || !episodesData.groups || episodesData.groups.length === 0) {
+  if (episodeGroups.length === 0) {
     return (
       <div className="py-12 text-center">
         <p className="text-sm text-gray-500">ยังไม่มีตอนที่เผยแพร่</p>
@@ -146,7 +165,7 @@ export const BookEpisodesTab = ({
       </div>
 
       <div className="divide-y divide-gray-100">
-        {episodesData.groups.map((group: any, groupIndex: number) => {
+        {episodeGroups.map((group: any, groupIndex: number) => {
           const isExpanded = expandedGroups[group.group_id] ?? groupIndex === 0;
 
           const toggleGroup = () => {
@@ -175,13 +194,21 @@ export const BookEpisodesTab = ({
 
               {isExpanded && (
                 <div className="divide-y divide-gray-50">
-                  {group.list.map((episode: any, index: number) => {
+                  {group.list.map((episode: any) => {
                     const regularPrice = Number(episode.coin ?? 0);
                     const early = normalizeEpisodeEarlyAccess(episode);
                     const hasEarlyAccess = early.isEarlyAccess;
                     const canPayByFastTicket = early.fastTicket;
                     const canPayByFastCoin = early.fastCoin;
-                    const isFastBuyable = hasEarlyAccess && isEpisodeSequentiallyUnlockable(episode, index, group.list);
+                    const episodeId = Number(episode?.ep_id);
+                    const orderedIndex = Number.isFinite(episodeId)
+                      ? orderedEpisodeIndexMap.get(episodeId)
+                      : undefined;
+                    const isFastBuyable = hasEarlyAccess && (
+                      orderedIndex === undefined
+                        ? true
+                        : isEpisodeSequentiallyUnlockable(episode, orderedIndex, orderedEpisodes)
+                    );
                     const isFastLocked = hasEarlyAccess && !isFastBuyable && !Boolean(episode?.isBuy);
                     const fastTicketPrice = early.fastTicketPrice;
                     const fastCoinPrice = early.fastCoinPrice;

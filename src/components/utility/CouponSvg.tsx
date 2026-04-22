@@ -1,5 +1,4 @@
-import React from 'react';
-
+import * as React from "react";
 type CouponSvgProps = {
     type: 'discount_percent' | 'novel_whole' | 'boxset' | 'coin_freecoin' | string;
     className?: string;

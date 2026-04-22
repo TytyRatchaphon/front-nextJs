@@ -1,6 +1,4 @@
 'use client';
-
-import React from 'react';
 import { App } from 'antd';
 import { useUIStore } from '@/stores/uiStore';
 import { useAuthStore } from '@/stores/authStore';

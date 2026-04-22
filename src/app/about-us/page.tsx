@@ -1,4 +1,3 @@
-import React from 'react';
 import AboutUsContent from '@/features/about/AboutUsContent';
 import { Metadata } from 'next';
 

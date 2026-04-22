@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import * as React from "react";
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Input, Button, notification, Upload, Select, Steps, ConfigProvider } from 'antd';
 import { UploadOutlined, UserOutlined, BankOutlined } from '@ant-design/icons';

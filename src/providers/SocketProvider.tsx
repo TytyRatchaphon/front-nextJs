@@ -1,6 +1,6 @@
-'use client';
-
-import React, { createContext, useContext, useEffect, useState } from 'react';
+"use client";
+import * as React from "react";
+import { createContext, useContext, useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '@/stores/authStore';
 import Cookies from 'js-cookie';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal, Input, Button, Empty, Pagination } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import Image from 'next/image';

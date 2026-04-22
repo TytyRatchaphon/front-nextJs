@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import * as React from "react";
+import { useState, useEffect } from "react";
 import { Alert, Button, Select, Popover, Tabs, Pagination, App, Empty, Segmented } from "antd";
 import { fetchBookReviews, fetchStickers, postBookReview, fetchBookComments, postCommentNotification, postReviewNotification } from "@/services/apiServices";
 import { CommentData, CommentEpData, StickerSet } from "@/types/api";

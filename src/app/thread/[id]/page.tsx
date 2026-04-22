@@ -1,4 +1,3 @@
-import React from 'react'
 import ThreadDetail from '@/features/book/threadDetail'
 import { fetchThreadDetail } from '@/services/apiServices';
 

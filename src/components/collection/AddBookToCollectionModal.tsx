@@ -1,6 +1,5 @@
 'use client';
-
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { Modal, Input, Button, Tabs, Empty, Pagination, App } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';

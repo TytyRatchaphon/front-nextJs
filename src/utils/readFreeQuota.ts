@@ -22,7 +22,7 @@ type EvaluateFreeQuotaInput = {
   isEpisodeOwned?: boolean;
 };
 
-export type EvaluateFreeQuotaResult = {
+type EvaluateFreeQuotaResult = {
   blocked: boolean;
   reason: FreeQuotaBlockReason;
   currentCount: number;
@@ -121,7 +121,7 @@ export const readFreeQuotaStorage = (): ReadFreeQuotaStorage => {
   }
 };
 
-export const writeFreeQuotaStorage = (data: ReadFreeQuotaStorage): void => {
+const writeFreeQuotaStorage = (data: ReadFreeQuotaStorage): void => {
   const browserStorage = getBrowserStorage();
   if (!browserStorage) return;
   try {

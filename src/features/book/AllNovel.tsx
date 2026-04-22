@@ -1,6 +1,5 @@
 'use client';
-
-import React, { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { Pagination, Tabs, Select, Alert } from 'antd';
 import GifLoader from '@/components/utility/GifLoader';
 import { useQuery } from '@tanstack/react-query';

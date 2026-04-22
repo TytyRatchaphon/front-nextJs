@@ -1,6 +1,5 @@
 "use client";
-
-import React from 'react';
+import * as React from "react";
 import { useQuery } from '@tanstack/react-query';
 import { fetchPinnedReviews, type ReviewFeedSort } from '@/services/api/commentApi';
 import Image from 'next/image';

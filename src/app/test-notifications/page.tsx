@@ -1,6 +1,5 @@
 "use client";
-
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSocket } from '@/providers/SocketProvider';
 import { Button, Card, Tag, Typography, List } from 'antd';
 import { WifiOutlined, DisconnectOutlined } from '@ant-design/icons';

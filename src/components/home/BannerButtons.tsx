@@ -1,6 +1,4 @@
 import Link from 'next/link';
-import React from 'react';
-
 const BannerButtons = () => {
   return (
     <div className="w-full -mt-1 mb-1">

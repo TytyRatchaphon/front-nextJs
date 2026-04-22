@@ -1,7 +1,8 @@
 "use client";
+import * as React from "react";
 
 import Image from "next/image";
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { Modal, Checkbox, Spin, Button, App, Radio, Image as AntImage } from "antd";
 import { useQuery } from "@tanstack/react-query";
@@ -19,10 +20,10 @@ import { CountdownTimer as CommonCountdownTimer } from "@/components/common/Coun
 import { useWebsiteStore } from '@/stores/websiteStore';
 import "jwt-decode";
 import '@/utils/imageUtils';
-import type { DiscountReward, EpisodeGroup, BookEpisodesResponse } from '@/types/api';
+import type { DiscountReward, EpisodeGroup } from '@/types/api';
 import '@/types/errors';
 import { useLogger } from '@/hooks/useLogger';
-import { isEpisodeOwnedOrFree, isEpisodeSequentiallyUnlockable, normalizeEpisodeEarlyAccess } from '@/utils/earlyAccessUtils';
+import { isEpisodeOwnedOrFree, normalizeEpisodeEarlyAccess } from '@/utils/earlyAccessUtils';
 import { requestNavbarRankRefresh } from '@/utils/rankRefresh';
 
 
@@ -335,7 +336,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
         for (let index = 0; index < g.list.length; index += 1) {
           const ep = g.list[index];
           const early = getEarlyAccess(ep);
-          if (isEpisodeSequentiallyUnlocked(ep, index, g.list) && !early.isEarlyAccess) {
+          if (isEpisodeSequentiallyUnlocked(ep) && !early.isEarlyAccess) {
             selectableIds.push(Number(ep.ep_id));
             epMap[Number(ep.ep_id)] = ep;
             total += getEpisodePriceByMethod(ep, 'coin');
@@ -492,7 +493,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     return { hasTicketConfig, hasCoinConfig };
   };
 
-  const canEpisodePayWithCoin = (_episode: any) => true;
+  const canEpisodePayWithCoin = () => true;
   const canEpisodePayWithFastCoin = (episode: any) => {
     const early = getEarlyAccess(episode);
     if (!early.isEarlyAccess) return true;
@@ -544,20 +545,44 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     if (Array.isArray(selectionContext)) return selectionContext.includes(episodeId);
     return false;
   };
+  const getEpisodesForSelectionMode = (group: any) => {
+    const list = Array.isArray(group?.list) ? group.list : [];
+    if (selectionModalMode !== 'early') return list;
+    return list.filter((episode: any) => getEarlyAccess(episode).isEarlyAccess);
+  };
+  const orderedEpisodesForSelectionMode = useMemo(() => {
+    if (!episodesData?.groups) return [] as any[];
+    const orderedEpisodes: any[] = [];
+    for (const group of episodesData.groups) {
+      orderedEpisodes.push(...getEpisodesForSelectionMode(group));
+    }
+    return orderedEpisodes;
+  }, [episodesData, selectionModalMode]);
+  const orderedEpisodeIndexMap = useMemo(() => {
+    const episodeIndexMap = new Map<number, number>();
+    for (let index = 0; index < orderedEpisodesForSelectionMode.length; index += 1) {
+      const episodeId = Number(orderedEpisodesForSelectionMode[index]?.ep_id);
+      if (!Number.isFinite(episodeId) || episodeIndexMap.has(episodeId)) continue;
+      episodeIndexMap.set(episodeId, index);
+    }
+    return episodeIndexMap;
+  }, [orderedEpisodesForSelectionMode]);
   const isEpisodeSequentiallyUnlocked = (
     episode: any,
-    index: number,
-    groupList: any[],
     selectionContext: ReadonlySet<number> | readonly number[] = selectedEpisodeIds,
   ) => {
     if (!isEpisodeBaseSelectable(episode)) return false;
     const early = getEarlyAccess(episode);
     if (!early.isEarlyAccess) return true;
-    if (isEpisodeSequentiallyUnlockable(episode, index, groupList)) return true;
+
+    const episodeId = Number(episode?.ep_id);
+    if (!Number.isFinite(episodeId)) return true;
+    const orderedIndex = orderedEpisodeIndexMap.get(episodeId);
+    if (orderedIndex === undefined) return true;
 
     let previousEarlyEpisode: any = null;
-    for (let i = index - 1; i >= 0; i -= 1) {
-      const candidate = groupList[i];
+    for (let i = orderedIndex - 1; i >= 0; i -= 1) {
+      const candidate = orderedEpisodesForSelectionMode[i];
       if (getEarlyAccess(candidate).isEarlyAccess) {
         previousEarlyEpisode = candidate;
         break;
@@ -586,17 +611,12 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       const episode = episodes[index];
       const episodeId = Number(episode?.ep_id);
       if (!Number.isFinite(episodeId)) continue;
-      if (!isEpisodeSequentiallyUnlocked(episode, index, episodes, unlockContext)) continue;
+      if (!isEpisodeSequentiallyUnlocked(episode, unlockContext)) continue;
       selectableIds.push(episodeId);
       unlockContext.add(episodeId);
     }
 
     return selectableIds;
-  };
-
-  const getEpisodesForSelectionMode = (group: any) => {
-    if (selectionModalMode !== 'early') return group.list;
-    return group.list.filter((episode: any) => getEarlyAccess(episode).isEarlyAccess);
   };
 
   const selectedSummary = useMemo(() => {
@@ -640,7 +660,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
         fastTicketCount += 1;
         fastTicketRequiredTotal += Number(getEpisodePriceByMethod(ep, 'fast_ticket') || 0);
       }
-      canUseCoin = canUseCoin && canEpisodePayWithCoin(ep);
+      canUseCoin = canUseCoin && canEpisodePayWithCoin();
       canUseFreecoin = canUseFreecoin && canEpisodePayWithFreecoin(ep);
       canUseFastTicket = canUseFastTicket && canEpisodePayWithFastTicket(ep);
       canUseFastCoin = canUseFastCoin && canEpisodePayWithFastCoin(ep);
@@ -667,14 +687,8 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   }, [selectedEpisodeIds, episodesData, payWith, fastPayWith]);
 
   const allSelectableIds = useMemo(() => {
-    if (!episodesData?.groups) return [] as number[];
-    const ids: number[] = [];
-    for (const g of episodesData.groups) {
-      const selectableList = getEpisodesForSelectionMode(g);
-      ids.push(...getProgressiveSelectableIds(selectableList, selectedEpisodeIds));
-    }
-    return Array.from(new Set(ids.map((id) => Number(id)).filter((id) => Number.isFinite(id))));
-  }, [episodesData, selectedEpisodeIds, selectionModalMode]);
+    return getProgressiveSelectableIds(orderedEpisodesForSelectionMode, selectedEpisodeIds);
+  }, [orderedEpisodesForSelectionMode, selectedEpisodeIds]);
 
   const allSelected = allSelectableIds.length > 0 && allSelectableIds.every((id) => selectedEpisodeIds.includes(id));
 
@@ -770,7 +784,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
         const ep = visibleEpisodes[index];
         const epId = Number(ep?.ep_id);
         if (!selectedEpisodeIds.includes(epId)) continue;
-        if (isEpisodeSequentiallyUnlocked(ep, index, visibleEpisodes)) {
+        if (isEpisodeSequentiallyUnlocked(ep)) {
           validSelected.add(epId);
         }
       }
@@ -822,53 +836,6 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
               {summary.canUseFreecoin && (
                 <Image src={settings?.freecoin || '/images/money-bag.png'} alt="freecoin" width={14} height={14} unoptimized />
               )}
-            </div>
-          </>
-        )}
-      </div>
-    );
-  };
-
-  const renderCompactEarlyAccessSummary = (summary: {
-    fastTicketRequiredTotal: number;
-    earlyAccessCoinTotal: number;
-    baseCoinTotal: number;
-    canUseFreecoin: boolean;
-    canUseFastCoin: boolean;
-  }) => {
-    const showFastTicket = summary.fastTicketRequiredTotal > 0;
-    const showFastCoin = summary.canUseFastCoin && summary.earlyAccessCoinTotal > 0;
-
-    if (!showFastTicket && !showFastCoin) return null;
-
-    return (
-      <div className="flex flex-wrap items-center justify-center gap-2 text-base font-semibold">
-        <div className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-amber-700">
-          <span>(</span>
-          {showFastTicket && (
-            <>
-              <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={16} height={16} unoptimized />
-              <span>{summary.fastTicketRequiredTotal}</span>
-            </>
-          )}
-          {showFastTicket && showFastCoin && <span className="text-gray-400">/</span>}
-          {showFastCoin && (
-            <>
-              <Image src={settings?.coin || '/images/e-coin.png'} alt="fast coin" width={16} height={16} unoptimized />
-              <span>{summary.earlyAccessCoinTotal}</span>
-            </>
-          )}
-          <span>)</span>
-        </div>
-        {summary.baseCoinTotal > 0 && (
-          <>
-            <span className="text-gray-400">+</span>
-            <div className="inline-flex items-center gap-1 text-orange-600">
-              <Image src={settings?.coin || '/images/e-coin.png'} alt="coin" width={16} height={16} unoptimized />
-              {summary.canUseFreecoin && (
-                <Image src={settings?.freecoin || '/images/money-bag.png'} alt="freecoin" width={16} height={16} unoptimized />
-              )}
-              <span>{summary.baseCoinTotal}</span>
             </div>
           </>
         )}
@@ -1228,11 +1195,11 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
 
                             {isExpanded && (
                               <div className="divide-y">
-                                {visibleEpisodes.map((episode: any, index: number) => {
+                                {visibleEpisodes.map((episode: any) => {
                                   const early = getEarlyAccess(episode);
                                   const fastTicketDisplayPrice = early.fastTicketPrice ?? 1;
                                   const canUseFreecoin = canEpisodePayWithFreecoin(episode);
-                                  const sequentialUnlocked = isEpisodeSequentiallyUnlocked(episode, index, visibleEpisodes);
+                                  const sequentialUnlocked = isEpisodeSequentiallyUnlocked(episode);
                                   const isFastEpisode = early.isEarlyAccess;
                                   const fastLocked = isFastEpisode && !sequentialUnlocked && !episode?.isBuy;
                                   const fastBuyable = isFastEpisode && sequentialUnlocked && !episode?.isBuy;

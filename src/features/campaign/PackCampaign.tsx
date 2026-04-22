@@ -1,6 +1,5 @@
 "use client";
-
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import { PackCampaignDetail, BookPromotionOption } from '@/types/api';
 import { fetchBookPromotionOptions, buyGroupPromotion } from '@/services/apiServices';

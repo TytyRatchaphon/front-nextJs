@@ -1,4 +1,3 @@
-import React from 'react';
 import ArticleDetail from '@/features/article/ArticleDetail';
 import { fetchArticleDetail } from '@/services/apiServices';
 

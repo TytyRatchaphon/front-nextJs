@@ -1,6 +1,5 @@
 "use client";
-
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchBookReviewsNew, deleteUserReview } from '@/services/api/commentApi';
 import ImageWithFallback from '@/components/ui/ImageWithFallback';

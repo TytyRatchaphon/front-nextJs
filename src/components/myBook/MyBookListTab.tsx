@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from "react";
 import Link from 'next/link';
 import { Input, Select, Button, Pagination } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';

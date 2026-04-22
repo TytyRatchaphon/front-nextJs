@@ -1,3 +1,4 @@
+import * as React from "react";
 import type { Metadata } from "next";
 import { GoogleAnalytics } from '@next/third-parties/google';
 import 'swiper/css';

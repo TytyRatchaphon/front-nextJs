@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchCartItems, updateCartItem, removeCartItem } from '@/services/cartService';
 import { Button, Collapse, App, Image as AntImage } from 'antd';

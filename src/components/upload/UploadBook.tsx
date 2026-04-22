@@ -1,6 +1,6 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
+"use client";
+import * as React from "react";
+import { useState, useEffect } from 'react';
 import { Image, Upload } from 'antd';
 import type { RcFile } from 'antd/es/upload/interface';
 import ImgCrop from 'antd-img-crop';

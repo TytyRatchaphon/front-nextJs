@@ -1,6 +1,5 @@
 "use client";
-
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchThreads, createThread, deleteThread } from '@/services/apiServices';
 import { App, Pagination, Select, Tabs, Modal, Input, Button, Form } from 'antd';

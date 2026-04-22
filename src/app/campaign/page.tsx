@@ -1,4 +1,3 @@
-import React from 'react';
 import Campaign from '@/features/campaign/Campaign';
 import { fetchCampaigns } from '@/services/apiServices';
 

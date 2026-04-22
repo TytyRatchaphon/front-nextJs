@@ -1,6 +1,4 @@
 "use client"
-
-import React from 'react'
 import Image from 'next/image'
 import { useAuthStore } from '@/stores/authStore'
 import apiClient from '@/services/apiClient'

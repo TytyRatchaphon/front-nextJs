@@ -1,4 +1,3 @@
-import React from 'react';
 import Article from "@/features/article/Article";
 import { fetchLatestArticles, fetchPopularArticles } from '@/services/apiServices';
 

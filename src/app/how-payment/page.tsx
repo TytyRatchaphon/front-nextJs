@@ -1,4 +1,3 @@
-import React from 'react';
 import HowPaymentContent from '@/features/payment/HowPaymentContent';
 import { Metadata } from 'next';
 

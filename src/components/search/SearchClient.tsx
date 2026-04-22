@@ -1,6 +1,6 @@
 "use client";
-
-import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
+import * as React from "react";
+import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Pagination, Alert } from "antd";
 import { useQuery } from "@tanstack/react-query";

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import * as React from "react";
+import { useState } from 'react';
 import parse, { DOMNode, Element, domToReact } from 'html-react-parser';
 
 const SpoilerWrapper = ({ children }: { children: React.ReactNode }) => {

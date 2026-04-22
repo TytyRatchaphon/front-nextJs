@@ -10,7 +10,7 @@
 /**
  * Custom error class for API-related errors
  */
-export class ApiError extends Error {
+class ApiError extends Error {
   constructor(
     message: string,
     public code?: string,
@@ -28,25 +28,16 @@ export class ApiError extends Error {
 }
 
 /**
- * Interface for API error responses
- */
-export interface ApiErrorResponse {
-  message: string;
-  code?: string;
-  data?: unknown;
-}
-
-/**
  * Type guard to check if an error is an ApiError
  */
-export const isApiError = (error: unknown): error is ApiError => {
+const isApiError = (error: unknown): error is ApiError => {
   return error instanceof ApiError;
 };
 
 /**
  * Type guard to check if an error has a message property
  */
-export const hasErrorMessage = (error: unknown): error is { message: string } => {
+const hasErrorMessage = (error: unknown): error is { message: string } => {
   return (
     typeof error === 'object' &&
     error !== null &&
@@ -74,13 +65,3 @@ export const getErrorMessage = (error: unknown): string => {
   return 'An unknown error occurred';
 };
 
-/**
- * Extract status code from error if available
- */
-export const getErrorStatusCode = (error: unknown): number | undefined => {
-  if (isApiError(error)) {
-    return error.statusCode;
-  }
-  
-  return undefined;
-};

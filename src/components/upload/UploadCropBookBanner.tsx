@@ -1,6 +1,6 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
+"use client";
+import * as React from "react";
+import { useState, useEffect } from 'react';
 import { Upload, Image as AntdImage } from 'antd'; // 1. เปลี่ยนชื่อ Image ของ Antd
 import type { RcFile } from 'antd/es/upload/interface';
 import ImgCrop from 'antd-img-crop';

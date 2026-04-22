@@ -1,6 +1,6 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
+"use client";
+import * as React from "react";
+import { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 

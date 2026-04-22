@@ -1,4 +1,3 @@
-import React from 'react';
 import LineCallbackContent from '@/features/auth/LineCallbackContent';
 import { Metadata } from 'next';
 

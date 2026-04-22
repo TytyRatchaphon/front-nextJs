@@ -1,6 +1,5 @@
 "use client";
-
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Rate, Input, App, Popover } from 'antd';
 import Image from 'next/image';
 import Link from 'next/link';

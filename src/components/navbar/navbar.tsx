@@ -1,4 +1,5 @@
 "use client";
+import * as React from "react";
 
 import NovelMenu from './NovelMenu';
 import CartPopover from './CartPopover';
@@ -6,7 +7,7 @@ import { Popover, App, Drawer, Switch } from 'antd';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import LoginButtonHeader from './LoginButtonHeader';
 import { ChevronRight, Menu, X } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Image from 'next/image';
 import NotificationList from './NotificationList';
 import { useSocket } from '@/providers/SocketProvider';
@@ -687,7 +688,7 @@ function Navbar() {
                 <NovelMenu />
               </div>
             </div>
-            <Link href="/news" className={getLinkClasses('/news')}>นิยายใหม่</Link>
+            {/* <Link href="/news" className={getLinkClasses('/news')}>นิยายใหม่</Link> */}
             <Link href="/ranking" className={getLinkClasses('/ranking')}>จัดอันดับ</Link>
             <Link href="/article" className={getLinkClasses('/article')}>บทความ</Link>
             {/* <Link href="/campaign" className={getLinkClasses('/campaign')}>แคมเปญ</Link> */}

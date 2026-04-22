@@ -1,6 +1,5 @@
 "use client";
-
-import React from 'react';
+import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchCartItems, updateCartItem, removeCartItem, clearCart } from '@/services/cartService';
 import { CartItem, SelectableOption } from '@/interfaces/cart.interface';

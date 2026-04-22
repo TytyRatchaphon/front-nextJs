@@ -1,4 +1,3 @@
-import React from 'react';
 import FaqContent from '@/features/faq/FaqContent';
 import { fetchFaqs } from '@/services/apiServices';
 

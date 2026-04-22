@@ -1,6 +1,5 @@
 "use client";
-
-import React from 'react';
+import * as React from "react";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Scrollbar, A11y, EffectFade, FreeMode } from 'swiper/modules';
 import ArticleCard from '../novelCard/ArticleCard';

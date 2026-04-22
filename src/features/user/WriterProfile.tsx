@@ -1,6 +1,5 @@
 "use client";
-
-import React, { useEffect, useState, Suspense, useCallback } from "react";
+import { useEffect, useState, Suspense, useCallback } from "react";
 import Image from "next/image";
 import { Image as AntdImage } from "antd";
 import { App, Pagination, Select, Empty, Button, Modal } from "antd";

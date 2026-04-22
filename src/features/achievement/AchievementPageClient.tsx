@@ -1,11 +1,11 @@
 "use client";
-
-import React, { useState } from 'react';
+import * as React from "react";
+import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Modal, Progress, App } from 'antd';
+import { Modal, App } from 'antd';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Trophy, Award, Target, BookOpen, Coins, Flame, Gift, ChevronRight, X } from 'lucide-react';
+import { Trophy, Award, Target, BookOpen, Coins, Flame, Gift, X } from 'lucide-react';
 import { fetchAchievements, fetchAchievementDetail, claimAchievement } from '@/services/api/achievementApi';
 import { useAuthStore } from '@/stores/authStore';
 import { useWebsiteStore } from '@/stores/websiteStore';

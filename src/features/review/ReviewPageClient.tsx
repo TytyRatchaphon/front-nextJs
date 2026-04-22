@@ -1,6 +1,5 @@
 "use client";
-
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { App } from 'antd';
 import { fetchReviewById, deleteUserReview } from '@/services/api/commentApi';
@@ -42,7 +41,7 @@ export default function ReviewPageClient({ reviewId }: ReviewPageClientProps) {
     router.back();
   };
 
-  const handleEdit = (review: any) => {
+  const handleEdit = () => {
     setIsModalOpen(false);
     setIsEditModalOpen(true);
   };

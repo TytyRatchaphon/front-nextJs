@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface SaleGroupSVGProps {
     className?: string;
     percent?: number | string;

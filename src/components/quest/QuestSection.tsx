@@ -1,6 +1,5 @@
 "use client";
-
-import React, { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { notification } from "antd";
 import { CheckCircleOutlined } from "@ant-design/icons";
 import type { QuestGroup, QuestItem } from "@/services/api/userApi";

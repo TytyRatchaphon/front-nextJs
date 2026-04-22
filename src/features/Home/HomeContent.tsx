@@ -1,6 +1,5 @@
 "use client";
-
-import React from "react";
+import * as React from "react";
 import { App } from "antd";
 import { CloseCircleOutlined } from "@ant-design/icons";
 import Banner from "@/components/home/Banner";
@@ -124,14 +123,13 @@ export default function HomeContent({
     enabled: !isLoading && enableSecondaryQueries && !!user,
     select: (data: any) => data?.books ?? [],
   });
-
   const {
     data: pinnedReviewsData,
     isLoading: isPinnedReviewsLoading,
     error: pinnedReviewsError,
   } = useQuery({
-    queryKey: ["pinnedReviews", "liked", 10, 1],
-    queryFn: () => fetchPinnedReviews({ sort: "liked", limit: 10, page: 1 }),
+    queryKey: ["pinnedReviews", "latest", 10, 1],
+    queryFn: () => fetchPinnedReviews({ sort: "latest", limit: 10, page: 1 }),
     enabled: !isLoading && enableSecondaryQueries,
   });
 

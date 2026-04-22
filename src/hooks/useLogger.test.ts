@@ -11,8 +11,8 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("react", () => ({
-  useEffect: (effect: () => void | (() => void), _deps: unknown[]) => mockUseEffect(effect),
-  useCallback: (fn: any, _deps: unknown[]) => mockUseCallback(fn),
+  useEffect: (effect: () => void | (() => void)) => mockUseEffect(effect),
+  useCallback: (fn: any) => mockUseCallback(fn),
   useRef: (initial: any) => mockUseRef(initial),
 }));
 

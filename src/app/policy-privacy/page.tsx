@@ -1,4 +1,3 @@
-import React from 'react';
 import PrivacyPolicyContent from '@/features/policy/PrivacyPolicyContent';
 import { Metadata } from 'next';
 

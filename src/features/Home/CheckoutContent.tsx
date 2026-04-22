@@ -1,15 +1,13 @@
 "use client";
-
-import React, { useState, useEffect } from 'react';
+import * as React from "react";
+import { useState, useEffect } from 'react';
 import { isValidPhoneNumber } from 'libphonenumber-js';
-import { App, List, Avatar, Empty, Spin, Form, Input, Button, Typography, Tag } from 'antd';
+import { App, Empty, Spin, Form, Input, Button, Typography, Tag } from 'antd';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchCheckoutItems, fetchCheckoutAddress, fetchCheckoutSummary, confirmCheckout } from '@/services/cartService';
 import { updateUserAddress } from '@/services/apiServices';
 import { 
-    UnorderedListOutlined, 
     HomeOutlined, 
-    FileTextOutlined, 
     CheckCircleOutlined, 
     LeftOutlined, 
     CloseCircleOutlined,
@@ -208,10 +206,6 @@ export default function CheckoutContent() {
 
     const nextStep = () => {
         setCurrentStep(prev => prev + 1);
-    };
-
-    const prevStep = () => {
-        setCurrentStep(prev => prev - 1);
     };
 
     const renderCurrencyIcon = (currency: string, size = 18) => {

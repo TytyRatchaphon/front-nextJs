@@ -1,4 +1,3 @@
-import React from 'react';
 import Report from '@/features/mybook/Report';
 import AuthGuard from '@/components/auth/AuthGuard';
 

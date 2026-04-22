@@ -1,4 +1,3 @@
-import React from 'react'
 import Redeem from '@/features/user/Redeem'
 import AuthGuard from '@/components/auth/AuthGuard'
 

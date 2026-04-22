@@ -1,4 +1,3 @@
-import React from 'react';
 import WriterNCPolicyContent from '@/features/policy/WriterNCPolicyContent';
 import { Metadata } from 'next';
 

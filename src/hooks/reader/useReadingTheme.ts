@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useState, useEffect, useRef } from 'react';
 
 export type ReadingThemeFontOption = {

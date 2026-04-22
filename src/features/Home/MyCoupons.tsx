@@ -1,7 +1,6 @@
 
 'use client';
-
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchUserCoupons, useCoupon as applyCoupon } from '@/services/apiServices';
 import { App, Empty, Modal, Checkbox, Button, Image as AntImage } from 'antd';

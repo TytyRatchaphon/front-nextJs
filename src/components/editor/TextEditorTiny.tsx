@@ -1,4 +1,5 @@
-import React, { useRef, useEffect, useState } from 'react';
+import * as React from "react";
+import { useRef, useEffect, useState } from 'react';
 import { imageUploadHandler } from '@/components/editor/editor_api';
 
 // 1. ประกาศ Interface สำหรับ Props

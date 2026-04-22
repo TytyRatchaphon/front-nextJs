@@ -1,6 +1,5 @@
 'use client';
-
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { App, Spin } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';

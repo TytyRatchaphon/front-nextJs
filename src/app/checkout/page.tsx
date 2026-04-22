@@ -1,5 +1,3 @@
-
-import React from 'react';
 import AuthGuard from '@/components/auth/AuthGuard';
 import CheckoutContent from '@/features/Home/CheckoutContent';
 import { Metadata } from 'next';

@@ -1,6 +1,4 @@
 "use client"
-
-import React from 'react'
 import Image from 'next/image'
 import { Progress, Button, notification } from 'antd';
 import { GiftOutlined } from '@ant-design/icons'

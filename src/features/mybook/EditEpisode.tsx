@@ -1,6 +1,6 @@
-'use client';
-
-import React, { useEffect, useState } from "react";
+"use client";
+import * as React from "react";
+import { useEffect, useState } from "react";
 import { Form, Input, Select, DatePicker, notification, Modal } from "antd";
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';

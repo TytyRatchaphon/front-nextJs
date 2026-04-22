@@ -1,7 +1,5 @@
 "use client";
-
-import React, { Suspense, useEffect, useState } from "react";
-import Image from "next/image";
+import { Suspense, useEffect, useState } from "react";
 import { Image as AntdImage, Button } from "antd";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";

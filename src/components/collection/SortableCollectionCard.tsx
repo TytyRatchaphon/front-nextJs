@@ -1,6 +1,5 @@
-'use client';
-
-import React from 'react';
+"use client";
+import * as React from "react";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import Image from 'next/image';

@@ -1,4 +1,3 @@
-import React from "react";
 import ReadEpisodePage from "./page.client.internal";
 import ReadPageFonts from "@/components/fonts/ReadPageFonts";
 

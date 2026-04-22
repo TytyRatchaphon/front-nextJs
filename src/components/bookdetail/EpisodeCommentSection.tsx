@@ -1,5 +1,5 @@
-
-import React, { useState, useEffect, useMemo } from "react";
+import * as React from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Alert, Button, Pagination, App, Empty, Popover, Tabs } from "antd";
 import { fetchEpisodeComments, postEpisodeComment, fetchStickers, postCommentNotification } from "@/services/apiServices";
 import { CommentEpData, StickerSet } from "@/types/api";

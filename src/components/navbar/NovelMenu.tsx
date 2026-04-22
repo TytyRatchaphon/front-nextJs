@@ -1,11 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { fetchActiveTypes, fetchActiveCategories } from '@/services/apiServices';
 import { Spin } from 'antd';
-
-export const genresCommon = [];
-export const translatedSpecifics = [];
 
 const NovelMenu = () => {
     const [selectedType, setSelectedType] = useState<string>('all');

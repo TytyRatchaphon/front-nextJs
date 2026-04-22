@@ -17,7 +17,7 @@ vi.mock('js-cookie', () => ({
 
 vi.mock('@/utils/jwtParser', () => ({
   parseJwtToken: vi.fn((t: string) => t || undefined),
-  decodeAndMapUserFromToken: vi.fn((token: string, base: any) => ({
+  decodeAndMapUserFromToken: vi.fn((_token: string, base: any) => ({
     ...base,
     user_id: 42,
     fullname: 'Decoded User',

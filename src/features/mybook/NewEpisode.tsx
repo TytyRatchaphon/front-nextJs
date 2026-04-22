@@ -1,6 +1,6 @@
-'use client';
-
-import React, { useEffect, useState } from "react";
+"use client";
+import * as React from "react";
+import { useEffect, useState } from "react";
 import { Form, Input, Select, DatePicker, notification, Modal } from "antd"; // ✨ เพิ่ม Modal
 import type { Dayjs } from "dayjs";
 import dayjs from 'dayjs';

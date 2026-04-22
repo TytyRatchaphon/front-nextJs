@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import { Suspense } from 'react';
 import PublicCollectionDetail from '@/components/collection/PublicCollectionDetail';
 
 interface PageProps {

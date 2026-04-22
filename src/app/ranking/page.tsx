@@ -1,4 +1,3 @@
-import React from 'react';
 import Rank from '@/features/book/Rank';
 
 export const revalidate = 120;

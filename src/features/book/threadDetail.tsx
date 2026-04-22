@@ -1,9 +1,8 @@
 "use client"
-
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchThreadDetail, deleteThread } from '@/services/apiServices';
-import { Alert, Modal, Button, App } from 'antd';
+import { Alert, Button, App } from 'antd';
 import GifLoader from '@/components/utility/GifLoader';
 import ThreadCommentSection from './ThreadCommentSection';
 import '@/services/apiServices'; 

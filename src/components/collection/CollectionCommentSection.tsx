@@ -1,6 +1,6 @@
-"use client"
-
-import React, { useState, useEffect } from "react";
+"use client";
+import * as React from "react";
+import { useState, useEffect } from "react";
 import { Alert, Button, Pagination, App, Empty, Input } from "antd";
 import { fetchCollectionComments, postCollectionComment, CollectionCommentData } from "@/services/api/collectionApi";
 import CollectionCommentItem from "./CollectionCommentItem";

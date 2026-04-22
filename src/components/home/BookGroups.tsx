@@ -1,4 +1,3 @@
-import React from 'react';
 import BookSwiper from "@/components/home/BookSwiper";
 import TopRanking from "@/components/home/TopRanking";
 import ExclusiveSwiper from "@/components/swiper/ExclusiveSwiper";

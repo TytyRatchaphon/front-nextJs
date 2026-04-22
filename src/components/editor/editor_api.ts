@@ -11,26 +11,6 @@ interface BlobInfo {
   blobUri: () => string;
 }
 
-export const uploadDesImage = async (file: File | Blob): Promise<string> => {
-  const formdata = new FormData();
-  formdata.append("img", file);
-
-  try {
-    const response = await secureProxyClient.post("/user/image_text_editor", formdata, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-
-    if (response.data?.data?.imageURL) {
-      return response.data.data.imageURL;
-    }
-
-    return "";
-  } catch (error: any) {
-    console.error("uploadDesImage error:", error);
-    return "";
-  }
-};
-
 export const imageUploadHandler = (
   blobInfo: BlobInfo,
   progress: (percent: number) => void,

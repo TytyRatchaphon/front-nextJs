@@ -1,6 +1,6 @@
-"use client"
-
-import React, { useState } from "react";
+"use client";
+import * as React from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { CommentThreadData } from "@/types/api";
 import { postThreadReply, reportThreadComment, reportThreadReply, deleteThreadReply, deleteThreadComment } from "@/services/apiServices"; // We need to export this

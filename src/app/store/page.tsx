@@ -1,5 +1,4 @@
 import Store from '@/features/user/Store'
-import React from 'react'
 import AuthGuard from '@/components/auth/AuthGuard'
 import { Metadata } from 'next'
 

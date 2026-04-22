@@ -1,4 +1,3 @@
-import React from 'react'
 import AuthGuard from '@/components/auth/AuthGuard'
 import CartClientLoader from '@/features/Home/CartClientLoader'
 import { Metadata } from 'next'

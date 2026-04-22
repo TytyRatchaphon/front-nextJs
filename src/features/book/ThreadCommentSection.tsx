@@ -1,6 +1,6 @@
-"use client"
-
-import React, { useState, useEffect } from "react";
+"use client";
+import * as React from "react";
+import { useState, useEffect } from "react";
 import { Button, Popover, Tabs, Pagination, notification } from "antd";
 import GifLoader from '@/components/utility/GifLoader';
 import { fetchThreadComments, fetchStickers, postThreadComment } from "@/services/apiServices"; // Modified imports

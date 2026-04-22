@@ -1,5 +1,5 @@
 "use client"
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { App, Modal, Select, InputNumber } from 'antd'
 import { updateEpisodesPrice } from '../../services/apiServices'
 

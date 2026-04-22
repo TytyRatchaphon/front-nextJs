@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAllNotifications, markNotificationAsRead, markAllNotificationsAsRead, NotificationTab } from '@/services/apiServices';
 import { Tooltip, Button, Tag, Tabs } from 'antd';

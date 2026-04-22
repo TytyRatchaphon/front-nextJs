@@ -1,4 +1,3 @@
-import React from 'react';
 import PolicyConditionsContent from '@/features/policy/PolicyConditionsContent';
 import { Metadata } from 'next';
 

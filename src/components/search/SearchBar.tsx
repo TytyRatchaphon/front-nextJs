@@ -1,5 +1,6 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import * as React from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Drawer, Button } from "antd";
 import { FilterOutlined, HistoryOutlined, CloseOutlined, PushpinFilled } from "@ant-design/icons";
 import GifLoader from '@/components/utility/GifLoader';

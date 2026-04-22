@@ -1,6 +1,6 @@
 "use client";
-
-import React, { useState } from 'react';
+import * as React from "react";
+import { useState } from 'react';
 import Image from 'next/image';
 import { Image as AntdImage, DatePicker, Table, Button, Segmented, Empty } from 'antd';
 import { EyeOutlined, UnorderedListOutlined, BookOutlined } from '@ant-design/icons';

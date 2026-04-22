@@ -1,6 +1,6 @@
 "use client";
-
-import React, { useEffect, useState } from 'react';
+import * as React from "react";
+import { useEffect, useState } from 'react';
 import { Button } from 'antd';
 import { DownloadOutlined, AppleOutlined, AndroidOutlined } from '@ant-design/icons';
 import { useWebsiteStore } from '@/stores/websiteStore';

@@ -1,5 +1,4 @@
-
-import React from 'react';
+import * as React from "react";
 import { Ticket, Check } from 'lucide-react';
 import CouponSvg from '@/components/utility/CouponSvg';
 import dayjs from 'dayjs';

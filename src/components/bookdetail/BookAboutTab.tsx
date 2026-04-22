@@ -1,4 +1,3 @@
-import React from "react";
 import { sanitizeUserGeneratedHtml } from "@/utils/sanitizeHtml";
 
 type BookDetail = {
