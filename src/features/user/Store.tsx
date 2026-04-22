@@ -88,17 +88,6 @@ function Store() {
     setSelectedStorePackListIds([]);
   }, []);
 
-  const selectedOptionsPreview = React.useMemo(() => {
-    if (!selectedPack?.is_selection || !Array.isArray(selectedPack.selectable_options)) {
-      return [];
-    }
-
-    const selectedIdSet = new Set(selectedStorePackListIds.map((id) => String(id)));
-    return selectedPack.selectable_options.filter((option) =>
-      selectedIdSet.has(String(option.store_pack_list_id))
-    );
-  }, [selectedPack, selectedStorePackListIds]);
-
   // Fetch cart items for limit checking
   const { data: cartStores } = useQuery({
     queryKey: ['cartItems'],
@@ -561,9 +550,6 @@ function Store() {
     return `https://img.enjoybook.co/img/profile/${rawAvatar}`;
   })();
   const selectedPackImageSrc = resolveStoreImageSrc(selectedPack?.img || null, '/images/ejb.png');
-  const selectedPreviewHeroSrc = selectedOptionsPreview[0]?.item_img
-    ? resolveStoreImageSrc(selectedOptionsPreview[0].item_img, selectedPackImageSrc)
-    : selectedPackImageSrc;
   return (
     <div className="pb-20">
       <div className="max-w-[1128px] mx-auto px-4 mt-6">
@@ -715,33 +701,28 @@ function Store() {
         footer={null}
         centered
         zIndex={5000}
-        width={selectedPack?.is_selection ? 680 : 380}
+        width={selectedPack?.is_selection ? 560 : 380}
         style={{ maxWidth: 'calc(100vw - 20px)', top: 12 }}
         className="custom-modal-store font-primary"
       >
-            <div className="flex max-h-[calc(100dvh-96px)] flex-col items-center overflow-y-auto px-0 pb-4 pt-2 sm:px-2 sm:pb-6">
+            <div className="flex max-h-[calc(100dvh-96px)] flex-col items-center overflow-y-auto px-0 pb-4 pt-2 sm:px-2 sm:pb-5">
             
             {/* Item Card */}
-            <div className="w-full bg-white border border-gray-100 shadow-sm rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start gap-4 mb-6 relative overflow-hidden">
+            <div className="w-full bg-white border border-gray-100 shadow-sm rounded-2xl p-3 sm:p-4 flex items-start gap-3 mb-3 relative overflow-hidden">
                <div className="absolute top-0 right-0 w-16 h-16 bg-red-50 rounded-bl-full -mr-8 -mt-8 z-0"></div>
-               <div className={`${selectedPack?.is_selection ? 'w-28 h-36 sm:w-32 sm:h-40' : 'w-24 h-24'} relative flex-shrink-0 self-center sm:self-auto z-10 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shadow-sm`}>
+               <div className="relative h-20 w-20 flex-shrink-0 self-start z-10 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shadow-sm sm:h-24 sm:w-24">
                 <Image
-                  src={selectedPack?.is_selection ? selectedPreviewHeroSrc : selectedPackImageSrc}
+                  src={selectedPackImageSrc}
                   alt={selectedPack?.name || 'Pack'}
                   fill
-                  className={selectedPack?.is_selection ? 'object-cover' : 'object-contain p-1'}
+                  className="object-contain p-1"
                 />
-                {selectedPack?.is_selection && selectedOptionsPreview.length > 0 && (
-                  <div className="absolute inset-x-1 bottom-1 rounded-md bg-black/55 px-2 py-1 text-center text-[10px] font-semibold text-white backdrop-blur-sm">
-                    ปกที่เลือก
-                  </div>
-                )}
               </div>
-              <div className="flex-1 z-10 pt-1">
-                <h3 className="font-bold text-lg text-gray-800 mb-1 leading-tight">{selectedPack?.name}</h3>
-                <div className="w-full h-[1px] bg-gray-100 my-2"></div>
+              <div className="min-w-0 flex-1 z-10 pt-0.5">
+                <h3 className="line-clamp-2 font-bold text-base text-gray-800 mb-1 leading-tight sm:text-lg">{selectedPack?.name}</h3>
+                <div className="w-full h-[1px] bg-gray-100 my-1.5"></div>
                 {selectedPack?.items_description ? (
-                  <ul className="text-sm text-gray-500 space-y-1">
+                  <ul className="text-xs text-gray-500 space-y-1 sm:text-sm">
                     {selectedPack.items_description.split(',').map((item, index) => (
                       <li key={index} className="flex items-center gap-1">
                         <span className="w-1 h-1 bg-red-400 rounded-full"></span>
@@ -750,7 +731,7 @@ function Store() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-sm text-gray-500 flex items-center gap-1">
+                  <p className="text-xs text-gray-500 flex items-center gap-1 sm:text-sm">
                      <span className="w-1 h-1 bg-red-400 rounded-full"></span>
                      จำนวน x {selectedQty}
                   </p>
@@ -759,41 +740,19 @@ function Store() {
             </div>
 
             {selectedPack?.is_selection && Array.isArray(selectedPack?.selectable_options) && (
-              <div className="w-full mb-4 rounded-2xl border border-stone-200 bg-stone-50 p-3 sm:p-4">
+              <div className="w-full mb-3 rounded-2xl border border-stone-200 bg-stone-50 p-3">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-stone-500">
                   <span>เลือกได้สูงสุด {getSelectionLimit(selectedPack)} รายการ</span>
-                  <span>เลือกแล้ว {selectedStorePackListIds.length}</span>
+                  <span>เลือกแล้ว {selectedStorePackListIds.length}/{getSelectionLimit(selectedPack)}</span>
                 </div>
-                {selectedOptionsPreview.length > 0 && (
-                  <div className="mb-3 rounded-xl border border-red-100 bg-white p-3 shadow-sm">
-                    <p className="mb-3 text-xs font-semibold text-stone-500">รายการที่เลือก</p>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      {selectedOptionsPreview.map((option) => (
-                        <div key={`selected-${option.store_pack_list_id}`} className="flex items-start gap-3 rounded-xl border border-red-100 bg-red-50/80 p-2.5">
-                          <div className="h-20 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-red-100 bg-white shadow-sm">
-                            <AntdImage
-                              src={resolveStoreImageSrc(option.item_img || null, '/images/ejb.png')}
-                              alt={option.item_name}
-                              width="100%"
-                              height="100%"
-                              preview={false}
-                              className="!h-full !w-full object-cover"
-                            />
-                          </div>
-                          <p className="line-clamp-3 pt-1 text-sm font-medium leading-snug text-stone-800">{option.item_name}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                <div className="grid max-h-64 grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
                   {selectedPack.selectable_options.map((option) => {
                     const checked = selectedStorePackListIds.includes(option.store_pack_list_id);
                     const disabled = option.can_select === false || confirmLoading;
                     return (
                       <label
                         key={option.store_pack_list_id}
-                        className={`flex items-start gap-2.5 rounded-xl border bg-white p-2.5 text-sm transition sm:gap-3 ${checked ? 'border-red-200 bg-red-50/50 shadow-sm' : 'border-stone-200 hover:border-red-100'} ${disabled ? 'opacity-50' : 'cursor-pointer'}`}
+                        className={`flex min-w-0 items-start gap-2 rounded-xl border bg-white p-2 text-sm transition ${checked ? 'border-red-200 bg-red-50/50 shadow-sm' : 'border-stone-200 hover:border-red-100'} ${disabled ? 'opacity-50' : 'cursor-pointer'}`}
                       >
                         <Checkbox
                           checked={checked}
@@ -801,18 +760,18 @@ function Store() {
                           onChange={(event) => handleSelectableOptionChange(option, event.target.checked)}
                           className="[&_.ant-checkbox-checked_.ant-checkbox-inner]:!bg-red-500 [&_.ant-checkbox-checked_.ant-checkbox-inner]:!border-red-500 hover:[&_.ant-checkbox-inner]:!border-red-500"
                         />
-                        <div className="h-[72px] w-14 flex-shrink-0 overflow-hidden rounded-lg border border-stone-200 bg-stone-100 shadow-sm sm:h-20 sm:w-16">
-                          <AntdImage
+                        <div className="relative h-14 w-11 flex-shrink-0 overflow-hidden rounded-lg border border-stone-200 bg-stone-100 shadow-sm">
+                          <Image
                             src={resolveStoreImageSrc(option.item_img || null, '/images/ejb.png')}
                             alt={option.item_name}
-                            width="100%"
-                            height="100%"
-                            preview={false}
-                            className="!h-full !w-full object-cover"
+                            fill
+                            sizes="44px"
+                            unoptimized
+                            className="object-cover"
                           />
                         </div>
-                        <div className="min-w-0 pt-1">
-                          <p className="line-clamp-3 text-sm font-medium leading-snug text-stone-800">{option.item_name}</p>
+                        <div className="min-w-0 pt-0.5">
+                          <p className="line-clamp-2 text-xs font-medium leading-snug text-stone-800 sm:text-sm">{option.item_name}</p>
                           {option.can_select === false && (
                             <p className="text-[11px] text-rose-500">คุณมีรายการนี้ครบแล้ว</p>
                           )}
@@ -881,28 +840,28 @@ function Store() {
             )}
 
             {/* Price Calculation & Quantity */}
-            <div className="text-center mb-6 relative">
+            <div className="text-center mb-4 relative">
                  {/* Quantity Controls */}
-                 <div className="flex items-center justify-center gap-4 mb-4">
+                  <div className="flex items-center justify-center gap-3 mb-2">
                         <button 
                             onClick={handleDecrement}
-                            className={`w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors ${selectedQty <= 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors ${selectedQty <= 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
                             disabled={selectedQty <= 1}
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         </button>
-                        <span className="text-2xl font-bold w-12 text-center text-gray-800">{selectedQty}</span>
+                        <span className="text-xl font-bold w-10 text-center text-gray-800">{selectedQty}</span>
                         <button 
                             onClick={handleIncrement}
-                            className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                         </button>
                     </div>
 
                 <div className="inline-block relative">
-                    <span className="text-gray-400 text-sm font-medium block mb-1">ยอดรวมทั้งหมด</span>
-                    <div className="flex items-center justify-center gap-2.5">
+                    <span className="text-gray-400 text-xs font-medium block mb-0.5">ยอดรวมทั้งหมด</span>
+                    <div className="flex items-center justify-center gap-2">
                         {['coin', 'heart', 'flower', 'stamp', 'exp', 'freecoin', 'rp'].includes(selectedPack?.type_use || '') && (
                         <div className="relative">
                             <Image
@@ -915,15 +874,15 @@ function Store() {
                                             selectedPack?.type_use === 'rp' ? (settings?.rp || "/images/rp.png") :
                                                 (settings?.freecoin || "/images/freecoin.png")
                                 }
-                                width={36}
-                                height={36}
+                                width={30}
+                                height={30}
                                 alt={selectedPack?.type_use || 'currency'}
                                 unoptimized
                                 className="object-contain drop-shadow-sm"
                             />
                         </div>
                         )}
-                        <span className="text-3xl font-bold font-primary text-gray-800 tracking-tight">
+                        <span className="text-2xl font-bold font-primary text-gray-800 tracking-tight">
                             {((selectedPack?.price || 0) * selectedQty).toLocaleString()}
                         </span>
                         {!['coin', 'heart', 'flower', 'stamp', 'exp', 'freecoin', 'rp'].includes(selectedPack?.type_use || '') &&
@@ -934,17 +893,17 @@ function Store() {
             </div>
 
             {/* Buttons */}
-            <div className="sticky bottom-0 z-20 flex w-full items-center gap-3 border-t border-transparent bg-white/95 pt-3 backdrop-blur">
+            <div className="sticky bottom-0 z-20 flex w-full items-center gap-3 border-t border-transparent bg-white/95 pt-2 backdrop-blur">
               <button
                 onClick={handleCloseBuyModal}
-                className="flex-1 border-2 border-gray-200 text-gray-500 py-3 rounded-xl font-bold hover:bg-gray-50 hover:text-gray-700 hover:border-gray-300 transition-all duration-200"
+                className="flex-1 border-2 border-gray-200 text-gray-500 py-2.5 rounded-xl font-bold hover:bg-gray-50 hover:text-gray-700 hover:border-gray-300 transition-all duration-200"
               >
                 ยกเลิก
               </button>
               <button
                 onClick={handleConfirmBuy}
                 disabled={confirmLoading}
-                className="flex-1 bg-[#FF0037] !text-white py-3 rounded-xl font-bold shadow-lg shadow-red-200 hover:shadow-red-300 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex justify-center items-center disabled:opacity-70 disabled:grayscale disabled:pointer-events-none"
+                className="flex-1 bg-[#FF0037] !text-white py-2.5 rounded-xl font-bold shadow-lg shadow-red-200 hover:shadow-red-300 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex justify-center items-center disabled:opacity-70 disabled:grayscale disabled:pointer-events-none"
               >
                 {confirmLoading ? <Spin size="small" className="!mr-2 custom-spin-white" /> : null}
                 { (selectedPack?.type === 'gift' && (!user?.address_main || !user?.phone)) ? 'บันทึกและยืนยัน' : 'ยืนยันสั่งซื้อ' }

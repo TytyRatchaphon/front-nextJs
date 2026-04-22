@@ -25,8 +25,16 @@ import { useWebsiteStore } from '@/stores/websiteStore';
 import { useAuthStore } from '@/stores/authStore';
 import Image from 'next/image';
 import SuccessAnimation from '@/components/utility/SuccessAnimation';
+import { resolveStoreImageSrc } from '@/utils/imageUtils';
 
 const { Title, Text } = Typography;
+const DEFAULT_STORE_IMAGE = '/images/ejb.png';
+
+const isMissingImageSrc = (src: string | null | undefined) => {
+    if (typeof src !== 'string') return true;
+    const trimmed = src.trim();
+    return !trimmed || trimmed === 'null' || trimmed === 'undefined';
+};
 
 // --- Custom Components for Redesign ---
 
@@ -224,24 +232,37 @@ export default function CheckoutContent() {
             if (isLoadingItems) return <div className="py-20 flex justify-center"><Spin size="large" /></div>;
             return (
                 <div className="space-y-4 animate-in fade-in duration-500">
-                    {checkoutItemsData?.items?.map((item: any, idx: number) => (
-                        <div key={idx} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex gap-4 items-center group transition-all hover:border-red-100 hover:shadow-md" style={{ animationDelay: `${idx * 100}ms` }}>
-                            <div className="relative w-20 h-24 flex-shrink-0 rounded-lg overflow-hidden border border-gray-100 shadow-inner">
-                                <Image src={item.img} alt={item.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <Text strong className="text-base block truncate text-gray-800">{item.name}</Text>
-                                <Text type="secondary" className="text-xs block truncate mb-2">{item.description}</Text>
-                                <div className="flex items-center justify-between">
-                                    <Tag className="rounded-full bg-gray-50 border-gray-100 text-gray-500 px-3">จำนวน: x{item.quantity}</Tag>
-                                    <div className="flex items-center gap-1.5">
-                                        <Text strong className="text-lg text-red-500">{item.total_price.toLocaleString()}</Text>
-                                        {renderCurrencyIcon(item.currency)}
+                    {checkoutItemsData?.items?.map((item: any, idx: number) => {
+                        const isDefaultCover = isMissingImageSrc(item.img);
+                        const itemImageSrc = isDefaultCover
+                            ? DEFAULT_STORE_IMAGE
+                            : resolveStoreImageSrc(item.img, DEFAULT_STORE_IMAGE);
+
+                        return (
+                            <div key={idx} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex gap-4 items-center group transition-all hover:border-red-100 hover:shadow-md" style={{ animationDelay: `${idx * 100}ms` }}>
+                                <div className={`relative w-20 h-24 flex-shrink-0 rounded-lg overflow-hidden border border-gray-100 shadow-inner ${isDefaultCover ? 'bg-white p-2' : 'bg-gray-50'}`}>
+                                    <Image
+                                        src={itemImageSrc}
+                                        alt={item.name || 'สินค้า'}
+                                        fill
+                                        unoptimized
+                                        className={`${isDefaultCover ? 'object-contain' : 'object-cover group-hover:scale-105'} transition-transform duration-500`}
+                                    />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <Text strong className="text-base block truncate text-gray-800">{item.name}</Text>
+                                    <Text type="secondary" className="text-xs block truncate mb-2">{item.description}</Text>
+                                    <div className="flex items-center justify-between">
+                                        <Tag className="rounded-full bg-gray-50 border-gray-100 text-gray-500 px-3">จำนวน: x{item.quantity}</Tag>
+                                        <div className="flex items-center gap-1.5">
+                                            <Text strong className="text-lg text-red-500">{item.total_price.toLocaleString()}</Text>
+                                            {renderCurrencyIcon(item.currency)}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                     {(!checkoutItemsData?.items || checkoutItemsData.items.length === 0) && <Empty description="ไม่มีสินค้าในรายการ" />}
                 </div>
             );
