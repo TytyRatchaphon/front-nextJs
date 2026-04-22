@@ -27,7 +27,7 @@ import { useReadFreeQuota } from "@/hooks/reader/useReadFreeQuota";
 import { useLogger } from "@/hooks/useLogger";
 import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import { buildReadBuyPayload, getReadConfirmButtonLabel, getReadEpisodePurchaseState, getRegularEpisodePrices, type ReadFastPayMethod, type ReadPayMethod } from "./purchaseUtils";
-import { isEpisodeSequentiallyUnlockable } from "@/utils/earlyAccessUtils";
+import { requestNavbarRankRefresh } from "@/utils/rankRefresh";
 import AES from "crypto-js/aes";
 import encUtf8 from "crypto-js/enc-utf8";
 
@@ -58,6 +58,32 @@ type ReaderConfigPayload = {
   fonts?: unknown[];
 };
 
+type EpisodeFreeMeta = {
+  isDiscountFree: boolean;
+  freeUntilLabel: string | null;
+  displayCoinPrice: number;
+};
+
+type ReadEpisodeListItem = {
+  rawEpisodeId: string;
+  listKey: string;
+  name: string;
+  publishDatetime: string | null;
+  isBuy: boolean;
+  view: number;
+  isDiscountFree: boolean;
+  freeUntilLabel: string | null;
+  displayCoinPrice: number;
+};
+
+type ReadEpisodeListGroup = {
+  groupName: string;
+  groupKey: string;
+  expandKey: number;
+  defaultExpanded: boolean;
+  episodes: ReadEpisodeListItem[];
+};
+
 const BANGKOK_TIME_ZONE = "Asia/Bangkok";
 const READ_EPISODE_PUBLIC_SECRET_KEY = process.env.NEXT_PUBLIC_SECRET_KEY || "";
 const READ_EPISODE_API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "").replace(/\/+$/, "");
@@ -82,6 +108,46 @@ const READER_FONT_FAMILY_BY_KEY: Record<string, string> = {
   kodchasan: "contentENJOYKodchasan",
   chakrapetch: "contentENJOYChakraPetch",
   baijamjuree: "contentENJOYBaiJamjuree",
+};
+const READER_TOGGLE_IGNORE_SELECTOR = [
+  "a",
+  "button",
+  "input",
+  "textarea",
+  "select",
+  "label",
+  "[role='button']",
+  "[data-reader-ignore-toggle='true']",
+  ".ant-popover",
+  ".ant-popover-content",
+  ".ant-modal",
+  ".ant-modal-wrap",
+].join(",");
+
+const getEpisodeStableId = (episodeLike: any) =>
+  String(episodeLike?.ep_id ?? episodeLike?.epID ?? "");
+
+const formatFreeUntilLabel = (endDate?: string | null) => {
+  if (!endDate) return null;
+  const parsed = new Date(endDate);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toLocaleString("th-TH", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const getEpisodeFreeMeta = (ep: any): EpisodeFreeMeta => {
+  const prices = getRegularEpisodePrices(ep as any);
+  const isDiscountFree = Boolean(prices.isDiscountFree) && !Boolean(ep?.isBuy);
+  return {
+    isDiscountFree,
+    freeUntilLabel: isDiscountFree ? formatFreeUntilLabel(prices.discountEndDate) : null,
+    displayCoinPrice: Number(prices.coinPrice ?? ep?.coin ?? 0),
+  };
 };
 
 const formatScheduledPublishDate = (value: Date) =>
@@ -335,6 +401,17 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     staleTime: 30 * 1000,
   });
 
+  const invalidateEpisodeBookmarks = useCallback(() => {
+    return queryClient.invalidateQueries({ queryKey: ["episodeBookmarks", episodeId] });
+  }, [queryClient, episodeId]);
+
+  const resetBookmarkEditorState = useCallback(() => {
+    setBookmarkModalOpen(false);
+    setBookmarkNote("");
+    setBookmarkParagraphIndex(null);
+    setEditingBookmarkId(null);
+  }, []);
+
   const createBookmarkMutation = useMutation({
     mutationFn: async (payload: { paragraph_index: number; note: string }) => {
       return apiClient.post('/user/bookmarks', {
@@ -346,11 +423,8 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     },
     onSuccess: () => {
       notification.success({ message: 'บันทึกตำแหน่งสำเร็จ', placement: 'topRight' });
-      queryClient.invalidateQueries({ queryKey: ['episodeBookmarks', episodeId] });
-      setBookmarkModalOpen(false);
-      setBookmarkNote('');
-      setBookmarkParagraphIndex(null);
-      setEditingBookmarkId(null);
+      void invalidateEpisodeBookmarks();
+      resetBookmarkEditorState();
     },
     onError: (err: any) => {
       notification.error({ message: err?.response?.data?.message || 'บันทึกตำแหน่งไม่สำเร็จ', placement: 'topRight' });
@@ -363,11 +437,8 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     },
     onSuccess: () => {
       notification.success({ message: 'แก้ไข Bookmark สำเร็จ', placement: 'topRight' });
-      queryClient.invalidateQueries({ queryKey: ['episodeBookmarks', episodeId] });
-      setBookmarkModalOpen(false);
-      setBookmarkNote('');
-      setBookmarkParagraphIndex(null);
-      setEditingBookmarkId(null);
+      void invalidateEpisodeBookmarks();
+      resetBookmarkEditorState();
     },
     onError: (err: any) => {
       notification.error({ message: err?.response?.data?.message || 'แก้ไข Bookmark ไม่สำเร็จ', placement: 'topRight' });
@@ -380,7 +451,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     },
     onSuccess: () => {
       notification.success({ message: 'ลบ Bookmark สำเร็จ', placement: 'topRight' });
-      queryClient.invalidateQueries({ queryKey: ['episodeBookmarks', episodeId] });
+      void invalidateEpisodeBookmarks();
     },
     onError: (err: any) => {
       notification.error({ message: err?.response?.data?.message || 'ลบ Bookmark ไม่สำเร็จ', placement: 'topRight' });
@@ -551,6 +622,11 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     return obfuscateHtmlTextNodes(indexedHtml);
   }, [episode?.des, episode?.content, hasReaderObfuscationConfig, currentFontFamily?.family, user]);
 
+  const parsedRenderedEpisodeHtml = useMemo(
+    () => (renderedEpisodeHtml ? parse(renderedEpisodeHtml) : null),
+    [renderedEpisodeHtml]
+  );
+
   const shouldDelayObfuscatedRender = hasReaderObfuscationConfig
     && Boolean(renderedEpisodeHtml)
     && !isReaderAssetsReady;
@@ -696,47 +772,14 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     [bookmarks]
   );
 
-  const formatFreeUntil = (endDate?: string | null) => {
-    if (!endDate) return null;
-    const parsed = new Date(endDate);
-    if (Number.isNaN(parsed.getTime())) return null;
-    return parsed.toLocaleString('th-TH', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  const getEpisodeFreeMeta = (ep: any) => {
-    const prices = getRegularEpisodePrices(ep as any);
-    const isDiscountFree = Boolean(prices.isDiscountFree) && !Boolean(ep?.isBuy);
-    return {
-      isDiscountFree,
-      freeUntilLabel: isDiscountFree ? formatFreeUntil(prices.discountEndDate) : null,
-      displayCoinPrice: Number(prices.coinPrice ?? ep?.coin ?? 0),
-    };
-  };
-
-  const readerToggleIgnoreSelector = [
-    "a",
-    "button",
-    "input",
-    "textarea",
-    "select",
-    "label",
-    "[role='button']",
-    "[data-reader-ignore-toggle='true']",
-    ".ant-popover",
-    ".ant-popover-content",
-    ".ant-modal",
-    ".ant-modal-wrap",
-  ].join(",");
+  const purchaseState = useMemo(
+    () => getReadEpisodePurchaseState(episode as any, (bookDetail as any)?.use_freecoin),
+    [episode, bookDetail]
+  );
 
   const shouldIgnoreReaderToggle = (target: EventTarget | null) => {
     if (!(target instanceof Element)) return false;
-    return Boolean(target.closest(readerToggleIgnoreSelector));
+    return Boolean(target.closest(READER_TOGGLE_IGNORE_SELECTOR));
   };
 
   const handleProtectedCopy = (event: ReactClipboardEvent<HTMLDivElement>) => {
@@ -810,39 +853,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     return closestIdx;
   };
 
-  const openCreateBookmarkModal = () => {
-    if (!isLoggedIn) {
-      openLoginModal();
-      return;
-    }
-
-    const idx = getCurrentParagraphIndex();
-    if (!idx) {
-      notification.warning({ message: 'ไม่พบย่อหน้าปัจจุบัน', placement: 'topRight' });
-      return;
-    }
-
-    const existing = bookmarks.find((item) => item.paragraph_index === idx);
-    if (existing) {
-      setEditingBookmarkId(existing.id);
-      setBookmarkParagraphIndex(existing.paragraph_index);
-      setBookmarkNote(existing.note || '');
-      setBookmarkModalOpen(true);
-      return;
-    }
-
-    setEditingBookmarkId(null);
-    setBookmarkParagraphIndex(idx);
-    setBookmarkNote('');
-    setBookmarkModalOpen(true);
-  };
-
-  const openCreateBookmarkModalByIndex = (paragraphIndex: number) => {
-    if (!isLoggedIn) {
-      openLoginModal();
-      return;
-    }
-
+  const openBookmarkModalAtIndex = useCallback((paragraphIndex: number) => {
     const existing = bookmarks.find((item) => item.paragraph_index === paragraphIndex);
     if (existing) {
       setEditingBookmarkId(existing.id);
@@ -856,6 +867,30 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     setBookmarkParagraphIndex(paragraphIndex);
     setBookmarkNote('');
     setBookmarkModalOpen(true);
+  }, [bookmarks]);
+
+  const openCreateBookmarkModal = () => {
+    if (!isLoggedIn) {
+      openLoginModal();
+      return;
+    }
+
+    const idx = getCurrentParagraphIndex();
+    if (!idx) {
+      notification.warning({ message: 'ไม่พบย่อหน้าปัจจุบัน', placement: 'topRight' });
+      return;
+    }
+
+    openBookmarkModalAtIndex(idx);
+  };
+
+  const openCreateBookmarkModalByIndex = (paragraphIndex: number) => {
+    if (!isLoggedIn) {
+      openLoginModal();
+      return;
+    }
+
+    openBookmarkModalAtIndex(paragraphIndex);
   };
 
   const openEditBookmarkModal = (bookmark: EpisodeBookmark) => {
@@ -985,48 +1020,59 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
   const bookmarkIconStroke = currentBg?.key === 'dark' ? '#DFDFEC' : '#4B5563';
 
   const { episodesData, displayTitle, prevEpId, nextEpId } = useEpisodeNavigation(bookId, episodeId, episode);
-  const currentEpisodeMeta = useMemo(() => {
-    const groups = episodesData?.groups;
-    if (!Array.isArray(groups)) return null;
-    for (const group of groups) {
+  const currentEpisodeId = String(episodeId);
+  const episodeGroups = useMemo<ReadEpisodeListGroup[]>(() => {
+    const groups = Array.isArray(episodesData?.groups) ? episodesData.groups : [];
+    return groups.map((group: any, groupIndex: number) => {
+      const groupName = typeof group?.name === "string" ? group.name : `เล่ม ${groupIndex + 1}`;
+      const groupRawKey = group?.group_id ?? group?.groupID ?? groupIndex;
+      const normalizedExpandKey = Number(group?.group_id ?? groupIndex);
+      const expandKey = Number.isFinite(normalizedExpandKey) ? normalizedExpandKey : groupIndex;
       const list = Array.isArray(group?.list) ? group.list : [];
-      const found = list.find((ep: any) => String(ep?.ep_id ?? ep?.epID) === String(episodeId));
+      const episodes = list.map((ep: any, episodeIndex: number) => {
+        const rawEpisodeId = getEpisodeStableId(ep);
+        const listKey = rawEpisodeId || `${groupRawKey}-${episodeIndex}`;
+        const { isDiscountFree, freeUntilLabel, displayCoinPrice } = getEpisodeFreeMeta(ep);
+
+        return {
+          rawEpisodeId,
+          listKey,
+          name: typeof ep?.name === "string" ? ep.name.trim() : "",
+          publishDatetime: typeof ep?.publish_datetime === "string" ? ep.publish_datetime : null,
+          isBuy: Boolean(ep?.isBuy),
+          view: Number(ep?.view ?? 0),
+          isDiscountFree,
+          freeUntilLabel,
+          displayCoinPrice,
+        };
+      });
+
+      return {
+        groupName,
+        groupKey: String(groupRawKey),
+        expandKey,
+        defaultExpanded: groupIndex === 0,
+        episodes,
+      };
+    });
+  }, [episodesData?.groups]);
+
+  const currentEpisodeMeta = useMemo<ReadEpisodeListItem | null>(() => {
+    for (const group of episodeGroups) {
+      const found = group.episodes.find((ep) => ep.rawEpisodeId === currentEpisodeId);
       if (found) return found;
     }
     return null;
-  }, [episodesData, episodeId]);
-
-  const isCurrentEpisodeSequentiallyUnlocked = useMemo(() => {
-    const groups = episodesData?.groups;
-    if (!Array.isArray(groups)) return true;
-
-    for (const group of groups) {
-      const list = Array.isArray(group?.list) ? group.list : [];
-      const currentIndex = list.findIndex((ep: any) => String(ep?.ep_id ?? ep?.epID) === String(episodeId));
-      if (currentIndex === -1) continue;
-      return isEpisodeSequentiallyUnlockable(list[currentIndex], currentIndex, list);
-    }
-
-    return true;
-  }, [episodesData, episodeId]);
-
-  const purchaseState = useMemo(
-    () => getReadEpisodePurchaseState(
-      episode as any,
-      (bookDetail as any)?.use_freecoin,
-      { isSequentialUnlocked: isCurrentEpisodeSequentiallyUnlocked },
-    ),
-    [episode, bookDetail, isCurrentEpisodeSequentiallyUnlocked]
-  );
+  }, [episodeGroups, currentEpisodeId]);
 
   const [scheduleNowMs, setScheduleNowMs] = useState(() => Date.now());
   const scheduledPublishAt = useMemo(() => {
-    const rawValue = (episode as any)?.publish_datetime ?? (currentEpisodeMeta as any)?.publish_datetime;
+    const rawValue = (episode as any)?.publish_datetime ?? currentEpisodeMeta?.publishDatetime;
     if (!rawValue) return null;
 
     const parsedDate = new Date(rawValue);
     return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
-  }, [(episode as any)?.publish_datetime, (currentEpisodeMeta as any)?.publish_datetime]);
+  }, [(episode as any)?.publish_datetime, currentEpisodeMeta?.publishDatetime]);
   const isScheduledReleasePending = Boolean(
     scheduledPublishAt && scheduledPublishAt.getTime() > scheduleNowMs
   );
@@ -1100,6 +1146,19 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
   const [firstTopupModalOpen, setFirstTopupModalOpen] = useState(false);
   const allowTemporaryTextSelection = false;
 
+  const isGroupExpanded = useCallback(
+    (group: ReadEpisodeListGroup) =>
+      expandedGroups[group.expandKey] ?? group.defaultExpanded,
+    [expandedGroups]
+  );
+
+  const toggleGroupExpanded = useCallback((group: ReadEpisodeListGroup) => {
+    setExpandedGroups((prev) => {
+      const nextExpanded = !(prev[group.expandKey] ?? group.defaultExpanded);
+      return { ...prev, [group.expandKey]: nextExpanded };
+    });
+  }, []);
+
   // --- 4. Effects ---
   useEffect(() => {
     if (routeEpisodeId) {
@@ -1126,6 +1185,14 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, [bookId]);
+
+  const closeListPopover = useCallback(() => {
+    setIsListPopoverOpen(false);
+  }, []);
+
+  const closeSidebar = useCallback(() => {
+    setIsSidebarOpen(false);
+  }, []);
 
   const navigateToEpisode = useCallback(
     (nextEpisodeId: string | number, options?: { closeList?: boolean; closeSidebar?: boolean }) => {
@@ -1180,16 +1247,16 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
 
   // Effect to Auto-Expand Group containing current episode
   useEffect(() => {
-    if (episodesData?.groups && episodeId) {
-      const targetGroupId = episodesData.groups.find((group: any) => 
-        group.list.some((ep: any) => String(ep.ep_id ?? ep.epID) === String(episodeId))
-      )?.group_id;
+    if (!currentEpisodeId || episodeGroups.length === 0) return;
+    const targetGroup = episodeGroups.find((group) =>
+      group.episodes.some((ep) => ep.rawEpisodeId === currentEpisodeId)
+    );
+    if (!targetGroup) return;
 
-      if (targetGroupId) {
-        setExpandedGroups(prev => ({ ...prev, [targetGroupId]: true }));
-      }
-    }
-  }, [episodesData, episodeId]);
+    setExpandedGroups((prev) =>
+      prev[targetGroup.expandKey] ? prev : { ...prev, [targetGroup.expandKey]: true }
+    );
+  }, [episodeGroups, currentEpisodeId]);
 
   useEffect(() => {
     if (!scheduledPublishAt || scheduledPublishAt.getTime() <= Date.now()) return;
@@ -1266,12 +1333,12 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     }
   }, []);
 
-  const collapseAllGroups = () => {
-    if (!episodesData?.groups) return;
+  const collapseAllGroups = useCallback(() => {
+    if (episodeGroups.length === 0) return;
     const map: Record<number, boolean> = {};
-    episodesData.groups.forEach((g: any) => { map[g.group_id] = false; });
+    episodeGroups.forEach((group) => { map[group.expandKey] = false; });
     setExpandedGroups(map);
-  };
+  }, [episodeGroups]);
 
   // --- 5. Actions ---
   const openConfirm = (method: ReadPayMethod, amount?: number | null) => {
@@ -1375,6 +1442,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
         setConfirmOpen(false);
         await queryClient.invalidateQueries({ queryKey: ["episodeContent", episodeId] });
         await queryClient.invalidateQueries({ queryKey: ["bookEpisodes", bookId] });
+        await requestNavbarRankRefresh(queryClient);
       } else {
         notification.error({
                 message: 'ซื้อไม่สำเร็จ',
@@ -1596,15 +1664,15 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     const { isEarlyAccess, canFastTicket, canFastCoin, isFastLocked, fastTicketPrice, fastCoinPrice, canUseFreecoin } = purchaseState;
     const baseRegularPrice = Number(coinPrice ?? 0);
     const isDiscountFree = Boolean(purchaseState.isDiscountFree) && !isEarlyAccess;
-    const freeUntilLabel = isDiscountFree ? formatFreeUntil(purchaseState.discountEndDate) : null;
+    const freeUntilLabel = isDiscountFree ? formatFreeUntilLabel(purchaseState.discountEndDate) : null;
 
     if (isDiscountFree || (!isEarlyAccess && baseRegularPrice <= 0)) {
       return (
         <div className="text-center py-12">
           <Image src={settings?.img_buyep || '/images/unlock.png'} alt="Free Episode" width={100} height={100} unoptimized className="justify-center mx-auto" />
-          <p className="text-sm font-semibold text-emerald-700">{'\u0e15\u0e2d\u0e19\u0e19\u0e35\u0e49\u0e40\u0e1b\u0e34\u0e14\u0e2d\u0e48\u0e32\u0e19\u0e1f\u0e23\u0e35'}</p>
+            <p className="text-sm font-semibold text-emerald-700">ตอนนี้เปิดอ่านฟรี</p>
           {freeUntilLabel && (
-            <p className="mt-1 text-xs text-emerald-700">{`\u0e2d\u0e48\u0e32\u0e19\u0e1f\u0e23\u0e35\u0e16\u0e36\u0e07 ${freeUntilLabel}`}</p>
+              <p className="mt-1 text-xs text-emerald-700">{`อ่านฟรีถึง ${freeUntilLabel}`}</p>
           )}
         </div>
       );
@@ -1739,8 +1807,9 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     );
   };
 
-  const readerMenuTheme = currentBg?.key === "dark"
-    ? {
+  const readerMenuTheme = useMemo(() => {
+    if (currentBg?.key === "dark") {
+      return {
         panelBg: "#1a1a1a",
         panelBorder: "#333333",
         text: "#f3f4f6",
@@ -1749,32 +1818,81 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
         activeBg: "#2b2224",
         activeText: "#fca5a5",
         subtleBg: "#242426",
-      }
-    : currentBg?.key === "sepia"
-      ? {
-          panelBg: "#f4efe3",
-          panelBorder: "#e6dbc4",
-          text: "#5b4636",
-          muted: "#8b735c",
-          hoverBg: "hover:bg-[#ede5d5]",
-          activeBg: "#efe2d0",
-          activeText: "#8c2f39",
-          subtleBg: "#efe6d6",
-        }
-      : {
-          panelBg: "#ffffff",
-          panelBorder: "#e5e7eb",
-          text: "#1f2937",
-          muted: "#6b7280",
-          hoverBg: "hover:bg-gray-50",
-          activeBg: "#fef2f2",
-          activeText: "#dc2626",
-          subtleBg: "#f3f4f6",
-        };
+      };
+    }
+
+    if (currentBg?.key === "sepia") {
+      return {
+        panelBg: "#f4efe3",
+        panelBorder: "#e6dbc4",
+        text: "#5b4636",
+        muted: "#8b735c",
+        hoverBg: "hover:bg-[#ede5d5]",
+        activeBg: "#efe2d0",
+        activeText: "#8c2f39",
+        subtleBg: "#efe6d6",
+      };
+    }
+
+    return {
+      panelBg: "#ffffff",
+      panelBorder: "#e5e7eb",
+      text: "#1f2937",
+      muted: "#6b7280",
+      hoverBg: "hover:bg-gray-50",
+      activeBg: "#fef2f2",
+      activeText: "#dc2626",
+      subtleBg: "#f3f4f6",
+    };
+  }, [currentBg?.key]);
   const readerPopoverZIndex = 1200;
 
-  const renderEpisodesList = () => {
-    if (!episodesData?.groups) return <div className="p-4">ไม่พบรายการตอน</div>;
+  const textAlignOptions = useMemo(
+    () => ([
+      { key: 'left', label: 'ชิดซ้าย' },
+      { key: 'center', label: 'กึ่งกลาง' },
+      { key: 'justify', label: 'เต็มบรรทัด' },
+    ] as const),
+    []
+  );
+
+  const fontFamilyOptions = useMemo(
+    () => fontFamilies.map((f) => ({
+      value: f.key,
+      label: (
+        <span style={hasReaderObfuscationConfig ? undefined : { fontFamily: f.family }}>
+          ฟอนต์ {f.label}
+        </span>
+      ),
+    })),
+    [fontFamilies, hasReaderObfuscationConfig]
+  );
+
+  const resetReaderSettings = useCallback(() => {
+    setFontSize(20);
+    setFontFamily(readerDefaultFontKey);
+    setBgColor('sepia');
+    setIsBold(false);
+    setTextAlign('left');
+    setIsAutoScroll(false);
+    setScrollSpeed(0.3);
+    setShowTrackedParagraphLabel(true);
+    setShowTrackedParagraphArrow(true);
+  }, [
+    readerDefaultFontKey,
+    setBgColor,
+    setFontFamily,
+    setFontSize,
+    setIsAutoScroll,
+    setIsBold,
+    setScrollSpeed,
+    setShowTrackedParagraphArrow,
+    setShowTrackedParagraphLabel,
+    setTextAlign,
+  ]);
+
+  const renderEpisodesList = useCallback(() => {
+    if (episodeGroups.length === 0) return <div className="p-4">ไม่พบรายการตอน</div>;
     return (
       <div id="episode-list-container" className="max-h-64 w-72 overflow-auto">
         <div className="px-3 py-2 flex justify-end">
@@ -1782,39 +1900,37 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
             ย่อทั้งหมด
           </button>
         </div>
-        {episodesData.groups.map((group: any, groupIndex: number) => {
-          const isExpanded = expandedGroups[group.group_id] ?? groupIndex === 0;
-          const toggleGroup = () => setExpandedGroups((prev) => ({ ...prev, [group.group_id]: !isExpanded }));
+        {episodeGroups.map((group) => {
+          const isExpanded = isGroupExpanded(group);
           return (
-            <div key={group.group_id} className="border-b last:border-b-0">
-              <button onClick={toggleGroup} className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-500">
-                <span className="truncate">{group.name}</span>
+            <div key={group.groupKey} className="border-b last:border-b-0">
+              <button onClick={() => toggleGroupExpanded(group)} className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-500">
+                <span className="truncate">{group.groupName}</span>
                 <svg className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
               {isExpanded && (
                 <div>
-                  {group.list.map((ep: any) => {
-                    const isCurrent = String(ep.ep_id ?? ep.epID) === String(episodeId);
-                    const { isDiscountFree, freeUntilLabel } = getEpisodeFreeMeta(ep);
+                  {group.episodes.map((ep) => {
+                    const isCurrent = ep.rawEpisodeId === currentEpisodeId;
                     return (
                       <button
-                        key={ep.ep_id ?? ep.epID}
+                        key={ep.listKey}
                         id={isCurrent ? 'active-episode-item' : undefined}
                         onClick={() => {
-                          navigateToEpisode(String(ep.ep_id ?? ep.epID), { closeList: true });
+                          navigateToEpisode(ep.rawEpisodeId, { closeList: true });
                         }}
                         className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${isCurrent ? 'bg-red-50 text-red-600 font-medium' : 'text-gray-700'}`}
                       >
                         <div className="flex items-center gap-2">
-                          <div className="truncate text-sm">{ep.name?.trim()}</div>
-                          {isDiscountFree && (
-                            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">{'\u0e15\u0e2d\u0e19\u0e1f\u0e23\u0e35'}</span>
+                          <div className="truncate text-sm">{ep.name}</div>
+                          {ep.isDiscountFree && (
+                            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">ตอนฟรี</span>
                           )}
                         </div>
-                        {isDiscountFree && freeUntilLabel && (
-                          <div className="mt-0.5 truncate text-[10px] text-emerald-700">{`\u0e2d\u0e48\u0e32\u0e19\u0e1f\u0e23\u0e35\u0e16\u0e36\u0e07 ${freeUntilLabel}`}</div>
+                        {ep.isDiscountFree && ep.freeUntilLabel && (
+                          <div className="mt-0.5 truncate text-[10px] text-emerald-700">{`อ่านฟรีถึง ${ep.freeUntilLabel}`}</div>
                         )}
                       </button>
                     )
@@ -1826,7 +1942,84 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
         })}
       </div>
     );
-  };
+  }, [
+    collapseAllGroups,
+    currentEpisodeId,
+    episodeGroups,
+    isGroupExpanded,
+    navigateToEpisode,
+    toggleGroupExpanded,
+  ]);
+
+  const episodesListContent = useMemo(() => renderEpisodesList(), [renderEpisodesList]);
+
+  const sidebarEpisodesContent = useMemo(() => {
+    if (episodeGroups.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <p className="text-sm text-gray-500">ไม่พบรายการตอน</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="divide-y divide-gray-100">
+        {episodeGroups.map((group) => {
+          const isExpanded = isGroupExpanded(group);
+
+          return (
+            <div key={group.groupKey} className="bg-white">
+              <button onClick={() => toggleGroupExpanded(group)} className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors">
+                <h3 className="text-xs font-semibold text-gray-700 text-left uppercase tracking-wide">{group.groupName}</h3>
+                <svg className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {isExpanded && (
+                <div className="divide-y divide-gray-50">
+                  {group.episodes.map((ep) => {
+                    const isCurrentEpisode = ep.rawEpisodeId === currentEpisodeId;
+
+                    return (
+                      <button
+                        key={ep.listKey}
+                        onClick={() => {
+                          navigateToEpisode(ep.rawEpisodeId, { closeSidebar: true });
+                        }}
+                        className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors text-left ${isCurrentEpisode ? "bg-red-50/50 border-l-2 border-red-500" : ""}`}>
+                        <div className="flex-1 min-w-0 pr-3">
+                          <p className={`text-sm truncate ${isCurrentEpisode ? "text-red-600 font-medium" : "text-gray-700"}`}>{ep.name}</p>
+                        </div>
+                        <div className="flex-shrink-0 flex items-center gap-2">
+                          {ep.isBuy && <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>}
+                          {!ep.isBuy && ep.isDiscountFree ? (
+                            <div className="flex flex-col items-end">
+                              <span className="text-[11px] font-semibold text-emerald-700">ตอนฟรี</span>
+                              {ep.freeUntilLabel && (
+                                <span className="text-[10px] text-emerald-700">{`ถึง ${ep.freeUntilLabel}`}</span>
+                              )}
+                            </div>
+                          ) : (ep.displayCoinPrice > 0 && !ep.isBuy && (
+                            <span className="text-xs text-gray-500">{ep.displayCoinPrice}</span>
+                          ))}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }, [
+    currentEpisodeId,
+    episodeGroups,
+    isGroupExpanded,
+    navigateToEpisode,
+    toggleGroupExpanded,
+  ]);
 
   if (isLoading && !episode) {
     return (
@@ -1877,52 +2070,51 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
       {/* Sidebar Overlay */}
       {isSidebarOpen && (
         <>
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-[60]" onClick={() => setIsSidebarOpen(false)} />
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-[60]" onClick={closeSidebar} />
           <div className="fixed top-0 right-0 h-full w-full sm:w-80 bg-white shadow-xl z-[70] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
-              <button onClick={() => setIsSidebarOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+              <button onClick={closeSidebar} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                 <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
-            {episodesData?.groups?.length > 0 ? (
+            {sidebarEpisodesContent}
+            {/*
               <div className="divide-y divide-gray-100">
-                {episodesData.groups.map((group: any, groupIndex: number) => {
-                  const isExpanded = expandedGroups[group.group_id] ?? groupIndex === 0;
-                  const toggleGroup = () => setExpandedGroups((prev) => ({ ...prev, [group.group_id]: !isExpanded }));
+                {episodeGroups.map((group) => {
+                  const isExpanded = isGroupExpanded(group);
                   return (
-                    <div key={group.group_id} className="bg-white">
-                      <button onClick={toggleGroup} className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors">
-                        <h3 className="text-xs font-semibold text-gray-700 text-left uppercase tracking-wide">{group.name}</h3>
+                    <div key={group.groupKey} className="bg-white">
+                      <button onClick={() => toggleGroupExpanded(group)} className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors">
+                        <h3 className="text-xs font-semibold text-gray-700 text-left uppercase tracking-wide">{group.groupName}</h3>
                         <svg className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       </button>
                       {isExpanded && (
                         <div className="divide-y divide-gray-50">
-                          {group.list.map((ep: any) => {
-                            const isCurrentEpisode = String(ep.ep_id ?? ep.epID) === String(episodeId);
-                            const { isDiscountFree, freeUntilLabel, displayCoinPrice } = getEpisodeFreeMeta(ep);
+                          {group.episodes.map((ep) => {
+                            const isCurrentEpisode = ep.rawEpisodeId === currentEpisodeId;
                             return (
                               <button
-                                key={ep.ep_id}
+                                key={ep.listKey}
                                 onClick={() => {
-                                  navigateToEpisode(String(ep.ep_id ?? ep.epID), { closeSidebar: true });
+                                  navigateToEpisode(ep.rawEpisodeId, { closeSidebar: true });
                                 }}
                                 className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors text-left ${isCurrentEpisode ? "bg-red-50/50 border-l-2 border-red-500" : ""}`}>
                                 <div className="flex-1 min-w-0 pr-3">
-                                  <p className={`text-sm truncate ${isCurrentEpisode ? "text-red-600 font-medium" : "text-gray-700"}`}>{ep.name.trim()}</p>
+                                  <p className={`text-sm truncate ${isCurrentEpisode ? "text-red-600 font-medium" : "text-gray-700"}`}>{ep.name}</p>
                                 </div>
                                 <div className="flex-shrink-0 flex items-center gap-2">
                                   {ep.isBuy && <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>}
-                                  {!ep.isBuy && isDiscountFree ? (
+                                  {!ep.isBuy && ep.isDiscountFree ? (
                                     <div className="flex flex-col items-end">
-                                      <span className="text-[11px] font-semibold text-emerald-700">{'\u0e15\u0e2d\u0e19\u0e1f\u0e23\u0e35'}</span>
-                                      {freeUntilLabel && (
-                                        <span className="text-[10px] text-emerald-700">{`\u0e16\u0e36\u0e07 ${freeUntilLabel}`}</span>
+                                      <span className="text-[11px] font-semibold text-emerald-700">ตอนฟรี</span>
+                                      {ep.freeUntilLabel && (
+                                        <span className="text-[10px] text-emerald-700">{`ถึง ${ep.freeUntilLabel}`}</span>
                                       )}
                                     </div>
-                                  ) : (displayCoinPrice > 0 && !ep.isBuy && (
-                                    <span className="text-xs text-gray-500">{displayCoinPrice}</span>
+                                  ) : (ep.displayCoinPrice > 0 && !ep.isBuy && (
+                                    <span className="text-xs text-gray-500">{ep.displayCoinPrice}</span>
                                   ))}
                                 </div>
                               </button>
@@ -1936,7 +2128,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
               </div>
             ) : (
               <div className="text-center py-12"><p className="text-sm text-gray-500">ไม่พบรายการตอน</p></div>
-            )}
+            */}
           </div>
         </>
       )}
@@ -1966,7 +2158,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
                       <span className="hidden sm:inline">หน้าหลัก</span>
                     </div>
                   </Link>
-                  <Popover placement="bottomLeft" zIndex={readerPopoverZIndex} overlayClassName="reader-episode-popover" title={<div className="text-sm font-semibold">สารบัญ</div>} content={renderEpisodesList()} trigger="click" open={isListPopoverOpen} onOpenChange={(open) => setIsListPopoverOpen(open)}>
+                  <Popover placement="bottomLeft" zIndex={readerPopoverZIndex} overlayClassName="reader-episode-popover" title={<div className="text-sm font-semibold">สารบัญ</div>} content={episodesListContent} trigger="click" open={isListPopoverOpen} onOpenChange={(open) => setIsListPopoverOpen(open)}>
                     <button className={`p-2 rounded-full transition-colors ${currentBg?.key === "dark" ? "hover:bg-white/10" : "hover:bg-black/5"}`} title="สารบัญ" style={{ color: readerMenuTheme.text }}>
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
                     </button>
@@ -1990,19 +2182,13 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
                         style={{ borderBottomColor: readerMenuTheme.panelBorder, color: readerMenuTheme.text }}
                       >
                         <span className="text-base font-semibold">ตั้งค่าการอ่าน</span>
-                        <button onClick={() => {
-                          setFontSize(20); setFontFamily(readerDefaultFontKey); setBgColor("sepia"); setIsBold(false); setTextAlign("left"); setIsAutoScroll(false); setScrollSpeed(0.3); setShowTrackedParagraphLabel(true); setShowTrackedParagraphArrow(true);
-                        }} className="text-xs !text-red-500 !hover:text-red-700 font-medium cursor-pointer">
+                        <button onClick={resetReaderSettings} className="text-xs !text-red-500 !hover:text-red-700 font-medium cursor-pointer">
                           ค่าเริ่มต้น
                         </button>
                       </div>
                       {/* Alignment */}
                       <div className="grid grid-cols-3 gap-2 px-3">
-                        {[
-                          { key: 'left', label: 'ชิดซ้าย' },
-                          { key: 'center', label: 'กึ่งกลาง' },
-                          { key: 'justify', label: 'เต็มบรรทัด' },
-                        ].map(({ key, label }) => (
+                        {textAlignOptions.map(({ key, label }) => (
                           <button
                             key={key}
                             onClick={() => setTextAlign(key as any)}
@@ -2064,7 +2250,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
                           value={fontFamily}
                           onChange={setFontFamily}
                           style={{ width: '100%' }}
-                          options={fontFamilies.map(f => ({ value: f.key, label: <span style={hasReaderObfuscationConfig ? undefined : { fontFamily: f.family }}>ฟอนต์ {f.label}</span> }))}
+                          options={fontFamilyOptions}
                           className="reader-settings-select h-10"
                         />
                       </div>
@@ -2213,7 +2399,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
                 }}>
                 {(isFocused && !shouldDelayObfuscatedRender) ? (
                   renderedEpisodeHtml && !isQuotaHardBlocked ? (
-                    parse(renderedEpisodeHtml)
+                    parsedRenderedEpisodeHtml
                   ) : (
                     <PurchaseFallback />
                   )

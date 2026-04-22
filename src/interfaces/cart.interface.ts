@@ -5,6 +5,23 @@ export interface StorePackInCart {
   price: number;
   type_use: string;
   full_price: number;
+  is_selection?: boolean;
+  selection_limit?: number | null;
+  selectable_options?: SelectableOption[];
+}
+
+export interface SelectableOption {
+  store_pack_list_id: number;
+  store_pack_id: number;
+  type: string;
+  refer_id: string;
+  unit: number;
+  status: string;
+  item_name: string;
+  item_img: string;
+  book_id: number;
+  can_select: boolean;
+  selected: boolean;
 }
 
 export interface CartItem {
@@ -39,12 +56,14 @@ export interface AddToCartPayload {
   book_id?: number | string;
   store_pack_id?: number | string;
   quantity: number;
+  selected_store_pack_list_ids?: Array<number | string>;
 }
 
 export interface UpdateCartItemPayload {
   cart_item_id: number;
   quantity?: number;
   selected?: boolean;
+  selected_store_pack_list_ids?: Array<number | string>;
 }
 
 export interface CurrencySummary {

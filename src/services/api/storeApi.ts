@@ -22,11 +22,18 @@ export const buyStorePack = async (packId: string | number) => {
   }
 };
 
-export const buyStorePackNow = async (packId: number | string, quantity: number) => {
+export const buyStorePackNow = async (
+  packId: number | string,
+  quantity: number,
+  selectedStorePackListIds?: Array<number | string>
+) => {
     try {
         const response = await apiClient.post('/user/store/buy-now', {
             store_pack_id: packId,
-            quantity: quantity
+            quantity: quantity,
+            ...(selectedStorePackListIds?.length
+              ? { selected_store_pack_list_ids: selectedStorePackListIds }
+              : {}),
         });
         return response.data;
     } catch (error: any) {

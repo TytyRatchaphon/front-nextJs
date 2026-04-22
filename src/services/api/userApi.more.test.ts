@@ -364,9 +364,42 @@ describe("userApi more coverage", () => {
         "https://image.enjoybook.co/img/path.png",
         "/img/local.png",
         "https://cdn.com/a.png",
-        "//cdn.com/b.png",
+        "https://cdn.com/b.png",
         "/images/user.png",
       ]);
+    });
+
+    it("fetchAllRanks maps rank-level claim fields for reward claim UI", async () => {
+      mockedApiClient.get.mockResolvedValueOnce({
+        data: {
+          data: {
+            ranks: [
+              {
+                rank_id: 4,
+                rank_img: "https://cdn.com/rank.png",
+                can_claim: true,
+                grant_id: 5,
+                reward_claimed: false,
+                rewards: [
+                  {
+                    rank_reward_id: 5,
+                    name: "Fast Ticket",
+                    img: null,
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      });
+
+      const result = await fetchAllRanks("Bearer rank");
+      expect(result?.[0].can_claim).toBe(true);
+      expect(result?.[0].grant_id).toBe(5);
+      expect(result?.[0].reward_claimed).toBe(false);
+      expect(result?.[0].rewards?.[0]?.can_claim).toBe(true);
+      expect(result?.[0].rewards?.[0]?.grant_id).toBe(5);
+      expect(result?.[0].rewards?.[0]?.img).toBe("/images/user.png");
     });
 
     it("fetchAllRanks returns null for non-array and request failure", async () => {

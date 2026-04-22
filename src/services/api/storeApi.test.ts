@@ -32,8 +32,40 @@ describe("storeApi", () => {
 
   describe("read APIs", () => {
     it("fetchStoreData returns response data or [] fallback", async () => {
-      mockedApiClient.get.mockResolvedValueOnce({ data: { data: [{ category_id: 1 }] } });
-      await expect(fetchStoreData()).resolves.toEqual([{ category_id: 1 }]);
+      mockedApiClient.get.mockResolvedValueOnce({
+        data: {
+          data: [
+            {
+              category_id: 1,
+              StorePacks: [
+                {
+                  store_pack_id: 11,
+                  is_selection: true,
+                  selection_limit: 1,
+                  selectable_options: [
+                    { store_pack_list_id: 230, can_select: true, selected: true },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      });
+      await expect(fetchStoreData()).resolves.toEqual([
+        {
+          category_id: 1,
+          StorePacks: [
+            {
+              store_pack_id: 11,
+              is_selection: true,
+              selection_limit: 1,
+              selectable_options: [
+                { store_pack_list_id: 230, can_select: true, selected: true },
+              ],
+            },
+          ],
+        },
+      ]);
       expect(mockedApiClient.get).toHaveBeenCalledWith("/user/store");
 
       mockedApiClient.get.mockResolvedValueOnce({ data: {} });
@@ -91,6 +123,17 @@ describe("storeApi", () => {
       expect(mockedApiClient.post).toHaveBeenCalledWith("/user/store/buy-now", {
         store_pack_id: "88",
         quantity: 3,
+      });
+    });
+
+    it("buyStorePackNow includes selected_store_pack_list_ids when provided", async () => {
+      mockedApiClient.post.mockResolvedValueOnce({ data: { code: 200 } });
+      await expect(buyStorePackNow("88", 1, [230, 231])).resolves.toEqual({ code: 200 });
+
+      expect(mockedApiClient.post).toHaveBeenCalledWith("/user/store/buy-now", {
+        store_pack_id: "88",
+        quantity: 1,
+        selected_store_pack_list_ids: [230, 231],
       });
     });
 

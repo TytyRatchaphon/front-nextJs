@@ -163,7 +163,7 @@ const MyCoupons = () => {
                                                 src={item.img} 
                                                 alt={item.type} 
                                                 className={`w-full h-full ${item.type === 'NOVEL_WHOLE' ? 'object-cover' : 'object-contain'}`}
-                                                preview={item.type === 'NOVEL_WHOLE' ? { mask: false, zIndex: 2300 } : false}
+                                                preview={item.type === 'NOVEL_WHOLE' ? { mask: false } : false}
                                             />
                                         ) : item.type === 'COIN' || item.type === 'FREECOIN' ? (
                                             <Coins size={24} className="text-yellow-500" />
@@ -410,7 +410,7 @@ const MyCoupons = () => {
                                                                 src={resolveBookCoverImageSrc(reward.book, '/images/ejb.png')} 
                                                                 alt={reward.book.title} 
                                                                 className="w-full h-full object-cover" 
-                                                                preview={{ mask: false, zIndex: 3100 }} // Click to preview, no mask
+                                                                preview={{ mask: false }} // Click to preview, no mask
                                                             />
                                                         ) : (
                                                             <>

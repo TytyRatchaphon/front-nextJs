@@ -17,9 +17,9 @@ function FreeCoinPill({ amount, className = "" }: FreeCoinPillProps) {
 
     return (
         <div
-            className={`freecoin-pill min-w-[80px] h-[32px] bg-white rounded-full flex items-center justify-center px-3 gap-2 shadow-sm border border-gray-100 select-none ${className}`}
+            className={`freecoin-pill relative min-w-[80px] h-[32px] bg-white rounded-full flex items-center justify-center pl-8 pr-3 shadow-sm border border-gray-100 select-none ${className}`}
         >
-            <div className="freecoin-pill-icon w-5 h-5 relative flex-shrink-0">
+            <div className="freecoin-pill-icon absolute left-1 top-1/2 w-5 h-5 -translate-y-1/2">
                 <Image
                     src={iconSrc}
                     alt="FreeCoin"
@@ -28,7 +28,7 @@ function FreeCoinPill({ amount, className = "" }: FreeCoinPillProps) {
                     unoptimized
                 />
             </div>
-            <span className="freecoin-pill-text text-gray-800 font-medium text-sm leading-none pt-[1px]">
+            <span className="freecoin-pill-text w-full text-center text-gray-800 font-medium text-sm leading-none pt-[1px]">
                 {amount.toLocaleString()}
             </span>
         </div>

@@ -33,9 +33,9 @@ function FastTicketPill({ amount, onAddClick, className = "" }: FastTicketPillPr
 
   return (
     <div
-      className={`fast-ticket-pill w-[108px] h-[32px] bg-white rounded-full flex items-center justify-between p-1 shadow-sm border border-gray-100 select-none ${className}`}
+      className={`fast-ticket-pill relative w-[108px] h-[32px] bg-white rounded-full flex items-center justify-center px-8 shadow-sm border border-gray-100 select-none ${className}`}
     >
-      <div className="fast-ticket-pill-icon w-5 h-5 relative flex-shrink-0">
+      <div className="fast-ticket-pill-icon absolute left-1 top-1/2 w-5 h-5 -translate-y-1/2">
         <Image
           src={iconSrc}
           alt="Fast Ticket"
@@ -45,7 +45,7 @@ function FastTicketPill({ amount, onAddClick, className = "" }: FastTicketPillPr
         />
       </div>
 
-      <div className="flex-1 text-center mx-1 overflow-hidden cursor-pointer">
+      <div className="w-full text-center overflow-hidden cursor-pointer">
         <Tooltip title={amount.toLocaleString()} trigger={['click', 'hover']} placement="bottom">
           <span className="fast-ticket-pill-text text-sm font-medium text-gray-800 truncate block leading-none">
             {formattedAmount}
@@ -55,7 +55,7 @@ function FastTicketPill({ amount, onAddClick, className = "" }: FastTicketPillPr
 
       <button
         onClick={handleClick}
-        className="fast-ticket-pill-add w-6 h-6 rounded-full bg-[#7AC142] hover:bg-[#68a635] flex items-center justify-center !text-white transition-colors flex-shrink-0 active:scale-95"
+        className="fast-ticket-pill-add absolute right-1 top-1/2 w-6 h-6 -translate-y-1/2 rounded-full bg-[#7AC142] hover:bg-[#68a635] flex items-center justify-center !text-white transition-colors active:scale-95"
         aria-label="ไปที่ร้านค้าแต้ม"
       >
         <Plus size={16} strokeWidth={3} />
