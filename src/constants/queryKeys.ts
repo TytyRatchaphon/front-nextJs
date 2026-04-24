@@ -48,6 +48,9 @@ export const QUERY_KEYS = {
   // Home
   HOME_DATA: "home-data",
 
+  // Website
+  WEBSITE_SETTINGS: "website-settings",
+
   // Search
   SEARCH_RESULTS: "search-results",
 } as const;
@@ -100,6 +103,9 @@ export const queryKeys = {
     summary: () => [QUERY_KEYS.CART_SUMMARY] as const,
     checkoutItems: () => [QUERY_KEYS.CHECKOUT_ITEMS] as const,
     checkoutAddress: () => [QUERY_KEYS.CHECKOUT_ADDRESS] as const,
+  },
+  website: {
+    settings: () => [QUERY_KEYS.WEBSITE_SETTINGS] as const,
   },
 } as const;
 

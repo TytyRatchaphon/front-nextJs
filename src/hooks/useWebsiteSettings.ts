@@ -3,15 +3,15 @@ import {
   useQuery,
   useQueryClient,
   type QueryClient,
-  type QueryKey,
 } from "@tanstack/react-query";
 
+import { queryKeys } from "@/constants/queryKeys";
 import { fetchWebsiteSettings } from "@/services/api/userApi";
 import { getErrorMessage } from "@/types/errors";
 import type { WebsiteSettingsData, WebsiteSettingsResponse } from "@/types/api";
 
 export const WEBSITE_SETTINGS_CACHE_TTL_MS = 5 * 60 * 1000;
-export const WEBSITE_SETTINGS_QUERY_KEY = ["website-settings"] as const satisfies QueryKey;
+export const WEBSITE_SETTINGS_QUERY_KEY = queryKeys.website.settings();
 
 const normalizeWebsiteSettings = (
   response: WebsiteSettingsResponse | null,
