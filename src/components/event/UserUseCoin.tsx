@@ -5,7 +5,7 @@ import { GiftOutlined } from '@ant-design/icons'
 import apiClient from '@/services/apiClient'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
-import { QUERY_KEYS, QUERY_CONFIG } from '@/constants/query'
+import { QUERY_CONFIG, queryKeys } from '@/constants/query'
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
 
 type Props = {
@@ -48,7 +48,7 @@ export default function UserUseCoin({
 
   // 2. Query Data
   const { data } = useQuery({
-    queryKey: [QUERY_KEYS.USER_EVENT_SUMMARY, token],
+    queryKey: queryKeys.user.eventSummary(token),
     queryFn: () => fetchEventSummary(),
     staleTime: QUERY_CONFIG.STALE_TIME_MEDIUM,
     retry: QUERY_CONFIG.RETRY_COUNT
@@ -99,7 +99,7 @@ export default function UserUseCoin({
       }
 
       // --- STEP C: ซ่อนปุ่มทันที (Optimistic Cache Update) ---
-      queryClient.setQueryData(['user-event-summary', useAuthStore.getState().token], (oldData: any) => {
+      queryClient.setQueryData(queryKeys.user.eventSummary(useAuthStore.getState().token ?? null), (oldData: any) => {
         if (!oldData) return oldData;
         const newData = JSON.parse(JSON.stringify(oldData));
         if (newData.coin_used_data) {
@@ -114,7 +114,7 @@ export default function UserUseCoin({
         const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? ''
 
         // 1. Refetch หน้า Event (เผื่อมีเงื่อนไขอื่นเปลี่ยน)
-        queryClient.invalidateQueries({ queryKey: ['user-event-summary'] })
+        queryClient.invalidateQueries({ queryKey: queryKeys.user.eventSummaryRoot() })
 
         // 2. Fetch User Profile ล่าสุดจาก Server (เพื่อความชัวร์ 100%)
         try {

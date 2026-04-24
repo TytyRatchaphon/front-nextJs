@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import * as React from "react";
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { Trophy, Award, Target, BookOpen, Coins, Flame, Gift, X } from 'lucide-react';
 import { fetchAchievements, fetchAchievementDetail, claimAchievement } from '@/services/api/achievementApi';
 import { useAuthStore } from '@/stores/authStore';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 
 const conditionLabels: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   login_streak: { label: 'ล็อกอินต่อเนื่อง', icon: <Flame size={16} />, color: '#F59E0B' },
@@ -27,7 +27,7 @@ export default function AchievementPageClient() {
   const queryClient = useQueryClient();
   const { notification } = App.useApp();
   const { updateToken } = useAuthStore();
-  const { settings } = useWebsiteStore();
+  const { settings } = useWebsiteSettings();
 
   const { data, isLoading } = useQuery({
     queryKey: ['achievements'],
@@ -342,7 +342,7 @@ export default function AchievementPageClient() {
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center p-2">
                               {reward.reward_type === 'coin' ? (
-                                <Image src={settings?.coin || '/images/e-coin.png'} alt="เหรียญ" width={24} height={24} unoptimized className="object-contain" />
+                                <Image src={settings?.coin || '/images/e-coin.png'} alt="๬หรียญ" width={24} height={24} unoptimized className="object-contain" />
                               ) : reward.reward_type === 'freecoin' ? (
                                 <Image src={settings?.freecoin || '/images/money-bag.png'} alt="ถุงเงิน" width={24} height={24} unoptimized className="object-contain" />
                               ) : (
@@ -390,3 +390,4 @@ export default function AchievementPageClient() {
     </div>
   );
 }
+

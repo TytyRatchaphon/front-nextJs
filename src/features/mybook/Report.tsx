@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import * as React from "react";
 import { useState } from 'react';
 import Image from 'next/image';
@@ -9,7 +9,7 @@ import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 
 import { fetchBookStats, fetchBookAnalytics, fetchBookEpisodesStats, EpisodeStats, PurchaseItem } from '@/services/apiServices';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { useShallow } from 'zustand/react/shallow';
 import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
@@ -73,7 +73,7 @@ export default function Report({ bookId }: { bookId: string }) {
     const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([dayjs().subtract(7, 'd'), dayjs()]);
     const [, setLoading] = useState(true);
 
-    const { settings } = useWebsiteStore(useShallow((state) => ({ settings: state.settings })));
+    const { settings } = useWebsiteSettings(useShallow((state) => ({ settings: state.settings })));
 
     const loadAnalytics = React.useCallback(async (start: string, end: string) => {
         const analyticsData = await fetchBookAnalytics(bookId, start, end);
@@ -387,3 +387,4 @@ export default function Report({ bookId }: { bookId: string }) {
         </div>
     );
 }
+

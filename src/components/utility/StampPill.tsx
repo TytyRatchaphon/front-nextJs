@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 import Image from 'next/image';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import '@/utils/imageUtils';
 
 interface StampPillProps {
@@ -10,7 +10,7 @@ interface StampPillProps {
 
 
 function StampPill({ amount, className = "" }: StampPillProps) {
-    const { settings } = useWebsiteStore();
+    const { settings } = useWebsiteSettings();
     const iconSrc = settings?.stamp || "/images/stamp.png";
 
     return (
@@ -34,3 +34,4 @@ function StampPill({ amount, className = "" }: StampPillProps) {
 }
 
 export default StampPill;
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import * as React from "react";
 
 import '@/components/home/Banner';
@@ -12,7 +12,7 @@ import { useAuthStore } from '@/stores/authStore'
 import type { StoreCategory, StorePack, StorePackSelectableOption } from '@/types/api'
 import Link from 'next/link'
 import StoreCard from '@/components/utility/StoreCard'
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import GifLoader from '@/components/utility/GifLoader';
 import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill'
@@ -501,7 +501,7 @@ function Store() {
   };
 
   const finalItems = [allTabItem, ...tabItems];
-  const { settings } = useWebsiteStore();
+  const { settings } = useWebsiteSettings();
   const selectedStoreCategory =
     activeStoreTab === 'all'
       ? null
@@ -887,7 +887,7 @@ function Store() {
                 onClick={handleCloseBuyModal}
                 className="flex-1 border-2 border-gray-200 text-gray-500 py-2.5 rounded-xl font-bold hover:bg-gray-50 hover:text-gray-700 hover:border-gray-300 transition-all duration-200"
               >
-                ยกเลิก
+                ยก๬ลิก
               </button>
               <button
                 onClick={handleConfirmBuy}
@@ -910,3 +910,4 @@ function Store() {
 }
 
 export default Store
+

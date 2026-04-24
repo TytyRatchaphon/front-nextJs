@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 import Image from 'next/image';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import '@/utils/imageUtils';
 
 interface RPPillProps {
@@ -10,7 +10,7 @@ interface RPPillProps {
 
 
 function RPPill({ amount, className = "" }: RPPillProps) {
-    const { settings } = useWebsiteStore();
+    const { settings } = useWebsiteSettings();
     const iconSrc = settings?.rp || "/images/rp.png";
 
     return (

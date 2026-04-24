@@ -1,13 +1,13 @@
-"use client";
+﻿"use client";
 import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchCartItems, updateCartItem, removeCartItem, clearCart } from '@/services/cartService';
-import { CartItem, SelectableOption } from '@/interfaces/cart.interface';
+import { CartItem, SelectableOption } from '@/types/cart';
 import { Table, Checkbox, Button, InputNumber, Image as AntImage, Typography, Popconfirm, App, Empty, Collapse } from 'antd';
 import { DeleteOutlined, ShopOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/authStore';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import GifLoader from '@/components/utility/GifLoader';
 import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill';
@@ -28,7 +28,7 @@ const isMissingImageSrc = (src: string | null | undefined) => {
 export default function CartDetail() {
     const queryClient = useQueryClient();
     const { user } = useAuthStore() as any;
-    const { settings } = useWebsiteStore();
+    const { settings } = useWebsiteSettings();
     const { notification } = App.useApp();
     const { data: cartStores, isLoading } = useQuery({
         queryKey: ['cartItems'],
@@ -63,7 +63,7 @@ export default function CartDetail() {
         });
 
         const currencyMap: Record<string, string> = {
-            coin: 'เหรียญ',
+            coin: '๬หรียญ',
             freecoin: 'ถุงเงิน',
             stamp: 'แสตมป์',
             rp: 'RP'
@@ -641,7 +641,7 @@ export default function CartDetail() {
                         <Title level={4} className="mb-4">ยอดเงินคงเหลือ</Title>
                         <div className="flex flex-col gap-3">
                             <div className="flex justify-between items-center">
-                                <Text className="text-gray-500">เหรียญ</Text>
+                                <Text className="text-gray-500">๬หรียญ</Text>
                                 <AmountPill amount={user?.coin || 0} />
                             </div>
                             <div className="flex justify-between items-center">
@@ -729,3 +729,4 @@ export default function CartDetail() {
         </div>
     );
 }
+

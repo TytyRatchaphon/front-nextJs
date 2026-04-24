@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { Modal } from 'antd';
 import { useAuthStore } from '@/stores/authStore';
 import { useQuery } from '@tanstack/react-query';
@@ -6,7 +6,7 @@ import apiClient from '@/services/apiClient';
 import SevenDaysLogin from '@/components/event/SevenDaysLogin';
 
 import { useUIStore } from '@/stores/uiStore';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 
 const fetchWeeklyLogin = async (token?: string | null) => {
   if (!token) return {};
@@ -19,7 +19,7 @@ const fetchWeeklyLogin = async (token?: string | null) => {
 const DailyCheckinModal = () => {
     const { isLoggedIn, token } = useAuthStore();
     const { isCheckinModalOpen, closeCheckinModal } = useUIStore();
-    useWebsiteStore();
+    useWebsiteSettings();
     
     // Fetch data only if logged in
     useQuery({
@@ -66,3 +66,4 @@ const DailyCheckinModal = () => {
 };
 
 export default DailyCheckinModal;
+

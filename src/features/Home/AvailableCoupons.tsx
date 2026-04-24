@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAvailableCoupons, claimCoupon, fetchUserCoupons } from '@/services/apiServices';
 import { App, Empty, Modal, Button, Image as AntImage } from 'antd';
@@ -8,7 +8,7 @@ import CouponCard from '@/components/coupon/CouponCard';
 import { processCoupons, CouponUI } from '@/utils/couponUtils';
 import dayjs from 'dayjs';
 import 'dayjs/locale/th';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 const AvailableCoupons = () => {
@@ -22,7 +22,7 @@ const AvailableCoupons = () => {
     };
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedCoupon, setSelectedCoupon] = useState<CouponUI | null>(null);
-    const { settings } = useWebsiteStore();
+    const { settings } = useWebsiteSettings();
 
     // Fetch User Coupons to calculate ownedCount
     const { data: userCoupons = [] } = useQuery({
@@ -173,8 +173,8 @@ const AvailableCoupons = () => {
                                                  rewardValue = `ลด ${config?.percent || 0}%`;
                                                  iconColor = 'text-red-500';
                                              } else if (reward.rewardType === 'COIN') {
-                                                 rewardLabel = 'เหรียญ';
-                                                 rewardValue = `${config?.coin || config?.amount || 0} เหรียญ`;
+                                                 rewardLabel = '๬หรียญ';
+                                                 rewardValue = `${config?.coin || config?.amount || 0} ๬หรียญ`;
                                                  iconColor = 'text-yellow-500';
                                              } else if (reward.rewardType === 'FREECOIN') {
                                                  rewardLabel = 'ถุงเงิน';
@@ -276,3 +276,4 @@ const AvailableCoupons = () => {
 };
 
 export default AvailableCoupons;
+

@@ -34,7 +34,7 @@ export interface CartItem {
   limit_error?: string;
   limit_message?: string;
   // Compatibility fields for existing UI components (optional, or mapped in service)
-  book_id?: number; 
+  book_id?: number;
   book_name?: string;
   book_cover?: string;
   price?: number;
@@ -88,33 +88,33 @@ export interface CheckoutItem {
 }
 
 export interface CheckoutItemsResponse {
-    items: CheckoutItem[];
+  items: CheckoutItem[];
 }
 
 export interface ShippingItem {
-    name: string;
-    quantity: number;
+  name: string;
+  quantity: number;
 }
 
 export interface CheckoutAddressResponse {
-    has_physical_items: boolean;
-    phone: string;
-    address: string;
-    shipping_items: ShippingItem[];
+  has_physical_items: boolean;
+  phone: string;
+  address: string;
+  shipping_items: ShippingItem[];
 }
 
 export interface WalletState {
-    coin: number;
-    freecoin: number;
-    stamp: number;
-    coupon: number;
-    current_rp?: number;
+  coin: number;
+  freecoin: number;
+  stamp: number;
+  coupon: number;
+  current_rp?: number;
 }
 
 export interface CheckoutSummaryResponse {
-    total_cost: Record<string, number>;
-    wallet_before: WalletState;
-    wallet_after: WalletState;
-    can_purchase: boolean;
-    limit_error: string | null;
+  total_cost: Record<string, number>;
+  wallet_before: WalletState;
+  wallet_after: WalletState;
+  can_purchase: boolean;
+  limit_error: string | null;
 }

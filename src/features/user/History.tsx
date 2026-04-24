@@ -2,15 +2,23 @@
 
 import React from 'react'
 import { Card, Tabs, Table, Empty, notification } from 'antd';
-import apiClient from '@/services/apiClient'
 import { useQuery } from '@tanstack/react-query'
 import { get_date as use_date } from '@/utils/dateUtils'
 import '@/components/home/Banner';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import GifLoader from '@/components/utility/GifLoader';
 import Image from 'next/image';
 import '@/utils/imageUtils';
 import { CloseCircleOutlined } from '@ant-design/icons';
+import {
+  fetchGachaHistory,
+  fetchGetMoreHistory,
+  fetchGiftHistory,
+  fetchPaymentHistory,
+  fetchRedeemHistory,
+  fetchStoreHistory,
+  fetchUseCoinHistory,
+} from '@/services/apiServices';
 
 
 function History() {
@@ -67,20 +75,14 @@ function History() {
 
   const paymentsQuery = useQuery<any>(({
     queryKey: ['his_payment', paymentsPage, pageSize],
-    queryFn: async () => {
-      const resp = await apiClient.get('/user/his_payment', { params: { page: paymentsPage, limit: pageSize } })
-      return resp.data
-    },
+    queryFn: () => fetchPaymentHistory({ page: paymentsPage, limit: pageSize }),
     enabled: activeKey === '1',
     placeholderData: (previousData: any) => previousData,
   } as any))
 
   const useCoinQuery = useQuery<any>(({
     queryKey: ['his_usecoin', useCoinsPage, pageSize],
-    queryFn: async () => {
-      const resp = await apiClient.get('/user/his_usecoin', { params: { page: useCoinsPage, limit: pageSize } })
-      return resp.data
-    },
+    queryFn: () => fetchUseCoinHistory({ page: useCoinsPage, limit: pageSize }),
     enabled: activeKey === '2',
     placeholderData: (previousData: any) => previousData,
   } as any))
@@ -127,10 +129,7 @@ function History() {
   // redeem history query
   const redeemQuery = useQuery<any>(({
     queryKey: ['his_redeem', redeemPage, pageSize],
-    queryFn: async () => {
-      const resp = await apiClient.get('/user/his_redeem', { params: { page: redeemPage, limit: pageSize } })
-      return resp.data
-    },
+    queryFn: () => fetchRedeemHistory({ page: redeemPage, limit: pageSize }),
     enabled: activeKey === '3',
     placeholderData: (previousData: any) => previousData,
   } as any))
@@ -138,10 +137,7 @@ function History() {
   // gacha (กิจกรรมกล่องสุ่มปริศนา) history
   const gachaQuery = useQuery<any>(({
     queryKey: ['his_gacha', gachaPage, pageSize],
-    queryFn: async () => {
-      const resp = await apiClient.get('/user/his_gacha', { params: { page: gachaPage, limit: pageSize } })
-      return resp.data
-    },
+    queryFn: () => fetchGachaHistory({ page: gachaPage, limit: pageSize }),
     enabled: activeKey === '4',
     placeholderData: (previousData: any) => previousData,
   } as any))
@@ -149,10 +145,7 @@ function History() {
   // history of received extras (ประวัติการได้รับเหรียญเพิ่มเติม)
   const getMoreQuery = useQuery<any>(({
     queryKey: ['his_getmore', getmorePage, pageSize],
-    queryFn: async () => {
-      const resp = await apiClient.get('/user/his_getmore', { params: { page: getmorePage, limit: pageSize } })
-      return resp.data
-    },
+    queryFn: () => fetchGetMoreHistory({ page: getmorePage, limit: pageSize }),
     enabled: activeKey === '5',
     placeholderData: (previousData: any) => previousData,
   } as any))
@@ -292,10 +285,7 @@ function History() {
   // his_gift (ประวัติการแลกของขวัญ)
   const giftQuery = useQuery<any>(({
     queryKey: ['his_gift', giftPage, pageSize],
-    queryFn: async () => {
-      const resp = await apiClient.get('/user/his_gift', { params: { page: giftPage, limit: pageSize } })
-      return resp.data
-    },
+    queryFn: () => fetchGiftHistory({ page: giftPage, limit: pageSize }),
     enabled: activeKey === '6',
     placeholderData: (previousData: any) => previousData,
   } as any))
@@ -303,10 +293,7 @@ function History() {
   // store purchase history (ประวัติการซื้อสินค้า)
   const storeHistoryQuery = useQuery<any>(({
     queryKey: ['his_store', storeHistoryPage, pageSize],
-    queryFn: async () => {
-      const resp = await apiClient.get('/user/his_store', { params: { page: storeHistoryPage, limit: pageSize } })
-      return resp.data
-    },
+    queryFn: () => fetchStoreHistory({ page: storeHistoryPage, limit: pageSize }),
     enabled: activeKey === '7',
     placeholderData: (previousData: any) => previousData,
   } as any))
@@ -442,7 +429,7 @@ function History() {
     storeHistoryQuery,
   ])
 
-  const { settings } = useWebsiteStore();
+  const { settings } = useWebsiteSettings();
 
   const tableColumns = React.useMemo(() => {
     if (activeKey === '1') {

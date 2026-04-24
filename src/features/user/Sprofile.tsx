@@ -20,7 +20,7 @@ import { isValidPhoneNumber } from 'libphonenumber-js';
 import { useFormStore } from '@/stores/formStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
-import apiClient from '@/services/apiClient';
+import { changeUserPassword, fetchProfileCategories } from '@/services/apiServices';
 import Image from 'next/image';
 import GifLoader from '@/components/utility/GifLoader';
 import FrameOverlayImage from '@/components/ui/FrameOverlayImage';
@@ -51,8 +51,7 @@ const UserInfoForm = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await apiClient.get('/category');
-        const data = Array.isArray(res.data) ? res.data : (res.data.data || []);
+        const data = await fetchProfileCategories();
         setCategories(data);
       } catch {
       }
@@ -243,9 +242,9 @@ const ChangePasswordForm = () => {
         token: token,
       };
 
-      const response = await apiClient.post('/user/changepass', requestData);
+      const response = await changeUserPassword(requestData);
 
-      if (response.status === 200 && (response.data.status === 'success' || response.data.code === 200)) {
+      if (response?.status === 'success' || response?.code === 200) {
         notification.success({
           message: 'เปลี่ยนรหัสผ่านสำเร็จ!',
           description: 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว',
@@ -256,7 +255,7 @@ const ChangePasswordForm = () => {
       } else {
         notification.error({
           message: 'เปลี่ยนรหัสผ่านไม่สำเร็จ',
-          description: response.data.message || 'เกิดข้อผิดพลาด',
+          description: response?.message || 'เกิดข้อผิดพลาด',
           icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
           placement: 'topRight',
         });

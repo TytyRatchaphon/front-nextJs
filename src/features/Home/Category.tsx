@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useRef } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -9,7 +9,7 @@ import GifLoader from '@/components/utility/GifLoader';
 import { CategoryBookListResponse, CategoryBook, CategoryDetail } from "@/types/api";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import CategoryTypeSwiper from "./CategoryTypeSwiper";
 import CategoryGenreSwiper from "./CategoryGenreSwiper";
 import { useLogger } from "@/hooks/useLogger";
@@ -36,7 +36,7 @@ export default function Category() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { settings } = useWebsiteStore();
+  const { settings } = useWebsiteSettings();
 
   const idParam = params.id as string;
   const categoryId = idParam === 'list' ? searchParams.get('categoryId') || '' : idParam;
@@ -262,3 +262,4 @@ export default function Category() {
     </div>
   );
 }
+

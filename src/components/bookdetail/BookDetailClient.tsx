@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import * as React from "react";
 import { useState, useEffect } from "react";
 import { Alert, Collapse, Segmented } from "antd";
@@ -14,7 +14,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useRouter } from "next/navigation";
 import AgeVerificationModal from "@/components/modal/AgeVerificationModal";
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { useBookDetailData } from "@/hooks/book/useBookDetailData";
 import { BookAboutTab } from "@/components/bookdetail/BookAboutTab";
 import { BookEpisodesTab } from "@/components/bookdetail/BookEpisodesTab";
@@ -32,7 +32,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
 
   const { token, hasMounted, user } = useAuthStore() as any;
   const { openLoginModal } = useUIStore();
-  const { settings } = useWebsiteStore();
+  const { settings } = useWebsiteSettings();
 
   const [ageModal, setAgeModal] = useState<{ open: boolean; type: "login_required" | "underage" | "birthday_missing" }>({
     open: false,
@@ -346,3 +346,4 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
     </div>
   );
 }
+

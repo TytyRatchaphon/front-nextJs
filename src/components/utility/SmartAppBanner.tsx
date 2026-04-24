@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { CloseOutlined } from '@ant-design/icons';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { resolveSettingsImageSrc } from '@/utils/imageUtils';
 import {
     DEFAULT_APP_STORE_URL,
@@ -12,7 +12,7 @@ import {
 } from '@/utils/storeLinkUtils';
 
 const SmartAppBanner = () => {
-    const { settings } = useWebsiteStore();
+    const { settings } = useWebsiteSettings();
     const [isVisible, setIsVisible] = useState(true);
     const [os, setOs] = useState<'ios' | 'android' | 'other'>('other');
 
@@ -88,3 +88,4 @@ const SmartAppBanner = () => {
 };
 
 export default SmartAppBanner;
+

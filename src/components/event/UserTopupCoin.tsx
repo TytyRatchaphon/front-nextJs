@@ -5,7 +5,7 @@ import { GiftOutlined } from '@ant-design/icons'
 import apiClient from '@/services/apiClient'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
-import { QUERY_KEYS, QUERY_CONFIG } from '@/constants/query'
+import { QUERY_CONFIG, queryKeys } from '@/constants/query'
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
 
 type Props = {
@@ -42,7 +42,7 @@ export default function UserTopupCoin({
 
     // 2. Query Data
     const { data } = useQuery({
-        queryKey: [QUERY_KEYS.USER_EVENT_SUMMARY, token],
+        queryKey: queryKeys.user.eventSummary(token),
         queryFn: () => fetchEventSummary(),
         staleTime: QUERY_CONFIG.STALE_TIME_MEDIUM,
         retry: QUERY_CONFIG.RETRY_COUNT
@@ -62,7 +62,7 @@ export default function UserTopupCoin({
                 icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
                 placement: 'topRight',
             });
-            queryClient.invalidateQueries({ queryKey: ['user-event-summary'] })
+            queryClient.invalidateQueries({ queryKey: queryKeys.user.eventSummaryRoot() })
         },
         onError: (error: any) => {
             notification.error({

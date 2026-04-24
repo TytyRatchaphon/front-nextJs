@@ -8,6 +8,7 @@ import {
   fetchNewNovels,
   fetchBookPromotionOptions,
   fetchBookPromotions,
+  fetchBookReportTypes,
   fetchBookPurchaseDetails,
   fetchBookRecommendation,
   fetchBookTrans,
@@ -18,6 +19,7 @@ import {
   postBookClick,
   resolveBookId,
   resolveEpisodeId,
+  submitBookReport,
 } from "./bookApi";
 
 vi.mock("../apiClient", () => ({
@@ -336,6 +338,113 @@ describe("bookApi", () => {
 
       mockedApiClient.get.mockRejectedValueOnce(new Error("resolve-book-failed"));
       await expect(resolveBookId("x")).resolves.toBeNull();
+    });
+  });
+
+  describe("book report APIs", () => {
+    it("fetchBookReportTypes maps payload to normalized type/reason structure", async () => {
+      mockedApiClient.get.mockResolvedValueOnce({
+        data: {
+          code: 200,
+          status: "success",
+          message: "ok",
+          data: {
+            types: [
+              {
+                id: 1,
+                code: "inappropriate_content",
+                title: "Inappropriate content",
+                description: "desc",
+                reasons: [
+                  {
+                    id: 10,
+                    code: "spam",
+                    title: "Spam",
+                    description: "desc",
+                    requires_detail: 0,
+                  },
+                  {
+                    id: 11,
+                    code: "other",
+                    title: "Other",
+                    description: "desc",
+                    requires_detail: 1,
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      });
+
+      await expect(fetchBookReportTypes()).resolves.toEqual([
+        {
+          id: 1,
+          code: "inappropriate_content",
+          title: "Inappropriate content",
+          description: "desc",
+          reasons: [
+            {
+              id: 10,
+              code: "spam",
+              title: "Spam",
+              description: "desc",
+              requires_detail: false,
+            },
+            {
+              id: 11,
+              code: "other",
+              title: "Other",
+              description: "desc",
+              requires_detail: true,
+            },
+          ],
+        },
+      ]);
+      expect(mockedApiClient.get).toHaveBeenCalledWith("/book/report/types");
+    });
+
+    it("fetchBookReportTypes returns [] for invalid payload shape", async () => {
+      mockedApiClient.get.mockResolvedValueOnce({
+        data: { code: 200, data: { types: null } },
+      });
+      await expect(fetchBookReportTypes()).resolves.toEqual([]);
+    });
+
+    it("submitBookReport posts payload to /book/:book_id/report", async () => {
+      mockedApiClient.post.mockResolvedValueOnce({
+        data: { code: 200, status: "success" },
+      });
+
+      await expect(
+        submitBookReport(123, {
+          detail: "รายละเอียดยืนยัน",
+          reports: [
+            {
+              type_id: 1,
+              reason_id: 11,
+            },
+            {
+              type_id: 2,
+              reason_id: 20,
+            },
+          ],
+        })
+      ).resolves.toEqual({ code: 200, status: "success" });
+
+      expect(mockedApiClient.post).toHaveBeenCalledWith("/book/123/report", {
+        detail: "รายละเอียดยืนยัน",
+        reports: [
+          {
+            type_id: 1,
+            reason_id: 11,
+          },
+          {
+            type_id: 2,
+            reason_id: 20,
+          },
+        ],
+      });
     });
   });
 

@@ -2,7 +2,6 @@
 import apiClient from "../apiClient";
 import type { WebsiteSettingsResponse } from "@/types/api";
 import Cookies from 'js-cookie';
-import { cachedRequest } from "../requestCache";
 
 // --- Writer Registration & Check ---
 
@@ -79,6 +78,33 @@ export const updateUserAddress = async (formData: FormData, token: string) => {
   } catch (error: any) {
     throw error;
   }
+};
+
+export interface ProfileCategory {
+  id: number | string;
+  name: string;
+}
+
+export const fetchProfileCategories = async (): Promise<ProfileCategory[]> => {
+  try {
+    const response = await apiClient.get('/category');
+    const payload = response.data;
+    return Array.isArray(payload) ? payload : (payload?.data ?? []);
+  } catch {
+    return [];
+  }
+};
+
+export interface ChangePasswordPayload {
+  oldpass: string;
+  newpass1: string;
+  newpass2: string;
+  token: string;
+}
+
+export const changeUserPassword = async (payload: ChangePasswordPayload) => {
+  const response = await apiClient.post('/user/changepass', payload);
+  return response.data;
 };
 
 // --- Writer Profile (Public) ---
@@ -329,17 +355,8 @@ export const refreshToken = async (tokenOverride?: string) => {
 
 export const fetchWebsiteSettings = async (): Promise<WebsiteSettingsResponse | null> => {
   try {
-    return await cachedRequest<WebsiteSettingsResponse | null>(
-      'website-settings',
-      async () => {
-        const response = await apiClient.get<WebsiteSettingsResponse>("/get_website");
-        return response.data || null;
-      },
-      {
-        ttlMs: 5 * 60 * 1000,
-        shouldCache: (value) => value !== null,
-      }
-    );
+    const response = await apiClient.get<WebsiteSettingsResponse>("/get_website");
+    return response.data || null;
   } catch (error) {
     console.error("fetchWebsiteSettings error:", error);
     return null;

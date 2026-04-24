@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 import Image from 'next/image';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import '@/utils/imageUtils';
 
 interface FreeCoinPillProps {
@@ -10,7 +10,7 @@ interface FreeCoinPillProps {
 
 
 function FreeCoinPill({ amount, className = "" }: FreeCoinPillProps) {
-    const { settings } = useWebsiteStore();
+    const { settings } = useWebsiteSettings();
     const iconSrc = settings?.freecoin || "/images/money-bag.png";
 
     return (
@@ -34,3 +34,4 @@ function FreeCoinPill({ amount, className = "" }: FreeCoinPillProps) {
 }
 
 export default FreeCoinPill;
+

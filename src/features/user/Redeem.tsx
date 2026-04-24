@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 import { useEffect, useState } from 'react';
 import Image from 'next/image'
 import { useAuthStore } from '@/stores/authStore'
 import { notification, Modal } from 'antd';
 import { redeemCode, refreshToken } from '@/services/apiServices'
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { resolveSettingsImageSrc } from '@/utils/imageUtils';
 
 function Redeem() {
@@ -81,7 +81,7 @@ function Redeem() {
         }
     }
 
-    const { settings, fetchSettings } = useWebsiteStore();
+    const { settings, fetchSettings } = useWebsiteSettings();
 
     useEffect(() => {
         fetchSettings();
@@ -299,3 +299,4 @@ function Redeem() {
 }
 
 export default Redeem
+

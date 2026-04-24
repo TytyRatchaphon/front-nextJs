@@ -42,6 +42,7 @@ vi.mock("@/utils/imageUtils", () => ({
 }));
 
 import { useBookDetailData } from "@/hooks/book/useBookDetailData";
+import { QUERY_KEYS, queryKeys } from "@/constants/query";
 
 describe("useBookDetailData", () => {
   beforeEach(() => {
@@ -135,19 +136,19 @@ describe("useBookDetailData", () => {
 
     mockUseQuery.mockImplementation((config: any) => {
       const key = config.queryKey[0];
-      if (key === "bookDetail") {
+      if (key === QUERY_KEYS.BOOK_DETAIL) {
         return { data: bookDetail, isLoading: false, isError: false, error: null };
       }
-      if (key === "userShelf") {
+      if (key === QUERY_KEYS.USER_SHELF) {
         return { data: userShelf };
       }
-      if (key === "bookEpisodes") {
+      if (key === QUERY_KEYS.BOOK_EPISODES) {
         return { data: episodesData, isLoading: false, isError: false };
       }
-      if (key === "bookPurchaseDetails") {
+      if (key === QUERY_KEYS.BOOK_PURCHASE_DETAILS) {
         return { data: purchaseDetails };
       }
-      if (key === "novelPackCheck") {
+      if (key === QUERY_KEYS.NOVEL_PACK_CHECK) {
         return { data: novelPackCheck };
       }
       return {};
@@ -214,10 +215,10 @@ describe("useBookDetailData", () => {
   it("returns null transformed book and combines error/loading flags", () => {
     mockUseQuery.mockImplementation((config: any) => {
       const key = config.queryKey[0];
-      if (key === "bookDetail") {
+      if (key === QUERY_KEYS.BOOK_DETAIL) {
         return { data: null, isLoading: true, isError: true, error: new Error("detail error") };
       }
-      if (key === "bookEpisodes") {
+      if (key === QUERY_KEYS.BOOK_EPISODES) {
         return { data: undefined, isLoading: false, isError: true };
       }
       return { data: null };
@@ -241,21 +242,27 @@ describe("useBookDetailData", () => {
     expect(configs).toHaveLength(5);
     expect(configs[0]).toEqual(
       expect.objectContaining({
-        queryKey: ["bookDetail", ""],
+        queryKey: queryKeys.book.detail(""),
         enabled: false,
         placeholderData: keepPreviousDataMock,
       }),
     );
-    expect(configs[1]).toEqual(expect.objectContaining({ queryKey: ["userShelf", null], enabled: false }));
+    expect(configs[1]).toEqual(
+      expect.objectContaining({ queryKey: queryKeys.user.shelf(null), enabled: false }),
+    );
     expect(configs[2]).toEqual(
       expect.objectContaining({
-        queryKey: ["bookEpisodes", ""],
+        queryKey: queryKeys.book.episodes(""),
         enabled: false,
         placeholderData: keepPreviousDataMock,
       }),
     );
-    expect(configs[3]).toEqual(expect.objectContaining({ queryKey: ["bookPurchaseDetails", "", null], enabled: false }));
-    expect(configs[4]).toEqual(expect.objectContaining({ queryKey: ["novelPackCheck", ""], enabled: false }));
+    expect(configs[3]).toEqual(
+      expect.objectContaining({ queryKey: queryKeys.book.purchaseDetails("", null), enabled: false }),
+    );
+    expect(configs[4]).toEqual(
+      expect.objectContaining({ queryKey: queryKeys.book.novelPackCheck(""), enabled: false }),
+    );
   });
 
   it("uses user fallback writer, default price, and empty tags when data is sparse", () => {
@@ -300,19 +307,19 @@ describe("useBookDetailData", () => {
 
     mockUseQuery.mockImplementation((config: any) => {
       const key = config.queryKey[0];
-      if (key === "bookDetail") {
+      if (key === QUERY_KEYS.BOOK_DETAIL) {
         return { data: sparseBookDetail, isLoading: false, isError: false, error: null };
       }
-      if (key === "userShelf") {
+      if (key === QUERY_KEYS.USER_SHELF) {
         return { data: "not-array" };
       }
-      if (key === "bookEpisodes") {
+      if (key === QUERY_KEYS.BOOK_EPISODES) {
         return { data: episodesData, isLoading: false, isError: false };
       }
-      if (key === "bookPurchaseDetails") {
+      if (key === QUERY_KEYS.BOOK_PURCHASE_DETAILS) {
         return { data: undefined };
       }
-      if (key === "novelPackCheck") {
+      if (key === QUERY_KEYS.NOVEL_PACK_CHECK) {
         return { data: undefined };
       }
       return {};

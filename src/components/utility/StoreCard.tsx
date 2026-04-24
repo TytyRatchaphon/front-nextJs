@@ -1,7 +1,7 @@
-import * as React from "react";
+﻿import * as React from "react";
 import Image from 'next/image';
 import { StorePack, StorePackSelectableOption } from '@/types/api';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { App, Checkbox, Image as AntImage, Modal, Spin } from 'antd';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
@@ -19,7 +19,7 @@ interface StoreCardProps {
 
 
 const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
-  const { settings } = useWebsiteStore()
+  const { settings } = useWebsiteSettings()
   const { token } = useAuthStore() as any;
   const { notification } = App.useApp();
   useRouter();
@@ -350,7 +350,7 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
               onClick={() => setIsCartSelectionOpen(false)}
               className="flex-1 rounded-xl border-2 border-gray-200 py-2.5 font-bold text-gray-500 transition hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700"
             >
-              ยกเลิก
+              ยก๬ลิก
             </button>
             <button
               onClick={handleConfirmAddSelectionToCart}
@@ -370,3 +370,4 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
 
 
 export default StoreCard;
+

@@ -1,10 +1,10 @@
-"use client";
-import { useWebsiteStore } from '@/stores/websiteStore';
+﻿"use client";
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { Skeleton } from 'antd';
 import { sanitizeUserGeneratedHtml } from '@/utils/sanitizeHtml';
 
 export default function AboutUsContent() {
-    const { settings, isLoading } = useWebsiteStore();
+    const { settings, isLoading } = useWebsiteSettings();
     const safeAboutHtml = sanitizeUserGeneratedHtml(settings?.contact || settings?.contacts || '');
 
     return (
@@ -47,3 +47,4 @@ export default function AboutUsContent() {
         </div>
     );
 }
+

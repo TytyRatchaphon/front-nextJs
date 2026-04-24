@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 import * as React from "react";
 import { useEffect, useState } from 'react';
 import { Button } from 'antd';
 import { DownloadOutlined, AppleOutlined, AndroidOutlined } from '@ant-design/icons';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import {
     DEFAULT_APP_STORE_URL,
     DEFAULT_PLAY_STORE_URL,
@@ -19,7 +19,7 @@ interface SmartDownloadButtonProps {
 }
 
 const SmartDownloadButton: React.FC<SmartDownloadButtonProps> = ({ className, label = 'Download App', children }) => {
-    const { settings } = useWebsiteStore();
+    const { settings } = useWebsiteSettings();
     const [os, setOs] = useState<'ios' | 'android' | 'other' | null>(null);
 
     useEffect(() => {
@@ -90,3 +90,4 @@ const SmartDownloadButton: React.FC<SmartDownloadButtonProps> = ({ className, la
 };
 
 export default SmartDownloadButton;
+

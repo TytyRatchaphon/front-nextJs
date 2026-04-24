@@ -1,4 +1,4 @@
-
+﻿
 'use client';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,7 +11,7 @@ import { processCoupons, CouponUI } from '@/utils/couponUtils';
 import dayjs from 'dayjs';
 import 'dayjs/locale/th';
 import { useAuthStore } from '@/stores/authStore';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 const MyCoupons = () => {
@@ -26,7 +26,7 @@ const MyCoupons = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedCoupon, setSelectedCoupon] = useState<CouponUI | null>(null);
     const [selectedRewardIds, setSelectedRewardIds] = useState<number[]>([]);
-    const { settings } = useWebsiteStore();
+    const { settings } = useWebsiteSettings();
 
     const { data: userCoupons = [], isLoading, isError } = useQuery({
         queryKey: ['userCoupons'],
@@ -57,9 +57,6 @@ const MyCoupons = () => {
              // Process response for display
              const rewards = responseData?.rewards || responseData?.data || [];
              
-             // Get website settings for images
-             const { settings } = useWebsiteStore.getState();
-
              if (rewards.length > 0) {
                  const rewardList = rewards.map((r: any) => {
                      let label = '';
@@ -96,7 +93,7 @@ const MyCoupons = () => {
                          const amount = config?.coin || config?.amount || config?.coins || config?.value || config?.quantity || 
                                         r?.coin || r?.amount || r?.coins || r?.value || r?.quantity || 0;
                          label = `${amount}`;
-                         subLabel = 'เหรียญ';
+                         subLabel = '๬หรียญ';
                          img = settings?.coin;
                      } else if (rewardType === 'FREECOIN') {
                          const amount = config?.coin || config?.amount || config?.coins || config?.value || config?.quantity || 
@@ -350,8 +347,8 @@ const MyCoupons = () => {
                                                  rewardValue = `ลด ${config?.percent || 0}%`;
                                                  iconColor = 'text-red-500';
                                              } else if (reward.rewardType === 'COIN') {
-                                                 rewardLabel = 'เหรียญ';
-                                                 rewardValue = `${config?.coin || config?.amount || 0} เหรียญ`;
+                                                 rewardLabel = '๬หรียญ';
+                                                 rewardValue = `${config?.coin || config?.amount || 0} ๬หรียญ`;
                                                  iconColor = 'text-yellow-500';
                                              } else if (reward.rewardType === 'FREECOIN') {
                                                  rewardLabel = 'ถุงเงิน';
@@ -460,3 +457,4 @@ const MyCoupons = () => {
 };
 
 export default MyCoupons;
+

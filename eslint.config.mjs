@@ -12,6 +12,7 @@ const eslintConfig = [
       "build/**",
       "coverage/**",
       "next-env.d.ts",
+      "refactor*.js",
     ],
   },
   {

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import apiClient from './apiClient';
+import apiClient from '../apiClient';
 import {
   addToCart,
   clearCart,
@@ -12,9 +12,9 @@ import {
   fetchCheckoutSummary,
   removeCartItem,
   updateCartItem,
-} from './cartService';
+} from './cartApi';
 
-vi.mock('./apiClient', () => ({
+vi.mock('../apiClient', () => ({
   default: {
     get: vi.fn(),
     post: vi.fn(),

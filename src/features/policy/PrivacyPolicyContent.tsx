@@ -1,10 +1,10 @@
-"use client";
-import { useWebsiteStore } from '@/stores/websiteStore';
+﻿"use client";
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { Skeleton } from 'antd';
 import { sanitizeUserGeneratedHtml } from '@/utils/sanitizeHtml';
 
 export default function PrivacyPolicyContent() {
-    const { settings, isLoading } = useWebsiteStore();
+    const { settings, isLoading } = useWebsiteSettings();
     const safePrivacyHtml = sanitizeUserGeneratedHtml(settings?.policy || settings?.privacy_policy || '');
 
     return (
@@ -47,3 +47,4 @@ export default function PrivacyPolicyContent() {
         </div>
     );
 }
+

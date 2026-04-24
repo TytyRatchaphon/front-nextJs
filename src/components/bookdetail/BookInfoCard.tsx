@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import * as React from "react";
 
 import Image from "next/image";
@@ -17,7 +17,7 @@ import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill';
 import FastTicketPill from '@/components/utility/FastTicketPill';
 import { CountdownTimer as CommonCountdownTimer } from "@/components/common/CountdownTimer";
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import "jwt-decode";
 import '@/utils/imageUtils';
 import type { DiscountReward, EpisodeGroup } from '@/types/api';
@@ -250,7 +250,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
         </div>
       ),
       okText: 'ยืนยัน',
-      cancelText: 'ยกเลิก',
+      cancelText: 'ยก๬ลิก',
       okButtonProps: { className: '!bg-red-600 hover:!bg-red-700 !border-red-600 !text-white' },
       onOk: async () => {
         try {
@@ -746,7 +746,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
 
   // useEffect for syncing local state removed - accessing user.coin directly in render
 
-  const { settings } = useWebsiteStore()
+  const { settings } = useWebsiteSettings()
 
   useEffect(() => {
     if (selectedSummary.count === 0) return;
@@ -978,7 +978,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                     </div>
 
                     <div className="flex items-center justify-between mt-3 mb-2 pt-3 border-t border-white/20">
-                      <div className="text-xs opacity-90 drop-shadow-sm">เหลือเวลาอีก</div>
+                      <div className="text-xs opacity-90 drop-shadow-sm">๬หลือ๬วลาอีก</div>
                       <CountdownTimer endDate={book.promotion.endDate} />
                     </div>
 
@@ -1099,7 +1099,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                 footer={
                   <div className="w-full">
                     <div className="flex items-center justify-between">
-                      <Button onClick={closeModal} className="border border-red-200 text-red-600 bg-white !hover:bg-red-50">ยกเลิก</Button>
+                      <Button onClick={closeModal} className="border border-red-200 text-red-600 bg-white !hover:bg-red-50">ยก๬ลิก</Button>
                       <div className="flex items-center gap-3 flex-wrap justify-end">
                         <div className="text-sm text-gray-700">เลือก {selectedSummary.count} ตอน</div>
                         {selectedSummary.fastTicketCount > 0 ? renderMixedPriceSummary(selectedSummary) : (
@@ -1426,7 +1426,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                           <div className="flex justify-center">
                             <Radio.Group value={payWith} onChange={(e) => setPayWith(e.target.value)} buttonStyle="solid">
                               <Radio.Button value="coin" disabled={!selectedSummary.canUseCoin}>
-                                <div className="flex items-center gap-1">เหรียญ <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={14} height={14} unoptimized /></div>
+                                <div className="flex items-center gap-1">๬หรียญ <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={14} height={14} unoptimized /></div>
                               </Radio.Button>
                               <Radio.Button value="freecoin" disabled={!selectedSummary.canUseFreecoin}>
                                 <div className="flex items-center gap-1">ถุงเงิน <Image src={settings?.freecoin || "/images/money-bag.png"} alt="free" width={14} height={14} unoptimized /></div>
@@ -1440,7 +1440,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                         <div className="flex justify-center">
                           <Radio.Group value={fastPayWith} onChange={(e) => setFastPayWith(e.target.value)} buttonStyle="solid">
                             <Radio.Button value="coin" disabled={!selectedSummary.canUseFastCoin}>
-                              <div className="flex items-center gap-1">เหรียญ <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={14} height={14} unoptimized /></div>
+                              <div className="flex items-center gap-1">๬หรียญ <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={14} height={14} unoptimized /></div>
                             </Radio.Button>
                             <Radio.Button value="fast_ticket" disabled={!selectedSummary.canUseFastTicket}>
                               <div className="flex items-center gap-1">FastTicket <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast" width={14} height={14} unoptimized /></div>
@@ -1454,7 +1454,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                     <div className="flex justify-center mt-2">
                       <Radio.Group value={payWith} onChange={(e) => setPayWith(e.target.value)} buttonStyle="solid">
                         <Radio.Button value="coin" disabled={!selectedSummary.canUseCoin}>
-                          <div className="flex items-center gap-1">เหรียญ <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={14} height={14} unoptimized /></div>
+                          <div className="flex items-center gap-1">๬หรียญ <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={14} height={14} unoptimized /></div>
                         </Radio.Button>
                         <Radio.Button value="freecoin" disabled={!selectedSummary.canUseFreecoin}>
                           <div className="flex items-center gap-1">ถุงเงิน <Image src={settings?.freecoin || "/images/money-bag.png"} alt="free" width={14} height={14} unoptimized /></div>
@@ -1464,7 +1464,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                   )}
 
                   <div className="flex gap-3 justify-center mt-4">
-                    <Button onClick={() => setManualBuyConfirmModalOpen(false)} className="w-1/2 !bg-white !text-red-600 hover:!border-red-600">ยกเลิก</Button>
+                    <Button onClick={() => setManualBuyConfirmModalOpen(false)} className="w-1/2 !bg-white !text-red-600 hover:!border-red-600">ยก๬ลิก</Button>
                     <Button type="primary" danger loading={buyLoading} className="w-1/2 !bg-red-600" onClick={async () => {
                       try {
                         setBuyLoading(true);
@@ -1554,7 +1554,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                     <div className="flex justify-center mt-2">
                       <Radio.Group value={payWith} onChange={(e) => setPayWith(e.target.value)} buttonStyle="solid">
                         <Radio.Button value="coin">
-                          <div className="flex items-center gap-1">เหรียญ <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={14} height={14} unoptimized /></div>
+                          <div className="flex items-center gap-1">๬หรียญ <Image src={settings?.coin || "/images/e-coin.png"} alt="coin" width={14} height={14} unoptimized /></div>
                         </Radio.Button>
                         <Radio.Button value="freecoin" disabled={buyAllFastTicketCount > 0}>
                           <div className="flex items-center gap-1">ถุงเงิน <Image src={settings?.freecoin || "/images/money-bag.png"} alt="free" width={14} height={14} unoptimized /></div>
@@ -1593,7 +1593,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                   </div>
 
                   <div className="flex gap-3 justify-center mt-4">
-                    <Button onClick={() => setBuyAllModalOpen(false)} className="w-1/2 !bg-white !text-red-600 hover:!border-red-600">ยกเลิก</Button>
+                    <Button onClick={() => setBuyAllModalOpen(false)} className="w-1/2 !bg-white !text-red-600 hover:!border-red-600">ยก๬ลิก</Button>
                     <Button type="primary" danger loading={buyLoading} className="w-1/2 !bg-red-600" onClick={async () => {
                       try {
                         if (buyAllFastTicketCount > 0 && payWith === 'freecoin') {
@@ -1750,3 +1750,4 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   );
 };
 export default BookInfoCard;
+

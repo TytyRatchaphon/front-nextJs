@@ -9,7 +9,7 @@ import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 import 'swiper/css/parallax';
 import { Slide, postBannerClick } from '@/services/apiServices';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { resolveBannerImageSrc } from '@/utils/imageUtils';
 import { navigateSafely } from '@/utils/navigationUtils';
 
@@ -24,7 +24,7 @@ interface BannerProps {
 
 
 function Banner({ slides = [], showTopUpBanner = true }: BannerProps) {
-  useWebsiteStore();
+  useWebsiteSettings();
   const { isLoggedIn } = useAuthStore();
   useUIStore();
   const prevRef = React.useRef<HTMLButtonElement>(null);
@@ -192,3 +192,4 @@ function Banner({ slides = [], showTopUpBanner = true }: BannerProps) {
 }
 
 export default Banner
+

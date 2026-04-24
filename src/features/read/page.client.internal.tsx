@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef, useMemo, useCallback, type ClipboardEvent as ReactClipboardEvent, type MouseEvent as ReactMouseEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -11,7 +11,7 @@ import GifLoader from '@/components/utility/GifLoader';
 import EpisodeCommentSection from "@/components/bookdetail/EpisodeCommentSection";
 import Image from "next/image";
 import { modifiedHtml, addParagraphIndexes, obfuscateClipboardText, obfuscateHtmlTextNodes } from "@/utils/htmlUtils";
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { fetchBookDetail, fetchHasPaymentHistory } from "@/services/apiServices";
 import apiClient from '@/services/apiClient';
 import { useAuthStore, AuthState } from '@/stores/authStore';
@@ -340,7 +340,7 @@ const fetchEpisodeContent = async (ep_id: string) => {
 };
 
 export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: Props) {
-  const { settings } = useWebsiteStore();
+  const { settings } = useWebsiteSettings();
   const router = useRouter();
   const [episodeId, setEpisodeId] = useState(routeEpisodeId);
   const { user } = useAuthStore();
@@ -900,7 +900,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
       title: 'ลบ Bookmark',
       content: 'ยืนยันการลบบุ๊กมาร์กนี้?',
       okText: 'ลบ',
-      cancelText: 'ยกเลิก',
+      cancelText: 'ยก๬ลิก',
       okButtonProps: { danger: true, loading: deleteBookmarkMutation.isPending },
       onOk: async () => {
         await deleteBookmarkMutation.mutateAsync(bookmarkId);
@@ -1824,7 +1824,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
         {confirmMethod === 'freecoin' ? (
           <Image src={settings?.freecoin || '/images/money-bag.png'} alt="ถุงเงิน" width={18} height={18} unoptimized />
         ) : (
-          <Image src={settings?.coin || '/images/e-coin.png'} alt="เหรียญ" width={18} height={18} unoptimized />
+          <Image src={settings?.coin || '/images/e-coin.png'} alt="๬หรียญ" width={18} height={18} unoptimized />
         )}
         <span>{confirmAmount != null ? confirmAmount : '---'}</span>
       </div>
@@ -2622,7 +2622,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
         title={<div className="text-center text-lg font-medium">ยืนยันการซื้อ</div>}
         zIndex={2000}
         footer={[
-          <Button key="cancel" onClick={() => setConfirmOpen(false)} disabled={buyLoading} className="transition-colors" onMouseEnter={() => setCancelHover(true)} onMouseLeave={() => setCancelHover(false)} style={{ borderColor: cancelHover ? '#dc2626' : 'transparent', color: cancelHover ? '#dc2626' : undefined }}>ยกเลิก</Button>,
+          <Button key="cancel" onClick={() => setConfirmOpen(false)} disabled={buyLoading} className="transition-colors" onMouseEnter={() => setCancelHover(true)} onMouseLeave={() => setCancelHover(false)} style={{ borderColor: cancelHover ? '#dc2626' : 'transparent', color: cancelHover ? '#dc2626' : undefined }}>ยก๬ลิก</Button>,
           <Button key="confirm" type="primary" danger loading={buyLoading} onClick={() => { if (confirmMethod) handleBuy(confirmMethod, confirmFastMethod); }}>{getReadConfirmButtonLabel(confirmMethod, confirmFastMethod, purchaseState)}</Button>,
         ]}
       >
@@ -2640,7 +2640,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
                     <div className="flex justify-center">
                       <Space.Compact>
                         <Button type={confirmFastMethod === 'coin' ? 'primary' : 'default'} onClick={() => setConfirmFastMethod('coin')}>
-                          เหรียญ <Image src={settings?.coin || '/images/e-coin.png'} alt="coin" width={14} height={14} unoptimized />
+                          ๬หรียญ <Image src={settings?.coin || '/images/e-coin.png'} alt="coin" width={14} height={14} unoptimized />
                         </Button>
                         <Button type={confirmFastMethod === 'fast_ticket' ? 'primary' : 'default'} onClick={() => setConfirmFastMethod('fast_ticket')} disabled={!purchaseState.canFastTicket}>
                           FastTicket <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={14} height={14} unoptimized />
@@ -2653,7 +2653,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
                     <div className="flex justify-center">
                       <Space.Compact>
                         <Button type={confirmMethod === 'coin' ? 'primary' : 'default'} onClick={() => { setConfirmMethod('coin'); setConfirmAmount(regularPrices.coinPrice); }}>
-                          เหรียญ <Image src={settings?.coin || '/images/e-coin.png'} alt="coin" width={14} height={14} unoptimized />
+                          ๬หรียญ <Image src={settings?.coin || '/images/e-coin.png'} alt="coin" width={14} height={14} unoptimized />
                         </Button>
                         <Button type={confirmMethod === 'freecoin' ? 'primary' : 'default'} onClick={() => { setConfirmMethod('freecoin'); setConfirmAmount(regularPrices.freecoinPrice); }} disabled={!purchaseState.canUseFreecoin}>
                           ถุงเงิน <Image src={settings?.freecoin || '/images/money-bag.png'} alt="freecoin" width={14} height={14} unoptimized />
@@ -2677,7 +2677,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
         }}
         onOk={submitBookmarkModal}
         okText={editingBookmarkId ? 'บันทึกการแก้ไข' : 'บันทึก'}
-        cancelText="ยกเลิก"
+        cancelText="ยก๬ลิก"
         confirmLoading={createBookmarkMutation.isPending || updateBookmarkMutation.isPending}
       >
         <div className="space-y-3 pt-2">
@@ -2771,3 +2771,4 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     </div>
   );
 }
+

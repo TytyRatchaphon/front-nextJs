@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState } from 'react';
 import Image from 'next/image';
 import { PackCampaignDetail, BookPromotionOption } from '@/types/api';
@@ -10,7 +10,7 @@ import PackCardBook from '@/components/novelCard/PackCardBook';
 import { Modal, Button, Spin, ConfigProvider, notification } from 'antd';
 import { CloseOutlined, CheckCircleFilled, CloseCircleFilled, ArrowLeftOutlined } from '@ant-design/icons';
 import th_TH from 'antd/locale/th_TH';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { useUIStore } from '@/stores/uiStore';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { buildCoinEnjoyTopupUrl, navigateSafely } from '@/utils/navigationUtils';
@@ -21,7 +21,7 @@ interface PackCampaignProps {
 
 
 function PackCampaign({ data }: PackCampaignProps) {
-    const { settings } = useWebsiteStore();
+    const { settings } = useWebsiteSettings();
     const { updateToken, token, isLoggedIn } = useAuthStore();
     const openLoginModal = useUIStore((s) => s.openLoginModal);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -309,7 +309,7 @@ function PackCampaign({ data }: PackCampaignProps) {
                             </div>
 
                             <div className="flex gap-3">
-                                <Button size="large" block className="rounded-lg h-10 hover:!text-red-500 hover:!border-red-500 transition-colors" onClick={() => setIsConfirmModalOpen(false)}>ยกเลิก</Button>
+                                <Button size="large" block className="rounded-lg h-10 hover:!text-red-500 hover:!border-red-500 transition-colors" onClick={() => setIsConfirmModalOpen(false)}>ยก๬ลิก</Button>
                                 <Button size="large" block type="primary" danger className="rounded-lg h-10 bg-[#E60000]" onClick={confirmPurchase}>ยืนยันการชำระเงิน</Button>
                             </div>
                         </div>
@@ -393,3 +393,4 @@ function PackCampaign({ data }: PackCampaignProps) {
 }
 
 export default PackCampaign;
+
