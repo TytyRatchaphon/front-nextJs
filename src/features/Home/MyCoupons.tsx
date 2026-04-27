@@ -11,7 +11,7 @@ import { processCoupons, CouponUI } from '@/utils/couponUtils';
 import dayjs from 'dayjs';
 import 'dayjs/locale/th';
 import { useAuthStore } from '@/stores/authStore';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 const MyCoupons = () => {
@@ -26,7 +26,7 @@ const MyCoupons = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedCoupon, setSelectedCoupon] = useState<CouponUI | null>(null);
     const [selectedRewardIds, setSelectedRewardIds] = useState<number[]>([]);
-    const { settings } = useWebsiteStore();
+    const { settings } = useWebsiteSettings();
 
     const { data: userCoupons = [], isLoading, isError } = useQuery({
         queryKey: ['userCoupons'],
@@ -57,9 +57,6 @@ const MyCoupons = () => {
              // Process response for display
              const rewards = responseData?.rewards || responseData?.data || [];
              
-             // Get website settings for images
-             const { settings } = useWebsiteStore.getState();
-
              if (rewards.length > 0) {
                  const rewardList = rewards.map((r: any) => {
                      let label = '';

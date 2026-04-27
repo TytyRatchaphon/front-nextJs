@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { Trophy, Award, Target, BookOpen, Coins, Flame, Gift, X } from 'lucide-react';
 import { fetchAchievements, fetchAchievementDetail, claimAchievement } from '@/services/api/achievementApi';
 import { useAuthStore } from '@/stores/authStore';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 
 const conditionLabels: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   login_streak: { label: 'ล็อกอินต่อเนื่อง', icon: <Flame size={16} />, color: '#F59E0B' },
@@ -27,7 +27,7 @@ export default function AchievementPageClient() {
   const queryClient = useQueryClient();
   const { notification } = App.useApp();
   const { updateToken } = useAuthStore();
-  const { settings } = useWebsiteStore();
+    const { settings } = useWebsiteSettings();
 
   const { data, isLoading } = useQuery({
     queryKey: ['achievements'],

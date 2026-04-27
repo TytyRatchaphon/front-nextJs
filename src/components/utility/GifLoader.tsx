@@ -1,7 +1,7 @@
 "use client"
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 
 interface GifLoaderProps {
   className?: string; // Allow overriding container styles
@@ -10,7 +10,7 @@ interface GifLoaderProps {
 }
 
 function GifLoader({ className = "h-screen", width = 300, height = 300 }: GifLoaderProps) {
-  const settings = useWebsiteStore((state) => state.settings);
+  const settings = useWebsiteSettings((state) => state.settings);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

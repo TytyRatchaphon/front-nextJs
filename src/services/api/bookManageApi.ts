@@ -386,6 +386,20 @@ export const fetchUserMyBooks = async (params: MyBookSearchParams = {}) => {
   }
 };
 
+export const fetchUserMyBookReportCases = async (
+  bookId: string | number,
+  status: string = 'pending',
+) => {
+  try {
+    const response = await apiClient.get(`/user/mybook/${bookId}/report-cases`, {
+      params: { status },
+    });
+    return response.data;
+  } catch {
+    return null;
+  }
+};
+
 export const fetchUserMyBookListNames = async () => {
   try {
     const response = await apiClient.get('/user/mybook/list-names');

@@ -6,7 +6,7 @@ import '@ant-design/v5-patch-for-react-19';
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-import { useWebsiteStore } from '@/stores/websiteStore'; // Direct import
+import { prefetchWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import BlockedUserModal from '@/components/auth/BlockedUserModal';
 
 const ReactQueryDevtoolsLazy = React.lazy(() =>
@@ -32,13 +32,13 @@ export default function TanstackProvider({ children }: { children: React.ReactNo
 
   // Initial fetch for website settings
   React.useEffect(() => {
-    useWebsiteStore.getState().fetchSettings();
+    void prefetchWebsiteSettings(queryClient);
     try {
       localStorage.removeItem('searchHistory');
       localStorage.removeItem('search_history');
     } catch {
     }
-  }, []);
+  }, [queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>

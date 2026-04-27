@@ -6,7 +6,7 @@ import apiClient from '@/services/apiClient'
 import { useQuery } from '@tanstack/react-query'
 import { get_date as use_date } from '@/utils/dateUtils'
 import '@/components/home/Banner';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import GifLoader from '@/components/utility/GifLoader';
 import Image from 'next/image';
 import '@/utils/imageUtils';
@@ -442,7 +442,7 @@ function History() {
     storeHistoryQuery,
   ])
 
-  const { settings } = useWebsiteStore();
+  const { settings } = useWebsiteSettings();
 
   const tableColumns = React.useMemo(() => {
     if (activeKey === '1') {

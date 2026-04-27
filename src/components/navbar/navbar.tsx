@@ -1,23 +1,23 @@
 "use client";
 import * as React from "react";
 
-import NovelMenu from './NovelMenu';
 import CartPopover from './CartPopover';
 import { Popover, App, Drawer, Switch } from 'antd';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import LoginButtonHeader from './LoginButtonHeader';
-import { ChevronRight, Menu, X } from 'lucide-react';
+import { ChevronDown, Menu, X } from 'lucide-react';
 import { useEffect } from 'react';
 import Image from 'next/image';
 import NotificationList from './NotificationList';
 import { useSocket } from '@/providers/SocketProvider';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchAllNotifications, fetchActiveTypes, fetchActiveCategories } from '@/services/api/miscApi';
+import { fetchActiveCategories, fetchAllNotifications } from '@/services/api/miscApi';
+import type { ActiveCategory } from '@/services/api/miscApi';
 import { fetchPromotingGroups } from '@/services/api/campaignApi';
 import { fetchAllRanksData } from '@/services/api/userApi';
 import { fetchCartItems } from '@/services/cartService';
 import { useAuthStore } from '@/stores/authStore';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { useLineLogin } from '@/hooks/useLineLogin';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -35,6 +35,7 @@ import FastTicketPill from '@/components/utility/FastTicketPill';
 import StampPill from '../utility/StampPill';
 
 
+type NavbarNovelContentType = 'tran' | 'write';
 
 
 
@@ -44,17 +45,16 @@ function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
-  const [isMobileNovelOpen, setIsMobileNovelOpen] = React.useState(false);
-  const [openMobileCategoryId, setOpenMobileCategoryId] = React.useState<string | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
   const [isCartOpen, setIsCartOpen] = React.useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = React.useState(false);
   const [isMobileNotificationOpen, setIsMobileNotificationOpen] = React.useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = React.useState(false);
+  const [openMobileNovelType, setOpenMobileNovelType] = React.useState<NavbarNovelContentType | null>(null);
   const [isMobileViewport, setIsMobileViewport] = React.useState(false);
   const [isGifModeEnabled, setIsGifModeEnabled] = React.useState(true);
   const ENABLE_GIF_MODE_TOGGLE = true;
-  const { settings } = useWebsiteStore();
+  const { settings } = useWebsiteSettings();
 
   // Notification Logic
   const queryClient = useQueryClient();
@@ -76,11 +76,18 @@ function Navbar() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: activeTypes = [] } = useQuery({
-    queryKey: ['activeTypes'],
-    queryFn: fetchActiveTypes,
-    staleTime: 60 * 60 * 1000, // 1 hour
-    gcTime: 2 * 60 * 60 * 1000, // 2 hours
+  const { data: translatedNovelCategories = [], isLoading: isLoadingTranslatedNovelCategories } = useQuery<ActiveCategory[]>({
+    queryKey: ['navbarNovelCategories', 'tran'],
+    queryFn: () => fetchActiveCategories('tran'),
+    staleTime: 60 * 60 * 1000,
+    gcTime: 2 * 60 * 60 * 1000,
+  });
+
+  const { data: fictionNovelCategories = [], isLoading: isLoadingFictionNovelCategories } = useQuery<ActiveCategory[]>({
+    queryKey: ['navbarNovelCategories', 'write'],
+    queryFn: () => fetchActiveCategories('write'),
+    staleTime: 60 * 60 * 1000,
+    gcTime: 2 * 60 * 60 * 1000,
   });
 
   const { data: cartStores } = useQuery({
@@ -95,14 +102,6 @@ function Navbar() {
     if (!cartStores) return 0;
     return cartStores.reduce((acc, store) => acc + (store.items?.length || 0), 0);
   }, [cartStores]);
-
-  const { data: mobileCategories = [] } = useQuery({
-    queryKey: ['mobileCategories', openMobileCategoryId],
-    queryFn: () => fetchActiveCategories(openMobileCategoryId!),
-    enabled: !!openMobileCategoryId,
-    staleTime: 60 * 60 * 1000, // 1 hour
-    gcTime: 2 * 60 * 60 * 1000, // 2 hours
-  });
 
   const unreadCount = notifications.filter((n) => n.readed === 'N').length;
 
@@ -367,12 +366,144 @@ function Navbar() {
 
   const closeMobileNavDrawer = () => {
     setIsMobileMenuOpen(false);
-    setIsMobileNovelOpen(false);
-    setOpenMobileCategoryId(null);
+    setOpenMobileNovelType(null);
+  };
+
+  const getNovelCategoryHref = (type: NavbarNovelContentType, categoryId: string | number) => (
+    `/cat/list?type=${type}&categoryId=${categoryId}&tab=bestseller&period=30&limit=10&page=1`
+  );
+
+  const renderDesktopNovelDropdown = ({
+    label,
+    href,
+    type,
+    categories,
+    isLoading,
+  }: {
+    label: string;
+    href: string;
+    type: NavbarNovelContentType;
+    categories: ActiveCategory[];
+    isLoading: boolean;
+  }) => (
+    <div className="group relative flex h-full items-center">
+      <Link href={href} className={`${getLinkClasses(href)} flex items-center gap-1.5`}>
+        <span>{label}</span>
+        <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200 group-hover:rotate-180" />
+      </Link>
+
+      <div className="invisible absolute left-1/2 top-[calc(100%-10px)] z-50 w-[520px] -translate-x-1/2 pt-[20px] opacity-0 transition-all duration-200 ease-out group-hover:visible group-hover:opacity-100">
+        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-xl">
+          <div className="mb-4 border-b border-gray-100 pb-2">
+            <h3 className="text-lg font-bold text-gray-800">
+              หมวดหมู่{label}
+            </h3>
+          </div>
+
+          {isLoading ? (
+            <div className="grid grid-cols-3 gap-x-4 gap-y-3">
+              {Array.from({ length: 9 }).map((_, index) => (
+                <div key={index} className="h-6 animate-pulse rounded-md bg-gray-100" />
+              ))}
+            </div>
+          ) : categories.length > 0 ? (
+            <div className="grid max-h-[280px] grid-cols-3 gap-x-4 gap-y-3 overflow-y-auto pr-1">
+              {categories.map((category) => (
+                <Link
+                  key={category.id}
+                  href={getNovelCategoryHref(type, category.id)}
+                  prefetch={false}
+                  title={category.name}
+                  className="block truncate py-1 text-sm text-gray-600 transition-colors hover:!text-red-600"
+                >
+                  {category.name}
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl bg-gray-50 px-4 py-10 text-center text-sm text-gray-400">
+              ยังไม่มีหมวดหมู่สำหรับ{label}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderMobileNovelCategoryBlock = ({
+    label,
+    href,
+    type,
+    categories,
+    isLoading,
+  }: {
+    label: string;
+    href: string;
+    type: NavbarNovelContentType;
+    categories: ActiveCategory[];
+    isLoading: boolean;
+  }) => {
+    const isOpen = openMobileNovelType === type;
+
+    return (
+      <div className="rounded-2xl">
+        <div className={`reader-mobile-nav-link flex items-center rounded-2xl text-[15px] font-medium transition-colors ${
+          pathname === href ? 'bg-[#f7f3f2] !text-[#111111]' : '!text-[#111111] hover:bg-[#f8f4f2]'
+        }`}>
+          <Link
+            href={href}
+            onClick={closeMobileNavDrawer}
+            className="flex-1 px-4 py-3 !text-[#111111]"
+          >
+            <span>{label}</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => setOpenMobileNovelType(isOpen ? null : type)}
+            aria-label={`เปิดหมวดหมู่${label}`}
+            className="mr-2 flex h-9 w-9 items-center justify-center rounded-xl text-gray-600 transition-colors hover:bg-white hover:text-red-600"
+          >
+            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+          </button>
+        </div>
+
+        {isOpen && (
+          <div className="mt-1 rounded-2xl border border-red-50 bg-[#fff8f7] p-3">
+            {isLoading ? (
+              <div className="grid grid-cols-2 gap-2">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <div key={index} className="h-8 animate-pulse rounded-xl bg-red-50" />
+                ))}
+              </div>
+            ) : categories.length > 0 ? (
+              <div className="grid grid-cols-2 gap-2">
+                {categories.map((category) => (
+                  <Link
+                    key={category.id}
+                    href={getNovelCategoryHref(type, category.id)}
+                    onClick={closeMobileNavDrawer}
+                    prefetch={false}
+                    className="rounded-xl bg-white px-3 py-2 text-sm font-medium !text-gray-700 shadow-sm transition-colors hover:!text-red-600"
+                  >
+                    <span className="line-clamp-1">{category.name}</span>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="px-3 py-5 text-center text-sm text-gray-500">
+                ยังไม่มีหมวดหมู่สำหรับ{label}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const mobileSectionLabel = React.useMemo(() => {
     if (pathname === '/novel-pack') return 'มัดแพ็ค';
+    if (pathname === '/translated-novel') return 'นิยายแปล';
+    if (pathname === '/fiction-novel') return 'นิยายแต่ง';
     if (pathname.startsWith('/ranking')) return 'จัดอันดับ';
     if (pathname.startsWith('/article')) return 'บทความ';
     if (pathname.startsWith('/promotion')) return 'โปรโมชัน';
@@ -673,21 +804,20 @@ function Navbar() {
             <Link href="/" className={getLinkClasses('/')}>หน้าหลัก</Link>
 
             <Link href="/novel-pack" className={getLinkClasses('/novel-pack')}>มัดแพ็ค</Link>
-            {/* Novel Menu Wrapper */}
-            <div
-              className="relative flex items-center h-full group"
-              onMouseEnter={() => { }}
-              onMouseLeave={() => { }}
-            >
-              <div className={`${getLinkClasses('/allnovel')} flex items-center gap-1 cursor-default`}>
-                นิยาย
-                <ChevronRight className="w-4 h-4 transition-transform duration-200 group-hover:rotate-90" />
-              </div>
-              {/* Mega Menu Dropdown */}
-              <div id="NovelMegaMenu" className="absolute top-[calc(100%-10px)] left-0 pt-[20px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ease-out z-50">
-                <NovelMenu />
-              </div>
-            </div>
+            {renderDesktopNovelDropdown({
+              label: 'นิยายแปล',
+              href: '/translated-novel',
+              type: 'tran',
+              categories: translatedNovelCategories,
+              isLoading: isLoadingTranslatedNovelCategories,
+            })}
+            {renderDesktopNovelDropdown({
+              label: 'นิยายแต่ง',
+              href: '/fiction-novel',
+              type: 'write',
+              categories: fictionNovelCategories,
+              isLoading: isLoadingFictionNovelCategories,
+            })}
             {/* <Link href="/news" className={getLinkClasses('/news')}>นิยายใหม่</Link> */}
             <Link href="/ranking" className={getLinkClasses('/ranking')}>จัดอันดับ</Link>
             <Link href="/article" className={getLinkClasses('/article')}>บทความ</Link>
@@ -896,6 +1026,20 @@ function Navbar() {
               >
                 <span>มัดแพ็ค</span>
               </Link>
+              {renderMobileNovelCategoryBlock({
+                label: 'นิยายแปล',
+                href: '/translated-novel',
+                type: 'tran',
+                categories: translatedNovelCategories,
+                isLoading: isLoadingTranslatedNovelCategories,
+              })}
+              {renderMobileNovelCategoryBlock({
+                label: 'นิยายแต่ง',
+                href: '/fiction-novel',
+                type: 'write',
+                categories: fictionNovelCategories,
+                isLoading: isLoadingFictionNovelCategories,
+              })}
               <Link
                 href="/ranking"
                 onClick={closeMobileNavDrawer}
@@ -926,54 +1070,6 @@ function Navbar() {
               ))}
             </div>
 
-            <div className="space-y-2">
-              <button
-                type="button"
-                className={`reader-mobile-nav-accordion flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-[15px] font-medium transition-colors ${isMobileNovelOpen ? 'bg-[#f7f3f2] text-[#111111]' : 'text-[#111111] hover:bg-[#f8f4f2]'}`}
-                onClick={() => setIsMobileNovelOpen(!isMobileNovelOpen)}
-              >
-                <div>
-                  <p className="hidden">Novel</p>
-                  <p className="text-[15px] font-medium text-[#1f1a1c]">หมวดนิยาย</p>
-                </div>
-                <ChevronRight className={`h-4 w-4 text-[#555555] transition-transform duration-200 ${isMobileNovelOpen ? 'rotate-90' : ''}`} />
-              </button>
-
-              <div className={`overflow-hidden transition-all duration-300 ${isMobileNovelOpen ? 'max-h-[1400px] pt-2 opacity-100' : 'max-h-0 opacity-0'}`}>
-                <div className="space-y-2 pb-2 pl-3">
-                  {activeTypes?.map((type) => (
-                    <div key={type.type} className="rounded-2xl bg-[#faf7f6]">
-                      <button
-                        type="button"
-                        className="reader-mobile-nav-subsection flex w-full items-center justify-between px-4 py-3 text-left"
-                        onClick={() => setOpenMobileCategoryId(openMobileCategoryId === type.type ? null : type.type)}
-                      >
-                        <span className="text-[13px] font-medium text-[#111111]">{type.label}</span>
-                        <ChevronRight className={`h-3.5 w-3.5 text-[#666666] transition-transform ${openMobileCategoryId === type.type ? 'rotate-90' : ''}`} />
-                      </button>
-                      <div className={`grid grid-cols-2 gap-2 overflow-hidden px-4 transition-all duration-300 ${openMobileCategoryId === type.type ? 'max-h-[420px] pb-4 opacity-100' : 'max-h-0 pb-0 opacity-0'}`}>
-                        {openMobileCategoryId === type.type && mobileCategories?.length > 0 ? (
-                          mobileCategories.map((cat) => (
-                            <Link
-                              key={cat.id}
-                              href={`/cat/list?type=${type.type}&categoryId=${cat.id}&tab=bestseller&period=30&limit=10&page=1`}
-                              className="reader-mobile-nav-sublink rounded-xl bg-white px-3 py-2 text-[13px] font-medium !text-[#111111] transition-colors hover:bg-[#f2eded]"
-                              onClick={closeMobileNavDrawer}
-                            >
-                              {cat.name}
-                            </Link>
-                          ))
-                        ) : (
-                          openMobileCategoryId === type.type && (
-                            <div className="col-span-2 px-2 py-1 text-center text-xs text-[#b6a1a4]">กำลังโหลด...</div>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </Drawer>

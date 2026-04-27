@@ -58,7 +58,7 @@ interface MyBookPermissionData {
 
 import { useRouter } from "next/navigation";
 import secureProxyClient from "@/services/secureProxyClient";
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { sanitizeUserGeneratedHtml } from "@/utils/sanitizeHtml";
 import {
     extractGifFrameAsFile,
@@ -103,7 +103,7 @@ const NewBook: React.FC = () => {
         set_fast_coin: false,
         suggest_configs: [],
     });
-    const { settings: website, fetchSettings } = useWebsiteStore();
+    const { settings: website, fetchSettings } = useWebsiteSettings();
 
     // Configs
     const IMAGE_BOOK_URL = process.env.NEXT_PUBLIC_IMAGE_BOOK_URL as string;

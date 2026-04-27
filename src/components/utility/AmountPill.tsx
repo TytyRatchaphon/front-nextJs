@@ -4,7 +4,7 @@ import { Plus } from 'lucide-react';
 import { Tooltip } from 'antd';
 
 import { useAuthStore } from '@/stores/authStore';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import '@/utils/imageUtils';
 import { buildCoinEnjoyTopupUrl, navigateSafely } from '@/utils/navigationUtils';
 
@@ -17,7 +17,7 @@ interface AmountPillProps {
 
 
 function AmountPill({ amount, icon, onAddClick, className = "" }: AmountPillProps) {
-    const { settings } = useWebsiteStore();
+    const { settings } = useWebsiteSettings();
     const { token } = useAuthStore();
     const iconSrc = icon || settings?.coin || "/images/e-coin.png";
 

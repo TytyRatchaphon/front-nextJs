@@ -50,6 +50,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 import TokenUpdater from "@/components/auth/TokenUpdater";
 import GlobalLogger from "@/components/utility/GlobalLogger";
+import RpQuestSocketListener from "@/components/socket/RpQuestSocketListener";
 import { Suspense } from "react";
 import Script from "next/script";
 
@@ -118,6 +119,9 @@ export default function RootLayout({
                   </Suspense>
                   <Suspense fallback={null}>
                     <GlobalLogger />
+                  </Suspense>
+                  <Suspense fallback={null}>
+                    <RpQuestSocketListener />
                   </Suspense>
                   {children}
                   <FooterWrapper />

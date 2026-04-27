@@ -9,6 +9,9 @@ import { parseJwtToken } from '@/utils/jwtParser';
 const isSessionIdUnknownError = (message: string | undefined) =>
   typeof message === 'string' && message.toLowerCase().includes('session id unknown');
 
+const SOCKET_HEALTH_CHECK_MS = 30_000;
+const SOCKET_RECREATE_DELAY_MS = 800;
+
 interface SocketContextType {
   socket: Socket | null;
   isConnected: boolean;
@@ -30,7 +33,28 @@ export default function SocketProvider({
 }) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [reconnectNonce, setReconnectNonce] = useState(0);
+  const recreateTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const { token: authToken, user } = useAuthStore() as any;
+
+  const requestSocketRecreate = React.useCallback(() => {
+    if (recreateTimerRef.current) {
+      clearTimeout(recreateTimerRef.current);
+    }
+
+    setIsConnected(false);
+    recreateTimerRef.current = setTimeout(() => {
+      setReconnectNonce((value) => value + 1);
+    }, SOCKET_RECREATE_DELAY_MS);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (recreateTimerRef.current) {
+        clearTimeout(recreateTimerRef.current);
+      }
+    };
+  }, []);
   
   // Calculate dependencies at component level
   const resolvedUserId = user?.user_id || (user as any)?.id || (user as any)?.userId;
@@ -56,6 +80,7 @@ export default function SocketProvider({
     // 1. If no token (Guest) or waiting for user ID resolution, do not connect socket.
     if (!token || !currentUserId) {
         setSocket(null); // Ensure we don't hold onto a stale socket
+        setIsConnected(false);
         return;
     }
 
@@ -68,9 +93,10 @@ export default function SocketProvider({
     const socketInstance = io(socketUrl, {
       transports: ['websocket'], 
       reconnection: true,
-      reconnectionAttempts: 10,
+      reconnectionAttempts: 999999,
       reconnectionDelay: 2000,
       reconnectionDelayMax: 30000,
+      randomizationFactor: 0.5,
       timeout: 10000,
       forceNew: false,
       auth: (cb) => {
@@ -78,6 +104,9 @@ export default function SocketProvider({
         let latestToken = useAuthStore.getState().token;
         if (!latestToken) {
             latestToken = parseJwtToken(Cookies.get('token')) || null;
+        }
+        if (latestToken) {
+          latestToken = latestToken.replace(/^Bearer\s+/i, '').trim();
         }
         cb({ token: latestToken });
       },
@@ -93,14 +122,19 @@ export default function SocketProvider({
 
     socketInstance.on('disconnect', (reason) => {
       setIsConnected(false);
-      if (reason === "io server disconnect") socketInstance.connect();
+      if (reason === "io server disconnect") {
+        window.setTimeout(() => {
+          if (!socketInstance.connected) socketInstance.connect();
+        }, SOCKET_RECREATE_DELAY_MS);
+      }
     });
 
     socketInstance.on('connect_error', (err) => {
         setIsConnected(false);
         if (isSessionIdUnknownError(err?.message)) {
-          socketInstance.io.opts.reconnection = false;
           socketInstance.disconnect();
+          setSocket((currentSocket) => currentSocket === socketInstance ? null : currentSocket);
+          requestSocketRecreate();
         }
     });
 
@@ -130,27 +164,43 @@ export default function SocketProvider({
 
     return () => {
       socketInstance.disconnect();
+      setSocket((currentSocket) => currentSocket === socketInstance ? null : currentSocket);
+      setIsConnected(false);
     };
-  }, [authToken, resolvedUserId, fullname]);
+  }, [authToken, resolvedUserId, fullname, reconnectNonce, requestSocketRecreate]);
 
   // Handle visibility separate from socket creation
   useEffect(() => {
       if (!socket) return;
 
+      const reconnectIfNeeded = () => {
+        if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+        if (socket.connected) return;
+
+        const latestUser = useAuthStore.getState().user as any;
+        const latestToken = useAuthStore.getState().token || parseJwtToken(Cookies.get('token')) || null;
+        const latestUserId = latestUser?.user_id || latestUser?.id || latestUser?.userId;
+        if (!latestToken || !latestUserId) return;
+
+        socket.connect();
+      };
+
       const onVisibilityChange = () => {
-        if (document.visibilityState === 'visible' && !socket.connected) {
-          const latestUser = useAuthStore.getState().user as any;
-          const latestToken = useAuthStore.getState().token || parseJwtToken(Cookies.get('token')) || null;
-          const latestUserId = latestUser?.user_id || latestUser?.id || latestUser?.userId;
-          if (latestToken && !latestUserId) return;
-          if ((socket.io.opts.reconnection ?? true) === false) return;
-          socket.connect();
+        if (document.visibilityState === 'visible') {
+          reconnectIfNeeded();
         }
       };
 
+      const healthCheck = window.setInterval(reconnectIfNeeded, SOCKET_HEALTH_CHECK_MS);
+
       document.addEventListener('visibilitychange', onVisibilityChange);
+      window.addEventListener('online', reconnectIfNeeded);
+      window.addEventListener('focus', reconnectIfNeeded);
       return () => {
+          window.clearInterval(healthCheck);
           document.removeEventListener('visibilitychange', onVisibilityChange);
+          window.removeEventListener('online', reconnectIfNeeded);
+          window.removeEventListener('focus', reconnectIfNeeded);
       };
   }, [socket]);
 

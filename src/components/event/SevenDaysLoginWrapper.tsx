@@ -1,9 +1,9 @@
 "use client";
 import SevenDaysLogin from '@/components/event/SevenDaysLogin';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 
 const SevenDaysLoginWrapper = () => {
-  const { settings } = useWebsiteStore();
+  const { settings } = useWebsiteSettings();
 
   if (settings?.['7D_Checkin'] !== 'active') {
     return null;

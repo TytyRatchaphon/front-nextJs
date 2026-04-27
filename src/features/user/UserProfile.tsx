@@ -5,7 +5,7 @@ import { App, Image as AntdImage } from "antd";
 import { useRouter } from "next/navigation";
 import GifLoader from '@/components/utility/GifLoader';
 import { imageLoader } from '@/utils/imageUtils';
-import { useWebsiteStore } from "@/stores/websiteStore";
+import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
 import CollectionCard from "@/components/collection/CollectionCard";
 import { usePublicUserProfileData } from "./hooks/usePublicUserProfile";
 import { AchievementShowcaseCard } from "./components/AchievementShowcaseCard";
@@ -18,7 +18,7 @@ import FrameOverlayImage from "@/components/ui/FrameOverlayImage";
 function UserProfileContent({ userId }: { userId: string }) {
     const router = useRouter();
     const queryClient = useQueryClient();
-    const { settings } = useWebsiteStore();
+    const { settings } = useWebsiteSettings();
     const { notification } = App.useApp();
     const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
     const openLoginModal = useUIStore((s) => s.openLoginModal);

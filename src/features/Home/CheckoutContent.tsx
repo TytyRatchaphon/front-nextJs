@@ -19,7 +19,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { useAuthStore } from '@/stores/authStore';
 import Image from 'next/image';
 import SuccessAnimation from '@/components/utility/SuccessAnimation';
@@ -150,7 +150,7 @@ const AddressForm = ({ user, token, onSuccess }: { user: any, token: string | nu
 
 export default function CheckoutContent() {
     const [currentStep, setCurrentStep] = useState(0);
-    const { settings } = useWebsiteStore();
+  const { settings } = useWebsiteSettings();
     const router = useRouter();
     const queryClient = useQueryClient();
     const { notification } = App.useApp();

@@ -9,8 +9,7 @@ import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 
 import { fetchBookStats, fetchBookAnalytics, fetchBookEpisodesStats, EpisodeStats, PurchaseItem } from '@/services/apiServices';
-import { useWebsiteStore } from '@/stores/websiteStore';
-import { useShallow } from 'zustand/react/shallow';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 const { RangePicker } = DatePicker;
@@ -73,7 +72,7 @@ export default function Report({ bookId }: { bookId: string }) {
     const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([dayjs().subtract(7, 'd'), dayjs()]);
     const [, setLoading] = useState(true);
 
-    const { settings } = useWebsiteStore(useShallow((state) => ({ settings: state.settings })));
+    const { settings } = useWebsiteSettings((state) => ({ settings: state.settings }));
 
     const loadAnalytics = React.useCallback(async (start: string, end: string) => {
         const analyticsData = await fetchBookAnalytics(bookId, start, end);

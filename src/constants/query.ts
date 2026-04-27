@@ -32,9 +32,32 @@ export const QUERY_KEYS = {
   
   // Home
   HOME_DATA: 'home-data',
+
+  // Website
+  WEBSITE_SETTINGS: 'website-settings',
+
+  // Rank
+  RANK_QUESTS: 'rank-quests',
+  RANK_QUEST_DETAIL: 'rank-quest-detail',
   
   // Search
   SEARCH_RESULTS: 'search-results',
+} as const;
+
+/**
+ * Query key factories
+ * Use these when a query key is shared between hooks, prefetching, and invalidation.
+ */
+export const queryKeys = {
+  website: {
+    settings: () => [QUERY_KEYS.WEBSITE_SETTINGS] as const,
+  },
+  rank: {
+    quests: () => [QUERY_KEYS.RANK_QUESTS] as const,
+    questDetails: () => [QUERY_KEYS.RANK_QUEST_DETAIL] as const,
+    questDetail: (questId: number | string | null | undefined) =>
+      [QUERY_KEYS.RANK_QUEST_DETAIL, String(questId ?? '')] as const,
+  },
 } as const;
 
 /**

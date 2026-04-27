@@ -2,6 +2,75 @@
 import apiClient from "../apiClient";
 import type { BookTrans, BookDetail, BookDetailResponse, BookPurchaseDetailsResponse, LatestReadEpisodeResponse, BookPromotionOption, CategoryPagination, UniversalBook } from "@/types/api";
 
+export interface BookReportReason {
+  id: number;
+  code: string;
+  title: string;
+  description: string;
+  requires_detail: boolean;
+}
+
+export interface BookReportType {
+  id: number;
+  code: string;
+  title: string;
+  description: string;
+  reasons: BookReportReason[];
+}
+
+export interface BookReportTypesResponse {
+  code: number;
+  status: string;
+  message: string;
+  data?: {
+    types?: unknown[];
+  };
+}
+
+export interface SubmitBookReportPayload {
+  detail: string | null;
+  reports: {
+    type_id: number;
+    reason_id: number;
+  }[];
+}
+
+const normalizeBookReportTypes = (payload: BookReportTypesResponse | any): BookReportType[] => {
+  const rawTypes = payload?.data?.types;
+  if (!Array.isArray(rawTypes)) return [];
+
+  return rawTypes
+    .map((rawType: any) => {
+      const typeId = Number(rawType?.id);
+      if (!Number.isFinite(typeId)) return null;
+
+      const rawReasons = Array.isArray(rawType?.reasons) ? rawType.reasons : [];
+      const reasons: BookReportReason[] = rawReasons
+        .map((rawReason: any) => {
+          const reasonId = Number(rawReason?.id);
+          if (!Number.isFinite(reasonId)) return null;
+
+          return {
+            id: reasonId,
+            code: String(rawReason?.code ?? ''),
+            title: String(rawReason?.title ?? ''),
+            description: String(rawReason?.description ?? ''),
+            requires_detail: Boolean(rawReason?.requires_detail),
+          };
+        })
+        .filter((reason: BookReportReason | null): reason is BookReportReason => reason !== null);
+
+      return {
+        id: typeId,
+        code: String(rawType?.code ?? ''),
+        title: String(rawType?.title ?? ''),
+        description: String(rawType?.description ?? ''),
+        reasons,
+      };
+    })
+    .filter((type: BookReportType | null): type is BookReportType => type !== null);
+};
+
 export const fetchBookTrans = async (): Promise<BookTrans[]> => {
   try {
     const response = await apiClient.get<{ data: BookTrans[] }>("/getAllBookHome");
@@ -450,4 +519,17 @@ export const fetchBookPromotions = async (page = 1, limit = 20) => {
   } catch (err: any) {
     throw err;
   }
+};
+
+export const fetchBookReportTypes = async (): Promise<BookReportType[]> => {
+  const response = await apiClient.get<BookReportTypesResponse>('/book/report/types');
+  return normalizeBookReportTypes(response.data);
+};
+
+export const submitBookReport = async (
+  bookId: string | number,
+  payload: SubmitBookReportPayload,
+): Promise<any> => {
+  const response = await apiClient.post(`/book/${bookId}/report`, payload);
+  return response.data;
 };

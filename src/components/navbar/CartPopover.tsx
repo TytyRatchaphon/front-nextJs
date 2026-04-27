@@ -7,7 +7,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import GifLoader from '@/components/utility/GifLoader';
 import { CartItem } from '@/interfaces/cart.interface';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import { resolveStoreImageSrc } from '@/utils/imageUtils';
 
@@ -25,7 +25,7 @@ const isMissingImageSrc = (src: string | null | undefined) => {
 };
 
 const CartPopover: React.FC<CartPopoverProps> = ({ onClose }) => {
-    const { settings } = useWebsiteStore();
+    const { settings } = useWebsiteSettings();
     const queryClient = useQueryClient();
     const { notification } = App.useApp();
 

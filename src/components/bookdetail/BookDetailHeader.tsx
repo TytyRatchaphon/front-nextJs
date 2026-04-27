@@ -4,9 +4,10 @@ import NextImage from "next/image";
 import axios from "axios";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { Image as AntImage, App, Modal, Dropdown } from "antd";
+import { Image as AntImage, App, Modal, Dropdown, Select, Input, Checkbox } from "antd";
 import apiClient from "@/services/apiClient";
-import { fetchLatestReadEpisode } from "@/services/apiServices";
+import { fetchLatestReadEpisode, fetchBookReportTypes, submitBookReport } from "@/services/apiServices";
+import type { BookReportType } from "@/services/apiServices";
 import { fetchUserCollections, addBooksToCollection } from "@/services/api/collectionApi";
 import type { CollectionItem } from "@/services/api/collectionApi";
 
@@ -14,7 +15,6 @@ import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
 import { FacebookShareButton, TwitterShareButton, LineShareButton } from "react-share";
 import { TagSwiper } from "@/components/swiper/ImageSlider";
-import { useWebsiteStore } from '@/stores/websiteStore';
 import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 interface BookDetailHeaderProps {
@@ -72,6 +72,13 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
   const [collections, setCollections] = useState<CollectionItem[]>([]);
   const [collectionsLoading, setCollectionsLoading] = useState(false);
   const [addingToCollection, setAddingToCollection] = useState<number | null>(null);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportTypes, setReportTypes] = useState<BookReportType[]>([]);
+  const [reportTypesLoading, setReportTypesLoading] = useState(false);
+  const [selectedReportTypeIds, setSelectedReportTypeIds] = useState<number[]>([]);
+  const [reportReasonByTypeId, setReportReasonByTypeId] = useState<Record<number, number[]>>({});
+  const [reportDetail, setReportDetail] = useState('');
+  const [submittingReport, setSubmittingReport] = useState(false);
 
   useEffect(() => {
     // Wait for hydration to complete to avoid double fetching (guest -> user)
@@ -142,6 +149,106 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
   useEffect(() => {
     setIsFollowed(book.writer?.isFollowing || false);
   }, [book.writer?.isFollowing]);
+
+  const canSubmitReport =
+    selectedReportTypeIds.length > 0 &&
+    selectedReportTypeIds.every((typeId) => {
+      const reasonIds = reportReasonByTypeId[typeId] ?? [];
+      return reasonIds.length > 0;
+    }) &&
+    !submittingReport;
+
+  const resetReportForm = () => {
+    setSelectedReportTypeIds([]);
+    setReportReasonByTypeId({});
+    setReportDetail('');
+  };
+
+  const handleToggleReportType = (typeId: number, checked: boolean) => {
+    setSelectedReportTypeIds((prev) => {
+      if (checked) {
+        if (prev.includes(typeId)) return prev;
+        return [...prev, typeId];
+      }
+      return prev.filter((id) => id !== typeId);
+    });
+
+    setReportReasonByTypeId((prev) => {
+      if (checked) {
+        return {
+          ...prev,
+          [typeId]: prev[typeId] ?? [],
+        };
+      }
+      const next = { ...prev };
+      delete next[typeId];
+      return next;
+    });
+  };
+
+  const handleChangeReason = (typeId: number, reasonIds: number[]) => {
+    const uniqueReasonIds = Array.from(new Set(reasonIds.filter((reasonId) => Number.isFinite(reasonId))));
+    setReportReasonByTypeId((prev) => ({
+      ...prev,
+      [typeId]: uniqueReasonIds,
+    }));
+  };
+
+  const getSelectedReasons = (type: BookReportType) => {
+    const reasonIds = reportReasonByTypeId[type.id] ?? [];
+    if (reasonIds.length === 0) return [];
+    return type.reasons.filter((reason) => reasonIds.includes(reason.id));
+  };
+
+  const selectedReportTypes = selectedReportTypeIds
+    .map((typeId) => reportTypes.find((type) => type.id === typeId) ?? null)
+    .filter((type): type is BookReportType => type !== null);
+
+  const selectedReportCount = selectedReportTypeIds.length;
+  const selectedReasonCount = selectedReportTypeIds.reduce((total, typeId) => {
+    const reasonIds = reportReasonByTypeId[typeId] ?? [];
+    return total + reasonIds.length;
+  }, 0);
+
+  const reportSummaryText =
+    selectedReportCount > 0
+      ? `เลือก ${selectedReportCount} ประเภท • เลือกเหตุผลแล้ว ${selectedReasonCount} ข้อ`
+      : 'ยังไม่ได้เลือกประเภท';
+
+  const buildReportPayload = () => ({
+    detail: reportDetail.trim() ? reportDetail.trim() : null,
+    reports: selectedReportTypeIds.flatMap((typeId) => {
+      const reasonIds = reportReasonByTypeId[typeId] ?? [];
+      return reasonIds.map((reasonId) => ({
+        type_id: typeId,
+        reason_id: reasonId,
+      }));
+    }),
+  });
+
+  const validateSelectedReasons = () => {
+    const missingReason = selectedReportTypeIds.some((typeId) => {
+      const reasonIds = reportReasonByTypeId[typeId] ?? [];
+      return reasonIds.length === 0;
+    });
+    if (missingReason) {
+      notification.warning({ message: "กรุณาเลือกเหตุผลของทุกประเภทที่ติ๊กไว้" });
+      return false;
+    }
+    return true;
+  };
+
+  const loadReportTypes = async () => {
+    setReportTypesLoading(true);
+    try {
+      const types = await fetchBookReportTypes();
+      setReportTypes(types);
+    } catch {
+      notification.error({ message: "โหลดประเภทการรายงานไม่สำเร็จ" });
+    } finally {
+      setReportTypesLoading(false);
+    }
+  };
 
   const handleToggleBookshelf = async () => {
     if (!token) {
@@ -254,8 +361,44 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
     }
   };
 
-  useWebsiteStore();
-  
+  const handleOpenReportModal = async () => {
+    if (!token) {
+      openLoginModal();
+      return;
+    }
+    if (!book.id) {
+      notification.error({ message: "ไม่พบข้อมูลนิยาย" });
+      return;
+    }
+
+    setMoreMenuOpen(false);
+    resetReportForm();
+    setReportModalOpen(true);
+
+    if (reportTypes.length === 0) {
+      await loadReportTypes();
+    }
+  };
+
+  const handleSubmitReport = async () => {
+    if (!book.id || !canSubmitReport) return;
+    if (!validateSelectedReasons()) return;
+
+    setSubmittingReport(true);
+    try {
+      await submitBookReport(book.id, buildReportPayload());
+      notification.success({ message: "ส่งรายงานนิยายเรียบร้อยแล้ว" });
+      setReportModalOpen(false);
+      resetReportForm();
+    } catch (error: any) {
+      notification.error({
+        message: error?.response?.data?.message || "ไม่สามารถส่งรายงานได้",
+      });
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
+
   return (
     <div className="relative w-full">
       {/* Full-width Background with Book Cover */}
@@ -479,6 +622,18 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
                             </svg>
                           ),
                           onClick: handleOpenCollectionModal,
+                        },
+                        {
+                          key: '2',
+                          label: 'รายงานนิยาย',
+                          icon: (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 9v4" />
+                              <path d="M12 17h.01" />
+                              <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                            </svg>
+                          ),
+                          onClick: handleOpenReportModal,
                         },
                       ],
                     }}
@@ -724,6 +879,119 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
                 </button>
               ))}
             </div>
+          )}
+        </div>
+      </Modal>
+
+      <Modal
+        open={reportModalOpen}
+        onCancel={() => {
+          setReportModalOpen(false);
+          resetReportForm();
+        }}
+        onOk={handleSubmitReport}
+        okText="ส่งรายงาน"
+        cancelText="ยกเลิก"
+        confirmLoading={submittingReport}
+        okButtonProps={{ disabled: !canSubmitReport }}
+        centered
+        width={560}
+        title="รายงานนิยาย"
+      >
+        <div className="space-y-4 py-2">
+          {reportTypesLoading ? (
+            <div className="flex flex-col items-center gap-3 py-10 text-gray-500">
+              <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-red-600" />
+              <span className="text-sm">กำลังโหลดประเภทการรายงาน...</span>
+            </div>
+          ) : reportTypes.length === 0 ? (
+            <div className="py-8 text-center text-gray-500">
+              <p className="text-sm">ไม่พบประเภทการรายงาน</p>
+              <button
+                type="button"
+                onClick={loadReportTypes}
+                className="mt-3 text-sm text-red-600 hover:text-red-700"
+              >
+                ลองโหลดใหม่
+              </button>
+            </div>
+          ) : (
+            <>
+              <div>
+                <p className="mb-2 text-sm font-medium text-gray-800">1) เลือกประเภท (เลือกได้หลายข้อ)</p>
+                <div className="max-h-[220px] space-y-2 overflow-y-auto rounded-lg border border-gray-200 p-3">
+                  {reportTypes.map((type) => (
+                    <label key={type.id} className="flex cursor-pointer items-start gap-2">
+                      <Checkbox
+                        checked={selectedReportTypeIds.includes(type.id)}
+                        onChange={(event) => handleToggleReportType(type.id, event.target.checked)}
+                      />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-medium text-gray-800">{type.title}</span>
+                        {type.description ? (
+                          <span className="block text-xs text-gray-500">{type.description}</span>
+                        ) : null}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3 rounded-lg border border-gray-200 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-gray-800">2) เลือกเหตุผลของแต่ละประเภท</p>
+                  <p className="text-xs text-gray-500">{reportSummaryText}</p>
+                </div>
+
+                {selectedReportTypes.length === 0 ? (
+                  <p className="text-xs text-gray-500">เลือกประเภทก่อนเพื่อระบุเหตุผล</p>
+                ) : (
+                  selectedReportTypes.map((type) => {
+                    const selectedReasons = getSelectedReasons(type);
+                    return (
+                      <div key={type.id} className="space-y-2">
+                        <p className="text-xs font-semibold text-gray-700">{type.title}</p>
+                        <Select
+                          mode="multiple"
+                          value={reportReasonByTypeId[type.id] ?? []}
+                          placeholder="เลือกเหตุผล"
+                          onChange={(values) =>
+                            handleChangeReason(
+                              type.id,
+                              (Array.isArray(values) ? values : []).map((value) => Number(value)),
+                            )
+                          }
+                          options={type.reasons.map((reason) => ({
+                            value: reason.id,
+                            label: reason.title,
+                          }))}
+                          className="w-full"
+                        />
+                        {selectedReasons.map((reason) => (
+                          reason.description ? (
+                            <p key={`${type.id}-${reason.id}`} className="text-xs text-gray-500">
+                              - {reason.description}
+                            </p>
+                          ) : null
+                        ))}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <div>
+                <p className="mb-2 text-sm font-medium text-gray-800">3) เหตุผลประกอบ</p>
+                <Input.TextArea
+                  value={reportDetail}
+                  onChange={(event) => setReportDetail(event.target.value)}
+                  rows={4}
+                  maxLength={500}
+                  placeholder="ระบุรายละเอียดเพิ่มเติม (ถ้ามี)"
+                />
+                <p className="mt-1 text-right text-xs text-gray-400">{reportDetail.length}/500</p>
+              </div>
+            </>
           )}
         </div>
       </Modal>

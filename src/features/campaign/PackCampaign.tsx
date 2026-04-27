@@ -10,7 +10,7 @@ import PackCardBook from '@/components/novelCard/PackCardBook';
 import { Modal, Button, Spin, ConfigProvider, notification } from 'antd';
 import { CloseOutlined, CheckCircleFilled, CloseCircleFilled, ArrowLeftOutlined } from '@ant-design/icons';
 import th_TH from 'antd/locale/th_TH';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { useUIStore } from '@/stores/uiStore';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { buildCoinEnjoyTopupUrl, navigateSafely } from '@/utils/navigationUtils';
@@ -21,7 +21,7 @@ interface PackCampaignProps {
 
 
 function PackCampaign({ data }: PackCampaignProps) {
-    const { settings } = useWebsiteStore();
+  const { settings } = useWebsiteSettings();
     const { updateToken, token, isLoggedIn } = useAuthStore();
     const openLoginModal = useUIStore((s) => s.openLoginModal);
     const [isModalOpen, setIsModalOpen] = useState(false);

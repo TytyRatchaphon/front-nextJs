@@ -13,7 +13,7 @@ import UploadCropBook from "@/components/upload/UploadBook";
 import UploadCropBookBanner from "@/components/upload/UploadCropBookBanner";
 import secureProxyClient from "@/services/secureProxyClient";
 import GifLoader from '@/components/utility/GifLoader';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { sanitizeUserGeneratedHtml } from "@/utils/sanitizeHtml";
 import {
     extractGifFrameAsFile,
@@ -126,7 +126,7 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
         set_fast_ticket: false,
         set_fast_coin: false,
     });
-    const { settings: website, fetchSettings } = useWebsiteStore();
+    const { settings: website, fetchSettings } = useWebsiteSettings();
 
     // --- Fetch Data (Logic ของ EditBook) ---
     useEffect(() => {

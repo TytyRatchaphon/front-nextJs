@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { resolveSettingsImageSrc } from '@/utils/imageUtils';
 import {
   DEFAULT_APP_STORE_URL,
@@ -12,7 +12,7 @@ import {
 // ... imports
 
 export default function Footer() {
-  const { settings } = useWebsiteStore();
+  const { settings } = useWebsiteSettings();
   const playStoreLink = normalizePlayStoreUrl(settings?.play_store, DEFAULT_PLAY_STORE_URL);
   const appStoreLink = normalizeAppStoreUrl(settings?.app_store, DEFAULT_APP_STORE_URL);
 

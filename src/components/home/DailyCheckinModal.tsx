@@ -6,7 +6,6 @@ import apiClient from '@/services/apiClient';
 import SevenDaysLogin from '@/components/event/SevenDaysLogin';
 
 import { useUIStore } from '@/stores/uiStore';
-import { useWebsiteStore } from '@/stores/websiteStore';
 
 const fetchWeeklyLogin = async (token?: string | null) => {
   if (!token) return {};
@@ -19,7 +18,6 @@ const fetchWeeklyLogin = async (token?: string | null) => {
 const DailyCheckinModal = () => {
     const { isLoggedIn, token } = useAuthStore();
     const { isCheckinModalOpen, closeCheckinModal } = useUIStore();
-    useWebsiteStore();
     
     // Fetch data only if logged in
     useQuery({

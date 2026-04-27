@@ -2,7 +2,7 @@
 import * as React from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
-import { useWebsiteStore } from "@/stores/websiteStore";
+import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
 import Image from "next/image";
 import { buildCoinEnjoyTopupUrl, navigateSafely } from "@/utils/navigationUtils";
 
@@ -12,7 +12,7 @@ const DEFAULT_TOPUP_TEXT =
 const TopUpBanner = () => {
   const { token, isLoggedIn } = useAuthStore();
   const { openLoginModal } = useUIStore();
-  const { settings } = useWebsiteStore();
+  const { settings } = useWebsiteSettings();
 
   const coinIcon = settings?.coin || "/images/e-coin.png";
   const rawText = settings?.topup_banner_text || DEFAULT_TOPUP_TEXT;

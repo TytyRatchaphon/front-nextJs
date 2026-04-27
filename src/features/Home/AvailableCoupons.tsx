@@ -8,7 +8,7 @@ import CouponCard from '@/components/coupon/CouponCard';
 import { processCoupons, CouponUI } from '@/utils/couponUtils';
 import dayjs from 'dayjs';
 import 'dayjs/locale/th';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 const AvailableCoupons = () => {
@@ -22,7 +22,7 @@ const AvailableCoupons = () => {
     };
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedCoupon, setSelectedCoupon] = useState<CouponUI | null>(null);
-    const { settings } = useWebsiteStore();
+  const { settings } = useWebsiteSettings();
 
     // Fetch User Coupons to calculate ownedCount
     const { data: userCoupons = [] } = useQuery({

@@ -12,7 +12,7 @@ import { useAuthStore } from '@/stores/authStore'
 import type { StoreCategory, StorePack, StorePackSelectableOption } from '@/types/api'
 import Link from 'next/link'
 import StoreCard from '@/components/utility/StoreCard'
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import GifLoader from '@/components/utility/GifLoader';
 import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill'
@@ -501,7 +501,7 @@ function Store() {
   };
 
   const finalItems = [allTabItem, ...tabItems];
-  const { settings } = useWebsiteStore();
+  const { settings } = useWebsiteSettings();
   const selectedStoreCategory =
     activeStoreTab === 'all'
       ? null

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react' // เพิ่ม useEffect, useSta
 import Image from 'next/image'
 import 'antd';
 import { useAuthStore } from '@/stores/authStore'
-import { useWebsiteStore } from '@/stores/websiteStore'
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings'
 import '@/utils/imageUtils';
 import Cookies from 'js-cookie';
 
@@ -33,7 +33,7 @@ export default function UserProfileEvent({
 }: Props) {
   const { user, token, updateToken } = useAuthStore();
   const [isMounted, setIsMounted] = useState(false);
-  const { settings } = useWebsiteStore();
+  const { settings } = useWebsiteSettings();
 
   // 2. เพิ่ม useEffect เพื่อ Force Update ข้อมูลจาก Token ตอนโหลดหน้า
   useEffect(() => {

@@ -4,7 +4,7 @@ import { Plus } from 'lucide-react';
 import { Tooltip } from 'antd';
 
 import { navigateSafely } from '@/utils/navigationUtils';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import '@/utils/imageUtils';
 
 interface FastTicketPillProps {
@@ -14,7 +14,7 @@ interface FastTicketPillProps {
 }
 
 function FastTicketPill({ amount, onAddClick, className = "" }: FastTicketPillProps) {
-  const { settings } = useWebsiteStore();
+  const { settings } = useWebsiteSettings();
   const iconSrc = settings?.fast_ticket || '/images/fast_ticket.png';
   const formattedAmount = amount > 9999
     ? Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(amount)

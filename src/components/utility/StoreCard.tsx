@@ -1,7 +1,7 @@
 import * as React from "react";
 import Image from 'next/image';
 import { StorePack, StorePackSelectableOption } from '@/types/api';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { App, Checkbox, Image as AntImage, Modal, Spin } from 'antd';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'next/navigation';
@@ -19,7 +19,7 @@ interface StoreCardProps {
 
 
 const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
-  const { settings } = useWebsiteStore()
+  const { settings } = useWebsiteSettings()
   const { token } = useAuthStore() as any;
   const { notification } = App.useApp();
   useRouter();

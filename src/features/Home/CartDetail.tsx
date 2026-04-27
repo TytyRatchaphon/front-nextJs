@@ -7,7 +7,7 @@ import { Table, Checkbox, Button, InputNumber, Image as AntImage, Typography, Po
 import { DeleteOutlined, ShopOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/authStore';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import GifLoader from '@/components/utility/GifLoader';
 import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill';
@@ -28,7 +28,7 @@ const isMissingImageSrc = (src: string | null | undefined) => {
 export default function CartDetail() {
     const queryClient = useQueryClient();
     const { user } = useAuthStore() as any;
-    const { settings } = useWebsiteStore();
+  const { settings } = useWebsiteSettings();
     const { notification } = App.useApp();
     const { data: cartStores, isLoading } = useQuery({
         queryKey: ['cartItems'],

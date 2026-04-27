@@ -11,7 +11,7 @@ import GifLoader from '@/components/utility/GifLoader';
 import EpisodeCommentSection from "@/components/bookdetail/EpisodeCommentSection";
 import Image from "next/image";
 import { modifiedHtml, addParagraphIndexes, obfuscateClipboardText, obfuscateHtmlTextNodes } from "@/utils/htmlUtils";
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { fetchBookDetail, fetchHasPaymentHistory } from "@/services/apiServices";
 import apiClient from '@/services/apiClient';
 import { useAuthStore, AuthState } from '@/stores/authStore';
@@ -340,7 +340,7 @@ const fetchEpisodeContent = async (ep_id: string) => {
 };
 
 export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: Props) {
-  const { settings } = useWebsiteStore();
+  const { settings } = useWebsiteSettings();
   const router = useRouter();
   const [episodeId, setEpisodeId] = useState(routeEpisodeId);
   const { user } = useAuthStore();

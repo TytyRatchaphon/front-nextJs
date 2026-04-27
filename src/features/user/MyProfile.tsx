@@ -11,6 +11,7 @@ import StampPill from "@/components/utility/StampPill";
 import RPPill from "@/components/utility/RPPill";
 import ProfileAchievements from "@/components/achievement/ProfileAchievements";
 import UserRankShowcase from "@/features/user/components/UserRankShowcase";
+import RpQuestPanel from "@/features/user/components/RpQuestPanel";
 import FrameOverlayImage from "@/components/ui/FrameOverlayImage";
 import FastTicketPill from "@/components/utility/FastTicketPill";
 
@@ -158,6 +159,10 @@ function MyProfileContent() {
       </div>
 
       <div className="container mx-auto mt-8 px-4">
+        <div className="mb-6">
+          <RpQuestPanel />
+        </div>
+
         <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-2">
           <UserRankShowcase />
           <ProfileAchievements />

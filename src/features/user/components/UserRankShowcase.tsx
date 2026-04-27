@@ -11,7 +11,7 @@ import "swiper/css/free-mode";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
-import { useWebsiteStore } from "@/stores/websiteStore";
+import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
 import { fetchAllRanksData, claimRankReward, claimAllRankRewards } from "@/services/api/userApi";
 import type { AllRanksData, RankItem, RankProfileResponse } from "@/services/api/userApi";
 import { useSocket } from "@/providers/SocketProvider";
@@ -233,7 +233,7 @@ export default function UserRankShowcase({
   const { isLoggedIn, hasMounted, token: authToken, user } = useAuthStore();
   const { socket } = useSocket();
   const queryClient = useQueryClient();
-  const { settings } = useWebsiteStore();
+  const { settings } = useWebsiteSettings();
   const { notification: notificationApi } = App.useApp();
   const [rankData, setRankData] = useState<RankProfileResponse["data"] | null>(null);
   const [allRanks, setAllRanks] = useState<RankItem[]>([]);

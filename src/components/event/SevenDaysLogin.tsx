@@ -7,7 +7,7 @@ import { Modal, Button, Popover } from 'antd'
 import { InfoCircleOutlined } from '@ant-design/icons'
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useWebsiteStore } from '@/stores/websiteStore'
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings'
 import '@/utils/imageUtils';
 
 type LoginStatus = {
@@ -104,7 +104,7 @@ function SevenDaysLogin({ onClose }: SevenDaysLoginProps) {
     }
   }
 
-  const { settings } = useWebsiteStore()
+  const { settings } = useWebsiteSettings()
 
   const handleModalOk = () => {
     setModalVisible(false)

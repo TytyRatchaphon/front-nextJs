@@ -228,6 +228,7 @@ export default function HomeContent({
 
   const editorNoteTitle =
     cleanHtmlText(editorNoteGroup?.name_web) || editorNoteGroup?.name || "เรื่องเด่นจากทีมงาน";
+  const shouldRenderSpotlightFeature = showSpotlightFeature && Boolean(selectedSpotlight);
 
   return (
     <div className="flex w-full flex-col items-center overflow-x-hidden bg-white font-primary font-medium transition-colors duration-300">
@@ -267,7 +268,7 @@ export default function HomeContent({
             <ActiveCategoriesStrip categories={activeCategories} />
           ) : null}
 
-          {showSpotlightFeature ? (
+          {shouldRenderSpotlightFeature ? (
             <SpotlightFeatureSection
               selectedSpotlight={selectedSpotlight}
               spotlightBooks={spotlightBooks}

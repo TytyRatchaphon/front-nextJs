@@ -17,7 +17,7 @@ import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill';
 import FastTicketPill from '@/components/utility/FastTicketPill';
 import { CountdownTimer as CommonCountdownTimer } from "@/components/common/CountdownTimer";
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import "jwt-decode";
 import '@/utils/imageUtils';
 import type { DiscountReward, EpisodeGroup } from '@/types/api';
@@ -746,7 +746,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
 
   // useEffect for syncing local state removed - accessing user.coin directly in render
 
-  const { settings } = useWebsiteStore()
+  const { settings } = useWebsiteSettings()
 
   useEffect(() => {
     if (selectedSummary.count === 0) return;

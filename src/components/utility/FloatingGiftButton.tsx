@@ -1,7 +1,7 @@
 "use client";
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
-import { useWebsiteStore } from '@/stores/websiteStore';
+import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
 import Image from 'next/image';
@@ -19,7 +19,7 @@ const fetchWeeklyLogin = async (token?: string | null) => {
 const FloatingGiftButton = () => {
     const { isLoggedIn, token } = useAuthStore();
     const { isCheckinModalOpen, openCheckinModal, isDailyPopupProcessComplete } = useUIStore();
-    const { settings } = useWebsiteStore();
+    const { settings } = useWebsiteSettings();
 
     const { data } = useQuery({
         queryKey: ['weekly-login', token],
