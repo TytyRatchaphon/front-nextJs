@@ -8,7 +8,8 @@ import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import type { FormProps } from 'antd';
 import Image from 'next/image';
 import { useMutation } from '@tanstack/react-query';
-import apiClient, { ApiResponse } from '@/services/apiClient';
+import apiClient from '@/services/apiClient';
+import type { ApiResponse } from '@/types/api';
 import { useAuthStore, UserData } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useLogger } from '@/hooks/useLogger';
@@ -20,6 +21,7 @@ import LoginLine from '../social/LoginLine';
 import LoginApple from '../social/LoginApple';
 import DuplicateLoginModal from '@/components/auth/DuplicateLoginModal';
 import BlockedUserModal from '@/components/auth/BlockedUserModal';
+import PolicyModal from '@/components/modal/PolicyModal';
 
 type LoginFieldType = {
   email?: string;
@@ -72,6 +74,15 @@ const LoginButtonHeader: React.FC = () => {
   // เก็บข้อมูล form สำหรับใช้หลัง login/register สำเร็จ
   const [, setLoginFormData] = useState<LoginFieldType | null>(null);
   const [, setRegisterFormData] = useState<RegisterFieldType | null>(null);
+
+  // Policy Modal state
+  const [policyModalOpen, setPolicyModalOpen] = useState(false);
+  const [policyType, setPolicyType] = useState<'privacy' | 'conditions' | null>(null);
+
+  const handleOpenPolicy = (type: 'privacy' | 'conditions') => {
+    setPolicyType(type);
+    setPolicyModalOpen(true);
+  };
 
   // Password strength checker
   const checkPasswordStrength = (password: string): number => {
@@ -558,7 +569,7 @@ const LoginButtonHeader: React.FC = () => {
                     </div>
                   </div>
 
-                  <a target="_blank" rel="noopener noreferrer" className="text-sm cursor-pointer font-bold mt-5 inline-block font-primary login-link" href="/policy-privacy">
+                  <a onClick={() => handleOpenPolicy('privacy')} className="text-sm cursor-pointer font-bold mt-5 inline-block font-primary login-link">
                     <span className='font-primary text-red-600 underline'>นโยบายข้อมูลส่วนบุคคล</span>
                   </a>
                 </div>
@@ -638,7 +649,7 @@ const LoginButtonHeader: React.FC = () => {
 
                     <div className="flex flex-col text-center py-4">
                       <span className="text-sm text-gray-500 font-primary">กดปุ่ม &quot;สมัครสมาชิก&quot; เป็นการยอมรับ</span>
-                      <a href="#" className="text-sm text-primary font-bold cursor-pointer font-primary "><span className='text-red-600 text-bold '>ข้อตกลงการใช้งาน</span></a>
+                      <a onClick={() => handleOpenPolicy('conditions')} className="text-sm text-primary font-bold cursor-pointer font-primary "><span className='text-red-600 text-bold underline'>ข้อตกลงการใช้งาน</span></a>
                     </div>
                     <div className="grid grid-cols-2 items-center">
                       <div className="flex justify-start">
@@ -733,6 +744,11 @@ const LoginButtonHeader: React.FC = () => {
       </Modal>
       <DuplicateLoginModal />
       <BlockedUserModal />
+      <PolicyModal 
+        open={policyModalOpen} 
+        onCancel={() => setPolicyModalOpen(false)} 
+        type={policyType} 
+      />
     </>
   );
 };

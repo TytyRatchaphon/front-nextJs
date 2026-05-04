@@ -9,6 +9,7 @@ import CardBook from "@/components/novelCard/CardBook";
 import GifLoader from '@/components/utility/GifLoader';
 import { useLogger } from "@/hooks/useLogger";
 import apiClient from '@/services/apiClient';
+import { normalizeBookPurchaseReward } from '@/utils/bookPurchaseReward';
 
 interface SearchParams {
   query: string;
@@ -193,6 +194,7 @@ export default function SearchClient() {
         discount_ep_count: b.discount_ep_count,
         discount_end_date: b.discount_end_date,
         time_end: b.time_end || b.end_date,
+        ep_purchase_reward: normalizeBookPurchaseReward(b),
       };
     });
 

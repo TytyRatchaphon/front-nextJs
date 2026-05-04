@@ -413,6 +413,25 @@ export interface DiscountReward {
   name: string;
 }
 
+export interface EpPurchaseRewardCampaign {
+  campaign_id: number;
+  buy_count: number;
+  reward_count: number;
+  badge_label: string;
+  display_title: string;
+  display_description: string;
+  icon_url: string | null;
+  detail_text: string;
+  start_date: string;
+  end_date: string | null;
+}
+
+export interface EpPurchaseRewardInfo {
+  has_promotion: boolean;
+  campaign?: EpPurchaseRewardCampaign | null;
+  img?: string | null;
+}
+
 export interface BookDetail {
   book_id: number;
   bookID: string;
@@ -458,6 +477,7 @@ export interface BookDetail {
   isFollowing: boolean;
   star: number;
   video: BookDetailVideo;
+  ep_purchase_reward?: EpPurchaseRewardInfo | null;
 }
 
 export interface BookDetailVideo {
@@ -912,6 +932,7 @@ export interface UniversalBook extends Partial<BookTrans>, Partial<PackCampaignB
   book_id?: number;
   bookID?: string;
   img?: string;
+  ep_purchase_reward?: EpPurchaseRewardInfo | null;
   name?: string;
   title?: string;
   writer_name?: string;

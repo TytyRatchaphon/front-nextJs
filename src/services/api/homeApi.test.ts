@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import apiClient from "../apiClient";
 import { cachedRequest } from "../requestCache";
-import { fetchBookUpdates, fetchHomeData } from "./homeApi";
+import { fetchBookUpdates, fetchHomeData, normalizeBookUpdateTab } from "./homeApi";
 import { parseJwtToken } from "@/utils/jwtParser";
 
 vi.mock("../apiClient", () => ({
@@ -73,14 +73,23 @@ describe("homeApi", () => {
   });
 
   describe("fetchBookUpdates", () => {
+    it("normalizes supported update tabs and falls back to novel", () => {
+      expect(normalizeBookUpdateTab("novel")).toBe("novel");
+      expect(normalizeBookUpdateTab("novel_pack")).toBe("novel_pack");
+      expect(normalizeBookUpdateTab("trancn")).toBe("trancn");
+      expect(normalizeBookUpdateTab("fiction")).toBe("fiction");
+      expect(normalizeBookUpdateTab("unknown")).toBe("novel");
+      expect(normalizeBookUpdateTab()).toBe("novel");
+    });
+
     it("uses cachedRequest with expected cache key and ttl", async () => {
       mockedCachedRequest.mockResolvedValueOnce([{ book_id: 100 }]);
 
-      const result = await fetchBookUpdates();
+      const result = await fetchBookUpdates("novel_pack");
 
       expect(mockedCachedRequest).toHaveBeenCalledTimes(1);
       const [cacheKey, fetcher, options] = mockedCachedRequest.mock.calls[0];
-      expect(cacheKey).toBe("home:book-updates");
+      expect(cacheKey).toBe("home:book-updates:novel_pack");
       expect(typeof fetcher).toBe("function");
       expect(options).toEqual({ ttlMs: 5 * 60 * 1000 });
       expect(result).toEqual([{ book_id: 100 }]);
@@ -93,7 +102,18 @@ describe("homeApi", () => {
       });
 
       await expect(fetchBookUpdates()).resolves.toEqual([{ book_id: 101 }]);
-      expect(mockedApiClient.get).toHaveBeenCalledWith("/getBookUpdate");
+      expect(mockedApiClient.get).toHaveBeenCalledWith("/getBookUpdate", {
+        params: { tab: "novel" },
+      });
+
+      mockedCachedRequest.mockImplementationOnce(async (_key, fetcher) => fetcher());
+      mockedApiClient.get.mockResolvedValueOnce({
+        data: { data: [{ book_id: 102 }] },
+      });
+      await expect(fetchBookUpdates("trancn")).resolves.toEqual([{ book_id: 102 }]);
+      expect(mockedApiClient.get).toHaveBeenLastCalledWith("/getBookUpdate", {
+        params: { tab: "trancn" },
+      });
 
       mockedCachedRequest.mockImplementationOnce(async (_key, fetcher) => fetcher());
       mockedApiClient.get.mockResolvedValueOnce({

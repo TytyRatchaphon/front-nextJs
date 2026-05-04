@@ -51,8 +51,10 @@ export async function generateMetadata(): Promise<Metadata> {
 import TokenUpdater from "@/components/auth/TokenUpdater";
 import GlobalLogger from "@/components/utility/GlobalLogger";
 import RpQuestSocketListener from "@/components/socket/RpQuestSocketListener";
+import NotificationAlertSocketListener from "@/components/socket/NotificationAlertSocketListener";
 import { Suspense } from "react";
-import Script from "next/script";
+import Script from 'next/script';
+import CookieConsentBanner from '@/components/common/CookieConsentBanner';
 
 // ... (existing imports)
 
@@ -123,8 +125,12 @@ export default function RootLayout({
                   <Suspense fallback={null}>
                     <RpQuestSocketListener />
                   </Suspense>
+                  <Suspense fallback={null}>
+                    <NotificationAlertSocketListener />
+                  </Suspense>
                   {children}
                   <FooterWrapper />
+                  <CookieConsentBanner />
                 </App>
               </ConfigProvider>
             </SocketProvider>

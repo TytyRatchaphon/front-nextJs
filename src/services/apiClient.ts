@@ -25,14 +25,6 @@ const resolveDeviceId = async (): Promise<string | null> => {
     return deviceIdRequest;
 };
 
-// API Response Interface
-export interface ApiResponse<T = any> {
-    code: number;
-    status: string;
-    message: string;
-    data: T;
-}
-
 //สร้าง  BaseUrl ไว้ส่วนกลางจะได้ไม่ต้องเขียนใหม่
 const apiClient = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,

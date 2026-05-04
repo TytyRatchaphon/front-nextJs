@@ -4,6 +4,7 @@
  */
 
 import { UniversalBook, BookData } from '@/types/api';
+import { normalizeBookPurchaseReward } from '@/utils/bookPurchaseReward';
 
 /**
  * Normalized book data for continue reading cards
@@ -45,6 +46,7 @@ export const normalizeBookData = (book: BookData): UniversalBook => {
     shelveCount: Number(book.shelve_count ?? 0),
     end: book.end ?? book.status ?? '',
     status: book.status ?? book.end ?? '',
+    ep_purchase_reward: normalizeBookPurchaseReward(book),
   };
 };
 

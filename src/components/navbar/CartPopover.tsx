@@ -130,11 +130,11 @@ const CartPopover: React.FC<CartPopoverProps> = ({ onClose }) => {
                         defaultActiveKey={cartStores.map(s => s.store_id)} 
                         ghost 
                         expandIconPosition="end"
-                        className="reader-cart-popover-collapse [&_.ant-collapse-header]:!px-4 [&_.ant-collapse-header]:!py-3 [&_.ant-collapse-header]:!bg-gray-50 [&_.ant-collapse-content-box]:!p-0"
+                        className="reader-cart-popover-collapse [&_.ant-collapse-header]:!px-4 [&_.ant-collapse-header]:!py-3 [&_.ant-collapse-header]:bg-gray-50 [&_.ant-collapse-content-box]:!p-0"
                         items={cartStores.map((store) => ({
                             key: store.store_id,
                             label: (
-                                <div className="flex items-center gap-2 text-gray-700">
+                                <div className="reader-cart-popover-store-label flex items-center gap-2 text-gray-700">
                                     <ShopOutlined /> 
                                     <span className="font-bold">{store.store_name}</span>
                                     <span className="text-xs text-gray-400 font-normal">({store.items?.length || 0})</span>

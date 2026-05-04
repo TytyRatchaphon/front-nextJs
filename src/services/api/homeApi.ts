@@ -29,11 +29,25 @@ export interface PopupItem {
 }
 
 export interface GroupBookHomeItem {
-  home_group_id: number;
+  home_group_id?: number;
+  user_bookhome_section?: number;
   name: string;
+  name_web?: string;
   type: string;
+  content_type?: string;
   order_by: number;
   update_at: string;
+  ref_ids?: string;
+  pre_countdown_date?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  countdown_date?: string;
+  countdown_text?: string;
+  labeltag?: string;
+  link?: string;
+  img?: string | null;
+  can_follow?: boolean;
+  is_followed?: boolean;
   list: BookTrans[];
 }
 
@@ -66,6 +80,14 @@ export interface BookUpdate {
   }[];
 }
 
+export type BookUpdateTab = "novel" | "novel_pack" | "trancn" | "fiction";
+
+const BOOK_UPDATE_TABS = new Set<BookUpdateTab>(["novel", "novel_pack", "trancn", "fiction"]);
+
+export const normalizeBookUpdateTab = (tab?: string | null): BookUpdateTab => (
+  BOOK_UPDATE_TABS.has(tab as BookUpdateTab) ? (tab as BookUpdateTab) : "novel"
+);
+
 export const fetchHomeData = async (
   token?: string | null,
   contentType?: string,
@@ -83,12 +105,43 @@ export const fetchHomeData = async (
   }
 }
 
-export const fetchBookUpdates = async (): Promise<BookUpdate[]> => {
+export const trackUserBookhomeSectionClick = async ({
+  userBookhomeSection,
+  bookId,
+  token,
+}: {
+  userBookhomeSection?: number | string | null;
+  bookId?: number | string | null;
+  token?: string | null;
+}) => {
+  const cleanedToken = parseJwtToken(token);
+  if (!cleanedToken || !userBookhomeSection || !bookId) return;
+
   try {
+    await apiClient.post(
+      "/user-bookhome-section/click",
+      {
+        user_bookhome_section: userBookhomeSection,
+        book_id: bookId,
+      },
+      {
+        headers: { Authorization: `Bearer ${cleanedToken}` },
+      },
+    );
+  } catch (error) {
+    console.warn("track user bookhome section click failed", error);
+  }
+};
+
+export const fetchBookUpdates = async (tab?: string | null): Promise<BookUpdate[]> => {
+  try {
+    const normalizedTab = normalizeBookUpdateTab(tab);
     return await cachedRequest<BookUpdate[]>(
-      'home:book-updates',
+      `home:book-updates:${normalizedTab}`,
       async () => {
-        const response = await apiClient.get<{ data: BookUpdate[] }>("/getBookUpdate");
+        const response = await apiClient.get<{ data: BookUpdate[] }>("/getBookUpdate", {
+          params: { tab: normalizedTab },
+        });
         return Array.isArray(response.data?.data) ? response.data.data : [];
       },
       { ttlMs: 5 * 60 * 1000 }

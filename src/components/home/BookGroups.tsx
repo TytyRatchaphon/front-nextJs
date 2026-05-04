@@ -1,3 +1,6 @@
+"use client";
+
+import * as React from "react";
 import BookSwiper from "@/components/home/BookSwiper";
 import TopRanking from "@/components/home/TopRanking";
 import ExclusiveSwiper from "@/components/swiper/ExclusiveSwiper";
@@ -6,13 +9,57 @@ import ArticleSwiper from "@/components/swiper/ArticleSwiper";
 import RewardSwiper from "@/components/swiper/RewardSwiper";
 import Image from "next/image";
 import Link from "next/link";
+import { trackUserBookhomeSectionClick } from "@/services/apiServices";
+import { useAuthStore } from "@/stores/authStore";
+import { parseJwtToken } from "@/utils/jwtParser";
+import { getBookhomeSectionId, isUserBookhomeSection } from "@/utils/userBookhomeSection";
 
 interface BookGroupsProps {
   groupBookHome: any[];
+  contentType?: string;
 }
 
-export default function BookGroups({ groupBookHome }: BookGroupsProps) {
+const MORE_LINK_MIN_BOOKS = 11;
+const EXCLUDED_AUTO_MORE_GROUP_TYPES = new Set([
+  "ranking",
+  "image",
+  "article",
+  "spotlight",
+  "recommend_admin",
+]);
+
+const buildHomeGroupMoreLink = (group: any, contentType?: string) => {
+  if (group?.link) return group.link;
+
+  const items = Array.isArray(group?.list) ? group.list : [];
+  const groupId = getBookhomeSectionId(group);
+  if (!groupId || items.length < MORE_LINK_MIN_BOOKS || EXCLUDED_AUTO_MORE_GROUP_TYPES.has(group?.type)) {
+    return undefined;
+  }
+
+  const params = new URLSearchParams();
+  if (contentType) params.set("content_type", contentType);
+  if (isUserBookhomeSection(group)) params.set("section", "user");
+  return `/home-group/${groupId}${params.size > 0 ? `?${params.toString()}` : ""}`;
+};
+
+export default function BookGroups({ groupBookHome, contentType }: BookGroupsProps) {
   const rewardInitialNow = Date.now();
+  const { token, isLoggedIn } = useAuthStore();
+  const authToken = parseJwtToken(token);
+
+  const handleUserSectionBookClick = (section: any, book: any) => {
+    if (!isLoggedIn || !authToken || !isUserBookhomeSection(section)) return;
+
+    const bookId = book?.book_id ?? book?.id;
+    if (!section?.user_bookhome_section || !bookId) return;
+
+    void trackUserBookhomeSectionClick({
+      userBookhomeSection: section.user_bookhome_section,
+      bookId,
+      token: authToken,
+    });
+  };
 
   return (
     <div className="w-full mb-8">
@@ -34,6 +81,11 @@ export default function BookGroups({ groupBookHome }: BookGroupsProps) {
           return pA - pB;
         })
         .map((group: any, index: number) => {
+          const moreLink = buildHomeGroupMoreLink(group, contentType);
+          const onBookClick = isUserBookhomeSection(group)
+            ? (book: any) => handleUserSectionBookClick(group, book)
+            : undefined;
+
           if (group.type === 'ranking') {
             return (
               <div key={index} className="w-full -mt-4">
@@ -71,7 +123,8 @@ export default function BookGroups({ groupBookHome }: BookGroupsProps) {
                   title={group.name_web || group.name}
                   items={group.list || []}
                   icon={group.img}
-                  link={group.link || undefined}
+                  link={moreLink}
+                  onBookClick={onBookClick}
                 />
               </div>
             );
@@ -83,7 +136,8 @@ export default function BookGroups({ groupBookHome }: BookGroupsProps) {
                   title={group.name_web || group.name}
                   items={group.list || []}
                   icon={group.img}
-                  link={group.link || undefined}
+                  link={moreLink}
+                  onBookClick={onBookClick}
                 />
               </div>
             );
@@ -107,7 +161,8 @@ export default function BookGroups({ groupBookHome }: BookGroupsProps) {
                   title={group.name_web || group.name}
                   items={group.list || []}
                   icon={group.img}
-                  link={group.link || undefined}
+                  link={moreLink}
+                  onBookClick={onBookClick}
                   startDate={group.start_date}
                   endDate={group.end_date}
                   groupId={group.home_group_id}
@@ -124,7 +179,8 @@ export default function BookGroups({ groupBookHome }: BookGroupsProps) {
                 title={group.name_web || group.name}
                 books={group.list || []}
                 icon={group.img}
-                link={group.link || undefined}
+                link={moreLink}
+                onBookClick={onBookClick}
               />
             </div>
           );

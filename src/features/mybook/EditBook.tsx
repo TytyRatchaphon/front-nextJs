@@ -55,8 +55,11 @@ interface BookFormValues {
     bgimg?: any;
     img_gif?: any;
     content_type?: 'novel' | 'novel_pack' | string;
-    fast_ticket?: number;
-    fast_coin?: number;
+    fast_ticket?: number | string;
+    fast_coin?: number | string;
+    fast_ticket_daily_increase?: number | string;
+    fast_coin_daily_increase?: number | string;
+    fast_ep_days?: number | string;
     [key: string]: any;
     
 }
@@ -97,6 +100,8 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
 
     const [api, contextHolder] = notification.useNotification();
     const [formNewBook] = Form.useForm();
+    const fastTicketValue = Form.useWatch('fast_ticket', formNewBook);
+    const fastCoinValue = Form.useWatch('fast_coin', formNewBook);
     const { TextArea } = Input;
 
     const [openModal, setOpenModal] = useState<boolean>(false);
@@ -221,6 +226,11 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                         ...(permissionData.set_content_type ? { content_type: bookData.content_type || 'novel' } : {}),
                         ...(permissionData.set_fast_ticket ? { fast_ticket: bookData.fast_ticket } : {}),
                         ...(permissionData.set_fast_coin ? { fast_coin: bookData.fast_coin } : {}),
+                        ...(permissionData.set_fast_ticket || permissionData.set_fast_coin ? {
+                            fast_ticket_daily_increase: bookData.fast_ticket_daily_increase,
+                            fast_coin_daily_increase: bookData.fast_coin_daily_increase,
+                            fast_ep_days: bookData.fast_ep_days,
+                        } : {}),
                     });
 
                     // Filter หมวดหมู่ตาม Type ของหนังสือที่ดึงมา
@@ -458,12 +468,18 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
             return;
         }
 
+        const hasFastUnlockPrice = Number(values.fast_ticket || 0) > 0 || Number(values.fast_coin || 0) > 0;
+        const submitValues: BookFormValues = {
+            ...values,
+            fast_ep_days: hasFastUnlockPrice ? values.fast_ep_days : 0,
+        };
+
         console.group("🚀 Debug Edit Data");
         const formdata = new FormData();
         formdata.append("accept_conditions", "true");
 
-        for (const key in values) {
-            let value = values[key];
+        for (const key in submitValues) {
+            let value = submitValues[key];
             let keyName = key;
 
             if (key === 'imgBook') keyName = 'img';
@@ -521,6 +537,10 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
         }
     }
 
+    const showAdvancedConfig = permissions.set_content_type;
+    const showFastUnlockConfig = permissions.set_fast_ticket || permissions.set_fast_coin;
+    const showFastEpDays = (permissions.set_fast_ticket && Number(fastTicketValue || 0) > 0)
+        || (permissions.set_fast_coin && Number(fastCoinValue || 0) > 0);
     const safeBookConditionsHtml = sanitizeUserGeneratedHtml(website?.book_conditions);
 
     // --- UI Render (เหมือน NewBook เป๊ะๆ) ---
@@ -719,39 +739,80 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                                     </div>
                                 </div>
 
-                                {(permissions.set_content_type || permissions.set_fast_ticket || permissions.set_fast_coin) && (
-                                    <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mt-1'>
-                                        {permissions.set_content_type && (
-                                            <div>
-                                                <span className='body-text'>รูปแบบการอ่าน</span>
-                                                <Form.Item name='content_type'>
-                                                    <Select
-                                                        placeholder="Select content type"
-                                                    >
-                                                        <Select.Option value='novel'>รายตอน</Select.Option>
-                                                        <Select.Option value='novel_pack'>มัดแพ็ค</Select.Option>
-                                                    </Select>
-                                                </Form.Item>
-                                            </div>
-                                        )}
+                                {showAdvancedConfig && (
+                                    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-1'>
+                                        <div>
+                                            <span className='body-text'>รูปแบบการอ่าน</span>
+                                            <Form.Item name='content_type'>
+                                                <Select
+                                                    placeholder="Select content type"
+                                                >
+                                                    <Select.Option value='novel'>รายตอน</Select.Option>
+                                                    <Select.Option value='novel_pack'>มัดแพ็ค</Select.Option>
+                                                </Select>
+                                            </Form.Item>
+                                        </div>
+                                    </div>
+                                )}
 
-                                        {permissions.set_fast_ticket && (
-                                            <div>
-                                                <span className='body-text'>ราคาปลดล็อคตอนล่วงหน้าด้วยตั๋ว</span>
-                                                <Form.Item name='fast_ticket'>
-                                                    <Input type='number' min={0} className='input' />
-                                                </Form.Item>
-                                            </div>
-                                        )}
+                                {showFastUnlockConfig && (
+                                    <div className='mt-6 rounded-lg border border-rose-100 bg-rose-50/40 p-4'>
+                                        <div className='mb-4'>
+                                            <h3 className='text-base font-semibold text-gray-800'>ฟีเจอร์ปลดล็อคล่วงหน้า</h3>
+                                        </div>
+                                        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+                                            {permissions.set_fast_ticket && (
+                                                <div>
+                                                    <span className='body-text'>ราคาปลดล็อคตอนล่วงหน้าด้วยตั๋ว</span>
+                                                    <p className='mt-1 text-sm text-red-500'>ใส่ 0 เพื่อปิดใช้งาน</p>
+                                                    <Form.Item name='fast_ticket'>
+                                                        <Input type='number' min={0} className='input' />
+                                                    </Form.Item>
+                                                </div>
+                                            )}
 
-                                        {permissions.set_fast_coin && (
+                                            {permissions.set_fast_coin && (
+                                                <div>
+                                                    <span className='body-text'>ราคาตอนปลดล็อคตอนล่วงหน้าด้วยเหรียญ</span>
+                                                    <p className='mt-1 text-sm text-red-500'>ใส่ 0 เพื่อปิดใช้งาน</p>
+                                                    <Form.Item name='fast_coin'>
+                                                        <Input type='number' min={0} className='input' />
+                                                    </Form.Item>
+                                                </div>
+                                            )}
+
                                             <div>
-                                                <span className='body-text'>ราคาตอนปลดล็อคตอนล่วงหน้าด้วยเหรียญ</span>
-                                                <Form.Item name='fast_coin'>
-                                                    <Input type='number' min={0} className='input' />
+                                                <span className='body-text'>เปิดอ่านล่วงหน้าได้กี่วัน</span>
+                                                <p className='mt-1 text-sm text-gray-400'>กรอกราคาเพื่อเปิดใช้งานช่องนี้</p>
+                                                <Form.Item name='fast_ep_days'>
+                                                    <Input
+                                                        type='number'
+                                                        min={0}
+                                                        className='input'
+                                                        placeholder='เช่น 7'
+                                                        disabled={!showFastEpDays}
+                                                    />
                                                 </Form.Item>
                                             </div>
-                                        )}
+
+                                            {permissions.set_fast_ticket && (
+                                                <div>
+                                                    <span className='body-text'>จำนวนตั๋วที่เพิ่มต่อวัน</span>
+                                                    <Form.Item name='fast_ticket_daily_increase'>
+                                                        <Input type='number' min={0} className='input' placeholder='เช่น 1' />
+                                                    </Form.Item>
+                                                </div>
+                                            )}
+
+                                            {permissions.set_fast_coin && (
+                                                <div>
+                                                    <span className='body-text'>จำนวนเหรียญที่เพิ่มต่อวัน</span>
+                                                    <Form.Item name='fast_coin_daily_increase'>
+                                                        <Input type='number' min={0} className='input' placeholder='เช่น 5' />
+                                                    </Form.Item>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
 

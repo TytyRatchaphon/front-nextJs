@@ -34,9 +34,10 @@ interface RecommendSwiperProps {
   title?: string;
   icon?: string;
   link?: string;
+  onBookClick?: (book: any) => void;
 }
 
-export default function RecommendSwiper({ items, title, icon, link }: RecommendSwiperProps) {
+export default function RecommendSwiper({ items, title, icon, link, onBookClick }: RecommendSwiperProps) {
   const prevRef = React.useRef<HTMLButtonElement>(null);
   const nextRef = React.useRef<HTMLButtonElement>(null);
 
@@ -132,7 +133,7 @@ export default function RecommendSwiper({ items, title, icon, link }: RecommendS
         {items && items.length > 0 ? (
           items.filter(item => item.book).map((item, index) => (
             <SwiperSlide key={item.rec_id || index} className="!w-auto">
-              <RecommendCard data={item} />
+              <RecommendCard data={item} onBookClick={onBookClick} />
             </SwiperSlide>
           ))
         ) : (

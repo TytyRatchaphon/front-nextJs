@@ -4,6 +4,7 @@ import { Pagination, Tabs, Select, Alert } from 'antd';
 import GifLoader from '@/components/utility/GifLoader';
 import { useQuery } from '@tanstack/react-query';
 import CardBook from '@/components/novelCard/CardBook';
+import { normalizeBookPurchaseReward } from '@/utils/bookPurchaseReward';
 
 export interface SearchParams {
   query: string;
@@ -135,6 +136,7 @@ function AllNovel({ initialData }: { initialData?: any }) {
         discount: b.discount,
         isNewEp: b.isNewEp,
         discount_ep_count: b.discount_ep_count,
+        ep_purchase_reward: normalizeBookPurchaseReward(b),
       };
     });
 

@@ -32,8 +32,7 @@ const setupApiClientModule = async (options: SetupOptions = {}) => {
     },
   }))
 
-  const openDuplicateLoginModal = vi.fn()
-  const openBlockedUserModal = vi.fn()
+  const emitApiClientEvent = vi.fn()
   const getDeviceIdMock = deviceIdReject
     ? vi.fn().mockRejectedValue(new Error('device error'))
     : vi.fn().mockResolvedValue(deviceId)
@@ -47,13 +46,8 @@ const setupApiClientModule = async (options: SetupOptions = {}) => {
     },
   }))
 
-  vi.doMock('@/stores/uiStore', () => ({
-    useUIStore: {
-      getState: () => ({
-        openDuplicateLoginModal,
-        openBlockedUserModal,
-      }),
-    },
+  vi.doMock('@/services/apiEvents', () => ({
+    emitApiClientEvent,
   }))
 
   vi.doMock('@/utils/deviceUtils', () => ({
@@ -94,8 +88,7 @@ const setupApiClientModule = async (options: SetupOptions = {}) => {
       axiosCreate,
       requestUse,
       responseUse,
-      openDuplicateLoginModal,
-      openBlockedUserModal,
+      emitApiClientEvent,
       getDeviceIdMock,
       cookieGetMock,
       parseJwtTokenMock,
@@ -235,7 +228,7 @@ describe('apiClient', () => {
 
     const result = await handlers.responseError(error)
 
-    expect(mocks.openDuplicateLoginModal).toHaveBeenCalledTimes(1)
+    expect(mocks.emitApiClientEvent).toHaveBeenCalledWith('duplicate-login')
     expect(result.status).toBe(200)
     expect(result.data).toBeNull()
   })
@@ -252,7 +245,7 @@ describe('apiClient', () => {
 
     const result = await handlers.responseError(error)
 
-    expect(mocks.openBlockedUserModal).toHaveBeenCalledTimes(1)
+    expect(mocks.emitApiClientEvent).toHaveBeenCalledWith('blocked-user')
     expect(result.status).toBe(200)
     expect(result.data).toBeNull()
   })

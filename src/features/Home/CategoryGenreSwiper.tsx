@@ -1,15 +1,17 @@
 "use client";
 import { useState, useRef, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { fetchActiveCategories } from '@/services/apiServices';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function CategoryGenreSwiper() {
   const router = useRouter();
+  const params = useParams();
   const searchParams = useSearchParams();
   const currentType = searchParams.get('type') || 'all';
-  const currentCategoryId = searchParams.get('categoryId') || 'all';
+  const pathCategoryId = typeof params.id === 'string' && params.id !== 'list' ? params.id : '';
+  const currentCategoryId = searchParams.get('categoryId') || pathCategoryId || 'all';
   const currentTab = searchParams.get('tab') || 'bestseller';
   const currentPeriod = searchParams.get('period') || ((currentTab === 'bestseller' || currentTab === 'topchart') ? '30' : '');
 

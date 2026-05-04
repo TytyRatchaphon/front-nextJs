@@ -5,16 +5,18 @@ import { useRouter } from 'next/navigation';
 import { Empty, Modal, Spin } from 'antd';
 import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 import { fetchUserMyBookReportCases } from '@/services/apiServices';
+import { BookPurchaseRewardBadge } from './BookPurchaseRewardBadge';
+import { formatNumber, resolveBookParam } from './bookCardUtils';
 
 interface Book {
   book_id?: number;
-  bookID?: any; // strict string in some contexts
+  bookID?: any;
   img?: string;
   name?: string;
   view?: number;
   chapter?: number;
-  total_income?: number; // Assumption: API provides this or I default to 0
-  status?: string | number; // For "close story" check
+  total_income?: number;
+  status?: string | number;
   [key: string]: any;
 }
 
@@ -75,16 +77,8 @@ const MyBookCardNew: React.FC<MyBookCardNewProps> = ({ book }) => {
   const [reportLoaded, setReportLoaded] = React.useState(false);
 
   const imageUrl = resolveBookCoverImageSrc(book, '/images/ejb.png');
+  const bookParam = resolveBookParam(book);
 
-  // 2. Format Numbers
-  const formatNumber = (num: number) => {
-    if (num >= 1000 && num <= 999999) return `${(num / 1000).toFixed(0)}k`;
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-    return num;
-  };
-
-  // 3. ID Logic
-  const bookParam = book.book_id ? String(book.book_id) : (book.bookID && String(book.bookID).trim() !== "" ? String(book.bookID) : "");
   const hasPendingReportIssue = normalizeBooleanFlag(
     book.status_has_pending_report_issue
       ?? book.has_pending_report_issue
@@ -96,9 +90,6 @@ const MyBookCardNew: React.FC<MyBookCardNewProps> = ({ book }) => {
   // 4. Handlers
   const handleCloseStory = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Logic to close/unpublish story - likely just a placeholder or needs API integration
-    // User asked to "Design" it, functionality might be separate. 
-    // I'll make it a button that looks right.
   };
 
   const handleOpenStats = (e: React.MouseEvent) => {
@@ -122,7 +113,6 @@ const MyBookCardNew: React.FC<MyBookCardNewProps> = ({ book }) => {
     setReportLoading(false);
   };
 
-  /* handleEdit removed, logic moved to Link onClick */
   const destination = bookParam ? `/w/b/${encodeURIComponent(bookParam)}` : '/w/b';
 
   const onLinkClick = () => {
@@ -162,6 +152,7 @@ const MyBookCardNew: React.FC<MyBookCardNewProps> = ({ book }) => {
             <span className="truncate">ถูกรายงาน</span>
           </button>
         )}
+        <BookPurchaseRewardBadge book={book} />
       </div>
 
       {/* Info Section */}
@@ -222,7 +213,7 @@ const MyBookCardNew: React.FC<MyBookCardNewProps> = ({ book }) => {
             onClick={handleOpenStats}
             className="text-base text-black hover:text-red-500 font-medium flex items-center"
           >
-            สถิติ {'>'}{'>'}{'>'}
+            สถิติ {'>'}{'>'}{'>'} 
           </div>
         </div>
       </div>

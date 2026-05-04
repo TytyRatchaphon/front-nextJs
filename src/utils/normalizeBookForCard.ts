@@ -1,4 +1,5 @@
 import type { UniversalBook } from "@/types/api";
+import { normalizeBookPurchaseReward } from "@/utils/bookPurchaseReward";
 
 const toFiniteNumber = (value: unknown, fallback: number = 0): number => {
   const parsed = Number(value);
@@ -40,6 +41,7 @@ export const normalizeBookForCard = (book: UniversalBook): UniversalBook => {
     isNewEp: Boolean(book.isNewEp),
     discount: book.discount || undefined,
     discount_ep_count: book.discount_ep_count ?? null,
+    ep_purchase_reward: normalizeBookPurchaseReward(book),
   };
 };
 

@@ -7,6 +7,7 @@ import {
   fetchLeaderboardUsers,
   fetchRankingBooks,
   fetchRankingCategories,
+  normalizeRankingContentTab,
 } from "./rankingApi";
 
 vi.mock("../apiClient", () => ({
@@ -214,6 +215,15 @@ describe("rankingApi", () => {
   });
 
   describe("fetchRankingCategories", () => {
+    it("normalizes supported ranking content tabs and falls back to novel", () => {
+      expect(normalizeRankingContentTab("novel")).toBe("novel");
+      expect(normalizeRankingContentTab("novel_pack")).toBe("novel_pack");
+      expect(normalizeRankingContentTab("trancn")).toBe("trancn");
+      expect(normalizeRankingContentTab("fiction")).toBe("fiction");
+      expect(normalizeRankingContentTab("unknown")).toBe("novel");
+      expect(normalizeRankingContentTab()).toBe("novel");
+    });
+
     it("returns data only when code is 200", async () => {
       mockedApiClient.get.mockResolvedValueOnce({
         data: {
@@ -224,9 +234,12 @@ describe("rankingApi", () => {
           },
         },
       });
-      await expect(fetchRankingCategories()).resolves.toEqual({
+      await expect(fetchRankingCategories("fiction")).resolves.toEqual({
         left: { id: 1, name: "Novel" },
         right: { id: 2, name: "User" },
+      });
+      expect(mockedApiClient.get).toHaveBeenCalledWith("/books/ranking/categories", {
+        params: { tab: "fiction" },
       });
 
       mockedApiClient.get.mockResolvedValueOnce({ data: { code: 500, data: {} } });
@@ -248,9 +261,9 @@ describe("rankingApi", () => {
         },
       });
 
-      const result = await fetchCategoryRankingBooks(4, "weekly", 8);
+      const result = await fetchCategoryRankingBooks("all", "weekly", 8, "trancn");
 
-      expect(mockedApiClient.get).toHaveBeenCalledWith("/books/ranking/4/weekly?limit=8");
+      expect(mockedApiClient.get).toHaveBeenCalledWith("/books/ranking/all/weekly?tab=trancn&limit=8");
       expect(result).toEqual([{ rank: 1, book_id: 9, name: "ABC" }]);
     });
 

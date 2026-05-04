@@ -3,11 +3,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import apiClient from "../apiClient";
 import Cookies from "js-cookie";
 import { cachedRequest } from "../requestCache";
+import axios from "axios";
 import {
+  changeUserPassword,
   checkWriterStatus,
   fetchAllRanks,
   fetchHasPaymentHistory,
+  fetchProfileFrames,
   fetchPublicWriterProfile,
+  fetchUserProfileCategories,
   fetchUserShelve,
   fetchUserShelveBuy,
   fetchUserShelveContinue,
@@ -20,6 +24,7 @@ import {
   redeemCode,
   refreshToken,
   registerWriter,
+  saveUserProfileViaRoute,
   updateUserAddress,
   updateWriter,
 } from "./userApi";
@@ -41,6 +46,13 @@ vi.mock("../requestCache", () => ({
   cachedRequest: vi.fn(),
 }));
 
+vi.mock("axios", () => ({
+  default: {
+    get: vi.fn(),
+    post: vi.fn(),
+  },
+}));
+
 const mockedApiClient = apiClient as unknown as {
   get: ReturnType<typeof vi.fn>;
   post: ReturnType<typeof vi.fn>;
@@ -51,6 +63,10 @@ const mockedCookies = Cookies as unknown as {
 };
 
 const mockedCachedRequest = cachedRequest as unknown as ReturnType<typeof vi.fn>;
+const mockedAxios = axios as unknown as {
+  get: ReturnType<typeof vi.fn>;
+  post: ReturnType<typeof vi.fn>;
+};
 
 describe("userApi more coverage", () => {
   beforeEach(() => {
@@ -58,6 +74,50 @@ describe("userApi more coverage", () => {
   });
 
   describe("writer registration/profile actions", () => {
+    it("fetchUserProfileCategories normalizes category payloads", async () => {
+      mockedApiClient.get.mockResolvedValueOnce({ data: { data: [{ id: 1, name: "Fantasy" }] } });
+      await expect(fetchUserProfileCategories()).resolves.toEqual([{ id: 1, name: "Fantasy" }]);
+      expect(mockedApiClient.get).toHaveBeenCalledWith("/category");
+
+      mockedApiClient.get.mockResolvedValueOnce({ data: [{ id: 2, name: "Action" }] });
+      await expect(fetchUserProfileCategories()).resolves.toEqual([{ id: 2, name: "Action" }]);
+
+      mockedApiClient.get.mockRejectedValueOnce(new Error("category-failed"));
+      await expect(fetchUserProfileCategories()).resolves.toEqual([]);
+    });
+
+    it("changeUserPassword posts payload to changepass endpoint", async () => {
+      const payload = {
+        oldpass: "old",
+        newpass1: "new",
+        newpass2: "new",
+        token: "token",
+      };
+
+      mockedApiClient.post.mockResolvedValueOnce({ status: 200, data: { code: 200 } });
+      await expect(changeUserPassword(payload)).resolves.toEqual({ status: 200, data: { code: 200 } });
+      expect(mockedApiClient.post).toHaveBeenCalledWith("/user/changepass", payload);
+    });
+
+    it("fetchProfileFrames and saveUserProfileViaRoute call Next API routes with auth", async () => {
+      mockedAxios.get.mockResolvedValueOnce({ data: { code: 200, data: { frames: [] } } });
+      await expect(fetchProfileFrames("Bearer frame")).resolves.toEqual({ code: 200, data: { frames: [] } });
+      expect(mockedAxios.get).toHaveBeenCalledWith("/api/getframes", {
+        headers: { Authorization: "Bearer frame" },
+        timeout: 30000,
+      });
+
+      const formData = new FormData();
+      mockedAxios.post.mockResolvedValueOnce({ data: { code: 200, data: { token: "new-token" } } });
+      await expect(saveUserProfileViaRoute(formData, "Bearer save")).resolves.toEqual({
+        code: 200,
+        data: { token: "new-token" },
+      });
+      expect(mockedAxios.post).toHaveBeenCalledWith("/api/save_profile", formData, {
+        headers: { Authorization: "Bearer save" },
+      });
+    });
+
     it("registerWriter and updateWriter call same endpoint with auth headers", async () => {
       mockedApiClient.post.mockResolvedValueOnce({ data: { ok: true } });
       await expect(

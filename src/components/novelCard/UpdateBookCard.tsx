@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import { Heart, Eye, AlignJustify } from 'lucide-react';
 import Link from 'next/link';
+import { BookPurchaseRewardBadge } from './BookPurchaseRewardBadge';
 
 interface Chapter {
   id: string;
@@ -21,6 +22,10 @@ interface UpdateBookCardProps {
     title: string;
     author: string;
     cover: string;
+    ep_purchase_reward?: {
+      has_promotion: boolean;
+      img: string | null;
+    } | null;
     chapters: Chapter[];
     stats: BookStats;
   };
@@ -78,6 +83,7 @@ const UpdateBookCard = ({ book }: UpdateBookCardProps) => {
                     <div>ENJOY</div>
                     <div className="mt-auto">BOOK</div>
                 </div>
+                <BookPurchaseRewardBadge book={data} className="min-w-[22px] max-w-[40px]" />
              </div>
           </Link>
         ) : (

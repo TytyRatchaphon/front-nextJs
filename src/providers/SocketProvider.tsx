@@ -9,8 +9,27 @@ import { parseJwtToken } from '@/utils/jwtParser';
 const isSessionIdUnknownError = (message: string | undefined) =>
   typeof message === 'string' && message.toLowerCase().includes('session id unknown');
 
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL?.trim() || process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
+const SOCKET_PATH = '/socket.io/';
 const SOCKET_HEALTH_CHECK_MS = 30_000;
 const SOCKET_RECREATE_DELAY_MS = 800;
+const SHOULD_LOG_SOCKET_DEBUG = process.env.NODE_ENV !== 'production';
+
+const getBrowserOnlineState = () =>
+  typeof navigator === 'undefined' ? true : navigator.onLine;
+
+const connectSocketIfOnline = (socket: Socket, source: string) => {
+  if (!getBrowserOnlineState()) {
+    if (SHOULD_LOG_SOCKET_DEBUG) {
+      console.warn('[socket] skip connect because browser is offline', { source });
+    }
+    return;
+  }
+
+  if (!socket.connected) {
+    socket.connect();
+  }
+};
 
 interface SocketContextType {
   socket: Socket | null;
@@ -35,7 +54,9 @@ export default function SocketProvider({
   const [isConnected, setIsConnected] = useState(false);
   const [reconnectNonce, setReconnectNonce] = useState(0);
   const recreateTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const socketRef = React.useRef<Socket | null>(null);
   const { token: authToken, user } = useAuthStore() as any;
+  const hasAuthToken = Boolean(authToken);
 
   const requestSocketRecreate = React.useCallback(() => {
     if (recreateTimerRef.current) {
@@ -61,9 +82,15 @@ export default function SocketProvider({
   const fullname = user?.fullname;
 
   useEffect(() => {
-    // ใช้ URL เดียวกับ API โดย fallback ไปที่ค่า default ถ้าไม่มี env
-    const socketUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.220.214:3331';
-    
+    if (!SOCKET_URL) {
+      console.warn('Socket URL is not configured');
+      socketRef.current?.disconnect();
+      socketRef.current = null;
+      setSocket(null);
+      setIsConnected(false);
+      return;
+    }
+
     // Retrieve token from store or cookie fallback
     let token = authToken;
     let currentUser = user;
@@ -79,6 +106,8 @@ export default function SocketProvider({
     
     // 1. If no token (Guest) or waiting for user ID resolution, do not connect socket.
     if (!token || !currentUserId) {
+        socketRef.current?.disconnect();
+        socketRef.current = null;
         setSocket(null); // Ensure we don't hold onto a stale socket
         setIsConnected(false);
         return;
@@ -89,16 +118,18 @@ export default function SocketProvider({
       'fullname': currentUser?.fullname || 'undefined'
     }); */
 
-    // 2. Initialize Socket
-    const socketInstance = io(socketUrl, {
-      transports: ['websocket'], 
+    // 2. Create one socket for the current authenticated user/environment.
+    const socketInstance = io(SOCKET_URL, {
+      path: SOCKET_PATH,
+      transports: ['websocket'],
       reconnection: true,
-      reconnectionAttempts: 999999,
-      reconnectionDelay: 2000,
-      reconnectionDelayMax: 30000,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 10000,
       randomizationFactor: 0.5,
-      timeout: 10000,
-      forceNew: false,
+      timeout: 20000,
+      autoConnect: false,
+      forceNew: true,
       auth: (cb) => {
         // ⚡ Dynamic Auth: Fetch latest token on every connection/reconnection attempt
         let latestToken = useAuthStore.getState().token;
@@ -116,30 +147,108 @@ export default function SocketProvider({
       }
     });
 
-    socketInstance.on('connect', () => {
-      setIsConnected(true);
-    });
+    const getTransportName = () => socketInstance.io.engine?.transport?.name ?? 'unknown';
 
-    socketInstance.on('disconnect', (reason) => {
+    const handleConnect = () => {
+      if (!getBrowserOnlineState()) {
+        setIsConnected(false);
+        if (SHOULD_LOG_SOCKET_DEBUG) {
+          console.warn('[socket] connected while browser is offline; disconnecting', {
+            url: SOCKET_URL,
+            socketId: socketInstance.id,
+            transport: getTransportName(),
+            userId: currentUserId,
+            online: false,
+          });
+        }
+        socketInstance.disconnect();
+        return;
+      }
+
+      setIsConnected(true);
+      if (SHOULD_LOG_SOCKET_DEBUG) {
+        console.log('[socket] connected', {
+          url: SOCKET_URL,
+          socketId: socketInstance.id,
+          transport: getTransportName(),
+          userId: currentUserId,
+          online: getBrowserOnlineState(),
+        });
+      }
+    };
+
+    const handleDisconnect = (reason: Socket.DisconnectReason) => {
       setIsConnected(false);
+      if (SHOULD_LOG_SOCKET_DEBUG) {
+        console.log('[socket] disconnected', reason, {
+          online: getBrowserOnlineState(),
+        });
+      }
       if (reason === "io server disconnect") {
         window.setTimeout(() => {
-          if (!socketInstance.connected) socketInstance.connect();
+          connectSocketIfOnline(socketInstance, 'server-disconnect');
         }, SOCKET_RECREATE_DELAY_MS);
       }
-    });
+    };
 
-    socketInstance.on('connect_error', (err) => {
-        setIsConnected(false);
-        if (isSessionIdUnknownError(err?.message)) {
-          socketInstance.disconnect();
-          setSocket((currentSocket) => currentSocket === socketInstance ? null : currentSocket);
-          requestSocketRecreate();
-        }
-    });
+    const handleConnectError = (err: Error & { description?: unknown; context?: unknown }) => {
+      setIsConnected(false);
+      if (SHOULD_LOG_SOCKET_DEBUG) {
+        console.error('[socket] connect_error', {
+          url: SOCKET_URL,
+          message: err.message,
+          description: err.description,
+          context: err.context,
+          online: getBrowserOnlineState(),
+        });
+      }
+      if (isSessionIdUnknownError(err?.message)) {
+        socketInstance.disconnect();
+        setSocket((currentSocket) => currentSocket === socketInstance ? null : currentSocket);
+        requestSocketRecreate();
+      }
+    };
+
+    const handleReconnectAttempt = (attempt: number) => {
+      if (SHOULD_LOG_SOCKET_DEBUG) {
+        console.log('[socket] reconnect_attempt', attempt, {
+          online: getBrowserOnlineState(),
+        });
+      }
+
+      if (!getBrowserOnlineState()) {
+        socketInstance.disconnect();
+      }
+    };
+
+    const handleReconnect = (attempt: number) => {
+      if (SHOULD_LOG_SOCKET_DEBUG) {
+        console.log('[socket] reconnect', attempt, {
+          socketId: socketInstance.id,
+          transport: getTransportName(),
+          online: getBrowserOnlineState(),
+        });
+      }
+    };
+
+    const handleReconnectError = (err: Error & { description?: unknown }) => {
+      if (SHOULD_LOG_SOCKET_DEBUG) {
+        console.error('[socket] reconnect_error', {
+          message: err.message,
+          description: err.description,
+          online: getBrowserOnlineState(),
+        });
+      }
+    };
+
+    const handleReconnectFailed = () => {
+      if (SHOULD_LOG_SOCKET_DEBUG) {
+        console.error('[socket] reconnect_failed');
+      }
+    };
 
     // Handle force_refresh event
-    socketInstance.on('force_refresh', async () => {
+    const handleForceRefresh = async () => {
         // console.log("📢 Received force_refresh:", data);
         try {
             let currentToken = useAuthStore.getState().token;
@@ -158,16 +267,74 @@ export default function SocketProvider({
         } catch (error) {
             console.error("❌ Failed to refresh token via socket:", error);
         }
-    });
+    };
 
+    socketInstance.on('connect', handleConnect);
+    socketInstance.on('disconnect', handleDisconnect);
+    socketInstance.on('connect_error', handleConnectError);
+    socketInstance.on('force_refresh', handleForceRefresh);
+    socketInstance.io.on('reconnect_attempt', handleReconnectAttempt);
+    socketInstance.io.on('reconnect', handleReconnect);
+    socketInstance.io.on('reconnect_error', handleReconnectError);
+    socketInstance.io.on('reconnect_failed', handleReconnectFailed);
+
+    socketRef.current = socketInstance;
     setSocket(socketInstance);
+    connectSocketIfOnline(socketInstance, 'initial');
 
     return () => {
+      socketInstance.off('connect', handleConnect);
+      socketInstance.off('disconnect', handleDisconnect);
+      socketInstance.off('connect_error', handleConnectError);
+      socketInstance.off('force_refresh', handleForceRefresh);
+      socketInstance.io.off('reconnect_attempt', handleReconnectAttempt);
+      socketInstance.io.off('reconnect', handleReconnect);
+      socketInstance.io.off('reconnect_error', handleReconnectError);
+      socketInstance.io.off('reconnect_failed', handleReconnectFailed);
       socketInstance.disconnect();
+      if (socketRef.current === socketInstance) {
+        socketRef.current = null;
+      }
       setSocket((currentSocket) => currentSocket === socketInstance ? null : currentSocket);
       setIsConnected(false);
     };
-  }, [authToken, resolvedUserId, fullname, reconnectNonce, requestSocketRecreate]);
+  }, [hasAuthToken, resolvedUserId, fullname, reconnectNonce, requestSocketRecreate]);
+
+  useEffect(() => {
+      const handleOnline = () => {
+        if (SHOULD_LOG_SOCKET_DEBUG) {
+          console.log('[network] online', {
+            online: getBrowserOnlineState(),
+          });
+        }
+
+        const currentSocket = socketRef.current;
+        if (currentSocket && !currentSocket.connected) {
+          connectSocketIfOnline(currentSocket, 'browser-online');
+        }
+      };
+
+      const handleOffline = () => {
+        if (SHOULD_LOG_SOCKET_DEBUG) {
+          console.log('[network] offline', {
+            online: getBrowserOnlineState(),
+          });
+        }
+
+        const currentSocket = socketRef.current;
+        if (currentSocket) {
+          currentSocket.disconnect();
+        }
+        setIsConnected(false);
+      };
+
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+      return () => {
+          window.removeEventListener('online', handleOnline);
+          window.removeEventListener('offline', handleOffline);
+      };
+  }, []);
 
   // Handle visibility separate from socket creation
   useEffect(() => {
@@ -175,6 +342,14 @@ export default function SocketProvider({
 
       const reconnectIfNeeded = () => {
         if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+        if (!getBrowserOnlineState()) {
+          if (SHOULD_LOG_SOCKET_DEBUG) {
+            console.warn('[socket] skip connect because browser is offline', {
+              source: 'visibility-health-check',
+            });
+          }
+          return;
+        }
         if (socket.connected) return;
 
         const latestUser = useAuthStore.getState().user as any;
@@ -182,7 +357,7 @@ export default function SocketProvider({
         const latestUserId = latestUser?.user_id || latestUser?.id || latestUser?.userId;
         if (!latestToken || !latestUserId) return;
 
-        socket.connect();
+        connectSocketIfOnline(socket, 'visibility-health-check');
       };
 
       const onVisibilityChange = () => {
@@ -194,12 +369,10 @@ export default function SocketProvider({
       const healthCheck = window.setInterval(reconnectIfNeeded, SOCKET_HEALTH_CHECK_MS);
 
       document.addEventListener('visibilitychange', onVisibilityChange);
-      window.addEventListener('online', reconnectIfNeeded);
       window.addEventListener('focus', reconnectIfNeeded);
       return () => {
           window.clearInterval(healthCheck);
           document.removeEventListener('visibilitychange', onVisibilityChange);
-          window.removeEventListener('online', reconnectIfNeeded);
           window.removeEventListener('focus', reconnectIfNeeded);
       };
   }, [socket]);

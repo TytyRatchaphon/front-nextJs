@@ -8,6 +8,10 @@ import { Modal, Checkbox, Spin, Button, App, Radio, Image as AntImage } from "an
 import { useQuery } from "@tanstack/react-query";
 import { fetchBookEpisodes, refreshToken } from "@/services/apiServices";
 import apiClient from "@/services/apiClient";
+import {
+  fetchEpisodePurchaseRewardPreview,
+  type EpisodePurchaseRewardPreviewResult,
+} from "@/services/api/episodePurchaseRewardApi";
 import { useQueryClient } from '@tanstack/react-query';
 import { useUIStore } from '@/stores/uiStore';
 // import { Minus, Plus } from "lucide-react";
@@ -17,6 +21,7 @@ import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill';
 import FastTicketPill from '@/components/utility/FastTicketPill';
 import { CountdownTimer as CommonCountdownTimer } from "@/components/common/CountdownTimer";
+import { EpisodePurchaseRewardPreviewNotice } from "@/components/common/EpisodePurchaseRewardPreviewNotice";
 import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import "jwt-decode";
 import '@/utils/imageUtils';
@@ -67,6 +72,21 @@ type Book = {
   use_freecoin?: number;
   end?: string;
   status?: string;
+  ep_purchase_reward?: {
+    has_promotion: boolean;
+    campaign?: {
+      campaign_id: number;
+      buy_count: number;
+      reward_count: number;
+      badge_label: string;
+      display_title: string;
+      display_description: string;
+      icon_url: string | null;
+      detail_text: string;
+      start_date: string;
+      end_date: string | null;
+    } | null;
+  } | null;
 };
 
 function decodeToken(token: string) {
@@ -313,6 +333,50 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   const [buyAllFastTicketCount, setBuyAllFastTicketCount] = useState(0);
   const [buyAllEpisodeMap, setBuyAllEpisodeMap] = useState<Record<number, any>>({});
   const [bulkPurchaseMode, setBulkPurchaseMode] = useState<'all' | 'early'>('all');
+  const [manualRewardPreview, setManualRewardPreview] = useState<EpisodePurchaseRewardPreviewResult | null>(null);
+  const [manualRewardPreviewLoading, setManualRewardPreviewLoading] = useState(false);
+  const [buyAllRewardPreview, setBuyAllRewardPreview] = useState<EpisodePurchaseRewardPreviewResult | null>(null);
+  const [buyAllRewardPreviewLoading, setBuyAllRewardPreviewLoading] = useState(false);
+
+  const hasEpisodePurchaseReward = book.ep_purchase_reward?.has_promotion === true;
+
+  const loadEpisodeRewardPreview = async (
+    episodeIds: number[],
+    setPreview: React.Dispatch<React.SetStateAction<EpisodePurchaseRewardPreviewResult | null>>,
+    setLoading: React.Dispatch<React.SetStateAction<boolean>>,
+  ) => {
+    setPreview(null);
+    if (!hasEpisodePurchaseReward) return;
+
+    const safeEpisodeIds = episodeIds.map((id) => Number(id)).filter((id) => Number.isFinite(id));
+    if (safeEpisodeIds.length === 0) return;
+
+    try {
+      setLoading(true);
+      const preview = await fetchEpisodePurchaseRewardPreview(
+        safeEpisodeIds.length === 1 ? safeEpisodeIds[0] : safeEpisodeIds,
+      );
+      setPreview(preview);
+    } catch (error) {
+      console.warn('[episode-purchase-reward-preview] fallback to normal buy flow', error);
+      setPreview(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const closeManualBuyConfirmModal = () => {
+    setManualBuyConfirmModalOpen(false);
+    setManualRewardPreview(null);
+    setManualRewardPreviewLoading(false);
+  };
+
+  const closeBuyAllConfirmModal = () => {
+    setBuyAllModalOpen(false);
+    setBuyAllFastTicketCount(0);
+    setBuyAllRewardPreview(null);
+    setBuyAllRewardPreviewLoading(false);
+  };
 
   const handleBuyAllClick = async () => {
     if (buyLoading) return;
@@ -359,6 +423,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
       setPayWith('coin'); // Default to coin
       setFastPayWith('coin');
       setBuyAllModalOpen(true);
+      void loadEpisodeRewardPreview(selectableIds, setBuyAllRewardPreview, setBuyAllRewardPreviewLoading);
       setBuyLoading(false);
 
     } catch {
@@ -880,6 +945,24 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     );
   };
 
+  const openManualBuyConfirmModal = () => {
+    if (!isLoggedIn) {
+      setIsModalOpen(false);
+      setSelectedEpisodeIds([]);
+      openLoginModal();
+      return;
+    }
+
+    setPayWith('coin');
+    setFastPayWith(
+      selectedSummary.hasEarlyAccess
+        ? (selectedSummary.canUseFastTicket ? 'fast_ticket' : 'coin')
+        : 'coin'
+    );
+    setManualBuyConfirmModalOpen(true);
+    void loadEpisodeRewardPreview(selectedEpisodeIds, setManualRewardPreview, setManualRewardPreviewLoading);
+  };
+
 
   // Helper for Stepper
 
@@ -1108,21 +1191,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                             <Image src={payWith === 'freecoin' ? (settings?.freecoin || '/images/money-bag.png') : (settings?.coin || '/images/e-coin.png')} alt="currency" width={16} height={16} unoptimized />
                           </div>
                         )}
-                        <Button type="primary" danger disabled={selectedSummary.count === 0} onClick={() => {
-                          if (!isLoggedIn) {
-                            setIsModalOpen(false);
-                            setSelectedEpisodeIds([]);
-                            openLoginModal();
-                            return;
-                          }
-                          setPayWith('coin');
-                          setFastPayWith(
-                            selectedSummary.hasEarlyAccess
-                              ? (selectedSummary.canUseFastTicket ? 'fast_ticket' : 'coin')
-                              : 'coin'
-                          );
-                          setManualBuyConfirmModalOpen(true);
-                        }}>
+                        <Button type="primary" danger disabled={selectedSummary.count === 0} onClick={openManualBuyConfirmModal}>
                           ยืนยัน
                         </Button>
                       </div>
@@ -1404,7 +1473,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
               <Modal
                 title="ยืนยันการซื้อ"
                 open={manualBuyConfirmModalOpen}
-                onCancel={() => setManualBuyConfirmModalOpen(false)}
+                onCancel={closeManualBuyConfirmModal}
                 zIndex={2100}
                 centered
                 footer={null}
@@ -1418,6 +1487,10 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                     ตอนที่เลือก: <b>{selectedSummary.count} ตอน</b>
                   </div>
                   {renderConfirmSummary()}
+                  <EpisodePurchaseRewardPreviewNotice
+                    loading={manualRewardPreviewLoading}
+                    preview={manualRewardPreview}
+                  />
 
                   {selectedSummary.hasEarlyAccess ? (
                     <div className="space-y-3">
@@ -1464,8 +1537,8 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                   )}
 
                   <div className="flex gap-3 justify-center mt-4">
-                    <Button onClick={() => setManualBuyConfirmModalOpen(false)} className="w-1/2 !bg-white !text-red-600 hover:!border-red-600">ยกเลิก</Button>
-                    <Button type="primary" danger loading={buyLoading} className="w-1/2 !bg-red-600" onClick={async () => {
+                    <Button onClick={closeManualBuyConfirmModal} className="w-1/2 !bg-white !text-red-600 hover:!border-red-600">ยกเลิก</Button>
+                    <Button type="primary" danger loading={buyLoading || manualRewardPreviewLoading} disabled={manualRewardPreviewLoading} className="w-1/2 !bg-red-600" onClick={async () => {
                       try {
                         setBuyLoading(true);
                         const payload = buildBuyEpsPayload(selectedEpisodeIds, payWith, fastPayWith);
@@ -1502,7 +1575,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                             } catch { }
                           }
 
-                          setManualBuyConfirmModalOpen(false);
+                          closeManualBuyConfirmModal();
                           closeModal(); // Close the main selection modal too
                           setSelectedEpisodeIds([]);
                         } else {
@@ -1522,10 +1595,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
               <Modal
                 title="ยืนยันการซื้อ"
                 open={buyAllModalOpen}
-                onCancel={() => {
-                  setBuyAllModalOpen(false);
-                  setBuyAllFastTicketCount(0);
-                }}
+                onCancel={closeBuyAllConfirmModal}
                 zIndex={2100}
                 centered
                 footer={null}
@@ -1542,6 +1612,10 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                     รวมยอด: <b className="text-red-600 text-xl">{buyAllTotal.toLocaleString()}</b>
                     <Image src={payWith === 'freecoin' ? (settings?.freecoin || "/images/money-bag.png") : (settings?.coin || "/images/e-coin.png")} alt="currency" width={20} height={20} unoptimized />
                   </div>
+                  <EpisodePurchaseRewardPreviewNotice
+                    loading={buyAllRewardPreviewLoading}
+                    preview={buyAllRewardPreview}
+                  />
 
                   {buyAllFastTicketCount > 0 && (
                     <div className="text-center flex justify-center items-center gap-2 text-amber-700">
@@ -1593,8 +1667,8 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                   </div>
 
                   <div className="flex gap-3 justify-center mt-4">
-                    <Button onClick={() => setBuyAllModalOpen(false)} className="w-1/2 !bg-white !text-red-600 hover:!border-red-600">ยกเลิก</Button>
-                    <Button type="primary" danger loading={buyLoading} className="w-1/2 !bg-red-600" onClick={async () => {
+                    <Button onClick={closeBuyAllConfirmModal} className="w-1/2 !bg-white !text-red-600 hover:!border-red-600">ยกเลิก</Button>
+                    <Button type="primary" danger loading={buyLoading || buyAllRewardPreviewLoading} disabled={buyAllRewardPreviewLoading} className="w-1/2 !bg-red-600" onClick={async () => {
                       try {
                         if (buyAllFastTicketCount > 0 && payWith === 'freecoin') {
                           messageApi.error('ตอนล่วงหน้าต้องใช้ FastTicket + เหรียญ');
@@ -1654,9 +1728,8 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
                               if (refreshRes?.data?.token) updateToken(refreshRes.data.token);
                             } catch { }
                           }
-                          setBuyAllModalOpen(false);
+                          closeBuyAllConfirmModal();
                           setBuyAllIds([]);
-                          setBuyAllFastTicketCount(0);
                         } else {
                           messageApi.error(res?.data?.message || 'ไม่สามารถทำการซื้อได้');
                         }

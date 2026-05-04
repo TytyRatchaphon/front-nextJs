@@ -2,8 +2,11 @@
 import Image from 'next/image';
 import React from 'react'
 import { UniversalBook } from '../../types/api';
-import SaleGroupSVG from './SaleGroupSvg';
 import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
+import { BookPurchaseRewardBadge } from './BookPurchaseRewardBadge';
+import { BookCoverImage } from './BookCoverImage';
+import { BookStatusBadges } from './BookStatusBadges';
+import { computeEnded, formatNumber } from './bookCardUtils';
 
 
 
@@ -16,31 +19,10 @@ interface PackCardBookHorizontalProps {
 
 
 function PackCardBookHorizontal({ book, onClick, action, className = "" }: PackCardBookHorizontalProps) {
-    const [imgError, setImgError] = React.useState(false);
-
-    const formatNumber = (num: number) => {
-        if (num >= 1000 && num <= 999999) {
-            return `${(num / 1000).toFixed(0)}k`;
-        }
-        if (num >= 1000000) {
-            return `${(num / 1000000).toFixed(1)}M`;
-        }
-        return num;
-    }
 
     const imageUrl = resolveBookCoverImageSrc(book, '/images/ejb.png');
-
-    const isEndedValue = (v: any) => {
-        if (v === true) return true;
-        if (v === 1 || v === '1') return true;
-        if (!v && v !== 0) return false;
-        if (typeof v === 'number' && v >= 2) return true;
-        if (typeof v === 'string' && /^[0-9]+$/.test(v) && Number(v) >= 2) return true;
-        const s = String(v).trim().toLowerCase();
-        return s === 'end' || s === 'ended' || s === 'finished' || s === 'true' || s === 'จบ' || s === 'จบแล้ว' || s === 'complete' || s === 'completed' || s === 'finished';
-    };
-
-    const ended = isEndedValue(book.end) || isEndedValue(book.status) || isEndedValue(book.finished) || isEndedValue(book.is_end) || isEndedValue(book.isFinished) || isEndedValue(book.finish) || isEndedValue(book.ended) || isEndedValue(book.end_status) || isEndedValue(book.publish_status) || isEndedValue(book.status_id) || isEndedValue(book.status_code) || isEndedValue(book.complete) || isEndedValue(book.is_complete) || isEndedValue(book.finish_status);
+    const hasBottomSaleOverlay = Boolean(book.discount_ep_count && book.discount_ep_count > 0);
+    const ended = computeEnded(book);
 
     return (
         <div
@@ -48,27 +30,13 @@ function PackCardBookHorizontal({ book, onClick, action, className = "" }: PackC
             onClick={onClick}
         >
             {/* Image Container - Fixed Aspect Ratio 2:3 */}
-            <div className="relative w-[120px] aspect-[2/3] flex-shrink-0">
-                {!imgError ? (
-                    <Image
-                        src={imageUrl}
-                        alt={book.name ?? ''}
-                        className="w-full h-full object-cover rounded-lg relative z-0"
-                        fill
-                        loading="lazy"
-                        onError={() => {
-                            setImgError(true);
-                        }}
-                    />
-                ) : (
-                    <Image
-                        src="/images/ejb.png"
-                        alt={book.name ?? ''}
-                        className="w-full h-full object-cover rounded-lg relative z-0"
-                        fill
-                    />
-                )}
-
+            <BookCoverImage
+                src={imageUrl}
+                alt={book.name ?? ''}
+                fill
+                className="w-[120px] aspect-[2/3] flex-shrink-0"
+                imgClassName="w-full h-full object-cover rounded-lg relative z-0"
+            >
                 {/* Discount Episode Overlay */}
                 {book.discount_ep_count && book.discount_ep_count > 0 && (
                     <div className="absolute bottom-0 left-0 right-0 z-10 w-full">
@@ -85,6 +53,8 @@ function PackCardBookHorizontal({ book, onClick, action, className = "" }: PackC
                     </div>
                 )}
 
+                <BookPurchaseRewardBadge book={book} avoidBottomOverlay={hasBottomSaleOverlay} />
+
                 {/* Rank Badge */}
                 {book.rank && (
                     <div className="absolute bottom-1 right-1 w-[20px] h-[20px] transform rotate-45 rounded-lg bg-[#E60000] shadow-md border-2 border-white flex items-center justify-center z-20">
@@ -93,74 +63,14 @@ function PackCardBookHorizontal({ book, onClick, action, className = "" }: PackC
                 )}
 
                 {/* Status Badges */}
-                {(() => {
-                    let leftBadge: any = null;
-                    let rightBadge: any = null;
-                    const badges = {
-                        bestSeller: { src: "/images/bestseller.png", width: 46, height: 54, className: "absolute -top-2 -right-0" },
-                        bestSellerLeft: { src: "/images/bestseller.png", width: 46, height: 54, className: "absolute -top-2 -left-2 scale-x-[-1]" },
-                        new: { src: "/images/new.png", width: 50, height: 50, className: "absolute top-2 right-1" },
-                        discount: (percent: number | string) => ({
-                            component: (
-                                <SaleGroupSVG 
-                                    className="absolute top-0 right-2 z-20 w-[2.8rem] h-[3.9rem] drop-shadow-md" 
-                                    percent={percent} 
-                                />
-                            )
-                        }),
-                        newEp: { src: "/images/new.png", width: 36, height: 36, className: "absolute top-0 right-0" },
-                        ended: (pos: 'left' | 'right') => ({
-                            component: (
-                                <div className={`absolute top-2 ${pos === 'left' ? 'left-2' : 'right-2'} bg-gradient-to-r from-emerald-400 to-teal-500 text-white px-2 py-0.5 rounded-full text-[10px] font-medium shadow-md z-20`}>
-                                    จบแล้ว
-                                </div>
-                            )
-                        })
-                    };
-
-                    if (book.isBestSeller && book.discount) {
-                        leftBadge = { ...badges.bestSeller, className: "absolute -top-[10px] left-2" };
-                        rightBadge = badges.discount(book.discount);
-                    } else if (book.isBestSeller) {
-                        rightBadge = badges.bestSeller;
-                        if (ended) leftBadge = badges.ended('left');
-                    } else if (book.isNew && !ended) {
-                        rightBadge = badges.new;
-                    } else if (book.discount) {
-                        rightBadge = badges.discount(book.discount);
-                        if (ended) leftBadge = badges.ended('left');
-                    } else if (ended) {
-                        rightBadge = badges.ended('right');
-                    }
-
-                    return (
-                        <>
-                            {leftBadge && (leftBadge.component ? leftBadge.component : (
-                                <div className={`${leftBadge.className} z-20`}>
-                                    <Image
-                                        src={leftBadge.src}
-                                        alt="badge"
-                                        width={leftBadge.width}
-                                        height={leftBadge.height}
-                                        className="object-contain drop-shadow-md"
-                                    />
-                                </div>
-                            ))}
-                            {rightBadge && (rightBadge.component ? rightBadge.component : (
-                                <div className={`${rightBadge.className} z-20`}>
-                                    <Image
-                                        src={rightBadge.src}
-                                        alt="badge"
-                                        width={rightBadge.width}
-                                        height={rightBadge.height}
-                                        className="object-contain drop-shadow-md"
-                                    />
-                                </div>
-                            ))}
-                        </>
-                    );
-                })()}
-            </div>
+                <BookStatusBadges
+                    isBestSeller={book.isBestSeller}
+                    isNew={book.isNew}
+                    discount={book.discount}
+                    ended={ended}
+                    size="sm"
+                />
+            </BookCoverImage>
 
             {/* Content Container */}
             <div className="flex flex-col flex-1 min-w-0">

@@ -26,4 +26,3 @@ export const writeGifModePreference = (enabled: boolean): void => {
     // ignore storage write errors
   }
 };
-

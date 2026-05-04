@@ -2,18 +2,14 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback, type ClipboardEvent as ReactClipboardEvent, type MouseEvent as ReactMouseEvent } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { Alert, Button, Popover, Modal, Slider, Switch, Select, ConfigProvider, App, Input, Space } from "antd";
+import { useQuery } from "@tanstack/react-query";
+import { App } from "antd";
 import parse from "html-react-parser";
 import { BackToTopButton } from "@/components/utility/BackToTopButton";
-import Link from "next/link";
-import GifLoader from '@/components/utility/GifLoader';
 import EpisodeCommentSection from "@/components/bookdetail/EpisodeCommentSection";
-import Image from "next/image";
 import { modifiedHtml, addParagraphIndexes, obfuscateClipboardText, obfuscateHtmlTextNodes } from "@/utils/htmlUtils";
 import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { fetchBookDetail, fetchHasPaymentHistory } from "@/services/apiServices";
-import apiClient from '@/services/apiClient';
 import { useAuthStore, AuthState } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import '@/utils/imageUtils';
@@ -21,322 +17,33 @@ import '@/utils/imageUtils';
 // Hooks
 import { useContentProtection } from "@/hooks/reader/useContentProtection";
 import { useReadingProgress } from "@/hooks/reader/useReadingProgress";
-import { useReadingTheme, type ReadingThemeFontOption } from "@/hooks/reader/useReadingTheme";
-import { useEpisodeNavigation } from "@/hooks/reader/useEpisodeNavigation";
 import { useReadFreeQuota } from "@/hooks/reader/useReadFreeQuota";
 import { useLogger } from "@/hooks/useLogger";
-import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
-import { buildReadBuyPayload, getReadConfirmButtonLabel, getReadEpisodePurchaseState, getRegularEpisodePrices, type ReadFastPayMethod, type ReadPayMethod } from "./purchaseUtils";
-import { isEpisodeSequentiallyUnlockable } from "@/utils/earlyAccessUtils";
-import { requestNavbarRankRefresh } from "@/utils/rankRefresh";
-import AES from "crypto-js/aes";
-import encUtf8 from "crypto-js/enc-utf8";
+import { getReadEpisodePurchaseState } from "./purchaseUtils";
+import {
+  READER_TOGGLE_IGNORE_SELECTOR,
+} from "./readerContentUtils";
+import { fetchEpisodeContent } from "./readerApi";
+import { useEpisodeBookmarks } from "./hooks/useEpisodeBookmarks";
+import { useReadEpisodePurchase } from "./hooks/useReadEpisodePurchase";
+import { useReadEpisodeList } from "./hooks/useReadEpisodeList";
+import { useReadScheduledRelease } from "./hooks/useReadScheduledRelease";
+import { useReaderParagraphTracking } from "./hooks/useReaderParagraphTracking";
+import { useReaderObfuscationAssets } from "./hooks/useReaderObfuscationAssets";
+import { useReaderPageEffects } from "./hooks/useReaderPageEffects";
+import { ReadStickyEpisodeNav } from "./components/ReadStickyEpisodeNav";
+import { ReadQuotaModals } from "./components/ReadQuotaModals";
+import { ReadConfirmPurchaseModal } from "./components/ReadConfirmPurchaseModal";
+import { ReadBookmarkModal } from "./components/ReadBookmarkModal";
+import { ReaderContentArea } from "./components/ReaderContentArea";
+import { ReaderTopBar } from "./components/ReaderTopBar";
+import { ReadEpisodeSidebarDrawer } from "./components/ReadEpisodeSidebarDrawer";
+import { ReaderGlobalStyles } from "./components/ReaderGlobalStyles";
+import { ReadEpisodeErrorState, ReadEpisodeLoadingState } from "./components/ReadEpisodeStatusStates";
 
 type Props = {
   bookId: string;
   episodeId: string;
-};
-
-type EpisodeBookmark = {
-  id: number;
-  ep_id: number;
-  paragraph_index: number;
-  note?: string;
-  created_at?: string;
-};
-
-type ReaderConfigFont = {
-  key: string;
-  label: string;
-  fontFamily: string;
-  file?: string;
-};
-
-type ReaderConfigPayload = {
-  defaultFontKey?: string;
-  cssUrl?: string;
-  sharedCharacters?: number;
-  fonts?: unknown[];
-};
-
-type EpisodeFreeMeta = {
-  isDiscountFree: boolean;
-  freeUntilLabel: string | null;
-  displayCoinPrice: number;
-};
-
-type ReadEpisodeListItem = {
-  rawEpisodeId: string;
-  listKey: string;
-  name: string;
-  publishDatetime: string | null;
-  isBuy: boolean;
-  view: number;
-  isDiscountFree: boolean;
-  freeUntilLabel: string | null;
-  displayCoinPrice: number;
-};
-
-type ReadEpisodeListGroup = {
-  groupName: string;
-  groupKey: string;
-  expandKey: number;
-  defaultExpanded: boolean;
-  episodes: ReadEpisodeListItem[];
-};
-
-const BANGKOK_TIME_ZONE = "Asia/Bangkok";
-const READ_EPISODE_PUBLIC_SECRET_KEY = process.env.NEXT_PUBLIC_SECRET_KEY || "";
-const READER_OBFUSCATION_CSS_ID = "reader-obfuscation-css";
-const READER_OBFUSCATION_CSS_PRELOAD_ID = "reader-obfuscation-css-preload";
-const READER_TEMP_DISABLED_FONT_KEYS = ["baijamjuree", "trirong", "maitree"] as const;
-const READER_PREFERRED_DEFAULT_FONT_KEYS = ["chakrapetch", "sarabun", "thsarabunnew"] as const;
-const READER_SAFE_OBFUSCATION_FONT_KEYS = [
-  "sarabun",
-  "thsarabunnew",
-  "mali",
-  "trirong",
-  "maitree",
-] as const;
-const READER_FONT_FAMILY_BY_KEY: Record<string, string> = {
-  sarabun: "contentENJOYSarabun",
-  thsarabunnew: "contentENJOYTHSarabunNew",
-  mali: "contentENJOYMali",
-  trirong: "contentENJOYTrirong",
-  maitree: "contentENJOYMaitree",
-  taviraj: "contentENJOYTaviraj",
-  kodchasan: "contentENJOYKodchasan",
-  chakrapetch: "contentENJOYChakraPetch",
-  baijamjuree: "contentENJOYBaiJamjuree",
-};
-const READER_TOGGLE_IGNORE_SELECTOR = [
-  "a",
-  "button",
-  "input",
-  "textarea",
-  "select",
-  "label",
-  "[role='button']",
-  "[data-reader-ignore-toggle='true']",
-  ".ant-popover",
-  ".ant-popover-content",
-  ".ant-modal",
-  ".ant-modal-wrap",
-].join(",");
-
-const getEpisodeStableId = (episodeLike: any) =>
-  String(episodeLike?.ep_id ?? episodeLike?.epID ?? "");
-
-const formatFreeUntilLabel = (endDate?: string | null) => {
-  if (!endDate) return null;
-  const parsed = new Date(endDate);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return parsed.toLocaleString("th-TH", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
-const getEpisodeFreeMeta = (ep: any): EpisodeFreeMeta => {
-  const prices = getRegularEpisodePrices(ep as any);
-  const isDiscountFree = Boolean(prices.isDiscountFree) && !Boolean(ep?.isBuy);
-  return {
-    isDiscountFree,
-    freeUntilLabel: isDiscountFree ? formatFreeUntilLabel(prices.discountEndDate) : null,
-    displayCoinPrice: Number(prices.coinPrice ?? ep?.coin ?? 0),
-  };
-};
-
-const formatScheduledPublishDate = (value: Date) =>
-  new Intl.DateTimeFormat("th-TH", {
-    timeZone: BANGKOK_TIME_ZONE,
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(value);
-
-const formatScheduledPublishTime = (value: Date) =>
-  new Intl.DateTimeFormat("th-TH", {
-    timeZone: BANGKOK_TIME_ZONE,
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(value);
-
-const formatScheduledPublishCountdown = (value: Date, nowMs: number) => {
-  const diffMs = value.getTime() - nowMs;
-  if (diffMs <= 0) return null;
-
-  const totalMinutes = Math.ceil(diffMs / 60000);
-  const days = Math.floor(totalMinutes / (60 * 24));
-  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
-  const minutes = totalMinutes % 60;
-
-  const parts: string[] = [];
-  if (days > 0) parts.push(`${days} วัน`);
-  if (hours > 0) parts.push(`${hours} ชั่วโมง`);
-  if (minutes > 0 || parts.length === 0) parts.push(`${minutes} นาที`);
-
-  return `อีก ${parts.slice(0, 2).join(" ")}`;
-};
-
-const decryptEpisodePayloadOnClient = (payload: unknown): Record<string, unknown> | null => {
-  if (payload && typeof payload === "object") {
-    return payload as Record<string, unknown>;
-  }
-
-  if (typeof payload !== "string") {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(payload);
-    return parsed && typeof parsed === "object" ? parsed : null;
-  } catch {
-    if (!READ_EPISODE_PUBLIC_SECRET_KEY) return null;
-
-    try {
-      const bytes = AES.decrypt(payload, READ_EPISODE_PUBLIC_SECRET_KEY);
-      const decrypted = bytes.toString(encUtf8);
-      if (!decrypted) return null;
-
-      const parsed = JSON.parse(decrypted);
-      return parsed && typeof parsed === "object" ? parsed : null;
-    } catch {
-      return null;
-    }
-  }
-};
-
-const normalizeReaderConfigFont = (value: unknown): ReaderConfigFont | null => {
-  if (!value || typeof value !== "object") return null;
-  const data = value as {
-    key?: unknown;
-    label?: unknown;
-    fontFamily?: unknown;
-    family?: unknown;
-    file?: unknown;
-  };
-
-  const key = typeof data.key === "string" ? data.key.trim().toLowerCase() : "";
-  const label = typeof data.label === "string" ? data.label.trim() : "";
-  if (!key || !label) return null;
-
-  const candidateFamilies = [
-    typeof data.fontFamily === "string" ? data.fontFamily.trim() : "",
-    typeof data.family === "string" ? data.family.trim() : "",
-    READER_FONT_FAMILY_BY_KEY[key] || "",
-  ];
-  const resolvedFamily = candidateFamilies.find((item) => item.length > 0) || "";
-  if (!resolvedFamily) return null;
-
-  const file = typeof data.file === "string" && data.file.trim().length > 0
-    ? data.file.trim()
-    : undefined;
-
-  return {
-    key,
-    label,
-    fontFamily: resolvedFamily,
-    file,
-  };
-};
-
-const appendCacheVersion = (url: string, cacheVersion?: string) => {
-  if (!cacheVersion) return url;
-  const encodedVersion = encodeURIComponent(cacheVersion);
-  const hashIndex = url.indexOf("#");
-
-  if (hashIndex >= 0) {
-    const baseUrl = url.slice(0, hashIndex);
-    const hash = url.slice(hashIndex);
-    const separator = baseUrl.includes("?") ? "&" : "?";
-    return `${baseUrl}${separator}v=${encodedVersion}${hash}`;
-  }
-
-  const separator = url.includes("?") ? "&" : "?";
-  return `${url}${separator}v=${encodedVersion}`;
-};
-
-const resolveReaderAssetUrl = (assetUrl: string, cacheVersion?: string) => {
-  const trimmed = assetUrl.trim();
-  if (!trimmed) return "";
-
-  if (/^https?:\/\//i.test(trimmed)) {
-    try {
-      const parsed = new URL(trimmed);
-      const marker = "/reader-assets/";
-      const markerIndex = parsed.pathname.indexOf(marker);
-      if (markerIndex >= 0) {
-        const relativeAssetPath = parsed.pathname.slice(markerIndex + marker.length);
-        if (relativeAssetPath) {
-          return appendCacheVersion(`/api/read/reader-assets/${relativeAssetPath}`, cacheVersion);
-        }
-      }
-    } catch {
-      // fall through
-    }
-    return appendCacheVersion(trimmed, cacheVersion);
-  }
-
-  if (trimmed.startsWith("//")) {
-    return appendCacheVersion(`https:${trimmed}`, cacheVersion);
-  }
-
-  let normalizedPath = trimmed;
-  if (!normalizedPath.startsWith("/")) normalizedPath = `/${normalizedPath}`;
-
-  const marker = "/reader-assets/";
-  const markerIndex = normalizedPath.indexOf(marker);
-  const relativeAssetPath = markerIndex >= 0
-    ? normalizedPath.slice(markerIndex + marker.length)
-    : normalizedPath.replace(/^\/+/, "");
-
-  if (!relativeAssetPath) return "";
-
-  return appendCacheVersion(`/api/read/reader-assets/${relativeAssetPath}`, cacheVersion);
-};
-
-const resolveReaderCssUrl = (cssUrl: string, cacheVersion?: string) =>
-  resolveReaderAssetUrl(cssUrl, cacheVersion);
-
-// API function
-const fetchEpisodeContent = async (ep_id: string) => {
-  try {
-    let data: any;
-    const encodedEpisodeId = encodeURIComponent(ep_id);
-
-    const response = await fetch(`/api/read/episode/${encodedEpisodeId}`, {
-      method: "GET",
-      credentials: "same-origin",
-      cache: "no-store",
-    });
-    data = await response.json();
-
-    if (data?.code === 200 && data.data) {
-      const resolvedPayload = decryptEpisodePayloadOnClient(data.data);
-      if (resolvedPayload) {
-        return resolvedPayload;
-      }
-      throw new Error("Failed to decrypt episode content");
-    }
-
-    if (data?.code === 401) {
-      throw new Error(data.message || "คุณไม่มีสิทธิ์อ่านตอนนี้ กรุณาซื้อตอนก่อน");
-    }
-
-    throw new Error(data?.message || "ไม่พบข้อมูลตอน");
-  } catch (err: any) {
-    const status = err?.response?.status;
-    const errorData = err?.response?.data;
-    if (errorData) {
-      const msg = errorData.message || (typeof errorData === 'string' ? errorData : `ไม่สามารถดึงข้อมูลตอนได้ (${status})`);
-      throw new Error(msg);
-    }
-    throw new Error(err.message || "เกิดข้อผิดพลาดในการเชื่อมต่อ");
-  }
 };
 
 export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: Props) {
@@ -346,18 +53,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
   const { user } = useAuthStore();
   const isLoggedIn = useAuthStore((s: AuthState) => s.isLoggedIn);
   const openLoginModal = useUIStore((s: any) => s.openLoginModal);
-  const updateToken = useAuthStore((s: AuthState) => s.updateToken);
-  const queryClient = useQueryClient();
   const { notification } = App.useApp();
-  const [isBookmarkPopoverOpen, setIsBookmarkPopoverOpen] = useState(false);
-  const [bookmarkModalOpen, setBookmarkModalOpen] = useState(false);
-  const [bookmarkNote, setBookmarkNote] = useState('');
-  const [bookmarkParagraphIndex, setBookmarkParagraphIndex] = useState<number | null>(null);
-  const [editingBookmarkId, setEditingBookmarkId] = useState<number | null>(null);
-  const [selectedParagraphIndex, setSelectedParagraphIndex] = useState<number | null>(null);
-  const [trackedParagraphIndex, setTrackedParagraphIndex] = useState<number | null>(null);
-  const [showTrackedParagraphLabel, setShowTrackedParagraphLabel] = useState(true);
-  const [showTrackedParagraphArrow, setShowTrackedParagraphArrow] = useState(true);
 
   // --- 1. Fetch Data ---
   const {
@@ -381,81 +77,27 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     retry: 2,
   });
 
-  const { data: bookmarks = [], isFetching: isFetchingBookmarks } = useQuery<EpisodeBookmark[]>({
-    queryKey: ["episodeBookmarks", episodeId],
-    queryFn: async () => {
-      const res = await apiClient.get(`/user/bookmarks`, { params: { ep_id: Number(episodeId) } });
-      const list = Array.isArray(res?.data?.data) ? res.data.data : [];
-      return list
-        .map((item: any) => ({
-          id: Number(item?.id),
-          ep_id: Number(item?.ep_id),
-          paragraph_index: Number(item?.paragraph_index),
-          note: item?.note,
-          created_at: item?.created_at,
-        }))
-        .filter((item: EpisodeBookmark) => Number.isFinite(item.paragraph_index) && item.paragraph_index > 0)
-        .sort((a: EpisodeBookmark, b: EpisodeBookmark) => a.paragraph_index - b.paragraph_index);
-    },
-    enabled: !!episodeId && isLoggedIn,
-    staleTime: 30 * 1000,
-  });
-
-  const invalidateEpisodeBookmarks = useCallback(() => {
-    return queryClient.invalidateQueries({ queryKey: ["episodeBookmarks", episodeId] });
-  }, [queryClient, episodeId]);
-
-  const resetBookmarkEditorState = useCallback(() => {
-    setBookmarkModalOpen(false);
-    setBookmarkNote("");
-    setBookmarkParagraphIndex(null);
-    setEditingBookmarkId(null);
-  }, []);
-
-  const createBookmarkMutation = useMutation({
-    mutationFn: async (payload: { paragraph_index: number; note: string }) => {
-      return apiClient.post('/user/bookmarks', {
-        book_id: Number(bookId),
-        ep_id: Number(episodeId),
-        paragraph_index: payload.paragraph_index,
-        note: payload.note,
-      });
-    },
-    onSuccess: () => {
-      notification.success({ message: 'บันทึกตำแหน่งสำเร็จ', placement: 'topRight' });
-      void invalidateEpisodeBookmarks();
-      resetBookmarkEditorState();
-    },
-    onError: (err: any) => {
-      notification.error({ message: err?.response?.data?.message || 'บันทึกตำแหน่งไม่สำเร็จ', placement: 'topRight' });
-    },
-  });
-
-  const updateBookmarkMutation = useMutation({
-    mutationFn: async (payload: { bookmark_id: number; note: string }) => {
-      return apiClient.patch('/user/bookmarks', payload);
-    },
-    onSuccess: () => {
-      notification.success({ message: 'แก้ไข Bookmark สำเร็จ', placement: 'topRight' });
-      void invalidateEpisodeBookmarks();
-      resetBookmarkEditorState();
-    },
-    onError: (err: any) => {
-      notification.error({ message: err?.response?.data?.message || 'แก้ไข Bookmark ไม่สำเร็จ', placement: 'topRight' });
-    },
-  });
-
-  const deleteBookmarkMutation = useMutation({
-    mutationFn: async (bookmarkId: number) => {
-      return apiClient.delete('/user/bookmarks', { data: { bookmark_ids: [bookmarkId] } });
-    },
-    onSuccess: () => {
-      notification.success({ message: 'ลบ Bookmark สำเร็จ', placement: 'topRight' });
-      void invalidateEpisodeBookmarks();
-    },
-    onError: (err: any) => {
-      notification.error({ message: err?.response?.data?.message || 'ลบ Bookmark ไม่สำเร็จ', placement: 'topRight' });
-    },
+  const {
+    bookmarks,
+    isFetchingBookmarks,
+    isBookmarkPopoverOpen,
+    setIsBookmarkPopoverOpen,
+    bookmarkModalOpen,
+    bookmarkNote,
+    setBookmarkNote,
+    bookmarkParagraphIndex,
+    editingBookmarkId,
+    isSavingBookmark,
+    resetBookmarkEditorState,
+    openBookmarkModalAtIndex,
+    openEditBookmarkModal,
+    handleDeleteBookmark,
+    submitBookmarkModal,
+  } = useEpisodeBookmarks({
+    bookId,
+    episodeId,
+    isLoggedIn,
+    notification,
   });
 
   // --- 2. Custom Hooks ---
@@ -472,100 +114,6 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
 
   const { contentRef, showNav, setShowNav } = useReadingProgress(bookId, episodeId, user);
 
-  const readerConfig = useMemo<ReaderConfigPayload | null>(() => {
-    const config = (episode as any)?.readerConfig;
-    if (!config || typeof config !== "object") return null;
-    return config as ReaderConfigPayload;
-  }, [episode]);
-
-  const normalizedReaderFonts = useMemo<ReaderConfigFont[]>(() => {
-    if (!Array.isArray(readerConfig?.fonts)) return [];
-
-    const uniqueByKey = new Map<string, ReaderConfigFont>();
-    readerConfig.fonts.forEach((item) => {
-      const normalized = normalizeReaderConfigFont(item);
-      if (!normalized) return;
-      if (READER_TEMP_DISABLED_FONT_KEYS.includes(normalized.key as (typeof READER_TEMP_DISABLED_FONT_KEYS)[number])) {
-        return;
-      }
-      if (!uniqueByKey.has(normalized.key)) {
-        uniqueByKey.set(normalized.key, normalized);
-      }
-    });
-
-    return Array.from(uniqueByKey.values());
-  }, [readerConfig]);
-
-  const readerFontFamilies = useMemo<ReadingThemeFontOption[]>(() => {
-    return normalizedReaderFonts.map((font) => ({
-      key: font.key,
-      label: font.label,
-      family: font.fontFamily,
-    }));
-  }, [normalizedReaderFonts]);
-
-  const readerDefaultFontKey = useMemo(() => {
-    if (readerFontFamilies.length === 0) return "sarabun";
-    const candidate = readerConfig?.defaultFontKey;
-    if (
-      typeof candidate === "string"
-      && readerFontFamilies.some((font) => font.key === candidate)
-      && !READER_TEMP_DISABLED_FONT_KEYS.includes(candidate as (typeof READER_TEMP_DISABLED_FONT_KEYS)[number])
-      && READER_SAFE_OBFUSCATION_FONT_KEYS.includes(candidate as (typeof READER_SAFE_OBFUSCATION_FONT_KEYS)[number])
-    ) {
-      return candidate;
-    }
-
-    const preferredDefault = READER_PREFERRED_DEFAULT_FONT_KEYS.find((preferredKey) =>
-      readerFontFamilies.some((font) => font.key === preferredKey)
-    );
-    if (preferredDefault) return preferredDefault;
-
-    const safeFallback = READER_SAFE_OBFUSCATION_FONT_KEYS.find((safeKey) =>
-      readerFontFamilies.some((font) => font.key === safeKey)
-    );
-    if (safeFallback) return safeFallback;
-
-    return readerFontFamilies[0].key;
-  }, [readerConfig, readerFontFamilies]);
-
-  const readerAssetCacheVersion = useMemo(() => {
-    if (!readerConfig) return episodeId;
-
-    const sharedCharacters = Number.isFinite(readerConfig.sharedCharacters)
-      ? String(readerConfig.sharedCharacters)
-      : "";
-    const defaultFontKey = typeof readerConfig.defaultFontKey === "string"
-      ? readerConfig.defaultFontKey.trim().toLowerCase()
-      : "";
-    const fontSignature = Array.isArray(readerConfig.fonts)
-      ? readerConfig.fonts
-        .map((font) => {
-          const data = font as { key?: unknown; file?: unknown; source?: unknown };
-          const key = typeof data.key === "string" ? data.key.trim().toLowerCase() : "";
-          const file = typeof data.file === "string" ? data.file.trim() : "";
-          const source = typeof data.source === "string" ? data.source.trim() : "";
-          if (!key && !file && !source) return "";
-          return `${key}:${file || source}`;
-        })
-        .filter(Boolean)
-        .join("|")
-      : "";
-
-    return [sharedCharacters, defaultFontKey, fontSignature]
-      .filter(Boolean)
-      .join(":");
-  }, [readerConfig]);
-
-  const readerCssHref = useMemo(() => {
-    if (!readerConfig?.cssUrl || typeof readerConfig.cssUrl !== "string") return "";
-    return resolveReaderCssUrl(readerConfig.cssUrl, readerAssetCacheVersion);
-  }, [readerConfig, readerAssetCacheVersion]);
-
-  const hasReaderObfuscationConfig = readerFontFamilies.length > 0 && Boolean(readerCssHref);
-  const [isReaderCssReady, setIsReaderCssReady] = useState(false);
-  const [isReaderAssetsReady, setIsReaderAssetsReady] = useState(false);
-
   const {
     fontSize, setFontSize,
     fontFamily, setFontFamily,
@@ -575,37 +123,15 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     isAutoScroll, setIsAutoScroll,
     scrollSpeed, setScrollSpeed,
     currentBg, currentFontFamily,
-    fontFamilies, bgColors
-  } = useReadingTheme(contentRef, {
-    fontFamilies: hasReaderObfuscationConfig ? readerFontFamilies : undefined,
-    defaultFontKey: hasReaderObfuscationConfig ? readerDefaultFontKey : undefined,
+    fontFamilies, bgColors,
+    readerDefaultFontKey,
+    hasReaderObfuscationConfig,
+    isReaderAssetsReady,
+  } = useReaderObfuscationAssets({
+    contentRef,
+    episodeId,
+    episode,
   });
-
-  const readerFontFileByKey = useMemo(() => {
-    const fileByKey = new Map<string, string>();
-    normalizedReaderFonts.forEach((font) => {
-      if (!font.file) return;
-      fileByKey.set(font.key, font.file);
-    });
-    return fileByKey;
-  }, [normalizedReaderFonts]);
-
-  const activeReaderFontFile = useMemo(() => {
-    if (readerFontFileByKey.size === 0) return "";
-    const selectedKey = typeof fontFamily === "string" && fontFamily.trim().length > 0
-      ? fontFamily.trim().toLowerCase()
-      : "";
-    if (selectedKey && readerFontFileByKey.has(selectedKey)) {
-      return readerFontFileByKey.get(selectedKey) || "";
-    }
-    return readerFontFileByKey.get(readerDefaultFontKey) || "";
-  }, [fontFamily, readerDefaultFontKey, readerFontFileByKey]);
-
-  const readerFontAssetHrefs = useMemo(() => {
-    if (!activeReaderFontFile) return [];
-    const href = resolveReaderAssetUrl(activeReaderFontFile);
-    return href ? [href] : [];
-  }, [activeReaderFontFile]);
 
   const renderedEpisodeHtml = useMemo(() => {
     const rawDes = episode?.des;
@@ -631,146 +157,25 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     && Boolean(renderedEpisodeHtml)
     && !isReaderAssetsReady;
 
-  useEffect(() => {
-    const oldNode = document.getElementById(READER_OBFUSCATION_CSS_ID) as HTMLLinkElement | null;
-    const oldPreloadNode = document.getElementById(READER_OBFUSCATION_CSS_PRELOAD_ID) as HTMLLinkElement | null;
 
-    if (!readerCssHref) {
-      oldNode?.remove();
-      oldPreloadNode?.remove();
-      setIsReaderCssReady(false);
-      return;
-    }
-
-    setIsReaderCssReady(false);
-
-    if (oldPreloadNode?.href !== readerCssHref) {
-      oldPreloadNode?.remove();
-      const preload = document.createElement("link");
-      preload.id = READER_OBFUSCATION_CSS_PRELOAD_ID;
-      preload.rel = "preload";
-      preload.as = "style";
-      preload.href = readerCssHref;
-      document.head.appendChild(preload);
-    }
-
-    if (oldNode?.href === readerCssHref) {
-      setIsReaderCssReady(true);
-      return;
-    }
-    oldNode?.remove();
-
-    const link = document.createElement("link");
-    link.id = READER_OBFUSCATION_CSS_ID;
-    link.rel = "stylesheet";
-    link.href = readerCssHref;
-    const handleLoad = () => setIsReaderCssReady(true);
-    const handleError = () => setIsReaderCssReady(false);
-    link.addEventListener("load", handleLoad);
-    link.addEventListener("error", handleError);
-    document.head.appendChild(link);
-
-    return () => {
-      link.removeEventListener("load", handleLoad);
-      link.removeEventListener("error", handleError);
-      const currentNode = document.getElementById(READER_OBFUSCATION_CSS_ID);
-      if (currentNode === link) currentNode.remove();
-      const currentPreloadNode = document.getElementById(READER_OBFUSCATION_CSS_PRELOAD_ID);
-      if (currentPreloadNode) currentPreloadNode.remove();
-    };
-  }, [readerCssHref]);
-
-  useEffect(() => {
-    if (readerFontAssetHrefs.length === 0) return;
-
-    const createdLinks: HTMLLinkElement[] = [];
-    readerFontAssetHrefs.forEach((href) => {
-      const existing = document.querySelector(`link[rel="preload"][as="font"][href="${href}"]`) as HTMLLinkElement | null;
-      if (existing) return;
-
-      const preload = document.createElement("link");
-      preload.rel = "preload";
-      preload.as = "font";
-      preload.href = href;
-      preload.crossOrigin = "anonymous";
-
-      const lowerHref = href.toLowerCase();
-      if (lowerHref.endsWith(".woff2")) preload.type = "font/woff2";
-      else if (lowerHref.endsWith(".woff")) preload.type = "font/woff";
-      else if (lowerHref.endsWith(".ttf")) preload.type = "font/ttf";
-      else if (lowerHref.endsWith(".otf")) preload.type = "font/otf";
-
-      document.head.appendChild(preload);
-      createdLinks.push(preload);
-    });
-
-    return () => {
-      createdLinks.forEach((link) => link.remove());
-    };
-  }, [readerFontAssetHrefs]);
-
-  useEffect(() => {
-    if (!hasReaderObfuscationConfig) {
-      setIsReaderAssetsReady(true);
-      return;
-    }
-
-    setIsReaderAssetsReady(false);
-    if (!isReaderCssReady) return;
-
-    const activeFontFamily = currentFontFamily?.family
-      || readerFontFamilies.find((font) => font.key === readerDefaultFontKey)?.family
-      || "";
-    if (!activeFontFamily) {
-      setIsReaderAssetsReady(true);
-      return;
-    }
-
-    let cancelled = false;
-    const markReady = () => {
-      if (!cancelled) setIsReaderAssetsReady(true);
-    };
-
-    const loadActiveFont = async () => {
-      try {
-        const fontApi = (document as any).fonts;
-        if (!fontApi?.load) {
-          markReady();
-          return;
-        }
-
-        try {
-          await Promise.race([
-            fontApi.load(`1em ${activeFontFamily}`),
-            new Promise((_, reject) => setTimeout(() => reject(new Error("font-load-timeout")), 2500)),
-          ]);
-        } catch {
-          // best effort
-        }
-
-        try {
-          await Promise.race([
-            fontApi.ready,
-            new Promise((resolve) => setTimeout(resolve, 700)),
-          ]);
-        } catch {
-          // ignore
-        }
-      } finally {
-        markReady();
-      }
-    };
-
-    loadActiveFont();
-    return () => {
-      cancelled = true;
-    };
-  }, [hasReaderObfuscationConfig, isReaderCssReady, currentFontFamily?.family, readerFontFamilies, readerDefaultFontKey, episodeId]);
-
-  const bookmarkedParagraphIndexes = useMemo(
-    () => new Set(bookmarks.map((b) => b.paragraph_index).filter((n) => Number.isFinite(n) && n > 0)),
-    [bookmarks]
-  );
+  const {
+    selectedParagraphIndex,
+    setSelectedParagraphIndex,
+    trackedParagraphIndex,
+    showTrackedParagraphLabel,
+    setShowTrackedParagraphLabel,
+    showTrackedParagraphArrow,
+    setShowTrackedParagraphArrow,
+    getCurrentParagraphIndex,
+    scrollToParagraph,
+  } = useReaderParagraphTracking({
+    contentRootRef: innerContentRef,
+    isFocused,
+    renderedEpisodeHtml,
+    bookmarks,
+    notification,
+    onCloseBookmarkPopover: () => setIsBookmarkPopoverOpen(false),
+  });
 
   const shouldIgnoreReaderToggle = (target: EventTarget | null) => {
     if (!(target instanceof Element)) return false;
@@ -801,69 +206,6 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     setShowNav((prev) => !prev);
   };
 
-  const scrollToParagraph = (paragraphIndex: number) => {
-    const root = innerContentRef.current;
-    if (!root) return;
-
-    const target = root.querySelector(`[data-paragraph-index="${paragraphIndex}"]`) as HTMLElement | null;
-    if (!target) {
-      notification.warning({
-        message: 'ไม่พบตำแหน่งที่บุ๊กมาร์กไว้',
-        description: `ย่อหน้าที่ ${paragraphIndex} ไม่มีในเนื้อหาปัจจุบัน`,
-        placement: 'topRight',
-      });
-      return;
-    }
-
-    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    target.classList.add('bookmark-highlight');
-    window.setTimeout(() => target.classList.remove('bookmark-highlight'), 1400);
-    setIsBookmarkPopoverOpen(false);
-  };
-
-  const getCurrentParagraphIndex = () => {
-    const root = innerContentRef.current;
-    if (!root) return null;
-
-    const nodes = Array.from(root.querySelectorAll('[data-paragraph-index]')) as HTMLElement[];
-    if (nodes.length === 0) return null;
-
-    const anchorY = window.innerHeight * 0.35;
-    let closestIdx: number | null = null;
-    let closestDistance = Number.POSITIVE_INFINITY;
-
-    nodes.forEach((node) => {
-      const idx = Number(node.getAttribute('data-paragraph-index'));
-      if (!Number.isFinite(idx)) return;
-
-      const rect = node.getBoundingClientRect();
-      const topDistance = Math.abs(rect.top - anchorY);
-
-      if (topDistance < closestDistance) {
-        closestDistance = topDistance;
-        closestIdx = idx;
-      }
-    });
-
-    return closestIdx;
-  };
-
-  const openBookmarkModalAtIndex = useCallback((paragraphIndex: number) => {
-    const existing = bookmarks.find((item) => item.paragraph_index === paragraphIndex);
-    if (existing) {
-      setEditingBookmarkId(existing.id);
-      setBookmarkParagraphIndex(existing.paragraph_index);
-      setBookmarkNote(existing.note || '');
-      setBookmarkModalOpen(true);
-      return;
-    }
-
-    setEditingBookmarkId(null);
-    setBookmarkParagraphIndex(paragraphIndex);
-    setBookmarkNote('');
-    setBookmarkModalOpen(true);
-  }, [bookmarks]);
-
   const openCreateBookmarkModal = () => {
     if (!isLoggedIn) {
       openLoginModal();
@@ -888,201 +230,23 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     openBookmarkModalAtIndex(paragraphIndex);
   };
 
-  const openEditBookmarkModal = (bookmark: EpisodeBookmark) => {
-    setEditingBookmarkId(bookmark.id);
-    setBookmarkParagraphIndex(bookmark.paragraph_index);
-    setBookmarkNote(bookmark.note || '');
-    setBookmarkModalOpen(true);
-  };
-
-  const handleDeleteBookmark = (bookmarkId: number) => {
-    Modal.confirm({
-      title: 'ลบ Bookmark',
-      content: 'ยืนยันการลบบุ๊กมาร์กนี้?',
-      okText: 'ลบ',
-      cancelText: 'ยกเลิก',
-      okButtonProps: { danger: true, loading: deleteBookmarkMutation.isPending },
-      onOk: async () => {
-        await deleteBookmarkMutation.mutateAsync(bookmarkId);
-      },
-    });
-  };
-
-  const submitBookmarkModal = () => {
-    if (!bookmarkParagraphIndex) {
-      notification.warning({ message: 'ไม่พบย่อหน้าที่ต้องการบันทึก', placement: 'topRight' });
-      return;
-    }
-
-    if (editingBookmarkId) {
-      updateBookmarkMutation.mutate({
-        bookmark_id: editingBookmarkId,
-        note: bookmarkNote.trim() || `Bookmark ย่อหน้า ${bookmarkParagraphIndex}`,
-      });
-      return;
-    }
-
-    createBookmarkMutation.mutate({
-      paragraph_index: bookmarkParagraphIndex,
-      note: bookmarkNote.trim() || `Bookmark ย่อหน้า ${bookmarkParagraphIndex}`,
-    });
-  };
-
-  useEffect(() => {
-    const onSelectionChange = () => {
-      const root = innerContentRef.current;
-      if (!root || !isFocused) return;
-
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
-        setSelectedParagraphIndex(null);
-        return;
-      }
-
-      const range = selection.getRangeAt(0);
-      const container = range.commonAncestorContainer;
-      const targetNode = container.nodeType === Node.ELEMENT_NODE ? container as Element : container.parentElement;
-
-      if (!targetNode || !root.contains(targetNode)) {
-        setSelectedParagraphIndex(null);
-        return;
-      }
-
-      const paragraphEl = (targetNode as Element).closest('[data-paragraph-index]') as HTMLElement | null;
-      if (!paragraphEl) {
-        setSelectedParagraphIndex(null);
-        return;
-      }
-
-      const idx = Number(paragraphEl.getAttribute('data-paragraph-index'));
-      if (!Number.isFinite(idx) || idx <= 0) {
-        setSelectedParagraphIndex(null);
-        return;
-      }
-
-      setSelectedParagraphIndex(idx);
-    };
-
-    document.addEventListener('selectionchange', onSelectionChange);
-    return () => document.removeEventListener('selectionchange', onSelectionChange);
-  }, [isFocused]);
-
-  useEffect(() => {
-    if (!isFocused) {
-      setTrackedParagraphIndex(null);
-      return;
-    }
-
-    const updateTrackedParagraph = () => {
-      setTrackedParagraphIndex(getCurrentParagraphIndex());
-    };
-
-    updateTrackedParagraph();
-    window.addEventListener('scroll', updateTrackedParagraph, { passive: true });
-    window.addEventListener('resize', updateTrackedParagraph);
-
-    return () => {
-      window.removeEventListener('scroll', updateTrackedParagraph);
-      window.removeEventListener('resize', updateTrackedParagraph);
-    };
-  }, [isFocused, renderedEpisodeHtml]);
-
-  useEffect(() => {
-    const root = innerContentRef.current;
-    if (!root) return;
-
-    const nodes = Array.from(root.querySelectorAll('[data-paragraph-index]')) as HTMLElement[];
-    nodes.forEach((node) => node.classList.remove('paragraph-tracked-current'));
-
-    if (!trackedParagraphIndex || !showTrackedParagraphArrow) return;
-    const target = root.querySelector(`[data-paragraph-index="${trackedParagraphIndex}"]`) as HTMLElement | null;
-    if (target) target.classList.add('paragraph-tracked-current');
-  }, [trackedParagraphIndex, renderedEpisodeHtml, showTrackedParagraphArrow]);
-
-  useEffect(() => {
-    const root = innerContentRef.current;
-    if (!root) return;
-
-    const nodes = Array.from(root.querySelectorAll('[data-paragraph-index]')) as HTMLElement[];
-    nodes.forEach((node) => node.classList.remove('paragraph-bookmarked'));
-
-    bookmarkedParagraphIndexes.forEach((idx) => {
-      const target = root.querySelector(`[data-paragraph-index="${idx}"]`) as HTMLElement | null;
-      if (target) target.classList.add('paragraph-bookmarked');
-    });
-  }, [bookmarkedParagraphIndexes, renderedEpisodeHtml]);
-
-  const bookmarkIconStroke = currentBg?.key === 'dark' ? '#DFDFEC' : '#4B5563';
-
-  const { episodesData, displayTitle, prevEpId, nextEpId } = useEpisodeNavigation(bookId, episodeId, episode);
-  const currentEpisodeId = String(episodeId);
-  const episodeGroups = useMemo<ReadEpisodeListGroup[]>(() => {
-    const groups = Array.isArray(episodesData?.groups) ? episodesData.groups : [];
-    return groups.map((group: any, groupIndex: number) => {
-      const groupName = typeof group?.name === "string" ? group.name : `เล่ม ${groupIndex + 1}`;
-      const groupRawKey = group?.group_id ?? group?.groupID ?? groupIndex;
-      const normalizedExpandKey = Number(group?.group_id ?? groupIndex);
-      const expandKey = Number.isFinite(normalizedExpandKey) ? normalizedExpandKey : groupIndex;
-      const list = Array.isArray(group?.list) ? group.list : [];
-      const episodes = list.map((ep: any, episodeIndex: number) => {
-        const rawEpisodeId = getEpisodeStableId(ep);
-        const listKey = rawEpisodeId || `${groupRawKey}-${episodeIndex}`;
-        const { isDiscountFree, freeUntilLabel, displayCoinPrice } = getEpisodeFreeMeta(ep);
-
-        return {
-          rawEpisodeId,
-          listKey,
-          name: typeof ep?.name === "string" ? ep.name.trim() : "",
-          publishDatetime: typeof ep?.publish_datetime === "string" ? ep.publish_datetime : null,
-          isBuy: Boolean(ep?.isBuy),
-          view: Number(ep?.view ?? 0),
-          isDiscountFree,
-          freeUntilLabel,
-          displayCoinPrice,
-        };
-      });
-
-      return {
-        groupName,
-        groupKey: String(groupRawKey),
-        expandKey,
-        defaultExpanded: groupIndex === 0,
-        episodes,
-      };
-    });
-  }, [episodesData?.groups]);
-
-  const currentEpisodeMeta = useMemo<ReadEpisodeListItem | null>(() => {
-    for (const group of episodeGroups) {
-      const found = group.episodes.find((ep) => ep.rawEpisodeId === currentEpisodeId);
-      if (found) return found;
-    }
-    return null;
-  }, [episodeGroups, currentEpisodeId]);
-
-  const isCurrentEpisodeSequentiallyUnlocked = useMemo(() => {
-    const groups = Array.isArray(episodesData?.groups) ? episodesData.groups : [];
-    if (groups.length === 0) return true;
-
-    const orderedEpisodes: any[] = [];
-    for (const group of groups) {
-      const list = Array.isArray(group?.list) ? group.list : [];
-      orderedEpisodes.push(...list);
-    }
-
-    const currentIndex = orderedEpisodes.findIndex(
-      (ep: any) => String(ep?.ep_id ?? ep?.epID) === String(episodeId),
-    );
-    if (currentIndex !== -1) {
-      return isEpisodeSequentiallyUnlockable(
-        orderedEpisodes[currentIndex],
-        currentIndex,
-        orderedEpisodes,
-      );
-    }
-
-    return true;
-  }, [episodesData?.groups, episodeId]);
+  const {
+    episodesData,
+    displayTitle,
+    prevEpId,
+    nextEpId,
+    currentEpisodeId,
+    episodeGroups,
+    currentEpisodeMeta,
+    isCurrentEpisodeSequentiallyUnlocked,
+    isGroupExpanded,
+    toggleGroupExpanded,
+    collapseAllGroups,
+  } = useReadEpisodeList({
+    bookId,
+    episodeId,
+    episode,
+  });
 
   const purchaseState = useMemo(
     () => getReadEpisodePurchaseState(
@@ -1093,21 +257,16 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     [episode, bookDetail, isCurrentEpisodeSequentiallyUnlocked]
   );
 
-  const [scheduleNowMs, setScheduleNowMs] = useState(() => Date.now());
-  const scheduledPublishAt = useMemo(() => {
-    const rawValue = (episode as any)?.publish_datetime ?? currentEpisodeMeta?.publishDatetime;
-    if (!rawValue) return null;
-
-    const parsedDate = new Date(rawValue);
-    return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
-  }, [(episode as any)?.publish_datetime, currentEpisodeMeta?.publishDatetime]);
-  const isScheduledReleasePending = Boolean(
-    scheduledPublishAt && scheduledPublishAt.getTime() > scheduleNowMs
-  );
-  const scheduledReleaseCountdown = useMemo(
-    () => (scheduledPublishAt ? formatScheduledPublishCountdown(scheduledPublishAt, scheduleNowMs) : null),
-    [scheduledPublishAt, scheduleNowMs]
-  );
+  const {
+    scheduledPublishAt,
+    isScheduledReleasePending,
+    scheduledReleaseCountdown,
+  } = useReadScheduledRelease({
+    bookId,
+    episodeId,
+    episodePublishDatetime: (episode as any)?.publish_datetime,
+    currentEpisodePublishDatetime: currentEpisodeMeta?.publishDatetime,
+  });
 
   const isCurrentEpisodeOwned = Boolean((currentEpisodeMeta as any)?.isBuy ?? (episode as any)?.isBuy);
   const canTrackFreeReadQuota = Boolean(episode && renderedEpisodeHtml);
@@ -1160,32 +319,40 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
 
   // --- 3. Local State for UI ---
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState<Record<number, boolean>>({});
   const [isListPopoverOpen, setIsListPopoverOpen] = useState(false);
-
-  // Confirm Modal State
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmMethod, setConfirmMethod] = useState<ReadPayMethod | null>(null);
-  const [confirmFastMethod, setConfirmFastMethod] = useState<ReadFastPayMethod>("fast_ticket");
-  const [confirmAmount, setConfirmAmount] = useState<number | null>(null);
-  const [buyLoading, setBuyLoading] = useState(false);
-  const [cancelHover, setCancelHover] = useState(false);
   const [quotaLoginModalOpen, setQuotaLoginModalOpen] = useState(false);
   const [firstTopupModalOpen, setFirstTopupModalOpen] = useState(false);
   const allowTemporaryTextSelection = false;
 
-  const isGroupExpanded = useCallback(
-    (group: ReadEpisodeListGroup) =>
-      expandedGroups[group.expandKey] ?? group.defaultExpanded,
-    [expandedGroups]
-  );
-
-  const toggleGroupExpanded = useCallback((group: ReadEpisodeListGroup) => {
-    setExpandedGroups((prev) => {
-      const nextExpanded = !(prev[group.expandKey] ?? group.defaultExpanded);
-      return { ...prev, [group.expandKey]: nextExpanded };
-    });
-  }, []);
+  const {
+    confirmOpen,
+    setConfirmOpen,
+    confirmMethod,
+    setConfirmMethod,
+    confirmFastMethod,
+    setConfirmFastMethod,
+    confirmAmount,
+    setConfirmAmount,
+    buyLoading,
+    rewardPreview,
+    rewardPreviewLoading,
+    cancelHover,
+    setCancelHover,
+    openConfirm,
+    handleBuy,
+  } = useReadEpisodePurchase({
+    bookId,
+    episodeId,
+    episode,
+    displayTitle,
+    isLoggedIn,
+    openLoginModal,
+    notification,
+    purchaseState,
+    rpImageUrl: settings?.rp,
+    hasEpisodePurchaseReward: (bookDetail as any)?.ep_purchase_reward?.has_promotion === true,
+    log,
+  });
 
   // --- 4. Effects ---
   useEffect(() => {
@@ -1269,817 +436,28 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     hasPaymentHistory,
   ]);
 
-  // Effect to Auto-Expand Group containing current episode
-  useEffect(() => {
-    if (!currentEpisodeId || episodeGroups.length === 0) return;
-    const targetGroup = episodeGroups.find((group) =>
-      group.episodes.some((ep) => ep.rawEpisodeId === currentEpisodeId)
-    );
-    if (!targetGroup) return;
+  useReaderPageEffects({
+    isListPopoverOpen,
+    bookTitle: bookDetail?.title,
+    displayTitle,
+  });
 
-    setExpandedGroups((prev) =>
-      prev[targetGroup.expandKey] ? prev : { ...prev, [targetGroup.expandKey]: true }
-    );
-  }, [episodeGroups, currentEpisodeId]);
-
-  useEffect(() => {
-    if (!scheduledPublishAt || scheduledPublishAt.getTime() <= Date.now()) return;
-
-    setScheduleNowMs(Date.now());
-    const intervalId = window.setInterval(() => {
-      setScheduleNowMs(Date.now());
-    }, 60000);
-
-    return () => window.clearInterval(intervalId);
-  }, [scheduledPublishAt]);
-
-  useEffect(() => {
-    if (!scheduledPublishAt) return;
-
-    const remainingMs = scheduledPublishAt.getTime() - Date.now();
-    if (remainingMs <= 0) return;
-
-    const timeoutId = window.setTimeout(() => {
-      setScheduleNowMs(Date.now());
-      queryClient.invalidateQueries({ queryKey: ["episodeContent", episodeId] });
-      queryClient.invalidateQueries({ queryKey: ["bookEpisodes", bookId] });
-    }, Math.min(remainingMs + 1000, 2147483647));
-
-    return () => window.clearTimeout(timeoutId);
-  }, [scheduledPublishAt, queryClient, episodeId, bookId]);
-
-  // Effect to Scroll to Active Episode when Popover opens
-  useEffect(() => {
-    if (isListPopoverOpen) {
-      setTimeout(() => {
-        const container = document.getElementById('episode-list-container');
-        const activeItem = document.getElementById('active-episode-item');
-        
-        if (container && activeItem) {
-          const containerHeight = container.clientHeight;
-          const itemHeight = activeItem.clientHeight;
- 
-          const containerRect = container.getBoundingClientRect();
-          const itemRect = activeItem.getBoundingClientRect();
-          const relativeTop = itemRect.top - containerRect.top;
-          const currentScrollTop = container.scrollTop;
-          const newScrollTop = currentScrollTop + relativeTop - (containerHeight / 2) + (itemHeight / 2); 
-          container.scrollTo({ top: newScrollTop, behavior: 'smooth' });
-        }
-      }, 100);
-    }
-  }, [isListPopoverOpen]);
-
-  useEffect(() => {
-    if (bookDetail?.title) {
-      document.title = displayTitle ? `${displayTitle} - ${bookDetail.title} | EnjoyBook` : `${bookDetail.title} | EnjoyBook`;
-    } else {
-      document.title = "EnjoyBook - อ่านนิยายออนไลน์";
-    }
-  }, [bookDetail, displayTitle]);
-
-  useEffect(() => {
-    const disableRightClick = (e: MouseEvent) => {
-      e.preventDefault();
-    };
-
-    const disableDevTools = (e: KeyboardEvent) => {
-      // Additional key checks if needed
-      if (e.keyCode === 123) { e.preventDefault(); return false; }
-    };
-
-    document.addEventListener("contextmenu", disableRightClick);
-    document.addEventListener("keydown", disableDevTools);
-
-    return () => {
-      document.removeEventListener("contextmenu", disableRightClick);
-      document.removeEventListener("keydown", disableDevTools);
-    }
-  }, []);
-
-  const collapseAllGroups = useCallback(() => {
-    if (episodeGroups.length === 0) return;
-    const map: Record<number, boolean> = {};
-    episodeGroups.forEach((group) => { map[group.expandKey] = false; });
-    setExpandedGroups(map);
-  }, [episodeGroups]);
-
-  // --- 5. Actions ---
-  const openConfirm = (method: ReadPayMethod, amount?: number | null) => {
-    setConfirmMethod(method);
-    setConfirmFastMethod(purchaseState.canFastTicket ? 'fast_ticket' : 'coin');
-    setConfirmAmount(typeof amount === 'number' ? amount : null);
-    setConfirmOpen(true);
-  };
-
-  const handleBuy = async (method: ReadPayMethod, earlyMethod: ReadFastPayMethod = "coin") => {
-    if (!isLoggedIn) {
-      openLoginModal();
-      return;
-    }
-
-    try {
-      setBuyLoading(true);
-      const ep = episode as any;
-
-      if (purchaseState.isFastLocked) {
-        notification.error({
-          message: 'ตอนนี้ยังไม่เปิดให้ซื้อ',
-          description: 'ตอนล่วงหน้ายังไม่สามารถซื้อได้ในตอนนี้',
-          placement: 'topRight',
-        });
-        return;
-      }
-
-      if (purchaseState.isEarlyAccess && method === 'freecoin') {
-        notification.error({
-          message: 'ไม่รองรับการซื้อด้วยถุงเงิน',
-          description: 'ตอนล่วงหน้าไม่รองรับการซื้อด้วยถุงเงิน',
-          placement: 'topRight',
-        });
-        return;
-      }
-
-      const epId = String(ep?.ep_id ?? ep?.epID ?? episodeId);
-      const { coinPrice, freecoinPrice: freeCoinPrice } = getRegularEpisodePrices(ep);
-      const priceToDeduct = method === 'coin' ? coinPrice : freeCoinPrice;
-
-      const payload = buildReadBuyPayload(epId, method, earlyMethod, purchaseState);
-      const res = await apiClient.post(`/buy/eps`, payload);
-
-      if (res?.data?.code === 200) {
-        const respMsg = res.data?.message || "ซื้อสำเร็จ! กำลังอัปเดตเนื้อหา...";
-
-        log('buy_episode', 'book', bookId, {
-          episode_id: epId,
-          method,
-          price: priceToDeduct,
-          name: (episode as any)?.name || displayTitle || '',
-        });
-
-        if (res.data?.data?.rp_earned && res.data.data.rp_earned > 0) {
-          notification.success({
-            message: 'ยินดีด้วย!',
-            description: (
-              <div className="flex items-center gap-1">
-                <span>คุณได้รับ {res.data.data.rp_earned}</span>
-                {settings?.rp ? (
-                  <Image src={settings.rp} alt="RP" width={16} height={16} unoptimized className="object-contain" />
-                ) : (
-                  <span>RP</span>
-                )}
-              </div>
-            ),
-            placement: 'topRight',
-          });
-        }
-
-        notification.success({
-                message: respMsg,
-                description: respMsg,
-                icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
-                placement: 'topRight',
-            });
-        
-
-        // Optimistic Update
-        const currentUser = useAuthStore.getState().user;
-        if (currentUser) {
-          let finalCoin = (Number(currentUser.coin) || 0);
-          let finalFreeCoin = (Number(currentUser.freecoin) || 0);
-
-          if (method === 'coin') finalCoin = Math.max(0, finalCoin - (Number(priceToDeduct) || 0));
-          else if (method === 'freecoin') finalFreeCoin = Math.max(0, finalFreeCoin - (Number(priceToDeduct) || 0));
-
-          const updatedUser = { ...currentUser, coin: finalCoin, freecoin: finalFreeCoin };
-
-          // If backend returns token, use it to update (it will handle decoding)
-          const maybeToken = res?.data?.data?.token ?? res?.data?.token;
-          if (maybeToken) {
-            updateToken(maybeToken);
-          } else {
-            // If no token, just update state loosely
-            useAuthStore.getState().login(updatedUser, useAuthStore.getState().token || '');
-          }
-        }
-
-        setConfirmOpen(false);
-        await queryClient.invalidateQueries({ queryKey: ["episodeContent", episodeId] });
-        await queryClient.invalidateQueries({ queryKey: ["bookEpisodes", bookId] });
-        await requestNavbarRankRefresh(queryClient);
-      } else {
-        notification.error({
-                message: 'ซื้อไม่สำเร็จ',
-                description: res?.data?.message || "ซื้อไม่สำเร็จ",
-                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
-                placement: 'topRight',
-            });
-      }
-    } catch {
-      notification.error({
-                message: 'ซื้อไม่สำเร็จ',
-                description: "ยอดเหรียญไม่เพียงพอ",
-                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
-                placement: 'topRight',
-            });
-    } finally {
-      setBuyLoading(false);
-    }
-  };
-
-  // --- 6. Render Helpers ---
-  function ScheduledReleaseNotice({ compact = false }: { compact?: boolean }) {
-    if (!scheduledPublishAt) return null;
-
-    const scheduledPanelTheme = currentBg?.key === "dark"
-      ? {
-          panelBg: "linear-gradient(180deg, rgba(32,32,36,0.98) 0%, rgba(24,24,28,0.98) 100%)",
-          panelBorder: "rgba(255,255,255,0.08)",
-          chipBg: "rgba(227,28,61,0.14)",
-          chipText: "#fda4af",
-          text: "#f9fafb",
-          muted: "#a1a1aa",
-          accentBg: "rgba(255,255,255,0.04)",
-          accentBorder: "rgba(255,255,255,0.08)",
-        }
-      : currentBg?.key === "sepia"
-        ? {
-            panelBg: "linear-gradient(180deg, rgba(248,242,230,0.98) 0%, rgba(243,235,219,0.98) 100%)",
-            panelBorder: "#e7d9bf",
-            chipBg: "#f8e2d7",
-            chipText: "#b45309",
-            text: "#5b4636",
-            muted: "#8b735c",
-            accentBg: "rgba(255,255,255,0.45)",
-            accentBorder: "#eadbc2",
-          }
-        : {
-            panelBg: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,248,248,0.98) 100%)",
-            panelBorder: "#f3d4d7",
-            chipBg: "#fff1f2",
-            chipText: "#be123c",
-            text: "#1f2937",
-            muted: "#6b7280",
-            accentBg: "#fff8f8",
-            accentBorder: "#f7d7db",
-          };
-
-    if (compact) {
-      return (
-        <div
-          className="mx-auto max-w-md rounded-2xl border px-4 py-4 text-left shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
-          style={{
-            background: scheduledPanelTheme.panelBg,
-            borderColor: scheduledPanelTheme.panelBorder,
-          }}
-        >
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <div
-                className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em]"
-                style={{
-                  backgroundColor: scheduledPanelTheme.chipBg,
-                  color: scheduledPanelTheme.chipText,
-                }}
-              >
-                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                กำหนดเผยแพร่
-              </div>
-              <p className="mt-3 text-sm font-semibold" style={{ color: scheduledPanelTheme.text }}>
-                เปิดอ่าน {formatScheduledPublishDate(scheduledPublishAt)} เวลา {formatScheduledPublishTime(scheduledPublishAt)} น.
-              </p>
-              <p className="mt-1 text-xs" style={{ color: scheduledPanelTheme.muted }}>
-                ตอนนี้ยังไม่ถึงเวลาเผยแพร่ แต่สามารถปลดล็อกแบบตอนล่วงหน้าได้
-              </p>
-            </div>
-            {scheduledReleaseCountdown && (
-              <div
-                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold"
-                style={{
-                  backgroundColor: scheduledPanelTheme.chipBg,
-                  color: scheduledPanelTheme.chipText,
-                }}
-              >
-                <span className="h-2 w-2 rounded-full bg-current" />
-                {scheduledReleaseCountdown}
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="py-12">
-        <div
-          className="mx-auto max-w-xl rounded-[28px] border px-6 py-7 text-center shadow-[0_20px_60px_rgba(15,23,42,0.08)]"
-          style={{
-            background: scheduledPanelTheme.panelBg,
-            borderColor: scheduledPanelTheme.panelBorder,
-          }}
-        >
-          <div
-            className="mx-auto inline-flex items-center gap-2 rounded-full px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em]"
-            style={{
-              backgroundColor: scheduledPanelTheme.chipBg,
-              color: scheduledPanelTheme.chipText,
-            }}
-          >
-            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2m5-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            กำหนดเผยแพร่
-          </div>
-
-          <div className="mt-5">
-            <p className="text-sm font-medium" style={{ color: scheduledPanelTheme.muted }}>
-              ตอนนี้ยังไม่เปิดให้อ่าน
-            </p>
-            <div className="mt-3 flex items-end justify-center gap-2">
-              <span className="text-[2rem] font-semibold leading-none" style={{ color: scheduledPanelTheme.text }}>
-                {formatScheduledPublishTime(scheduledPublishAt)}
-              </span>
-              <span className="pb-1 text-sm font-medium" style={{ color: scheduledPanelTheme.muted }}>
-                น.
-              </span>
-            </div>
-            <p className="mt-2 text-sm" style={{ color: scheduledPanelTheme.muted }}>
-              เผยแพร่วันที่ {formatScheduledPublishDate(scheduledPublishAt)} เวลาไทย
-            </p>
-          </div>
-
-          <div
-            className="mt-5 rounded-2xl border px-4 py-4"
-            style={{
-              backgroundColor: scheduledPanelTheme.accentBg,
-              borderColor: scheduledPanelTheme.accentBorder,
-            }}
-          >
-            <p className="text-sm font-medium" style={{ color: scheduledPanelTheme.text }}>
-              ระบบจะเปิดตอนนี้ให้อ่านอัตโนมัติเมื่อถึงเวลา
-            </p>
-            {scheduledReleaseCountdown && (
-              <div
-                className="mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold"
-                style={{
-                  backgroundColor: scheduledPanelTheme.chipBg,
-                  color: scheduledPanelTheme.chipText,
-                }}
-              >
-                <span className="h-2 w-2 rounded-full bg-current" />
-                {scheduledReleaseCountdown}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  function ScheduledReleaseFallback() {
-    return <ScheduledReleaseNotice />;
-  }
-
-  function PurchaseFallback() {
-    const ep = episode as any;
-    const showScheduledReleaseNotice = isScheduledReleasePending;
-
-    if (showScheduledReleaseNotice && !purchaseState.isEarlyAccess) {
-      return <ScheduledReleaseFallback />;
-    }
-
-    if (isQuotaHardBlocked) {
-      const isGuestLimit = true;
-      return (
-        <div className="text-center py-12">
-          <Image src={settings?.img_buyep || '/images/unlock.png'} alt="Free quota reached" width={100} height={100} unoptimized className="justify-center mx-auto" />
-          <p className="mt-2 text-base font-semibold text-gray-700">
-            {isGuestLimit ? 'สิ้นสุดโควต้าอ่านฟรี' : 'อ่านฟรีครบ 40 ตอนแล้ว'}
-          </p>
-          <p className="mt-1 text-sm text-gray-500">
-            {isGuestLimit ? 'เข้าสู่ระบบเพื่ออ่านฟรีต่ออีก 30 ตอน' : 'ปลดล็อกตอนเพื่ออ่านต่อได้ทันที'}
-          </p>
-          <div className="mt-4 flex items-center justify-center gap-2">
-            {isGuestLimit ? (
-              <button
-                type="button"
-                onClick={openLoginModal}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
-              >
-                เข้าสู่ระบบเพื่ออ่านต่อ
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => router.push('/store')}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
-              >
-                เติมเหรียญเพื่ออ่านต่อ
-              </button>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    const { coinPrice, freecoinPrice, hasDiscount } = getRegularEpisodePrices(ep);
-    const { isEarlyAccess, canFastTicket, canFastCoin, isFastLocked, fastTicketPrice, fastCoinPrice, canUseFreecoin } = purchaseState;
-    const baseRegularPrice = Number(coinPrice ?? 0);
-    const isDiscountFree = Boolean(purchaseState.isDiscountFree) && !isEarlyAccess;
-    const freeUntilLabel = isDiscountFree ? formatFreeUntilLabel(purchaseState.discountEndDate) : null;
-
-    if (isDiscountFree || (!isEarlyAccess && baseRegularPrice <= 0)) {
-      return (
-        <div className="text-center py-12">
-          <Image src={settings?.img_buyep || '/images/unlock.png'} alt="Free Episode" width={100} height={100} unoptimized className="justify-center mx-auto" />
-            <p className="text-sm font-semibold text-emerald-700">ตอนนี้เปิดอ่านฟรี</p>
-          {freeUntilLabel && (
-              <p className="mt-1 text-xs text-emerald-700">{`อ่านฟรีถึง ${freeUntilLabel}`}</p>
-          )}
-        </div>
-      );
-    }
-
-    return (
-      <div className="text-center py-12">
-        {showScheduledReleaseNotice && purchaseState.isEarlyAccess && (
-          <div className="mb-5">
-            <ScheduledReleaseNotice compact />
-          </div>
-        )}
-        <Image src={settings?.img_buyep || '/images/unlock.png'} alt="No Content" width={100} height={100} unoptimized className="justify-center mx-auto" />
-        <p className="text-sm text-gray-500 mb-4">
-          {showScheduledReleaseNotice && purchaseState.isEarlyAccess
-            ? 'ตอนนี้ยังไม่ถึงเวลาเผยแพร่ แต่สามารถปลดล็อกเพื่ออ่านก่อนใครได้'
-            : 'ตอนนี้ยังไม่มีเนื้อหา หากต้องการอ่าน กรุณาซื้อ'}
-        </p>
-        {isEarlyAccess && (
-          <div className={`mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${isFastLocked ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-700'}`}>
-            <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={16} height={16} unoptimized />
-            {isFastLocked ? 'ซื้อตอนก่อนหน้า เพื่อปลดล็อค' : canFastTicket && canFastCoin ? 'ตอนล่วงหน้า เลือกจ่าย FastTicket / เหรียญ' : canFastTicket ? 'ตอนล่วงหน้า จ่ายด้วย FastTicket' : 'ตอนล่วงหน้า จ่ายด้วยเหรียญ'}
-          </div>
-        )}
-        <div className="flex items-center justify-center gap-3">
-          {canUseFreecoin && !isEarlyAccess && (
-            <button onClick={() => openConfirm("freecoin", freecoinPrice)} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg">
-              <Image src={settings?.freecoin || '/images/money-bag.png'} alt="Coin Icon" width={20} height={20} unoptimized />
-              ซื้อด้วยถุงเงิน {freecoinPrice ? `(${freecoinPrice})` : ""}
-            </button>
-          )}
-          <button onClick={() => openConfirm("coin", coinPrice)} disabled={isFastLocked || (isEarlyAccess && !canFastCoin)} className={`flex items-center gap-2 px-4 py-2 ${(canUseFreecoin && !isEarlyAccess) ? 'bg-yellow-400' : 'bg-red-600'} text-white rounded-lg disabled:opacity-60 disabled:cursor-not-allowed`}>
-            {isEarlyAccess ? (
-              <div className="flex items-center gap-2 text-white font-medium">
-                {canFastTicket && (
-                  <div className="inline-flex items-center gap-1">
-                    <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="Fast Ticket" width={18} height={18} unoptimized />
-                    <span>{fastTicketPrice}</span>
-                  </div>
-                )}
-                {canFastTicket && canFastCoin && <span className="opacity-80">/</span>}
-                {canFastCoin && (
-                  <div className="inline-flex items-center gap-1">
-                    <Image src={settings?.coin || '/images/e-coin.png'} alt="Coin Icon" width={18} height={18} unoptimized />
-                    <span>{fastCoinPrice}</span>
-                  </div>
-                )}
-                {baseRegularPrice > 0 && (
-                  <>
-                    <span className="opacity-80">+</span>
-                    <div className="inline-flex items-center gap-1">
-                      <Image src={settings?.coin || '/images/e-coin.png'} alt="regular coin" width={18} height={18} unoptimized />
-                      {canUseFreecoin && (
-                        <Image src={settings?.freecoin || '/images/money-bag.png'} alt="regular freecoin" width={18} height={18} unoptimized />
-                      )}
-                      <span>{baseRegularPrice}</span>
-                    </div>
-                  </>
-                )}
-              </div>
-            ) : (
-              <>
-                <Image src={settings?.coin || '/images/e-coin.png'} alt="Coin Icon" width={20} height={20} unoptimized />
-                <div className="flex items-center gap-1 text-white">
-                  <span>ซื้อด้วยเหรียญ</span>
-                  {hasDiscount ? (
-                    <>
-                      <span className="line-through opacity-60 text-xs text-white">({ep?.coin})</span>
-                      <span className="font-bold text-white">({coinPrice})</span>
-                    </>
-                  ) : (
-                    <span className="text-white">{ep?.coin ? `(${ep.coin})` : ""}</span>
-                  )}
-                </div>
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const renderReadConfirmSummary = () => {
-    const ep = episode as any;
-    const { coinPrice, freecoinPrice } = getRegularEpisodePrices(ep);
-    const { isEarlyAccess, fastTicketPrice, fastCoinPrice } = purchaseState;
-
-    if (isEarlyAccess) {
-      const regularPaymentIcon = confirmMethod === 'freecoin'
-        ? (settings?.freecoin || '/images/money-bag.png')
-        : (settings?.coin || '/images/e-coin.png');
-      const regularPaymentAmount = confirmMethod === 'freecoin' ? freecoinPrice : coinPrice;
-      const isCombinedCoinSummary = confirmFastMethod === 'coin' && confirmMethod === 'coin';
-      const combinedCoinAmount = Number(fastCoinPrice ?? 0) + Number(regularPaymentAmount ?? 0);
-
-      return (
-        <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-center">
-          <div className="text-xs font-medium text-gray-500 mb-2">สรุปราคา</div>
-          <div className="flex flex-wrap items-center justify-center gap-2 text-base font-semibold text-red-600">
-            {isCombinedCoinSummary ? (
-              <div className="inline-flex items-center gap-1 rounded-full border border-amber-100 bg-white px-4 py-1.5 text-amber-700 shadow-sm">
-                <Image src={settings?.coin || '/images/e-coin.png'} alt="combined coin payment" width={16} height={16} unoptimized />
-                <span>{combinedCoinAmount}</span>
-              </div>
-            ) : (
-              <>
-                <div className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 border border-amber-100 text-amber-700">
-                  <Image src={confirmFastMethod === 'fast_ticket' ? (settings?.fast_ticket || '/images/fast_ticket.png') : (settings?.coin || '/images/e-coin.png')} alt="early payment" width={16} height={16} unoptimized />
-                  <span>{confirmFastMethod === 'fast_ticket' ? fastTicketPrice : fastCoinPrice}</span>
-                </div>
-                <span className="text-gray-400">+</span>
-                <div className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 border border-orange-100 text-orange-600">
-                  <Image src={regularPaymentIcon} alt="regular payment" width={16} height={16} unoptimized />
-                  <span>{regularPaymentAmount}</span>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="text-sm text-red-600 font-medium flex items-center justify-center gap-2">
-        {confirmMethod === 'freecoin' ? (
-          <Image src={settings?.freecoin || '/images/money-bag.png'} alt="ถุงเงิน" width={18} height={18} unoptimized />
-        ) : (
-          <Image src={settings?.coin || '/images/e-coin.png'} alt="เหรียญ" width={18} height={18} unoptimized />
-        )}
-        <span>{confirmAmount != null ? confirmAmount : '---'}</span>
-      </div>
-    );
-  };
-
-  const readerMenuTheme = useMemo(() => {
-    if (currentBg?.key === "dark") {
-      return {
-        panelBg: "#1a1a1a",
-        panelBorder: "#333333",
-        text: "#f3f4f6",
-        muted: "#9ca3af",
-        hoverBg: "hover:bg-white/5",
-        activeBg: "#2b2224",
-        activeText: "#fca5a5",
-        subtleBg: "#242426",
-      };
-    }
-
-    if (currentBg?.key === "sepia") {
-      return {
-        panelBg: "#f4efe3",
-        panelBorder: "#e6dbc4",
-        text: "#5b4636",
-        muted: "#8b735c",
-        hoverBg: "hover:bg-[#ede5d5]",
-        activeBg: "#efe2d0",
-        activeText: "#8c2f39",
-        subtleBg: "#efe6d6",
-      };
-    }
-
-    return {
-      panelBg: "#ffffff",
-      panelBorder: "#e5e7eb",
-      text: "#1f2937",
-      muted: "#6b7280",
-      hoverBg: "hover:bg-gray-50",
-      activeBg: "#fef2f2",
-      activeText: "#dc2626",
-      subtleBg: "#f3f4f6",
-    };
-  }, [currentBg?.key]);
   const readerPopoverZIndex = 1200;
 
-  const textAlignOptions = useMemo(
-    () => ([
-      { key: 'left', label: 'ชิดซ้าย' },
-      { key: 'center', label: 'กึ่งกลาง' },
-      { key: 'justify', label: 'เต็มบรรทัด' },
-    ] as const),
-    []
-  );
-
-  const fontFamilyOptions = useMemo(
-    () => fontFamilies.map((f) => ({
-      value: f.key,
-      label: (
-        <span style={hasReaderObfuscationConfig ? undefined : { fontFamily: f.family }}>
-          ฟอนต์ {f.label}
-        </span>
-      ),
-    })),
-    [fontFamilies, hasReaderObfuscationConfig]
-  );
-
-  const resetReaderSettings = useCallback(() => {
-    setFontSize(20);
-    setFontFamily(readerDefaultFontKey);
-    setBgColor('sepia');
-    setIsBold(false);
-    setTextAlign('left');
-    setIsAutoScroll(false);
-    setScrollSpeed(0.3);
-    setShowTrackedParagraphLabel(true);
-    setShowTrackedParagraphArrow(true);
-  }, [
-    readerDefaultFontKey,
-    setBgColor,
-    setFontFamily,
-    setFontSize,
-    setIsAutoScroll,
-    setIsBold,
-    setScrollSpeed,
-    setShowTrackedParagraphArrow,
-    setShowTrackedParagraphLabel,
-    setTextAlign,
-  ]);
-
-  const renderEpisodesList = useCallback(() => {
-    if (episodeGroups.length === 0) return <div className="p-4">ไม่พบรายการตอน</div>;
-    return (
-      <div id="episode-list-container" className="max-h-64 w-72 overflow-auto">
-        <div className="px-3 py-2 flex justify-end">
-          <button type="button" onClick={collapseAllGroups} className="text-xs px-2 py-1 bg-gray-100 rounded">
-            ย่อทั้งหมด
-          </button>
-        </div>
-        {episodeGroups.map((group) => {
-          const isExpanded = isGroupExpanded(group);
-          return (
-            <div key={group.groupKey} className="border-b last:border-b-0">
-              <button onClick={() => toggleGroupExpanded(group)} className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-500">
-                <span className="truncate">{group.groupName}</span>
-                <svg className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {isExpanded && (
-                <div>
-                  {group.episodes.map((ep) => {
-                    const isCurrent = ep.rawEpisodeId === currentEpisodeId;
-                    return (
-                      <button
-                        key={ep.listKey}
-                        id={isCurrent ? 'active-episode-item' : undefined}
-                        onClick={() => {
-                          navigateToEpisode(ep.rawEpisodeId, { closeList: true });
-                        }}
-                        className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${isCurrent ? 'bg-red-50 text-red-600 font-medium' : 'text-gray-700'}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="truncate text-sm">{ep.name}</div>
-                          {ep.isDiscountFree && (
-                            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">ตอนฟรี</span>
-                          )}
-                        </div>
-                        {ep.isDiscountFree && ep.freeUntilLabel && (
-                          <div className="mt-0.5 truncate text-[10px] text-emerald-700">{`อ่านฟรีถึง ${ep.freeUntilLabel}`}</div>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  }, [
-    collapseAllGroups,
-    currentEpisodeId,
-    episodeGroups,
-    isGroupExpanded,
-    navigateToEpisode,
-    toggleGroupExpanded,
-  ]);
-
-  const episodesListContent = useMemo(() => renderEpisodesList(), [renderEpisodesList]);
-
-  const sidebarEpisodesContent = useMemo(() => {
-    if (episodeGroups.length === 0) {
-      return (
-        <div className="text-center py-12">
-          <p className="text-sm text-gray-500">ไม่พบรายการตอน</p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="divide-y divide-gray-100">
-        {episodeGroups.map((group) => {
-          const isExpanded = isGroupExpanded(group);
-
-          return (
-            <div key={group.groupKey} className="bg-white">
-              <button onClick={() => toggleGroupExpanded(group)} className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors">
-                <h3 className="text-xs font-semibold text-gray-700 text-left uppercase tracking-wide">{group.groupName}</h3>
-                <svg className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {isExpanded && (
-                <div className="divide-y divide-gray-50">
-                  {group.episodes.map((ep) => {
-                    const isCurrentEpisode = ep.rawEpisodeId === currentEpisodeId;
-
-                    return (
-                      <button
-                        key={ep.listKey}
-                        onClick={() => {
-                          navigateToEpisode(ep.rawEpisodeId, { closeSidebar: true });
-                        }}
-                        className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors text-left ${isCurrentEpisode ? "bg-red-50/50 border-l-2 border-red-500" : ""}`}>
-                        <div className="flex-1 min-w-0 pr-3">
-                          <p className={`text-sm truncate ${isCurrentEpisode ? "text-red-600 font-medium" : "text-gray-700"}`}>{ep.name}</p>
-                        </div>
-                        <div className="flex-shrink-0 flex items-center gap-2">
-                          {ep.isBuy && <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>}
-                          {!ep.isBuy && ep.isDiscountFree ? (
-                            <div className="flex flex-col items-end">
-                              <span className="text-[11px] font-semibold text-emerald-700">ตอนฟรี</span>
-                              {ep.freeUntilLabel && (
-                                <span className="text-[10px] text-emerald-700">{`ถึง ${ep.freeUntilLabel}`}</span>
-                              )}
-                            </div>
-                          ) : (ep.displayCoinPrice > 0 && !ep.isBuy && (
-                            <span className="text-xs text-gray-500">{ep.displayCoinPrice}</span>
-                          ))}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  }, [
-    currentEpisodeId,
-    episodeGroups,
-    isGroupExpanded,
-    navigateToEpisode,
-    toggleGroupExpanded,
-  ]);
-
   if (isLoading && !episode) {
-    return (
-      <div className={`min-h-screen ${currentBg?.bg || "bg-white"}`}>
-        <GifLoader />
-      </div>
-    );
+    return <ReadEpisodeLoadingState currentBg={currentBg} />;
   }
 
   if (isError) {
     const errorMessage = error instanceof Error ? error.message : "ไม่สามารถโหลดเนื้อหาได้";
     const is401Error = errorMessage.includes("ไม่พบตอน") || errorMessage.includes("ไม่มีสิทธิ์");
     return (
-      <div className="bg-gray-50 min-h-screen">
-        <div className="max-w-4xl mx-auto px-4 py-12">
-          <Alert
-            message={is401Error ? "ไม่สามารถเข้าถึงตอนนี้ได้" : "เกิดข้อผิดพลาด"}
-            description={
-              <div>
-                <p>{errorMessage}</p>
-                {is401Error && (
-                  <p className="mt-2 text-sm">
-                    กรุณาตรวจสอบว่า:<br />• คุณได้ซื้อตอนนี้แล้วหรือไม่<br />• คุณได้เข้าสู่ระบบแล้วหรือไม่<br />• ลิงก์ที่คุณใช้ถูกต้องหรือไม่
-                  </p>
-                )}
-              </div>
-            }
-            type={is401Error ? "warning" : "error"}
-            showIcon
-          />
-          <div className="mt-6 text-center space-x-4">
-            <Button type="primary" onClick={() => router.back()}>← กลับหน้าก่อนหน้า</Button>
-            {is401Error && <Button onClick={() => window.location.reload()}>🔄 ลองใหม่อีกครั้ง</Button>}
-          </div>
-        </div>
-      </div>
+      <ReadEpisodeErrorState
+        errorMessage={errorMessage}
+        isAccessError={is401Error}
+        onBack={() => router.back()}
+        onRetry={() => window.location.reload()}
+      />
     );
   }
 
@@ -2091,71 +469,15 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
       onCut={(e) => e.preventDefault()}
       onContextMenu={(e) => e.preventDefault()}
     >
-      {/* Sidebar Overlay */}
-      {isSidebarOpen && (
-        <>
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-[60]" onClick={closeSidebar} />
-          <div className="fixed top-0 right-0 h-full w-full sm:w-80 bg-white shadow-xl z-[70] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between">
-              <button onClick={closeSidebar} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-            {sidebarEpisodesContent}
-            {/*
-              <div className="divide-y divide-gray-100">
-                {episodeGroups.map((group) => {
-                  const isExpanded = isGroupExpanded(group);
-                  return (
-                    <div key={group.groupKey} className="bg-white">
-                      <button onClick={() => toggleGroupExpanded(group)} className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors">
-                        <h3 className="text-xs font-semibold text-gray-700 text-left uppercase tracking-wide">{group.groupName}</h3>
-                        <svg className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                      {isExpanded && (
-                        <div className="divide-y divide-gray-50">
-                          {group.episodes.map((ep) => {
-                            const isCurrentEpisode = ep.rawEpisodeId === currentEpisodeId;
-                            return (
-                              <button
-                                key={ep.listKey}
-                                onClick={() => {
-                                  navigateToEpisode(ep.rawEpisodeId, { closeSidebar: true });
-                                }}
-                                className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors text-left ${isCurrentEpisode ? "bg-red-50/50 border-l-2 border-red-500" : ""}`}>
-                                <div className="flex-1 min-w-0 pr-3">
-                                  <p className={`text-sm truncate ${isCurrentEpisode ? "text-red-600 font-medium" : "text-gray-700"}`}>{ep.name}</p>
-                                </div>
-                                <div className="flex-shrink-0 flex items-center gap-2">
-                                  {ep.isBuy && <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>}
-                                  {!ep.isBuy && ep.isDiscountFree ? (
-                                    <div className="flex flex-col items-end">
-                                      <span className="text-[11px] font-semibold text-emerald-700">ตอนฟรี</span>
-                                      {ep.freeUntilLabel && (
-                                        <span className="text-[10px] text-emerald-700">{`ถึง ${ep.freeUntilLabel}`}</span>
-                                      )}
-                                    </div>
-                                  ) : (ep.displayCoinPrice > 0 && !ep.isBuy && (
-                                    <span className="text-xs text-gray-500">{ep.displayCoinPrice}</span>
-                                  ))}
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-12"><p className="text-sm text-gray-500">ไม่พบรายการตอน</p></div>
-            */}
-          </div>
-        </>
-      )}
+      <ReadEpisodeSidebarDrawer
+        open={isSidebarOpen}
+        episodeGroups={episodeGroups}
+        currentEpisodeId={currentEpisodeId}
+        isGroupExpanded={isGroupExpanded}
+        toggleGroupExpanded={toggleGroupExpanded}
+        onNavigateToEpisode={navigateToEpisode}
+        onClose={closeSidebar}
+      />
 
       <main className={`${currentBg?.bg} min-h-screen pb-20`}>
         <div className="min-h-[500px] p-4 flex flex-col items-center">
@@ -2163,354 +485,92 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
             className={`min-h-[1000px] rounded-md w-full lg:max-w-[1000px] ${currentBg?.paper || currentBg?.bg} ${currentBg?.text} shadow-lg relative flex flex-col ${showNav ? "reader-nav-visible" : "reader-nav-hidden"}`}
             onClick={handleReaderSurfaceClick}
           >
-            {/* Header */}
-            <div
-              className={`transition-all duration-300 w-full sticky top-0 z-[120] ${currentBg?.paper || currentBg?.bg}`}
-              data-reader-ignore-toggle="true"
-              style={{
-                position: 'sticky',
-                top: 0,
-                zIndex: 120,
-                borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)",
-                borderBottomWidth: "1px"
-              }}>
-              <div className="flex items-center justify-between px-2 py-2">
-                <div className="flex items-center gap-1">
-                  <Link href={bookId ? `/book/${bookId}` : "/"} className={`p-2 rounded-full transition-colors ${currentBg?.key === "dark" ? "hover:bg-white/10" : "hover:bg-black/5"}`} style={{ color: readerMenuTheme.text }}>
-                    <div className="flex items-center gap-1 text-xs font-medium" style={{ color: readerMenuTheme.text }}>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
-                      <span className="hidden sm:inline">หน้าหลัก</span>
-                    </div>
-                  </Link>
-                  <Popover placement="bottomLeft" zIndex={readerPopoverZIndex} overlayClassName="reader-episode-popover" title={<div className="text-sm font-semibold">สารบัญ</div>} content={episodesListContent} trigger="click" open={isListPopoverOpen} onOpenChange={(open) => setIsListPopoverOpen(open)}>
-                    <button className={`p-2 rounded-full transition-colors ${currentBg?.key === "dark" ? "hover:bg-white/10" : "hover:bg-black/5"}`} title="สารบัญ" style={{ color: readerMenuTheme.text }}>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-                    </button>
-                  </Popover>
-                </div>
+            <ReaderTopBar
+              bookId={bookId}
+              displayTitle={displayTitle || ""}
+              currentBg={currentBg}
+              zIndex={readerPopoverZIndex}
+              episodeGroups={episodeGroups}
+              currentEpisodeId={currentEpisodeId}
+              isGroupExpanded={isGroupExpanded}
+              toggleGroupExpanded={toggleGroupExpanded}
+              collapseAllGroups={collapseAllGroups}
+              onNavigateToEpisode={navigateToEpisode}
+              isListPopoverOpen={isListPopoverOpen}
+              onListPopoverOpenChange={setIsListPopoverOpen}
+              fontSize={fontSize}
+              setFontSize={setFontSize}
+              fontFamily={fontFamily}
+              setFontFamily={setFontFamily}
+              bgColor={bgColor}
+              setBgColor={setBgColor}
+              isBold={isBold}
+              setIsBold={setIsBold}
+              textAlign={textAlign}
+              setTextAlign={setTextAlign}
+              isAutoScroll={isAutoScroll}
+              setIsAutoScroll={setIsAutoScroll}
+              scrollSpeed={scrollSpeed}
+              setScrollSpeed={setScrollSpeed}
+              fontFamilies={fontFamilies}
+              bgColors={bgColors}
+              readerDefaultFontKey={readerDefaultFontKey}
+              hasReaderObfuscationConfig={hasReaderObfuscationConfig}
+              showTrackedParagraphLabel={showTrackedParagraphLabel}
+              setShowTrackedParagraphLabel={setShowTrackedParagraphLabel}
+              showTrackedParagraphArrow={showTrackedParagraphArrow}
+              setShowTrackedParagraphArrow={setShowTrackedParagraphArrow}
+              isBookmarkPopoverOpen={isBookmarkPopoverOpen}
+              onBookmarkPopoverOpenChange={setIsBookmarkPopoverOpen}
+              bookmarks={bookmarks}
+              isFetchingBookmarks={isFetchingBookmarks}
+              onCreateBookmark={openCreateBookmarkModal}
+              onEditBookmark={openEditBookmarkModal}
+              onDeleteBookmark={handleDeleteBookmark}
+              onScrollToParagraph={scrollToParagraph}
+            />
 
-                <h1 className="text-sm font-medium truncate mx-4 flex-1 text-center opacity-80" style={{ color: currentBg?.key === "dark" ? "white" : undefined }}>{displayTitle || ""}</h1>
+            <ReaderContentArea
+              contentRef={contentRef}
+              innerContentRef={innerContentRef}
+              allowTemporaryTextSelection={allowTemporaryTextSelection}
+              renderedEpisodeHtml={renderedEpisodeHtml}
+              parsedRenderedEpisodeHtml={parsedRenderedEpisodeHtml}
+              isQuotaHardBlocked={isQuotaHardBlocked}
+              fontSize={fontSize}
+              currentFontFamily={currentFontFamily}
+              isBold={isBold}
+              textAlign={textAlign}
+              isFocused={isFocused}
+              contentHeight={contentHeight}
+              shouldDelayObfuscatedRender={shouldDelayObfuscatedRender}
+              episode={episode}
+              settings={settings}
+              isScheduledReleasePending={isScheduledReleasePending}
+              purchaseState={purchaseState}
+              scheduledPublishAt={scheduledPublishAt}
+              scheduledReleaseCountdown={scheduledReleaseCountdown}
+              currentBgKey={currentBg?.key}
+              onLogin={openLoginModal}
+              onGoStore={() => router.push('/store')}
+              onOpenConfirm={openConfirm}
+              selectedParagraphIndex={selectedParagraphIndex}
+              onCreateBookmarkAtParagraph={openCreateBookmarkModalByIndex}
+              onClearSelectedParagraph={() => setSelectedParagraphIndex(null)}
+              showTrackedParagraphLabel={showTrackedParagraphLabel}
+              trackedParagraphIndex={trackedParagraphIndex}
+            />
 
-                <Popover
-                  placement="bottomRight"
-                  zIndex={readerPopoverZIndex}
-                  classNames={{ root: "reader-settings-popover" }}
-                  styles={{ body: { padding: 0 } }}
-                  content={
-                    <div
-                      className="reader-settings-panel w-72 flex flex-col gap-4 p-1"
-                      style={{ backgroundColor: readerMenuTheme.panelBg, color: readerMenuTheme.text }}
-                    >
-                      <div
-                        className="reader-settings-title flex items-center justify-between border-b px-3 pt-3 pb-2"
-                        style={{ borderBottomColor: readerMenuTheme.panelBorder, color: readerMenuTheme.text }}
-                      >
-                        <span className="text-base font-semibold">ตั้งค่าการอ่าน</span>
-                        <button onClick={resetReaderSettings} className="text-xs !text-red-500 !hover:text-red-700 font-medium cursor-pointer">
-                          ค่าเริ่มต้น
-                        </button>
-                      </div>
-                      {/* Alignment */}
-                      <div className="grid grid-cols-3 gap-2 px-3">
-                        {textAlignOptions.map(({ key, label }) => (
-                          <button
-                            key={key}
-                            onClick={() => setTextAlign(key as any)}
-                            title={label}
-                            aria-label={label}
-                            className="reader-settings-neutral-button flex min-h-[48px] items-center justify-center rounded border px-2 py-2 transition-all"
-                            style={{
-                              borderColor: textAlign === key ? '#E31C3D' : readerMenuTheme.panelBorder,
-                              backgroundColor: textAlign === key ? readerMenuTheme.activeBg : readerMenuTheme.subtleBg,
-                              color: textAlign === key ? readerMenuTheme.activeText : readerMenuTheme.text,
-                              boxShadow: textAlign === key ? 'inset 0 0 0 1px rgba(227,28,61,0.12)' : 'none',
-                            }}
-                          >
-                            {key === 'left' && <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.6} d="M4 6h16M4 12h10M4 18h16" /></svg>}
-                            {key === 'center' && <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.6} d="M4 6h16M7 12h10M4 18h16" /></svg>}
-                            {key === 'justify' && <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.6} d="M4 6h16M4 12h16M4 18h16" /></svg>}
-                          </button>
-                        ))}
-                      </div>
-                      {/* Font Size */}
-                      <div className="grid grid-cols-2 gap-3 px-3">
-                        <button
-                          onClick={() => setFontSize(prev => Math.max(12, prev - 2))}
-                          className="reader-settings-neutral-button flex items-center justify-center p-2 rounded border active:scale-95 transition-transform"
-                          style={{ borderColor: readerMenuTheme.panelBorder, backgroundColor: readerMenuTheme.subtleBg, color: readerMenuTheme.text }}
-                        >
-                          <span className="text-sm">A-</span>
-                        </button>
-                        <button
-                          onClick={() => setFontSize(prev => Math.min(64, prev + 2))}
-                          className="reader-settings-neutral-button flex items-center justify-center p-2 rounded border active:scale-95 transition-transform"
-                          style={{ borderColor: readerMenuTheme.panelBorder, backgroundColor: readerMenuTheme.subtleBg, color: readerMenuTheme.text }}
-                        >
-                          <span className="text-lg">A+</span>
-                        </button>
-                      </div>
-                      {/* Auto Scroll */}
-                      <div
-                        className="reader-settings-card mx-3 flex flex-col gap-2 p-3 rounded-lg border"
-                        style={{ backgroundColor: readerMenuTheme.subtleBg, borderColor: readerMenuTheme.panelBorder }}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="reader-settings-label text-sm font-medium" style={{ color: readerMenuTheme.text }}>เลื่อนอัตโนมัติ</span>
-                          <Switch checked={isAutoScroll} onChange={setIsAutoScroll} size="small" className="bg-gray-300" style={{ backgroundColor: isAutoScroll ? '#E31C3D' : undefined }} />
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-lg">🐢</span>
-                          <div className="flex-1">
-                            <ConfigProvider theme={{ components: { Slider: { colorPrimary: '#E31C3D', handleColor: '#E31C3D', trackBg: '#E31C3D', handleActiveColor: '#C41230' } } }}>
-                              <Slider min={0.1} max={2.0} step={0.1} value={scrollSpeed} onChange={setScrollSpeed} tooltip={{ open: false }} />
-                            </ConfigProvider>
-                          </div>
-                          <span className="text-lg">🐇</span>
-                        </div>
-                      </div>
-                      {/* Font Family */}
-                      <div className="px-3">
-                        <Select
-                          value={fontFamily}
-                          onChange={setFontFamily}
-                          style={{ width: '100%' }}
-                          options={fontFamilyOptions}
-                          className="reader-settings-select h-10"
-                        />
-                      </div>
-                      {/* Theme Colors */}
-                      <div className="mt-1 flex items-center justify-center gap-4 px-3">
-                        {bgColors.map((bg) => (
-                          <button key={bg.key} onClick={() => setBgColor(bg.key)} className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${bg.key === bgColor ? 'border-[#E31C3D] scale-110' : 'border-transparent hover:scale-105'}`} title={bg.label}>
-                            <div className={`w-8 h-8 rounded-full border ${bg.bg} ${bg.border !== 'transparent' ? 'border shadow-sm' : ''}`} style={{ borderColor: bg.border }}></div>
-                          </button>
-                        ))}
-                      </div>
-                      {/* Bold Toggle */}
-                      <div className="flex items-center justify-between px-4">
-                        <span className="reader-settings-label text-sm" style={{ color: readerMenuTheme.muted }}>ตัวหนา</span>
-                        <Switch checked={isBold} onChange={setIsBold} size="small" style={{ backgroundColor: isBold ? '#E31C3D' : undefined }} />
-                      </div>
-                      <div className="flex items-center justify-between px-4">
-                        <span className="reader-settings-label text-sm" style={{ color: readerMenuTheme.muted }}>แสดงย่อหน้า</span>
-                        <Switch checked={showTrackedParagraphLabel} onChange={setShowTrackedParagraphLabel} size="small" style={{ backgroundColor: showTrackedParagraphLabel ? '#E31C3D' : undefined }} />
-                      </div>
-                      <div className="flex items-center justify-between px-4 pb-3">
-                        <span className="reader-settings-label text-sm" style={{ color: readerMenuTheme.muted }}>แสดง &gt;</span>
-                        <Switch checked={showTrackedParagraphArrow} onChange={setShowTrackedParagraphArrow} size="small" style={{ backgroundColor: showTrackedParagraphArrow ? '#E31C3D' : undefined }} />
-                      </div>
-                    </div>
-                  }
-                  trigger="click"
-                >
-                  <div className="flex items-center gap-2 cursor-pointer">
-                    <span className={`text-sm font-semibold ${currentBg?.key === "dark" ? "text-gray-300" : "text-gray-600"}`}>ตั้งค่าการอ่าน</span>
-                    <button className={`p-2 rounded-full transition-colors font-serif font-bold text-lg flex items-center justify-center w-10 h-10 ${currentBg?.text} ${currentBg?.key === "dark" ? "hover:bg-white/10" : "hover:bg-black/5"}`} title="ตั้งค่าการอ่าน" style={{ color: currentBg?.key === "dark" ? "white" : undefined }}>Aa</button>
-                  </div>
-                </Popover>
-
-                <Popover
-                  placement="bottomRight"
-                  zIndex={readerPopoverZIndex}
-                  classNames={{ root: "reader-bookmark-popover" }}
-                  styles={{ body: { padding: 0 } }}
-                  trigger="click"
-                  open={isBookmarkPopoverOpen}
-                  onOpenChange={setIsBookmarkPopoverOpen}
-                  content={
-                    <div
-                      className="reader-bookmark-panel w-80"
-                      style={{ backgroundColor: readerMenuTheme.panelBg, color: readerMenuTheme.text }}
-                    >
-                      <div
-                        className="reader-bookmark-title flex items-center justify-between border-b px-3 pt-3 pb-2"
-                        style={{ borderBottomColor: readerMenuTheme.panelBorder, color: readerMenuTheme.text }}
-                      >
-                        <div className="text-sm font-semibold">ตำแหน่งที่บุ๊กมาร์กไว้</div>
-                        <div />
-                      </div>
-                      <div className="mb-2 flex items-center justify-end px-3 pt-3">
-                        <Button size="small" type="primary" onClick={openCreateBookmarkModal}>
-                          เพิ่มจากตำแหน่งปัจจุบัน
-                        </Button>
-                      </div>
-                      <div className="max-h-72 overflow-auto">
-                        {isFetchingBookmarks ? (
-                          <div className="reader-bookmark-empty py-4 text-center text-xs" style={{ color: readerMenuTheme.muted }}>กำลังโหลด...</div>
-                        ) : bookmarks.length === 0 ? (
-                          <div className="reader-bookmark-empty py-4 text-center text-xs" style={{ color: readerMenuTheme.muted }}>ยังไม่มีบุ๊กมาร์กในตอนนี้</div>
-                        ) : (
-                          <div className="space-y-1">
-                            {bookmarks.map((bookmark) => (
-                              <div
-                                key={bookmark.id}
-                                className="reader-bookmark-item w-full px-3 py-2 rounded-lg transition-colors"
-                                style={{ borderColor: readerMenuTheme.panelBorder }}
-                              >
-                                <button
-                                  onClick={() => scrollToParagraph(bookmark.paragraph_index)}
-                                  className="w-full text-left"
-                                >
-                                  <div className="reader-bookmark-heading text-sm font-medium" style={{ color: readerMenuTheme.text }}>ย่อหน้า {bookmark.paragraph_index}</div>
-                                  {bookmark.note && <div className="reader-bookmark-note text-xs truncate" style={{ color: readerMenuTheme.muted }}>{bookmark.note}</div>}
-                                </button>
-                                <div className="mt-2 flex items-center justify-end gap-2">
-                                  <button
-                                    onClick={() => openEditBookmarkModal(bookmark)}
-                                    className="text-xs text-blue-500 hover:text-blue-600"
-                                  >
-                                    แก้ไข
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteBookmark(bookmark.id)}
-                                    className="text-xs text-red-500 hover:text-red-600"
-                                  >
-                                    ลบ
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  }
-                >
-                  <button
-                    className={`p-2 rounded-full transition-colors ${currentBg?.text} ${currentBg?.key === "dark" ? "hover:bg-white/10" : "hover:bg-black/5"}`}
-                    title="Bookmark"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <path d="M14 2C16 2 17 3.01 17 5.03V12.08C17 14.07 15.59 14.84 13.86 13.8L12.54 13C12.24 12.82 11.76 12.82 11.46 13L10.14 13.8C8.41 14.84 7 14.07 7 12.08V5.03C7 3.01 8 2 10 2H14Z" stroke={bookmarkIconStroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M6.82 4.98996C3.41 5.55996 2 7.65996 2 11.9V14.93C2 19.98 4 22 9 22H15C20 22 22 19.98 22 14.93V11.9C22 7.58996 20.54 5.47996 17 4.95996" stroke={bookmarkIconStroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
-                </Popover>
-              </div>
-            </div>
-
-            {/* Content */}
-            <article
-              ref={contentRef}
-              className={`episode-content episode-content-wrapper relative mt-5 ${allowTemporaryTextSelection ? '' : 'select-none'} leading-loose lg:px-11 px-6 text-wrap whitespace-normal overflow-x-hidden main-read cursor-pointer`}
-              style={{
-                userSelect: allowTemporaryTextSelection ? "text" : "none",
-                WebkitUserSelect: allowTemporaryTextSelection ? "text" : "none",
-                MozUserSelect: allowTemporaryTextSelection ? "text" : "none",
-                msUserSelect: allowTemporaryTextSelection ? "text" : "none",
-              }}
-            >
-              <div
-                ref={innerContentRef}
-                className={renderedEpisodeHtml && !isQuotaHardBlocked ? "reader-font-surface" : undefined}
-                style={{
-                  fontSize: `${fontSize}px`,
-                  lineHeight: "1.8",
-                  fontFamily: renderedEpisodeHtml && !isQuotaHardBlocked
-                    ? (currentFontFamily?.family || "var(--font-sarabun), sans-serif")
-                    : "var(--font-sarabun), sans-serif",
-                  fontWeight: isBold ? 'bold' : 'normal',
-                  textAlign: textAlign,
-                  whiteSpace: "normal",
-                  overflowWrap: "anywhere",
-                  wordBreak: "break-word",
-                  minHeight: !isFocused
-                    ? contentHeight
-                    : (shouldDelayObfuscatedRender ? 240 : undefined),
-                  opacity: (isFocused && !shouldDelayObfuscatedRender) ? 1 : 0,
-                  transition: 'opacity 0.1s ease',
-                  pointerEvents: (isFocused && !shouldDelayObfuscatedRender) ? 'auto' : 'none',
-                }}>
-                {(isFocused && !shouldDelayObfuscatedRender) ? (
-                  renderedEpisodeHtml && !isQuotaHardBlocked ? (
-                    parsedRenderedEpisodeHtml
-                  ) : (
-                    <PurchaseFallback />
-                  )
-                ) : null}
-              </div>
-
-              {isFocused && shouldDelayObfuscatedRender && (
-                <div
-                  className="absolute inset-x-0 top-0 px-6 lg:px-11 py-4 pointer-events-none"
-                  aria-hidden="true"
-                >
-                  <div className="animate-pulse space-y-4">
-                    <div className="h-4 rounded bg-white/10 w-11/12" />
-                    <div className="h-4 rounded bg-white/10 w-full" />
-                    <div className="h-4 rounded bg-white/10 w-10/12" />
-                    <div className="h-4 rounded bg-white/10 w-9/12" />
-                  </div>
-                </div>
-              )}
-
-              {!isFocused && (
-                <div className="fixed inset-0 z-[5000] bg-white pointer-events-none">
-                  <div className="hidden" aria-hidden="true">
-                    คลิกที่นี่เพื่ออ่านต่อ
-                  </div>
-                </div>
-              )}
-            </article>
-
-            {isFocused && selectedParagraphIndex && (
-              <div className="fixed bottom-24 right-6 z-[850]">
-                <button
-                  onClick={() => {
-                    openCreateBookmarkModalByIndex(selectedParagraphIndex);
-                    window.getSelection()?.removeAllRanges();
-                    setSelectedParagraphIndex(null);
-                  }}
-                  className="px-4 py-2 rounded-full bg-red-600 text-white text-sm font-semibold shadow-lg hover:bg-red-700 transition-colors"
-                >
-                  บันทึกย่อหน้า {selectedParagraphIndex}
-                </button>
-              </div>
-            )}
-
-            {isFocused && showTrackedParagraphLabel && trackedParagraphIndex && (
-              <div className="fixed bottom-24 left-6 z-[840] px-3 py-1.5 rounded-full bg-black/60 text-white text-xs font-medium pointer-events-none">
-                ย่อหน้า {trackedParagraphIndex.toLocaleString('th-TH')}
-              </div>
-            )}
-
-            {/* Sticky Navigation Footer */}
-            {(showNav) && (
-              <div
-                className={`w-full cursor-pointer border-t grid grid-cols-2 items-center sticky bottom-0 z-[999] transition-all duration-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] ${currentBg?.paper || currentBg?.bg}`}
-                data-reader-ignore-toggle="true"
-                style={{ borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)" }}>
-                <div className={`group w-full p-4 flex flex-row gap-2 items-center justify-center border-r hover:bg-black/5 transition-all ${!prevEpId ? "opacity-30 cursor-not-allowed" : "cursor-pointer active:scale-[0.98]"}`}
-                  style={{ borderColor: currentBg?.key === "dark" ? "#333333" : "rgba(0,0,0,0.05)" }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (prevEpId && bookId) {
-                      log('prev_episode', 'book', bookId, { from_episode: episodeId, to_episode: prevEpId });
-                      navigateToEpisode(prevEpId);
-                    }
-                  }}>
-                  <svg className={`w-5 h-5 transition-transform group-hover:-translate-x-1`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                  <div className="flex flex-col items-start leading-none gap-0.5">
-                    <span className="text-[10px] opacity-60 font-normal">ตอนก่อนหน้า</span>
-                    <span className="font-semibold text-sm">ก่อนหน้า</span>
-                  </div>
-                </div>
-                <div className={`group w-full p-4 flex flex-row gap-2 items-center justify-center hover:bg-black/5 transition-all ${!nextEpId ? "opacity-30 cursor-not-allowed" : "cursor-pointer active:scale-[0.98]"}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (nextEpId && bookId) {
-                      log('next_episode', 'book', bookId, { from_episode: episodeId, to_episode: nextEpId });
-                      navigateToEpisode(nextEpId);
-                    }
-                  }}>
-                  <div className="flex flex-col items-end leading-none gap-0.5">
-                    <span className="text-[10px] opacity-60 font-normal">ตอนต่อไป</span>
-                    <span className="font-semibold text-sm">ถัดไป</span>
-                  </div>
-                  <svg className={`w-5 h-5 transition-transform group-hover:translate-x-1`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                </div>
-              </div>
-            )}
+            <ReadStickyEpisodeNav
+              showNav={showNav}
+              currentBg={currentBg}
+              prevEpId={prevEpId}
+              nextEpId={nextEpId}
+              bookId={bookId}
+              episodeId={episodeId}
+              navigateToEpisode={navigateToEpisode}
+              log={log}
+            />
 
             
 
@@ -2525,249 +585,46 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
       </main>
 
       <BackToTopButton />
-      <Modal
-        open={quotaLoginModalOpen}
-        footer={null}
-        closable={false}
-        maskClosable
-        onCancel={() => setQuotaLoginModalOpen(false)}
-        centered
-        width={420}
-        zIndex={2100}
-      >
-        <div className="py-3 text-center">
-          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-red-100">
-            <svg className="h-10 w-10 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <path d="M7 10V7a5 5 0 0 1 10 0v3" strokeLinecap="round" strokeLinejoin="round" />
-              <rect x="5" y="10" width="14" height="10" rx="2" />
-              <circle cx="12" cy="15" r="1" />
-            </svg>
-          </div>
-          <h3 className="text-2xl font-bold text-gray-800">สิ้นสุดโควต้าอ่านฟรี</h3>
-          <p className="mt-2 text-xl font-bold text-gray-800">อยากอ่านต่อฟรีอีก 30 ตอน?</p>
-          <p className="mt-3 text-base leading-7 text-gray-500">
-            แค่เข้าสู่ระบบก็รับสิทธิ์อ่านตอนฟรีแบบจุกๆ
-            พร้อมสิทธิพิเศษอื่นๆ อีกมากมายได้ทันที
-          </p>
-          <button
-            type="button"
-            className="mt-6 w-full rounded-xl bg-red-600 py-3 text-lg font-bold !text-white hover:bg-red-700"
-            onClick={() => {
-              setQuotaLoginModalOpen(false);
-              openLoginModal();
-            }}
-          >
-            เข้าสู่ระบบเพื่ออ่านต่อ
-          </button>
-          <button
-            type="button"
-            className="mt-4 w-full py-2 text-lg font-semibold text-gray-500 hover:text-gray-700"
-            onClick={() => {
-              setQuotaLoginModalOpen(false);
-              router.push("/");
-            }}
-          >
-            กลับหน้าหลัก
-          </button>
-        </div>
-      </Modal>
-      <Modal
-        open={firstTopupModalOpen}
-        footer={null}
-        closable={false}
-        maskClosable
-        onCancel={() => setFirstTopupModalOpen(false)}
-        centered
-        width={420}
-        zIndex={2100}
-      >
-        <div className="py-3 text-center">
-          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-red-100">
-            <svg className="h-10 w-10 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <path d="M3 7h18" strokeLinecap="round" />
-              <rect x="3" y="4" width="18" height="16" rx="3" />
-              <path d="M16 13h2" strokeLinecap="round" />
-            </svg>
-          </div>
-          <h3 className="text-2xl font-bold text-gray-800">อ่านฟรีครบ 40 ตอนแล้ว</h3>
-          <p className="hidden">
-            รับสิทธิ์เติมเงินครั้งแรกราคาพิเศษ
-            เพื่อปลดล็อกตอนต่อไปได้ทันที
-          </p>
-          <p className="mt-2 text-base leading-7 text-gray-500">
-            {"อ่านฟรีครบแล้ว รับสิทธิ์เติมเงินครั้งแรกราคาพิเศษ"}
-          </p>
-          <button
-            type="button"
-            className="mt-6 w-full rounded-xl bg-red-600 py-3 text-lg font-bold !text-white hover:bg-red-700"
-            onClick={() => {
-              setFirstTopupModalOpen(false);
-              router.push("/store");
-            }}
-          >
-            เติมเงินครั้งแรกราคาพิเศษ
-          </button>
-          <button
-            type="button"
-            className="mt-4 w-full py-2 text-lg font-semibold text-gray-500 hover:text-gray-700"
-            onClick={() => setFirstTopupModalOpen(false)}
-          >
-            ไว้ทีหลัง
-          </button>
-        </div>
-      </Modal>
-      <Modal
+      <ReadQuotaModals
+        quotaLoginModalOpen={quotaLoginModalOpen}
+        firstTopupModalOpen={firstTopupModalOpen}
+        onQuotaLoginClose={() => setQuotaLoginModalOpen(false)}
+        onFirstTopupClose={() => setFirstTopupModalOpen(false)}
+        onLogin={openLoginModal}
+        onGoHome={() => router.push("/")}
+        onGoStore={() => router.push("/store")}
+      />
+      <ReadConfirmPurchaseModal
         open={confirmOpen}
-        onCancel={() => setConfirmOpen(false)}
-        title={<div className="text-center text-lg font-medium">ยืนยันการซื้อ</div>}
-        zIndex={2000}
-        footer={[
-          <Button key="cancel" onClick={() => setConfirmOpen(false)} disabled={buyLoading} className="transition-colors" onMouseEnter={() => setCancelHover(true)} onMouseLeave={() => setCancelHover(false)} style={{ borderColor: cancelHover ? '#dc2626' : 'transparent', color: cancelHover ? '#dc2626' : undefined }}>ยกเลิก</Button>,
-          <Button key="confirm" type="primary" danger loading={buyLoading} onClick={() => { if (confirmMethod) handleBuy(confirmMethod, confirmFastMethod); }}>{getReadConfirmButtonLabel(confirmMethod, confirmFastMethod, purchaseState)}</Button>,
-        ]}
-      >
-        <div className="space-y-2 text-center">
-          <div className="text-base font-semibold text-gray-700">{displayTitle || 'ตอนนี้'}</div>
-          {renderReadConfirmSummary()}
-          {(() => {
-              const ep = episode as any;
-              if (!purchaseState.isEarlyAccess) return null;
-              const regularPrices = getRegularEpisodePrices(ep);
-              return (
-                <div className="space-y-3 pt-2">
-                  <div>
-                    <div className="mb-2 text-center text-xs font-medium text-gray-500">ชำระส่วนตอนล่วงหน้า</div>
-                    <div className="flex justify-center">
-                      <Space.Compact>
-                        <Button type={confirmFastMethod === 'coin' ? 'primary' : 'default'} onClick={() => setConfirmFastMethod('coin')}>
-                          เหรียญ <Image src={settings?.coin || '/images/e-coin.png'} alt="coin" width={14} height={14} unoptimized />
-                        </Button>
-                        <Button type={confirmFastMethod === 'fast_ticket' ? 'primary' : 'default'} onClick={() => setConfirmFastMethod('fast_ticket')} disabled={!purchaseState.canFastTicket}>
-                          FastTicket <Image src={settings?.fast_ticket || '/images/fast_ticket.png'} alt="fast ticket" width={14} height={14} unoptimized />
-                        </Button>
-                      </Space.Compact>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="mb-2 text-center text-xs font-medium text-gray-500">ชำระราคาตอนปกติ</div>
-                    <div className="flex justify-center">
-                      <Space.Compact>
-                        <Button type={confirmMethod === 'coin' ? 'primary' : 'default'} onClick={() => { setConfirmMethod('coin'); setConfirmAmount(regularPrices.coinPrice); }}>
-                          เหรียญ <Image src={settings?.coin || '/images/e-coin.png'} alt="coin" width={14} height={14} unoptimized />
-                        </Button>
-                        <Button type={confirmMethod === 'freecoin' ? 'primary' : 'default'} onClick={() => { setConfirmMethod('freecoin'); setConfirmAmount(regularPrices.freecoinPrice); }} disabled={!purchaseState.canUseFreecoin}>
-                          ถุงเงิน <Image src={settings?.freecoin || '/images/money-bag.png'} alt="freecoin" width={14} height={14} unoptimized />
-                        </Button>
-                      </Space.Compact>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-        </div>
-      </Modal>
-      <Modal
+        onClose={() => setConfirmOpen(false)}
+        displayTitle={displayTitle}
+        episode={episode}
+        settings={settings}
+        confirmMethod={confirmMethod}
+        setConfirmMethod={setConfirmMethod}
+        confirmFastMethod={confirmFastMethod}
+        setConfirmFastMethod={setConfirmFastMethod}
+        confirmAmount={confirmAmount}
+        setConfirmAmount={setConfirmAmount}
+        purchaseState={purchaseState}
+        buyLoading={buyLoading}
+        rewardPreview={rewardPreview}
+        rewardPreviewLoading={rewardPreviewLoading}
+        cancelHover={cancelHover}
+        setCancelHover={setCancelHover}
+        handleBuy={handleBuy}
+      />
+      <ReadBookmarkModal
         open={bookmarkModalOpen}
-        title={editingBookmarkId ? 'แก้ไข Bookmark' : 'เพิ่ม Bookmark'}
-        onCancel={() => {
-          setBookmarkModalOpen(false);
-          setBookmarkNote('');
-          setBookmarkParagraphIndex(null);
-          setEditingBookmarkId(null);
-        }}
-        onOk={submitBookmarkModal}
-        okText={editingBookmarkId ? 'บันทึกการแก้ไข' : 'บันทึก'}
-        cancelText="ยกเลิก"
-        confirmLoading={createBookmarkMutation.isPending || updateBookmarkMutation.isPending}
-      >
-        <div className="space-y-3 pt-2">
-          <div className="text-sm text-gray-600">ตำแหน่งย่อหน้า: <span className="font-semibold text-gray-900">{bookmarkParagraphIndex ?? '-'}</span></div>
-          <Input.TextArea
-            value={bookmarkNote}
-            onChange={(e) => setBookmarkNote(e.target.value)}
-            rows={3}
-            maxLength={120}
-            placeholder="เพิ่มโน้ต (ไม่บังคับ)"
-          />
-        </div>
-      </Modal>
-      <style jsx global>{`
-        .reader-font-surface p,
-        .reader-font-surface li,
-        .reader-font-surface blockquote,
-        .reader-font-surface pre {
-          white-space: normal;
-          overflow-wrap: anywhere;
-          word-break: break-word;
-          max-width: 100%;
-        }
-        .reader-font-surface p {
-          margin: 0 0 1.1em;
-          text-indent: 2.1em;
-        }
-        .reader-font-surface p:last-child {
-          margin-bottom: 0;
-        }
-        .reader-font-surface p:empty {
-          margin: 0;
-          text-indent: 0;
-          min-height: 1em;
-        }
-        .reader-font-surface p > br:only-child {
-          display: block;
-          content: "";
-          margin: 0.5em 0;
-        }
-        .reader-font-surface img,
-        .reader-font-surface video,
-        .reader-font-surface iframe {
-          max-width: 100%;
-          height: auto;
-        }
-        .bookmark-highlight {
-          background: rgba(227, 28, 61, 0.14);
-          transition: background-color 0.25s ease;
-          border-radius: 6px;
-        }
-        .paragraph-tracked-current {
-          position: relative;
-          background: transparent;
-          border-radius: 0;
-        }
-        .paragraph-tracked-current::before {
-          content: ">";
-          position: absolute;
-          left: -14px;
-          top: 0.05em;
-          font-weight: 700;
-          font-size: 0.95em;
-          line-height: 1;
-          pointer-events: none;
-          opacity: 1;
-          transition: opacity 0.18s ease;
-        }
-        .reader-nav-hidden .paragraph-tracked-current::before {
-          opacity: 0;
-        }
-        .reader-theme-light .paragraph-tracked-current::before {
-          color: rgba(148, 163, 184, 0.92);
-        }
-        .reader-theme-dark .paragraph-tracked-current::before {
-          color: rgba(203, 213, 225, 0.88);
-        }
-        .reader-theme-light .paragraph-bookmarked {
-          background: rgba(59, 130, 246, 0.08);
-          border-left: 3px solid rgba(59, 130, 246, 0.55);
-          border-radius: 6px;
-          padding-left: 10px;
-        }
-        .reader-theme-dark .paragraph-bookmarked {
-          background: rgba(148, 163, 184, 0.14);
-          border-left: 3px solid rgba(203, 213, 225, 0.65);
-          border-radius: 6px;
-          padding-left: 10px;
-        }
-      `}</style>
+        editingBookmarkId={editingBookmarkId}
+        bookmarkParagraphIndex={bookmarkParagraphIndex}
+        bookmarkNote={bookmarkNote}
+        isSavingBookmark={isSavingBookmark}
+        onNoteChange={setBookmarkNote}
+        onCancel={resetBookmarkEditorState}
+        onSubmit={submitBookmarkModal}
+      />
+      <ReaderGlobalStyles />
     </div>
   );
 }

@@ -142,6 +142,13 @@ export function useReadingTheme(
          .reader-user-popover .ant-popover-arrow::after {
             background-color: ${colors.bg} !important;
          }
+         .reader-user-popover .reader-user-popover-content,
+         .reader-user-popover .reader-user-popover-body,
+         .reader-user-popover-content,
+         .reader-user-popover-body {
+            background-color: ${colors.bg} !important;
+            color: ${colors.text} !important;
+         }
          .reader-user-popover .reader-user-popover-panel {
             background-color: ${episodeSubtleBg} !important;
             color: ${colors.text} !important;
@@ -243,6 +250,8 @@ export function useReadingTheme(
          .reader-cart-popover .reader-cart-popover-empty-icon,
          .reader-notification-popover .reader-notification-empty-icon,
          .reader-cart-popover .reader-cart-popover-collapse .ant-collapse-header,
+         .reader-cart-popover .reader-cart-popover-collapse .ant-collapse-item,
+         .reader-cart-popover .reader-cart-popover-collapse .ant-collapse-content,
          .reader-cart-popover .reader-cart-popover-item .bg-white,
          .reader-cart-popover .reader-cart-popover-item .bg-gray-100,
          .reader-notification-popover .reader-notification-item,
@@ -261,6 +270,12 @@ export function useReadingTheme(
          .reader-cart-popover .reader-cart-popover-panel p,
          .reader-cart-popover .reader-cart-popover-panel span,
          .reader-cart-popover .reader-cart-popover-panel button,
+         .reader-cart-popover .reader-cart-popover-store-label,
+         .reader-cart-popover .reader-cart-popover-store-label span,
+         .reader-cart-popover .reader-cart-popover-store-label .anticon,
+         .reader-cart-popover .reader-cart-popover-collapse .ant-collapse-header,
+         .reader-cart-popover .reader-cart-popover-collapse .ant-collapse-header-text,
+         .reader-cart-popover .reader-cart-popover-collapse .ant-collapse-expand-icon,
          .reader-notification-popover .reader-notification-panel,
          .reader-notification-popover .reader-notification-panel h3,
          .reader-notification-popover .reader-notification-panel h4,
@@ -274,6 +289,8 @@ export function useReadingTheme(
          .reader-cart-popover .reader-cart-popover-panel .text-gray-700,
          .reader-cart-popover .reader-cart-popover-panel .text-gray-800,
          .reader-cart-popover .reader-cart-popover-panel .text-gray-900,
+         .reader-cart-popover .reader-cart-popover-store-label .text-gray-400,
+         .reader-cart-popover .reader-cart-popover-store-label .text-gray-700,
          .reader-notification-popover .reader-notification-panel .text-gray-400,
          .reader-notification-popover .reader-notification-panel .text-gray-500,
          .reader-notification-popover .reader-notification-panel .text-gray-600,
@@ -351,6 +368,34 @@ export function useReadingTheme(
          .reader-notification-popover .reader-notification-panel .ant-tabs-content-holder {
             background-color: transparent !important;
             border-color: ${colors.border} !important;
+         }
+         .reader-cart-popover .reader-cart-popover-panel .ant-collapse-header {
+            background-color: ${episodeSubtleBg} !important;
+            border-color: ${colors.border} !important;
+            color: ${colors.text} !important;
+         }
+         .reader-cart-popover-panel .reader-cart-popover-collapse > .ant-collapse-item > .ant-collapse-header,
+         .reader-cart-popover-panel .reader-cart-popover-collapse .ant-collapse-item .ant-collapse-header {
+            background-color: ${episodeSubtleBg} !important;
+            border-color: ${colors.border} !important;
+            color: ${colors.text} !important;
+         }
+         .reader-cart-popover-panel .reader-cart-popover-collapse .ant-collapse-header *,
+         .reader-cart-popover-panel .reader-cart-popover-store-label,
+         .reader-cart-popover-panel .reader-cart-popover-store-label *,
+         .reader-cart-popover-panel .reader-cart-popover-collapse .ant-collapse-expand-icon,
+         .reader-cart-popover-panel .reader-cart-popover-collapse .ant-collapse-expand-icon * {
+            color: ${colors.text} !important;
+         }
+         .reader-cart-popover-panel .reader-cart-popover-store-label .text-gray-400 {
+            color: #a1a1aa !important;
+         }
+         .reader-cart-popover .reader-cart-popover-panel .ant-collapse-header:hover {
+            background-color: ${episodeHoverBg} !important;
+         }
+         .reader-cart-popover-panel .reader-cart-popover-collapse > .ant-collapse-item > .ant-collapse-header:hover,
+         .reader-cart-popover-panel .reader-cart-popover-collapse .ant-collapse-item .ant-collapse-header:hover {
+            background-color: ${episodeHoverBg} !important;
          }
          .reader-cart-popover .reader-cart-popover-panel .ant-collapse-expand-icon,
          .reader-notification-popover .reader-notification-panel .ant-tabs-tab,

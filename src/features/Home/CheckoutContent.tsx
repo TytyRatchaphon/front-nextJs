@@ -23,6 +23,7 @@ import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { useAuthStore } from '@/stores/authStore';
 import Image from 'next/image';
 import SuccessAnimation from '@/components/utility/SuccessAnimation';
+import CurrencyIcon from '@/components/common/CurrencyIcon';
 import { resolveStoreImageSrc } from '@/utils/imageUtils';
 
 const { Title, Text } = Typography;
@@ -208,19 +209,6 @@ export default function CheckoutContent() {
         setCurrentStep(prev => prev + 1);
     };
 
-    const renderCurrencyIcon = (currency: string, size = 18) => {
-        const cur = (currency || '').toLowerCase();
-        const map: any = {
-            coin: settings?.coin || "/images/e-coin.png",
-            freecoin: settings?.freecoin || "/images/money-bag.png",
-            stamp: settings?.stamp || "/images/stamp.png",
-            current_rp: settings?.rp || "/images/rp.png",
-            rp: settings?.rp || "/images/rp.png"
-        };
-        const src = map[cur] || map.coin;
-        return <Image src={src} alt={currency} width={size} height={size} className="object-contain inline-block" unoptimized />;
-    };
-
     const renderStepContent = () => {
         if (currentStepId === 'items') {
             if (isLoadingItems) return <div className="py-20 flex justify-center"><Spin size="large" /></div>;
@@ -250,7 +238,7 @@ export default function CheckoutContent() {
                                         <Tag className="rounded-full bg-gray-50 border-gray-100 text-gray-500 px-3">จำนวน: x{item.quantity}</Tag>
                                         <div className="flex items-center gap-1.5">
                                             <Text strong className="text-lg text-red-500">{item.total_price.toLocaleString()}</Text>
-                                            {renderCurrencyIcon(item.currency)}
+                                            <CurrencyIcon type={item.currency} settings={settings} />
                                         </div>
                                     </div>
                                 </div>
@@ -338,7 +326,7 @@ export default function CheckoutContent() {
                                     <div className="space-y-2">
                                         {Object.entries(total_cost || {}).map(([cur]) => (
                                             <div key={cur} className="flex items-center justify-between">
-                                                <div className="flex items-center gap-1.5">{renderCurrencyIcon(cur, 16)}</div>
+                                                <div className="flex items-center gap-1.5"><CurrencyIcon type={cur} settings={settings} size={16} /></div>
                                                 <Text strong className="text-gray-700">{(wallet_before as any)?.[cur]?.toLocaleString() || 0}</Text>
                                             </div>
                                         ))}
@@ -351,7 +339,7 @@ export default function CheckoutContent() {
                                             const remain = (wallet_after as any)?.[cur] ?? 0;
                                             return (
                                                 <div key={cur} className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-1.5">{renderCurrencyIcon(cur, 16)}</div>
+                                                    <div className="flex items-center gap-1.5"><CurrencyIcon type={cur} settings={settings} size={16} /></div>
                                                     <Text strong className={remain < 0 ? 'text-red-500' : 'text-green-600'}>{remain.toLocaleString()}</Text>
                                                 </div>
                                             );
@@ -469,7 +457,7 @@ export default function CheckoutContent() {
                                     {checkoutSummaryData && Object.entries(checkoutSummaryData.total_cost || {}).map(([cur, amount]) => (
                                         <div key={cur} className="flex justify-between items-center bg-gray-50/50 p-3 rounded-2xl border border-gray-50">
                                             <div className="flex items-center gap-2">
-                                                {renderCurrencyIcon(cur, 24)}
+                                                <CurrencyIcon type={cur} settings={settings} size={24} />
                                                 <span className="text-gray-500 font-medium">ยอดรวม</span>
                                             </div>
                                             <Text strong className="text-2xl text-red-500">{(amount as number).toLocaleString()}</Text>

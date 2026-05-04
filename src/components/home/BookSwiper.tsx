@@ -21,9 +21,10 @@ interface BookSwiperProps {
   title?: string;
   icon?: string;
   link?: string;
+  onBookClick?: (book: any) => void;
 }
 
-export default function BookSwiper({ books, title, icon, link }: BookSwiperProps) {
+export default function BookSwiper({ books, title, icon, link, onBookClick }: BookSwiperProps) {
   const prevRef = React.useRef<HTMLButtonElement>(null);
   const nextRef = React.useRef<HTMLButtonElement>(null);
 
@@ -124,7 +125,7 @@ export default function BookSwiper({ books, title, icon, link }: BookSwiperProps
               key={`${book.book_id ?? book.id ?? 'book'}-${book.parent_book_id ?? 'root'}-${book.content_type ?? 'novel'}-${index}`}
               className="!w-auto"
             >
-              <CardBook book={book} />
+              <CardBook book={book} onBookClick={onBookClick} />
             </SwiperSlide>
           ))
         ) : (

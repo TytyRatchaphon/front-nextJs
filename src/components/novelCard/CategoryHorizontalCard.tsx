@@ -5,6 +5,7 @@ import { Eye, List } from "lucide-react";
 import { CategoryBook } from "@/types/api";
 import { TagSwiper } from "@/components/swiper/ImageSlider";
 import { resolveBookCoverImageSrc } from "@/utils/imageUtils";
+import { BookPurchaseRewardBadge } from "./BookPurchaseRewardBadge";
 
 interface CategoryHorizontalCardProps {
   book: CategoryBook;
@@ -40,6 +41,7 @@ const CategoryHorizontalCard: React.FC<CategoryHorizontalCardProps> = ({ book })
             NEW
           </div>
         )}
+        <BookPurchaseRewardBadge book={book as any} />
       </Link>
 
       {/* Content */}

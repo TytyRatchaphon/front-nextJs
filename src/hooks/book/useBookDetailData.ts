@@ -155,6 +155,7 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
                 firstEpisodeId: firstEpisodeId,
                 fastTicket: purchaseDetails?.fast_ticket,
                 use_freecoin: (bookDetail as any).use_freecoin,
+                ep_purchase_reward: (bookDetail as any).ep_purchase_reward,
                 // Pass raw data for Tabs using raw access - USE CALCULATED DATE
                 update_at: latestEpisodeDate,
                 des: bookDetail.des,

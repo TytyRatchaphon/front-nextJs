@@ -158,9 +158,17 @@ export const fetchLeaderboardUserRank = async (
   }
 };
 
+export type RankingContentTab = "novel" | "novel_pack" | "trancn" | "fiction";
+
+const RANKING_CONTENT_TABS = new Set<RankingContentTab>(["novel", "novel_pack", "trancn", "fiction"]);
+
+export const normalizeRankingContentTab = (tab?: string | null): RankingContentTab => (
+  RANKING_CONTENT_TABS.has(tab as RankingContentTab) ? (tab as RankingContentTab) : "novel"
+);
+
 export interface RankingCategoryData {
-  left: { id: number; name: string };
-  right: { id: number; name: string };
+  left: { id: number | string; name: string };
+  right: { id: number | string; name: string };
 }
 
 export interface RankingCategoryResponse {
@@ -170,9 +178,12 @@ export interface RankingCategoryResponse {
   data: RankingCategoryData;
 }
 
-export const fetchRankingCategories = async (): Promise<RankingCategoryData | null> => {
+export const fetchRankingCategories = async (tab?: string | null): Promise<RankingCategoryData | null> => {
   try {
-    const response = await apiClient.get<RankingCategoryResponse>("/books/ranking/categories");
+    const normalizedTab = normalizeRankingContentTab(tab);
+    const response = await apiClient.get<RankingCategoryResponse>("/books/ranking/categories", {
+      params: { tab: normalizedTab },
+    });
     if (response.data && response.data.code === 200) {
       return response.data.data;
     }
@@ -212,15 +223,21 @@ export interface CategoryRankingBooksResponse {
   data: {
     pagination: any;
     range: number;
-    categoryId: number;
+    categoryId: number | string;
     list_count: number;
     list: CategoryRankingBookItem[];
   };
 }
 
-export const fetchCategoryRankingBooks = async (categoryId: number, range: number | string, limit: number = 5): Promise<CategoryRankingBookItem[]> => {
+export const fetchCategoryRankingBooks = async (
+  categoryId: number | string,
+  range: number | string,
+  limit: number = 5,
+  tab?: string | null,
+): Promise<CategoryRankingBookItem[]> => {
   try {
-    const url = `/books/ranking/${categoryId}/${range}?limit=${limit}`;
+    const normalizedTab = normalizeRankingContentTab(tab);
+    const url = `/books/ranking/${categoryId}/${range}?tab=${encodeURIComponent(normalizedTab)}&limit=${limit}`;
     const response = await apiClient.get<CategoryRankingBooksResponse>(url);
 
     if (response.data && response.data.code === 200 && response.data.data) {

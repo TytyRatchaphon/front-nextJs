@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { prefetchWebsiteSettings } from '@/hooks/useWebsiteSettings';
+import ApiAuthEventBridge from '@/components/auth/ApiAuthEventBridge';
 import BlockedUserModal from '@/components/auth/BlockedUserModal';
 
 const ReactQueryDevtoolsLazy = React.lazy(() =>
@@ -42,6 +43,7 @@ export default function TanstackProvider({ children }: { children: React.ReactNo
 
   return (
     <QueryClientProvider client={queryClient}>
+      <ApiAuthEventBridge />
       {children}
       {process.env.NODE_ENV === 'development' && (
         <React.Suspense fallback={null}>

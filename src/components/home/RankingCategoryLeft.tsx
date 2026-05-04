@@ -12,21 +12,23 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchCategoryRankingBooks, CategoryRankingBookItem } from "@/services/apiServices";
 import GifLoader from '@/components/utility/GifLoader';
 import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
+import { BookPurchaseRewardBadge } from '@/components/novelCard/BookPurchaseRewardBadge';
 
 interface RankingCategoryLeftProps {
-  categoryId?: number;
+  categoryId?: number | string;
   categoryName?: string;
+  tab?: string;
 }
 
-export default function RankingCategoryLeft({ categoryId, categoryName }: RankingCategoryLeftProps) {
+export default function RankingCategoryLeft({ categoryId, categoryName, tab }: RankingCategoryLeftProps) {
   const [activeTab, setActiveTab] = useState<'weekly' | 'monthly' | 'yearly'>('weekly');
 
   const { data: books = [], isLoading } = useQuery({
-    queryKey: ['categoryRanking', categoryId, activeTab],
+    queryKey: ['categoryRanking', categoryId, activeTab, tab || 'novel'],
     queryFn: () => {
       // Changed from number days to string keywords
       if (!categoryId) return [];
-      return fetchCategoryRankingBooks(categoryId, activeTab);
+      return fetchCategoryRankingBooks(categoryId, activeTab, 5, tab);
     },
     enabled: !!categoryId,
   });
@@ -42,7 +44,7 @@ export default function RankingCategoryLeft({ categoryId, categoryName }: Rankin
         </div>
 
         <h2 className="text-base md:text-lg font-bold absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 whitespace-nowrap max-w-[50%] md:max-w-none truncate text-center">
-          จัดอันดับหมวด{categoryName}
+          {categoryName}
         </h2>
 
         <Link href={`/ranking/category/${categoryId}`} className="flex items-center text-xs font-medium !text-white hover:!text-gray-800 !transition-colors z-10">
@@ -110,6 +112,7 @@ export default function RankingCategoryLeft({ categoryId, categoryName }: Rankin
                   fill
                   className="object-cover"
                 />
+                <BookPurchaseRewardBadge book={book as any} />
               </div>
 
               {/* Details */}

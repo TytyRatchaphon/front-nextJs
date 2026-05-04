@@ -3,6 +3,7 @@ import apiClient from "../apiClient";
 import type { WebsiteSettingsResponse } from "@/types/api";
 import Cookies from 'js-cookie';
 import { cachedRequest } from "../requestCache";
+import axios from "axios";
 
 // --- Writer Registration & Check ---
 
@@ -67,6 +68,32 @@ export const fetchWriterCheck = async (): Promise<WriterCheckResponse | null> =>
 
 // --- User Profile & Address ---
 
+export interface UserProfileCategory {
+  id: number | string;
+  name: string;
+  order_by?: number | string;
+}
+
+export interface ChangePasswordPayload {
+  oldpass: string;
+  newpass1: string;
+  newpass2: string;
+  token: string;
+}
+
+export const fetchUserProfileCategories = async (): Promise<UserProfileCategory[]> => {
+  try {
+    const response = await apiClient.get('/category');
+    return Array.isArray(response.data) ? response.data : (response.data?.data || []);
+  } catch {
+    return [];
+  }
+};
+
+export const changeUserPassword = async (payload: ChangePasswordPayload) => {
+  return apiClient.post('/user/changepass', payload);
+};
+
 export const updateUserAddress = async (formData: FormData, token: string) => {
   try {
      const response = await apiClient.post('/user/save_profile', formData, {
@@ -79,6 +106,21 @@ export const updateUserAddress = async (formData: FormData, token: string) => {
   } catch (error: any) {
     throw error;
   }
+};
+
+export const fetchProfileFrames = async (token: string) => {
+  const response = await axios.get('/api/getframes', {
+    headers: { Authorization: token },
+    timeout: 30000,
+  });
+  return response.data;
+};
+
+export const saveUserProfileViaRoute = async (formData: FormData, token: string) => {
+  const response = await axios.post('/api/save_profile', formData, {
+    headers: { Authorization: token },
+  });
+  return response.data;
 };
 
 // --- Writer Profile (Public) ---

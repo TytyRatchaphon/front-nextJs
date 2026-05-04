@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAllNotifications, markNotificationAsRead, markAllNotificationsAsRead, NotificationTab } from '@/services/apiServices';
-import { Tooltip, Button, Tag, Tabs } from 'antd';
+import { Tooltip, Button, Tabs } from 'antd';
 import { BellOutlined, CheckOutlined, BookOutlined, MessageOutlined, InfoCircleOutlined, UserOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -14,6 +14,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { navigateSafely } from '@/utils/navigationUtils';
+import { formatNavbarNotificationBadgeCount } from './hooks/useNavbarNotifications';
+
+const NOTIFICATION_PREVIEW_LIMIT = 10;
 
 // Define Interface based on User's DB Schema
 interface NotificationType {
@@ -57,11 +60,12 @@ const NotificationList: React.FC<{ onClose?: () => void; mode?: 'popover' | 'dra
 
     const { data: notificationResponse, isLoading } = useQuery({
         queryKey: ['navbarNotifications'],
-        queryFn: () => fetchAllNotifications(1, 5, 'all'),
+        queryFn: () => fetchAllNotifications(1, NOTIFICATION_PREVIEW_LIMIT, 'all'),
         staleTime: 30000,
         refetchOnWindowFocus: false,
     });
     const notifications = notificationResponse?.notifications ?? [];
+    const unreadCount = notifications.filter((n: any) => n.readed === 'N').length;
     const filteredNotifications = React.useMemo(() => {
         if (activeTab === 'all') return notifications;
         return notifications.filter((item: any) => {
@@ -156,6 +160,13 @@ const NotificationList: React.FC<{ onClose?: () => void; mode?: 'popover' | 'dra
         return 'comment';
     };
 
+    const getTypeTagClassName = (toneKey: string, readed: NotificationItem['readed']) => {
+        if (readed !== 'N') return 'bg-gray-100 text-gray-500';
+        if (toneKey === 'book') return 'bg-blue-50 text-blue-600';
+        if (toneKey === 'system') return 'bg-red-50 text-red-600';
+        return 'bg-orange-50 text-orange-600';
+    };
+
     if (isLoading) {
         return (
             <div className={panelClassName}>
@@ -188,13 +199,13 @@ const NotificationList: React.FC<{ onClose?: () => void; mode?: 'popover' | 'dra
                 <div className="reader-notification-header px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-20 shadow-sm">
                     <div className="flex items-center gap-2">
                         <h3 className="font-bold text-lg text-gray-800 m-0">การแจ้งเตือน</h3>
-                        {notifications && notifications.filter((n: any) => n.readed === 'N').length > 0 && (
+                        {unreadCount > 0 && (
                             <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold text-white bg-[#E31C3D] rounded-full">
-                                {notifications.filter((n: any) => n.readed === 'N').length}
+                                {formatNavbarNotificationBadgeCount(unreadCount)}
                             </span>
                         )}
                     </div>
-                    {notifications && notifications.some((n: any) => n.readed === 'N') && (
+                    {unreadCount > 0 && (
                         <Tooltip title="อ่านทั้งหมด">
                             <Button
                                 type="text"
@@ -288,9 +299,9 @@ const NotificationList: React.FC<{ onClose?: () => void; mode?: 'popover' | 'dra
                                         <div className="flex-1 min-w-0 flex flex-col gap-1">
                                             {/* Top Row: Type Label & Time */}
                                             <div className="flex justify-between items-center">
-                                                <Tag color={item.readed === 'N' ? typeInfo.color : 'default'} className={`reader-notification-type-tag reader-notification-type-tag-${tagTone} m-0 text-[10px] border-none px-1.5 py-0 h-5 leading-5 font-semibold`}>
+                                                <span className={`reader-notification-type-tag reader-notification-type-tag-${tagTone} inline-flex h-5 items-center rounded px-1.5 text-[10px] font-semibold leading-5 ${getTypeTagClassName(toneKey, item.readed)}`}>
                                                     {typeInfo.text}
-                                                </Tag>
+                                                </span>
                                                 <span className="text-[10px] text-gray-400">
                                                     {dayjs(item.create_at).fromNow()}
                                                 </span>

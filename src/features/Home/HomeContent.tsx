@@ -27,6 +27,8 @@ import {
   fetchRankingCategories,
   fetchUserShelveContinue,
   HomeDataResponse,
+  normalizeBookUpdateTab,
+  normalizeRankingContentTab,
 } from "@/services/apiServices";
 import { fetchPinnedReviews } from "@/services/api/commentApi";
 import { useQuery } from "@tanstack/react-query";
@@ -46,10 +48,18 @@ export default function HomeContent({
 }: HomeContentProps) {
   const { notification } = App.useApp();
   const { user, token, isLoggedIn } = useAuthStore();
+  const bookUpdateTab = normalizeBookUpdateTab(contentType);
+  const rankingTab = normalizeRankingContentTab(contentType);
   const [selectedSpotlightId, setSelectedSpotlightId] = React.useState<number | string | null>(null);
   const [enableSecondaryQueries, setEnableSecondaryQueries] = React.useState(false);
   const [isPending, startTransition] = React.useTransition();
   const authToken = parseJwtToken(token);
+  const categoryType =
+    contentType === "trancn"
+      ? "tran"
+      : contentType === "fiction"
+        ? "write"
+        : "all";
 
   React.useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -86,8 +96,8 @@ export default function HomeContent({
     isLoading: isBookUpdatesLoading,
     error: bookUpdatesError,
   } = useQuery({
-    queryKey: ["bookUpdates"],
-    queryFn: fetchBookUpdates,
+    queryKey: ["bookUpdates", bookUpdateTab],
+    queryFn: () => fetchBookUpdates(bookUpdateTab),
     enabled: !isLoading && enableSecondaryQueries,
     staleTime: 10 * 60 * 1000,
   });
@@ -97,8 +107,8 @@ export default function HomeContent({
     isLoading: isActiveCategoriesLoading,
     error: activeCategoriesError,
   } = useQuery({
-    queryKey: ["activeCategories", "all"],
-    queryFn: () => fetchActiveCategories("all"),
+    queryKey: ["activeCategories", categoryType],
+    queryFn: () => fetchActiveCategories(categoryType),
     enabled: !isLoading && enableSecondaryQueries,
     staleTime: 5 * 60 * 1000,
   });
@@ -108,10 +118,14 @@ export default function HomeContent({
     isLoading: isRankingCategoriesLoading,
     error: rankingCategoriesError,
   } = useQuery({
-    queryKey: ["rankingCategories"],
-    queryFn: fetchRankingCategories,
+    queryKey: ["rankingCategories", rankingTab],
+    queryFn: () => fetchRankingCategories(rankingTab),
     enabled: !isLoading && enableSecondaryQueries,
   });
+  const rankingLeftCategoryId =
+    rankingTab === "trancn" || rankingTab === "fiction"
+      ? "all"
+      : rankingCategories?.left?.id;
 
   const {
     data: continueBooks,
@@ -265,7 +279,7 @@ export default function HomeContent({
               </div>
             </div>
           ) : activeCategories && activeCategories.length > 0 ? (
-            <ActiveCategoriesStrip categories={activeCategories} />
+            <ActiveCategoriesStrip categories={activeCategories} categoryType={categoryType} />
           ) : null}
 
           {shouldRenderSpotlightFeature ? (
@@ -280,7 +294,7 @@ export default function HomeContent({
             />
           ) : null}
 
-          <BookGroups groupBookHome={groupBookHome} />
+          <BookGroups groupBookHome={groupBookHome} contentType={contentType} />
         </div>
       </div>
 
@@ -302,14 +316,16 @@ export default function HomeContent({
               <>
                 {rankingCategories?.left && (
                   <RankingCategoryLeft
-                    categoryId={rankingCategories.left.id}
+                    categoryId={rankingLeftCategoryId}
                     categoryName={rankingCategories.left.name}
+                    tab={rankingTab}
                   />
                 )}
                 {rankingCategories?.right && (
                   <RankingCategoryRight
                     categoryId={rankingCategories.right.id}
                     categoryName={rankingCategories.right.name}
+                    tab={rankingTab}
                   />
                 )}
               </>

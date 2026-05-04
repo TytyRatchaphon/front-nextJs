@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import 'lucide-react';
 import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
+import { BookPurchaseRewardBadge } from './BookPurchaseRewardBadge';
 
 interface ContinueHomeCardBookProps {
   book: any;
@@ -24,6 +25,7 @@ const ContinueHomeCardBook = ({ book }: ContinueHomeCardBookProps) => {
                 fill
                 className="object-cover"
              />
+             <BookPurchaseRewardBadge book={book} className="min-w-[18px] max-w-[32px]" />
          </div>
 
          {/* Content */}

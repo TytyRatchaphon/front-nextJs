@@ -26,9 +26,10 @@ interface ExclusiveSwiperProps {
   title?: string;
   icon?: string;
   link?: string;
+  onBookClick?: (book: any) => void;
 }
 
-export default function ExclusiveSwiper({ items, title, icon, link }: ExclusiveSwiperProps) {
+export default function ExclusiveSwiper({ items, title, icon, link, onBookClick }: ExclusiveSwiperProps) {
   const prevRef = React.useRef<HTMLButtonElement>(null);
   const nextRef = React.useRef<HTMLButtonElement>(null);
 
@@ -124,7 +125,7 @@ export default function ExclusiveSwiper({ items, title, icon, link }: ExclusiveS
         {items && items.length > 0 ? (
           items.map((item, index) => (
             <SwiperSlide key={item.exc_id || index} className="!w-auto">
-              <CardBook book={item.book} />
+              <CardBook book={item.book} onBookClick={onBookClick} />
             </SwiperSlide>
           ))
         ) : (

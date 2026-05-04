@@ -20,6 +20,7 @@ interface RewardSwiperProps {
   title?: string;
   icon?: string;
   link?: string;
+  onBookClick?: (book: any) => void;
   startDate?: string;
   endDate?: string;
   groupId?: string | number;
@@ -86,9 +87,11 @@ const formatCount = (num?: number) => {
 function RewardCard({
   book,
   isLocked = false,
+  onBookClick,
 }: {
   book: any;
   isLocked?: boolean;
+  onBookClick?: (book: any) => void;
 }) {
   const [isRewardsModalOpen, setIsRewardsModalOpen] = React.useState(false);
   const promotion = Array.isArray(book?.full_book_promotions) ? book.full_book_promotions[0] : null;
@@ -108,7 +111,11 @@ function RewardCard({
         }`}
       >
         <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,2fr)_120px] gap-3 rounded-[22px] border border-stone-200 bg-stone-50 p-3">
-          <Link href={`/book/${book?.book_id}`} className="relative min-h-0 overflow-hidden rounded-[18px]">
+          <Link
+            href={`/book/${book?.book_id}`}
+            className="relative min-h-0 overflow-hidden rounded-[18px]"
+            onClick={() => onBookClick?.(book)}
+          >
             <div
               className={`absolute inset-0 transition duration-300 ${
                 isLocked ? "blur-[18px] saturate-[0.25] brightness-95 scale-[1.03]" : ""
@@ -182,7 +189,7 @@ function RewardCard({
 
         <div className={`min-h-[132px] px-1 pb-1 pt-6 transition duration-300 ${isLocked ? "blur-[10px] opacity-60" : ""}`}>
           <div className="min-w-0">
-            <Link href={`/book/${book?.book_id}`} className="block">
+            <Link href={`/book/${book?.book_id}`} className="block" onClick={() => onBookClick?.(book)}>
               <div className="space-y-1">
                 <h3 className="line-clamp-2 min-h-[3.2rem] text-[1.05rem] font-bold leading-tight text-stone-900 transition-colors hover:text-red-600">
                   {book?.name}
@@ -274,6 +281,7 @@ export default function RewardSwiper({
   title,
   icon,
   link,
+  onBookClick,
   startDate,
   endDate,
   groupId,
@@ -491,7 +499,7 @@ export default function RewardSwiper({
                 {items && items.length > 0 ? (
                   items.map((book, index) => (
                     <SwiperSlide key={book?.book_id || index} className="!w-auto">
-                      <RewardCard book={book} isLocked={isBeforeStart} />
+                      <RewardCard book={book} isLocked={isBeforeStart} onBookClick={onBookClick} />
                     </SwiperSlide>
                   ))
                 ) : (

@@ -13,6 +13,7 @@ import AmountPill from '@/components/utility/AmountPill';
 import FreeCoinPill from '@/components/utility/FreeCoinPill';
 import StampPill from '@/components/utility/StampPill';
 import RPPill from '@/components/utility/RPPill';
+import CurrencyIcon from '@/components/common/CurrencyIcon';
 import { resolveStoreImageSrc } from '@/utils/imageUtils';
 
 
@@ -363,18 +364,7 @@ export default function CartDetail() {
                 
                 return (
                     <div className="flex items-center justify-center gap-1">
-                        <AntImage 
-                            src={
-                                type === 'coin' ? (settings?.coin || "/images/e-coin.png") :
-                                type === 'stamp' ? (settings?.stamp || "/images/stamp.png") :
-                                type === 'freecoin' ? (settings?.freecoin || "/images/money-bag.png") :
-                                type === 'rp' ? (settings?.rp || "/images/rp.png") :
-                                "/images/e-coin.png"
-                            }
-                            width={16}
-                            height={16}
-                            preview={false}
-                        />
+                        <CurrencyIcon type={type} settings={settings} size={16} />
                          <Text>{Number(price).toLocaleString()}</Text>
                     </div>
                 );
@@ -407,18 +397,7 @@ export default function CartDetail() {
                 const total = Number(price) * record.quantity;
                 return (
                     <div className="flex items-center justify-center gap-1">
-                         <AntImage 
-                            src={
-                                type === 'coin' ? (settings?.coin || "/images/e-coin.png") :
-                                type === 'stamp' ? (settings?.stamp || "/images/stamp.png") :
-                                type === 'freecoin' ? (settings?.freecoin || "/images/money-bag.png") :
-                                type === 'rp' ? (settings?.rp || "/images/rp.png") :
-                                "/images/e-coin.png"
-                            }
-                            width={16}
-                            height={16}
-                            preview={false}
-                        />
+                         <CurrencyIcon type={type} settings={settings} size={16} />
                         <Text type="danger" strong>{total.toLocaleString()}</Text>
                     </div>
                 );
@@ -560,33 +539,11 @@ export default function CartDetail() {
                                                                             <div className="flex flex-col">
                                                                                 <div className="flex items-center gap-1 text-xs text-gray-500">
                                                                                     <span>ต่อชิ้น:</span>
-                                                                                    <AntImage 
-                             src={
-                                type === 'coin' ? (settings?.coin || "/images/e-coin.png") :
-                                type === 'stamp' ? (settings?.stamp || "/images/stamp.png") :
-                                type === 'freecoin' ? (settings?.freecoin || "/images/money-bag.png") :
-                                type === 'rp' ? (settings?.rp || "/images/rp.png") :
-                                "/images/e-coin.png"
-                            }
-                                                                                        width={12}
-                                                                                        height={12}
-                                                                                        preview={false}
-                                                                                    />
+                                                                                    <CurrencyIcon type={type} settings={settings} size={12} />
                                                                                     <Text>{Number(price).toLocaleString()}</Text>
                                                                                 </div>
                                                                                 <div className="flex items-center gap-1">
-                                                                                    <AntImage 
-                             src={
-                                type === 'coin' ? (settings?.coin || "/images/e-coin.png") :
-                                type === 'stamp' ? (settings?.stamp || "/images/stamp.png") :
-                                type === 'freecoin' ? (settings?.freecoin || "/images/money-bag.png") :
-                                type === 'rp' ? (settings?.rp || "/images/rp.png") :
-                                "/images/e-coin.png"
-                            }
-                                                                                        width={16}
-                                                                                        height={16}
-                                                                                        preview={false}
-                                                                                    />
+                                                                                    <CurrencyIcon type={type} settings={settings} size={16} />
                                                                                     <Text type="danger" strong className="text-base">{total.toLocaleString()}</Text>
                                                                                 </div>
                                                                             </div>
@@ -677,19 +634,7 @@ export default function CartDetail() {
                                     cartSummary.currency_list.map((curr: any, index: number) => (
                                         <div key={index} className="flex justify-between items-center">
                                             <div className="flex items-center gap-2">
-                                                <AntImage 
-                                                    src={
-                                                        curr.type === 'coin' ? (settings?.coin || "/images/e-coin.png") :
-                                                        curr.type === 'stamp' ? (settings?.stamp || "/images/stamp.png") :
-                                                        curr.type === 'freecoin' ? (settings?.freecoin || "/images/money-bag.png") :
-                                                        curr.type === 'rp' ? (settings?.rp || "/images/rp.png") :
-                                                        "/images/e-coin.png"
-                                                    }
-                                                    width={24}
-                                                    height={24}
-                                                    preview={false}
-                                                    alt={curr.name}
-                                                />
+                                                <CurrencyIcon type={curr.type} settings={settings} size={24} alt={curr.name} />
                                                 <Text className="text-gray-600">{curr.name}</Text>
                                             </div>
                                             <Text type="danger" strong className="text-xl">

@@ -9,6 +9,7 @@ import type { ActiveCategory } from "@/services/apiServices";
 
 interface ActiveCategoriesStripProps {
   categories: ActiveCategory[];
+  categoryType?: string;
 }
 
 const pillThemes = [
@@ -23,15 +24,34 @@ const pillThemes = [
   "!bg-pink-500 !text-white border border-pink-500 shadow-[0_10px_24px_-18px_rgba(236,72,153,0.8)]",
 ];
 
-export default function ActiveCategoriesStrip({ categories }: ActiveCategoriesStripProps) {
+export default function ActiveCategoriesStrip({
+  categories,
+  categoryType = "all",
+}: ActiveCategoriesStripProps) {
   if (!categories.length) return null;
+
+  const buildCategoryHref = (categoryId: string | number, categoryName?: string) => {
+    const params = new URLSearchParams({
+      type: categoryType,
+      categoryId: String(categoryId),
+      tab: "new",
+      limit: "10",
+      page: "1",
+    });
+
+    if (categoryName) {
+      params.set("name", categoryName);
+    }
+
+    return `/cat/list?${params.toString()}`;
+  };
 
   return (
     <section className="mb-5 mt-6 w-full border-b border-stone-200 pb-4 sm:mb-6 sm:mt-8">
       <div className="flex items-end justify-between gap-4">
         <p className="text-[15px] font-semibold text-stone-900">หมวดหมู่</p>
         <Link
-          href="/cat/all?type=all&tab=new&page=1&name=ทั้งหมด"
+          href={buildCategoryHref("all", "ทั้งหมด")}
           className="shrink-0 text-xs font-semibold text-emerald-600 transition hover:text-emerald-700"
         >
           ดูทั้งหมด
@@ -42,7 +62,7 @@ export default function ActiveCategoriesStrip({ categories }: ActiveCategoriesSt
         {categories.map((category, index) => (
           <Link
             key={`${category.id}-${category.name}`}
-            href={`/cat/${category.id}?type=all&tab=new&page=1&name=${encodeURIComponent(category.name)}`}
+            href={buildCategoryHref(category.id, category.name)}
             className={`inline-flex min-h-8 items-center rounded-md px-3 py-1.5 text-xs font-semibold leading-none no-underline transition duration-200 hover:-translate-y-0.5 hover:brightness-[1.05] ${pillThemes[index % pillThemes.length]}`}
           >
             {category.name}
@@ -69,7 +89,7 @@ export default function ActiveCategoriesStrip({ categories }: ActiveCategoriesSt
           {categories.map((category, index) => (
             <SwiperSlide key={`${category.id}-${category.name}`} className="!h-auto pb-2">
               <Link
-                href={`/cat/${category.id}?type=all&tab=new&page=1&name=${encodeURIComponent(category.name)}`}
+                href={buildCategoryHref(category.id, category.name)}
                 className={`flex min-h-8 w-full items-center justify-center rounded-md px-2 py-1.5 text-center text-[11px] font-semibold leading-none no-underline transition duration-200 ${pillThemes[index % pillThemes.length]}`}
               >
                 <span className="line-clamp-1">{category.name}</span>

@@ -17,6 +17,7 @@ interface RecommendCardProps {
       title?: string;
     };
   };
+  onBookClick?: (book: RecommendCardProps["data"]["book"]) => void;
 }
 
 const formatViews = (num: number | undefined | null): string => {
@@ -26,7 +27,7 @@ const formatViews = (num: number | undefined | null): string => {
   return num.toString();
 };
 
-const RecommendCard = ({ data }: RecommendCardProps) => {
+const RecommendCard = ({ data, onBookClick }: RecommendCardProps) => {
   if (!data?.book) return null;
 
   const imageUrl = data.banner.startsWith('http')
@@ -34,7 +35,11 @@ const RecommendCard = ({ data }: RecommendCardProps) => {
                     : `https://img.enjoybook.co/enjoybook.image/recommend/${data.banner}`;
 
   return (
-    <Link href={`/book/${data.book.book_id}`} className="block w-[85vw] sm:w-auto">
+    <Link
+      href={`/book/${data.book.book_id}`}
+      className="block w-[85vw] sm:w-auto"
+      onClick={() => onBookClick?.(data.book)}
+    >
       <div className="w-full sm:w-[470px] h-auto aspect-[470/275] sm:h-[275px] rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white flex flex-col border border-gray-100 relative group">
         <div className="relative w-full h-full">
           <Image

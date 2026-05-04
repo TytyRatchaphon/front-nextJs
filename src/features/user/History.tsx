@@ -2,37 +2,28 @@
 
 import React from 'react'
 import { Card, Tabs, Table, Empty, notification } from 'antd';
-import apiClient from '@/services/apiClient'
-import { useQuery } from '@tanstack/react-query'
+import {
+  fetchGachaHistory,
+  fetchGetMoreHistory,
+  fetchGiftHistory,
+  fetchPaymentHistory,
+  fetchRedeemHistory,
+  fetchStoreHistory,
+  fetchUseCoinHistory,
+} from '@/services/apiServices'
+import { useHistoryTab } from './hooks/useHistoryTab'
+import { clampHistoryPage, getHistoryTotal, type HistoryQueryLike } from './historyPagination'
+import { createHistoryColumns, createStoreHistoryExpandable, HISTORY_TABS } from './historyColumns'
 import { get_date as use_date } from '@/utils/dateUtils'
 import '@/components/home/Banner';
 import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import GifLoader from '@/components/utility/GifLoader';
-import Image from 'next/image';
 import '@/utils/imageUtils';
 import { CloseCircleOutlined } from '@ant-design/icons';
 
 
 function History() {
   const [activeKey, setActiveKey] = React.useState<string>('1')
-
-  const tabs = [
-    'ประวัติการเติมเหรียญ',
-    'ประวัติการใช้เหรียญ',
-    'ประวัติ REDEEM',
-    'กิจกรรมกล่องสุ่มปริศนา',
-    'ประวัติการได้รับเหรียญเพิ่มเติม',
-    'ประวัติการแลกของขวัญ',
-    'ประวัติการซื้อสินค้า',
-  ]
-
-  // table columns that apply for most history lists
-  const columns = React.useMemo(() => [
-    { title: 'วัน/เดือน/ปี', dataIndex: 'date', key: 'date', width: 180 },
-    { title: 'รายละเอียดสินค้า', dataIndex: 'detail', key: 'detail' },
-    { title: 'ราคา', dataIndex: 'price', key: 'price', width: 120, align: 'right' as const },
-    { title: 'สถานะ', dataIndex: 'status', key: 'status', width: 140, align: 'center' as const },
-  ], [])
 
   // no data for now; each tab will render a table with Empty when data is empty
   const data: any[] = []
@@ -52,38 +43,33 @@ function History() {
   // use react-query to load history endpoints; enabled only when corresponding tab active
 
   // pagination state for tabs (declare before queries so queries can use them)
-  const [paymentsPage, setPaymentsPage] = React.useState(1)
-  const [useCoinsPage, setUseCoinsPage] = React.useState(1)
-  const [redeemPage, setRedeemPage] = React.useState(1)
-  const [gachaPage, setGachaPage] = React.useState(1)
-  const [getmorePage, setGetmorePage] = React.useState(1)
-  const [giftPage, setGiftPage] = React.useState(1)
-  const [storeHistoryPage, setStoreHistoryPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState(20)
 
   // keep last-known totals to avoid transient 0 totals during fetches
 
 
 
-  const paymentsQuery = useQuery<any>(({
-    queryKey: ['his_payment', paymentsPage, pageSize],
-    queryFn: async () => {
-      const resp = await apiClient.get('/user/his_payment', { params: { page: paymentsPage, limit: pageSize } })
-      return resp.data
-    },
+  const {
+    page: paymentsPage,
+    setPage: setPaymentsPage,
+    query: paymentsQuery,
+  } = useHistoryTab({
+    queryKey: 'his_payment',
+    pageSize,
     enabled: activeKey === '1',
-    placeholderData: (previousData: any) => previousData,
-  } as any))
+    fetcher: fetchPaymentHistory,
+  })
 
-  const useCoinQuery = useQuery<any>(({
-    queryKey: ['his_usecoin', useCoinsPage, pageSize],
-    queryFn: async () => {
-      const resp = await apiClient.get('/user/his_usecoin', { params: { page: useCoinsPage, limit: pageSize } })
-      return resp.data
-    },
+  const {
+    page: useCoinsPage,
+    setPage: setUseCoinsPage,
+    query: useCoinQuery,
+  } = useHistoryTab({
+    queryKey: 'his_usecoin',
+    pageSize,
     enabled: activeKey === '2',
-    placeholderData: (previousData: any) => previousData,
-  } as any))
+    fetcher: fetchUseCoinHistory,
+  })
 
 
 
@@ -125,37 +111,40 @@ function History() {
   }, [activeKey])
 
   // redeem history query
-  const redeemQuery = useQuery<any>(({
-    queryKey: ['his_redeem', redeemPage, pageSize],
-    queryFn: async () => {
-      const resp = await apiClient.get('/user/his_redeem', { params: { page: redeemPage, limit: pageSize } })
-      return resp.data
-    },
+  const {
+    page: redeemPage,
+    setPage: setRedeemPage,
+    query: redeemQuery,
+  } = useHistoryTab({
+    queryKey: 'his_redeem',
+    pageSize,
     enabled: activeKey === '3',
-    placeholderData: (previousData: any) => previousData,
-  } as any))
+    fetcher: fetchRedeemHistory,
+  })
 
   // gacha (กิจกรรมกล่องสุ่มปริศนา) history
-  const gachaQuery = useQuery<any>(({
-    queryKey: ['his_gacha', gachaPage, pageSize],
-    queryFn: async () => {
-      const resp = await apiClient.get('/user/his_gacha', { params: { page: gachaPage, limit: pageSize } })
-      return resp.data
-    },
+  const {
+    page: gachaPage,
+    setPage: setGachaPage,
+    query: gachaQuery,
+  } = useHistoryTab({
+    queryKey: 'his_gacha',
+    pageSize,
     enabled: activeKey === '4',
-    placeholderData: (previousData: any) => previousData,
-  } as any))
+    fetcher: fetchGachaHistory,
+  })
 
   // history of received extras (ประวัติการได้รับเหรียญเพิ่มเติม)
-  const getMoreQuery = useQuery<any>(({
-    queryKey: ['his_getmore', getmorePage, pageSize],
-    queryFn: async () => {
-      const resp = await apiClient.get('/user/his_getmore', { params: { page: getmorePage, limit: pageSize } })
-      return resp.data
-    },
+  const {
+    page: getmorePage,
+    setPage: setGetmorePage,
+    query: getMoreQuery,
+  } = useHistoryTab({
+    queryKey: 'his_getmore',
+    pageSize,
     enabled: activeKey === '5',
-    placeholderData: (previousData: any) => previousData,
-  } as any))
+    fetcher: fetchGetMoreHistory,
+  })
 
   // update last-known totals when new data arrives
 
@@ -290,26 +279,28 @@ function History() {
   }, [useCoinRaw])
 
   // his_gift (ประวัติการแลกของขวัญ)
-  const giftQuery = useQuery<any>(({
-    queryKey: ['his_gift', giftPage, pageSize],
-    queryFn: async () => {
-      const resp = await apiClient.get('/user/his_gift', { params: { page: giftPage, limit: pageSize } })
-      return resp.data
-    },
+  const {
+    page: giftPage,
+    setPage: setGiftPage,
+    query: giftQuery,
+  } = useHistoryTab({
+    queryKey: 'his_gift',
+    pageSize,
     enabled: activeKey === '6',
-    placeholderData: (previousData: any) => previousData,
-  } as any))
+    fetcher: fetchGiftHistory,
+  })
 
   // store purchase history (ประวัติการซื้อสินค้า)
-  const storeHistoryQuery = useQuery<any>(({
-    queryKey: ['his_store', storeHistoryPage, pageSize],
-    queryFn: async () => {
-      const resp = await apiClient.get('/user/his_store', { params: { page: storeHistoryPage, limit: pageSize } })
-      return resp.data
-    },
+  const {
+    page: storeHistoryPage,
+    setPage: setStoreHistoryPage,
+    query: storeHistoryQuery,
+  } = useHistoryTab({
+    queryKey: 'his_store',
+    pageSize,
     enabled: activeKey === '7',
-    placeholderData: (previousData: any) => previousData,
-  } as any))
+    fetcher: fetchStoreHistory,
+  })
 
   React.useEffect(() => {
     const errorConfigs = [
@@ -388,287 +379,201 @@ function History() {
     }))
   }, [storeHistoryRaw])
 
+  const historyPageConfigs = React.useMemo(() => [
+    {
+      query: paymentsQuery as HistoryQueryLike,
+      page: paymentsPage,
+      fallbackLength: payments.length,
+      setPage: setPaymentsPage,
+    },
+    {
+      query: useCoinQuery as HistoryQueryLike,
+      page: useCoinsPage,
+      fallbackLength: useCoins.length,
+      setPage: setUseCoinsPage,
+    },
+    {
+      query: redeemQuery as HistoryQueryLike,
+      page: redeemPage,
+      fallbackLength: redeems.length,
+      setPage: setRedeemPage,
+    },
+    {
+      query: gachaQuery as HistoryQueryLike,
+      page: gachaPage,
+      fallbackLength: gachas.length,
+      setPage: setGachaPage,
+    },
+    {
+      query: getMoreQuery as HistoryQueryLike,
+      page: getmorePage,
+      fallbackLength: getMores.length,
+      setPage: setGetmorePage,
+    },
+    {
+      query: giftQuery as HistoryQueryLike,
+      page: giftPage,
+      fallbackLength: gifts.length,
+      setPage: setGiftPage,
+    },
+    {
+      query: storeHistoryQuery as HistoryQueryLike,
+      page: storeHistoryPage,
+      fallbackLength: storeHistories.length,
+      setPage: setStoreHistoryPage,
+    },
+  ], [
+    paymentsQuery,
+    paymentsPage,
+    payments.length,
+    useCoinQuery,
+    useCoinsPage,
+    useCoins.length,
+    redeemQuery,
+    redeemPage,
+    redeems.length,
+    gachaQuery,
+    gachaPage,
+    gachas.length,
+    getMoreQuery,
+    getmorePage,
+    getMores.length,
+    giftQuery,
+    giftPage,
+    gifts.length,
+    storeHistoryQuery,
+    storeHistoryPage,
+    storeHistories.length,
+  ])
+
   // Ensure current page indices stay within valid range when data or pageSize changes
   React.useEffect(() => {
-    const paymentsTotal = paymentsQuery.data?.data?.total ?? paymentsQuery.data?.data?.pagination?.total ?? paymentsQuery.data?.total ?? (paymentsQuery as any).previousData?.data?.total ?? (paymentsQuery as any).previousData?.data?.pagination?.total ?? payments.length
-    const maxPaymentsPage = Math.max(1, paymentsQuery.data?.data?.totalPages ?? Math.ceil((paymentsTotal ?? 0) / pageSize))
-    if (!paymentsQuery.isFetching && paymentsPage > maxPaymentsPage) setPaymentsPage(maxPaymentsPage)
-
-    const useCoinsTotal = useCoinQuery.data?.data?.total ?? useCoinQuery.data?.data?.pagination?.total ?? useCoinQuery.data?.total ?? (useCoinQuery as any).previousData?.data?.total ?? (useCoinQuery as any).previousData?.data?.pagination?.total ?? useCoins.length
-    const maxUseCoinsPage = Math.max(1, useCoinQuery.data?.data?.totalPages ?? Math.ceil((useCoinsTotal ?? 0) / pageSize))
-    if (!useCoinQuery.isFetching && useCoinsPage > maxUseCoinsPage) setUseCoinsPage(maxUseCoinsPage)
-
-    const redeemTotal = redeemQuery.data?.data?.total ?? redeemQuery.data?.data?.pagination?.total ?? redeemQuery.data?.total ?? (redeemQuery as any).previousData?.data?.total ?? (redeemQuery as any).previousData?.data?.pagination?.total ?? redeems.length
-    const maxRedeemPage = Math.max(1, redeemQuery.data?.data?.totalPages ?? Math.ceil((redeemTotal ?? 0) / pageSize))
-    if (!redeemQuery.isFetching && redeemPage > maxRedeemPage) setRedeemPage(maxRedeemPage)
-
-    const gachaTotal = gachaQuery.data?.data?.total ?? gachaQuery.data?.data?.pagination?.total ?? gachaQuery.data?.total ?? (gachaQuery as any).previousData?.data?.total ?? (gachaQuery as any).previousData?.data?.pagination?.total ?? gachas.length
-    const maxGachaPage = Math.max(1, gachaQuery.data?.data?.totalPages ?? Math.ceil((gachaTotal ?? 0) / pageSize))
-    if (!gachaQuery.isFetching && gachaPage > maxGachaPage) setGachaPage(maxGachaPage)
-
-    const getMoreTotal = getMoreQuery.data?.data?.total ?? getMoreQuery.data?.data?.pagination?.total ?? getMoreQuery.data?.total ?? (getMoreQuery as any).previousData?.data?.total ?? (getMoreQuery as any).previousData?.data?.pagination?.total ?? getMores.length
-    const maxGetMorePage = Math.max(1, getMoreQuery.data?.data?.totalPages ?? Math.ceil((getMoreTotal ?? 0) / pageSize))
-    if (!getMoreQuery.isFetching && getmorePage > maxGetMorePage) setGetmorePage(maxGetMorePage)
-
-    const giftTotal = giftQuery.data?.data?.total ?? giftQuery.data?.data?.pagination?.total ?? giftQuery.data?.total ?? (giftQuery as any).previousData?.data?.total ?? (giftQuery as any).previousData?.data?.pagination?.total ?? gifts.length
-    const maxGiftPage = Math.max(1, giftQuery.data?.data?.totalPages ?? Math.ceil((giftTotal ?? 0) / pageSize))
-    if (!giftQuery.isFetching && giftPage > maxGiftPage) setGiftPage(maxGiftPage)
-
-    const storeTotal = storeHistoryQuery.data?.data?.total ?? storeHistoryQuery.data?.data?.pagination?.total ?? storeHistoryQuery.data?.total ?? (storeHistoryQuery as any).previousData?.data?.total ?? (storeHistoryQuery as any).previousData?.data?.pagination?.total ?? storeHistories.length
-    const maxStorePage = Math.max(1, storeHistoryQuery.data?.data?.totalPages ?? Math.ceil((storeTotal ?? 0) / pageSize))
-    if (!storeHistoryQuery.isFetching && storeHistoryPage > maxStorePage) setStoreHistoryPage(maxStorePage)
-  }, [
-    payments.length,
-    useCoins.length,
-    redeems.length,
-    gachas.length,
-    getMores.length,
-    gifts.length,
-    storeHistories.length,
-    pageSize,
-    paymentsPage,
-    useCoinsPage,
-    redeemPage,
-    gachaPage,
-    getmorePage,
-    giftPage,
-    storeHistoryPage,
-    paymentsQuery,
-    useCoinQuery,
-    redeemQuery,
-    gachaQuery,
-    getMoreQuery,
-    giftQuery,
-    storeHistoryQuery,
-  ])
+    historyPageConfigs.forEach((config) => {
+      clampHistoryPage({
+        ...config,
+        pageSize,
+      })
+    })
+  }, [historyPageConfigs, pageSize])
 
   const { settings } = useWebsiteSettings();
 
-  const tableColumns = React.useMemo(() => {
+  const tableColumns = React.useMemo(() => createHistoryColumns({ activeKey, settings }), [activeKey, settings])
+
+  const storeHistoryExpandable = React.useMemo(() => createStoreHistoryExpandable(settings), [settings])
+
+  const createHistoryPagination = React.useCallback(({
+    page,
+    query,
+    fallbackLength,
+    setPage,
+  }: {
+    page: number;
+    query: HistoryQueryLike;
+    fallbackLength: number;
+    setPage: (page: number) => void;
+  }) => ({
+    current: page,
+    pageSize,
+    total: getHistoryTotal(query, fallbackLength),
+    showSizeChanger: false,
+    onChange: (nextPage: number, newPageSize?: number) => {
+      setPage(nextPage)
+      if (newPageSize && newPageSize !== pageSize) setPageSize(newPageSize)
+    },
+  }), [pageSize])
+
+  const tablePagination = React.useMemo(() => {
     if (activeKey === '1') {
-      return [
-        { title: 'เลขที่รายการ', dataIndex: 'paymentID', key: 'paymentID', width: 220 },
-        { title: 'วัน-เวลา', dataIndex: 'date', key: 'date', width: 200 },
-        { title: 'Status', dataIndex: 'status', key: 'status', width: 140, align: 'center' as const },
-        { title: 'Total', dataIndex: 'price', key: 'price', width: 120, align: 'right' as const },
-        { title: 'Detail', dataIndex: 'detail', key: 'detail', width: 120, align: 'center' as const },
-      ]
+      return createHistoryPagination({
+        page: paymentsPage,
+        query: paymentsQuery as HistoryQueryLike,
+        fallbackLength: payments.length,
+        setPage: setPaymentsPage,
+      })
     }
 
     if (activeKey === '2') {
-      return [
-        { title: 'วัน-เวลา', dataIndex: 'date', key: 'date', width: 220 },
-        {
-          title: 'ชื่อเรื่อง',
-          dataIndex: 'bookTitle',
-          key: 'bookTitle',
-          render: (text: any, record: any) => (
-            <div style={{ whiteSpace: 'nowrap' }}>{text ?? record?.raw?.BookTran?.name ?? ''}</div>
-          ),
-        },
-        {
-          title: 'ชื่อตอน',
-          dataIndex: 'epTitle',
-          key: 'epTitle',
-          width: 240,
-          render: (text: any, record: any) => (
-            <div style={{ whiteSpace: 'nowrap' }}>{text ?? record?.raw?.BookTranEp?.name ?? ''}</div>
-          ),
-        },
-        {
-          title: 'Total',
-          dataIndex: 'total',
-          key: 'total',
-          width: 140,
-          align: 'right' as const,
-          render: (text: any, record: any) => {
-            const isFreeCoin = record.type === 'freecoin';
-            const src = isFreeCoin ? (settings?.freecoin || '/images/money-bag.png') : (settings?.coin || '/images/e-coin.png');
-            return (
-              <div className="flex items-center justify-end gap-2">
-                <span>{text}</span>
-                <Image unoptimized src={src} alt="coin" width={18} height={18} />
-              </div>
-            )
-          },
-        },
-      ]
+      return createHistoryPagination({
+        page: useCoinsPage,
+        query: useCoinQuery as HistoryQueryLike,
+        fallbackLength: useCoins.length,
+        setPage: setUseCoinsPage,
+      })
     }
 
     if (activeKey === '3') {
-      return [
-        { title: 'วัน-เวลา', dataIndex: 'date', key: 'date', width: 220 },
-        { title: 'Redeem Code', dataIndex: 'code', key: 'code', width: 200 },
-        { title: 'รางวัล', dataIndex: 'name', key: 'name', render: (text: any) => <span>{text}</span> },
-        {
-          title: 'จำนวน',
-          dataIndex: 'unit',
-          key: 'unit',
-          width: 140,
-          align: 'right' as const,
-          render: (unit: any, record: any) => {
-            const type = record?.type ?? ''
-            const src = type === 'getcoin' ? settings?.coin || '/images/e-coin.png' : type === 'getfreecoin' ? settings?.freecoin || '/images/money-bag.png' : settings?.coin || '/images/e-coin.png'
-            return (
-              <div className="flex items-center justify-end gap-2">
-                <span>{unit}</span>
-                <Image unoptimized src={src} alt="icon" width={18} height={18} />
-              </div>
-            )
-          },
-        },
-      ]
-    }
-
-    if (activeKey === '6') {
-      return [
-        { title: 'วัน-เวลา', dataIndex: 'date', key: 'date', width: 220 },
-        { title: 'รายละเอียด', dataIndex: 'detail', key: 'detail' },
-        { title: 'สถานะ', dataIndex: 'status', key: 'status', width: 140, align: 'center' as const },
-        { title: 'เพิ่มเติม / Tracking Number', dataIndex: 'extra', key: 'extra', width: 200 },
-      ]
-    }
-
-    if (activeKey === '7') {
-      return [
-        { title: 'วัน-เวลา', dataIndex: 'date', key: 'date', width: 140 }, // Reduced from 220
-        { title: 'สินค้า', dataIndex: 'name', key: 'name', width: 180 }, // Added width to prevent squishing
-        {
-          title: 'ราคา',
-          dataIndex: 'price',
-          key: 'price',
-          width: 120, // Reduced from 250
-          align: 'right' as const,
-          render: (val: any, record: any) => {
-            // If price is string (new format), display as is
-            if (typeof val === 'string') {
-                const parts = val.split(',').map(p => p.trim());
-                return (
-                    <div className="flex flex-col items-end gap-1">
-                        {parts.map((part, idx) => {
-                            const [amount, currency] = part.split(' ');
-                            const curLower = (currency || '').toLowerCase();
-                            
-                            const map: Record<string, string> = {
-                              coin: settings?.coin || '/images/e-coin.png',
-                              coupon: settings?.coupon || '/images/gacha.png',
-                              freecoin: settings?.freecoin || '/images/money-bag.png',
-                              flower: settings?.flower || '/images/flower.png',
-                              heart: settings?.heart || '/images/heart.png',
-                              exp: settings?.exp || '/images/exp.png',
-                              fast_ticket: settings?.fast_ticket || '/images/fast_ticket.png',
-                              stamp: settings?.stamp || '/images/stamp.png',
-                              current_rp: settings?.rp || settings?.exp || '/images/e-coin.png',
-                              rp: settings?.rp || settings?.exp || '/images/e-coin.png',
-                            }
-                            const src = map[curLower];
-
-                            if (src) {
-                                return (
-                                    <div key={idx} className="flex items-center justify-end gap-1">
-                                        <span className="text-gray-700 font-medium">{Number(amount).toLocaleString()}</span>
-                                        <Image unoptimized src={src} alt={currency} width={16} height={16} />
-                                    </div>
-                                )
-                            }
-                            
-                            return <span key={idx} className="text-gray-700 font-medium">{part}</span>;
-                        })}
-                    </div>
-                );
-            }
-
-            return (
-              <div className="flex items-center justify-end gap-2">
-                <span>{Number(val).toLocaleString()}</span>
-                {record.des === 'coin' ? (
-                  <Image unoptimized src={settings?.coin || '/images/e-coin.png'} alt="coin" width={18} height={18} />
-                ) : record.des === 'freecoin' ? (
-                  <Image unoptimized src={settings?.freecoin || '/images/money-bag.png'} alt="freecoin" width={18} height={18} />
-                ) : record.des === 'stamp' ? (
-                  <Image unoptimized src={settings?.stamp || '/images/stamp.png'} alt="stamp" width={18} height={18} />
-                ) : (
-                  <span className="text-gray-500 text-xs">THB</span>
-                )}
-              </div>
-            )
-          }
-        },
-      ]
+      return createHistoryPagination({
+        page: redeemPage,
+        query: redeemQuery as HistoryQueryLike,
+        fallbackLength: redeems.length,
+        setPage: setRedeemPage,
+      })
     }
 
     if (activeKey === '4') {
-      return [
-        { title: 'วันที่ได้รับ', dataIndex: 'date', key: 'date', width: 220 },
-        {
-          title: 'รางวัล',
-          dataIndex: 'gift_value',
-          key: 'gift_value',
-          align: 'center' as const,
-          render: (val: any, record: any) => {
-            const type = record?.gift_type ?? ''
-            const value = val ?? record?.gift_value ?? ''
-            const src = type === 'stamp' ? settings?.stamp || '/images/stamp.png' : type === 'freecoin' ? settings?.freecoin || '/images/money-bag.png' : type === 'coin' ? settings?.coin || '/images/e-coin.png' : settings?.stamp || '/images/stamp.png'
-            return (
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-center">{value}</span>
-                <Image unoptimized src={src} alt={type} width={18} height={18} />
-              </div>
-            )
-          },
-        },
-      ]
+      return createHistoryPagination({
+        page: gachaPage,
+        query: gachaQuery as HistoryQueryLike,
+        fallbackLength: gachas.length,
+        setPage: setGachaPage,
+      })
     }
 
     if (activeKey === '5') {
-      return [
-        { title: 'วันที่ได้รับ', dataIndex: 'date', key: 'date', width: 220 },
-        { title: 'เงื่อนไข', dataIndex: 'condition', key: 'condition', width: 160 },
-        {
-          title: 'ประเภท',
-          dataIndex: 'currency',
-          key: 'currency',
-          align: 'center' as const,
-          render: (val: any, record: any) => {
-            const cur = (val ?? record?.currency ?? '').toLowerCase()
-            const map: Record<string, string> = {
-              coin: settings?.coin || '/images/e-coin.png',
-              coupon: settings?.coupon || '/images/gacha.png',
-              freecoin: settings?.freecoin || '/images/money-bag.png',
-              flower: settings?.flower || '/images/flower.png',
-              heart: settings?.heart || '/images/heart.png',
-              exp: settings?.exp || '/images/exp.png',
-              fast_ticket: settings?.fast_ticket || '/images/fast_ticket.png',
-              stamp: settings?.stamp || '/images/stamp.png',
-              current_rp: settings?.rp || settings?.exp || '/images/e-coin.png',
-              rp: settings?.rp || settings?.exp || '/images/e-coin.png',
-            }
-            const src = map[cur] ?? '/images/e-coin.png'
-            return (
-              <div className="flex items-center justify-center gap-2">
-                <Image unoptimized src={src} alt={cur} width={18} height={18} />
-              </div>
-            )
-          },
-        },
-        { title: 'จำนวน', dataIndex: 'unit', key: 'unit', width: 120, align: 'right' as const },
-        { title: 'หมายเหตุ', dataIndex: 'note', key: 'note' },
-      ]
+      return createHistoryPagination({
+        page: getmorePage,
+        query: getMoreQuery as HistoryQueryLike,
+        fallbackLength: getMores.length,
+        setPage: setGetmorePage,
+      })
     }
 
-    return columns
+    if (activeKey === '6') {
+      return createHistoryPagination({
+        page: giftPage,
+        query: giftQuery as HistoryQueryLike,
+        fallbackLength: gifts.length,
+        setPage: setGiftPage,
+      })
+    }
+
+    if (activeKey === '7') {
+      return createHistoryPagination({
+        page: storeHistoryPage,
+        query: storeHistoryQuery as HistoryQueryLike,
+        fallbackLength: storeHistories.length,
+        setPage: setStoreHistoryPage,
+      })
+    }
+
+    return { pageSize, current: 1, total: data.length }
   }, [
     activeKey,
-    columns,
-    settings?.coin,
-    settings?.coupon,
-    settings?.exp,
-    settings?.fast_ticket,
-    settings?.flower,
-    settings?.freecoin,
-    settings?.heart,
-    settings?.stamp,
-    settings?.rp,
+    createHistoryPagination,
+    data.length,
+    gachaPage,
+    gachaQuery,
+    gachas.length,
+    getMoreQuery,
+    getMores.length,
+    getmorePage,
+    giftPage,
+    giftQuery,
+    gifts.length,
+    pageSize,
+    payments.length,
+    paymentsPage,
+    paymentsQuery,
+    redeemPage,
+    redeemQuery,
+    redeems.length,
+    storeHistories.length,
+    storeHistoryPage,
+    storeHistoryQuery,
+    useCoinQuery,
+    useCoins.length,
+    useCoinsPage,
   ])
 
   return (
@@ -686,7 +591,7 @@ function History() {
                   type="line"
                   moreIcon={null}
                   tabBarStyle={{ padding: '6px', background: 'transparent', overflowX: 'visible' }}
-                  items={tabs.map((t, i) => ({
+                  items={HISTORY_TABS.map((t, i) => ({
                     key: String(i + 1),
                     label: (
                       <div
@@ -771,128 +676,8 @@ function History() {
                                     ? storeHistories
                                     : data
                     }
-                    expandable={activeKey === '7' ? {
-                        expandRowByClick: true,
-                        expandedRowRender: (record: any) => {
-                            if (!record.items || record.items.length === 0) return null;
-                            const srcMap: Record<string, string> = {
-                              coin: settings?.coin || '/images/e-coin.png',
-                              coupon: settings?.coupon || '/images/gacha.png',
-                              freecoin: settings?.freecoin || '/images/money-bag.png',
-                              flower: settings?.flower || '/images/flower.png',
-                              heart: settings?.heart || '/images/heart.png',
-                              exp: settings?.exp || '/images/exp.png',
-                              fast_ticket: settings?.fast_ticket || '/images/fast_ticket.png',
-                              stamp: settings?.stamp || '/images/stamp.png',
-                              current_rp: settings?.rp || settings?.exp || '/images/e-coin.png',
-                              rp: settings?.rp || settings?.exp || '/images/e-coin.png',
-                            };
-                            return (
-                                <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                                    <h4 className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">รายละเอียดสินค้าในรายการนี้</h4>
-                                    <div className="flex flex-col gap-2">
-                                        {record.items.map((item: any, i: number) => {
-                                             const currency = (item.currency_cached || '').toLowerCase();
-                                             const src = srcMap[currency] || null;
-
-                                             return (
-                                                <div key={i} className="flex items-center justify-between text-sm py-2 border-b border-gray-100 last:border-0">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
-                                                        <span className="text-gray-700 font-medium">{item.pack_name_cached}</span>
-                                                        <span className="text-gray-400 text-xs">x {item.quantity}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1">
-                                                        <span className="font-bold text-gray-800">{Number(item.final_price || item.total_price).toLocaleString()}</span>
-                                                        {src && <Image unoptimized src={src} alt={currency} width={16} height={16} />}
-                                                    </div>
-                                                </div>
-                                             );
-                                        })}
-                                    </div>
-                                </div>
-                            );
-                        },
-                        rowExpandable: (record: any) => record.items && record.items.length > 0,
-                    } : undefined}
-                    pagination={
-                      activeKey === '1'
-                        ? {
-                          current: paymentsPage,
-                          pageSize,
-                          total: paymentsQuery.data?.data?.total ?? paymentsQuery.data?.data?.pagination?.total ?? paymentsQuery.data?.total ?? (paymentsQuery as any).previousData?.data?.total ?? (paymentsQuery as any).previousData?.data?.pagination?.total ?? payments.length,
-                          showSizeChanger: false,
-                          onChange: (page: number) => {
-                            setPaymentsPage(page)
-                          },
-                        }
-                        : activeKey === '2'
-                          ? {
-                            current: useCoinsPage,
-                            pageSize,
-                            // prefer server-provided total, fall back to previous known total or array length
-                            total: useCoinQuery.data?.data?.total ?? useCoinQuery.data?.data?.pagination?.total ?? useCoinQuery.data?.total ?? (useCoinQuery as any).previousData?.data?.total ?? (useCoinQuery as any).previousData?.data?.pagination?.total ?? useCoins.length,
-                            showSizeChanger: false,
-                            onChange: (page: number, newPageSize?: number) => {
-                              setUseCoinsPage(page)
-                              if (newPageSize && newPageSize !== pageSize) setPageSize(newPageSize)
-                            },
-                          }
-                          : activeKey === '3'
-                            ? {
-                              current: redeemPage,
-                              pageSize,
-                              // use server total if available, otherwise array length; prefer previousData total if present
-                              total: redeemQuery.data?.data?.total ?? redeemQuery.data?.data?.pagination?.total ?? redeemQuery.data?.total ?? (redeemQuery as any).previousData?.data?.total ?? (redeemQuery as any).previousData?.data?.pagination?.total ?? redeems.length,
-                              showSizeChanger: false,
-                              onChange: (page: number) => setRedeemPage(page),
-                            }
-                            : activeKey === '4'
-                              ? {
-                                current: gachaPage,
-                                pageSize,
-                                total: gachaQuery.data?.data?.total ?? gachaQuery.data?.data?.pagination?.total ?? gachaQuery.data?.total ?? (gachaQuery as any).previousData?.data?.total ?? (gachaQuery as any).previousData?.data?.pagination?.total ?? gachas.length,
-                                showSizeChanger: false,
-                                onChange: (page: number, newPageSize?: number) => {
-                                  setGachaPage(page)
-                                  if (newPageSize && newPageSize !== pageSize) setPageSize(newPageSize)
-                                },
-                              }
-                              : activeKey === '5'
-                                ? {
-                                  current: getmorePage,
-                                  pageSize,
-                                  total: getMoreQuery.data?.data?.total ?? getMoreQuery.data?.data?.pagination?.total ?? getMoreQuery.data?.total ?? (getMoreQuery as any).previousData?.data?.total ?? (getMoreQuery as any).previousData?.data?.pagination?.total ?? getMores.length,
-                                  showSizeChanger: false,
-                                  onChange: (page: number, newPageSize?: number) => {
-                                    setGetmorePage(page)
-                                    if (newPageSize && newPageSize !== pageSize) setPageSize(newPageSize)
-                                  },
-                                }
-                                : activeKey === '6'
-                                  ? {
-                                    current: giftPage,
-                                    pageSize,
-                                    total: giftQuery.data?.data?.total ?? giftQuery.data?.data?.pagination?.total ?? giftQuery.data?.total ?? (giftQuery as any).previousData?.data?.total ?? (giftQuery as any).previousData?.data?.pagination?.total ?? gifts.length,
-                                    showSizeChanger: false,
-                                    onChange: (page: number, newPageSize?: number) => {
-                                      setGiftPage(page)
-                                      if (newPageSize && newPageSize !== pageSize) setPageSize(newPageSize)
-                                    },
-                                  }
-                                  : activeKey === '7'
-                                    ? {
-                                      current: storeHistoryPage,
-                                      pageSize,
-                                      total: storeHistoryQuery.data?.data?.total ?? storeHistoryQuery.data?.data?.pagination?.total ?? storeHistoryQuery.data?.total ?? (storeHistoryQuery as any).previousData?.data?.total ?? (storeHistoryQuery as any).previousData?.data?.pagination?.total ?? storeHistories.length,
-                                      showSizeChanger: false,
-                                      onChange: (page: number, newPageSize?: number) => {
-                                        setStoreHistoryPage(page)
-                                        if (newPageSize && newPageSize !== pageSize) setPageSize(newPageSize)
-                                      },
-                                    }
-                                    : { pageSize, current: 1, total: data.length }
-                    }
+                    expandable={activeKey === '7' ? storeHistoryExpandable : undefined}
+                    pagination={tablePagination}
                     rowKey="key"
                     locale={{
                       emptyText: (
@@ -915,3 +700,4 @@ function History() {
 }
 
 export default History;
+

@@ -85,9 +85,9 @@ const toStaticGifFrameSrc = (src: string): string => {
   }
 };
 
-const applyBookGifPreference = (src: string): string => {
+const applyBookGifPreference = (src: string, forceShowGif?: boolean): string => {
   if (!isGifAsset(src)) return src;
-  const showGif = readGifModePreference(true);
+  const showGif = forceShowGif ?? readGifModePreference(true);
   return showGif ? src : toStaticGifFrameSrc(src);
 };
 
@@ -105,8 +105,9 @@ export const resolveBookCoverImageSrc = (
   book: BookCoverSource | null | undefined,
   fallback = '/images/ejb.png',
   variant: 'tn' | 'thumbnail' | 'book' = 'tn',
+  forceShowGif?: boolean,
 ): string => {
-  const showGif = readGifModePreference(true);
+  const showGif = forceShowGif ?? readGifModePreference(true);
   const gifSource = pickValidBookCoverSource(book?.img_gif_full, book?.img_gif);
   const staticSource = pickValidBookCoverSource(
     book?.img,
@@ -118,7 +119,7 @@ export const resolveBookCoverImageSrc = (
   );
 
   const selectedSource = showGif ? (gifSource || staticSource) : (staticSource || gifSource);
-  return resolveBookImageSrc(selectedSource, fallback, variant);
+  return resolveBookImageSrc(selectedSource, fallback, variant, forceShowGif);
 };
 
 export const resolveImageSrc = (
@@ -153,6 +154,7 @@ export const resolveBookImageSrc = (
   src: string | null | undefined,
   fallback = '/images/ejb.png',
   variant: 'tn' | 'thumbnail' | 'book' = 'tn',
+  forceShowGif?: boolean,
 ): string => {
   const bookBaseMap = {
     tn: 'https://img.enjoybook.co/img/book/tn',
@@ -161,7 +163,7 @@ export const resolveBookImageSrc = (
   } as const;
 
   const resolved = resolveImageSrc(src, fallback, bookBaseMap[variant]);
-  return applyBookGifPreference(resolved);
+  return applyBookGifPreference(resolved, forceShowGif);
 };
 
 export const resolveBannerImageSrc = (
