@@ -56,7 +56,6 @@ const CartPopover: React.FC<CartPopoverProps> = ({ onClose }) => {
              notification.success({
                 message: 'ลบสินค้าเรียบร้อย',
                 description: 'ลบสินค้าเรียบร้อยแล้ว',
-                icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
                 placement: 'topRight',
             });
         },

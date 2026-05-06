@@ -63,7 +63,6 @@ const LoginApple = () => {
             notification.error({
                 message: 'เกิดข้อผิดพลาด',
                 description: 'Apple Sign-In SDK ยังไม่โหลด กรุณาลองใหม่อีกครั้ง',
-                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
                 placement: 'topRight',
             });
             setLoading(false);
@@ -86,7 +85,6 @@ const LoginApple = () => {
             notification.error({
                 message: 'เข้าสู่ระบบไม่สำเร็จ',
                 description: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบผ่าน Apple',
-                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
                 placement: 'topRight',
             });
         }
@@ -135,7 +133,6 @@ const LoginApple = () => {
                     notification.success({
                         message: 'เข้าสู่ระบบสำเร็จ',
                         description: 'เข้าสู่ระบบผ่าน Apple เรียบร้อยแล้ว',
-                        icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
                         placement: 'topRight',
                     });
                     closeLoginModal();
@@ -146,7 +143,6 @@ const LoginApple = () => {
                     notification.error({
                         message: 'เข้าสู่ระบบไม่สำเร็จ',
                         description: 'ไม่พบ token จาก Backend',
-                        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
                         placement: 'topRight',
                     });
                 }
@@ -155,7 +151,6 @@ const LoginApple = () => {
             notification.error({
                 message: 'เข้าสู่ระบบไม่สำเร็จ',
                 description: error.response?.data?.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบกับ Server',
-                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
                 placement: 'topRight',
             });
         } finally {

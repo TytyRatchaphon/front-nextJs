@@ -68,7 +68,6 @@ export default function QuestSection({ questGroups, onRefresh }: QuestSectionPro
             notification.success({
                 message: "รับรางวัลสำเร็จ!",
                 description: "คุณได้รับ RP เรียบร้อยแล้ว",
-                icon: <CheckCircleOutlined style={{ color: "#52c41a" }} />,
                 placement: "topRight",
             });
             onRefresh?.();

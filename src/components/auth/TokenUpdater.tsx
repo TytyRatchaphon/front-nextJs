@@ -66,7 +66,6 @@ export default function TokenUpdater() {
         notification.success({
             message: 'อัปเดตยอดเงินสำเร็จ',
             description: 'อัปเดตยอดเงินเรียบร้อยแล้ว',
-            icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
             placement: 'topRight',
         });
     }, [searchParams, router, pathname, updateToken]);

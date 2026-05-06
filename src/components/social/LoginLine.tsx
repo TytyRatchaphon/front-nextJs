@@ -26,7 +26,6 @@ const LoginLine = () => {
       notification.error({
         message: 'เข้าสู่ระบบไม่สำเร็จ',
         description: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบผ่าน LINE',
-        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
         placement: 'topRight',
       });
     }

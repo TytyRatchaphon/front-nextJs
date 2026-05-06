@@ -50,7 +50,6 @@ export const SprofileProfilePicture = ({ onProfileFileChange }: SprofileProfileP
       notification.error({
         message: 'เกิดข้อผิดพลาด',
         description: 'ไม่พบ token กรุณาเข้าสู่ระบบใหม่',
-        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
         placement: 'topRight',
       });
       return;
@@ -78,7 +77,6 @@ export const SprofileProfilePicture = ({ onProfileFileChange }: SprofileProfileP
       notification.error({
         message: 'เกิดข้อผิดพลาด',
         description: 'ไม่สามารถโหลดข้อมูลกรอบได้',
-        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
         placement: 'topRight',
       });
     } finally {
@@ -109,7 +107,6 @@ export const SprofileProfilePicture = ({ onProfileFileChange }: SprofileProfileP
       notification.success({
         message: 'เลือกกรอบสำเร็จ',
         description: `เลือกกรอบ: ${selectedFrameInModal.name}`,
-        icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
         placement: 'topRight',
       });
       setIsFrameModalOpen(false);
@@ -119,7 +116,6 @@ export const SprofileProfilePicture = ({ onProfileFileChange }: SprofileProfileP
       notification.success({
         message: 'นำกรอบออกเรียบร้อย',
         description: 'นำกรอบออกเรียบร้อยแล้ว',
-        icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
         placement: 'topRight',
       });
       setIsFrameModalOpen(false);
@@ -127,7 +123,6 @@ export const SprofileProfilePicture = ({ onProfileFileChange }: SprofileProfileP
       notification.warning({
         message: 'กรุณาเลือกกรอบก่อน',
         description: 'กรุณาเลือกกรอบก่อน',
-        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
         placement: 'topRight',
       });
     }
@@ -158,7 +153,6 @@ export const SprofileProfilePicture = ({ onProfileFileChange }: SprofileProfileP
             <Button size="small" icon={<span className='text-xs'>👑</span>} onClick={() => notification.info({
               message: 'เกิดข้อผิดพลาด',
               description: 'เลือกฉายา - ฟีเจอร์กำลังพัฒนา',
-              icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
               placement: 'topRight',
             })} style={{ borderColor: '#FF0037', color: '#FF0037' }} className='font-primary text-xs hover:bg-red-50'>
               เลือกฉายา

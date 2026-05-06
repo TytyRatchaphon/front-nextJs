@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { syncReadingProgress, updateReadingProgress } from "@/services/apiServices";
 
-export function useReadingProgress(bookId: string, episodeId: string, user: any) {
+export function useReadingProgress(bookId: string, episodeId: string, user: any, onConflict?: (data: any) => void) {
     const [showNav, setShowNav] = useState(true);
     const contentRef = useRef<HTMLElement>(null);
     const isInitialSyncDone = useRef(false);
@@ -58,22 +58,28 @@ export function useReadingProgress(bookId: string, episodeId: string, user: any)
 
                     const totalScrollable = elementHeight - windowHeight;
 
-                    if (totalScrollable <= 0) {
-                        await updateReadingProgress(bookId, episodeId, 1);
-                        setShowNav(true);
-                        timeoutId = null;
-                        return;
+                    try {
+                        if (totalScrollable <= 0) {
+                            await updateReadingProgress(bookId, episodeId, 1);
+                            setShowNav(true);
+                            timeoutId = null;
+                            return;
+                        }
+
+                        const relativeScroll = scrollY - elementTop;
+                        const progress = Math.min(Math.max(relativeScroll / totalScrollable, 0), 1);
+                        const formattedProgress = Number(progress.toFixed(4));
+
+                        if (progress >= 0.99) {
+                            setShowNav(true);
+                        }
+
+                        await updateReadingProgress(bookId, episodeId, formattedProgress);
+                    } catch (error: any) {
+                        if (error?.code === 409001 || error?.error_code === "READING_CONFLICT") {
+                            onConflict?.(error.data);
+                        }
                     }
-
-                    const relativeScroll = scrollY - elementTop;
-                    const progress = Math.min(Math.max(relativeScroll / totalScrollable, 0), 1);
-                    const formattedProgress = Number(progress.toFixed(4));
-
-                    if (progress >= 0.99) {
-                        setShowNav(true);
-                    }
-
-                    await updateReadingProgress(bookId, episodeId, formattedProgress);
                 }
                 timeoutId = null;
             }, 500);
@@ -84,7 +90,7 @@ export function useReadingProgress(bookId: string, episodeId: string, user: any)
             window.removeEventListener('scroll', handleScroll);
             if (timeoutId) clearTimeout(timeoutId);
         };
-    }, [episodeId, user, bookId]);
+    }, [episodeId, user, bookId, onConflict]);
 
     return { contentRef, showNav, setShowNav };
 }

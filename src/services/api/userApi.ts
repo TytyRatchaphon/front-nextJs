@@ -81,6 +81,11 @@ export interface ChangePasswordPayload {
   token: string;
 }
 
+export interface ChangeEmailPayload {
+  new_email: string;
+  current_password: string;
+}
+
 export const fetchUserProfileCategories = async (): Promise<UserProfileCategory[]> => {
   try {
     const response = await apiClient.get('/category');
@@ -92,6 +97,10 @@ export const fetchUserProfileCategories = async (): Promise<UserProfileCategory[
 
 export const changeUserPassword = async (payload: ChangePasswordPayload) => {
   return apiClient.post('/user/changepass', payload);
+};
+
+export const changeUserEmail = async (payload: ChangeEmailPayload) => {
+  return apiClient.post('/user/change-email', payload);
 };
 
 export const updateUserAddress = async (formData: FormData, token: string) => {

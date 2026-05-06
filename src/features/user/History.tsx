@@ -273,6 +273,14 @@ function History() {
         total: it.coin ?? it.price ?? '',
         type: it.typePayment ?? it.type ?? it.pay_with ?? 'coin',
         raw: it,
+        fastTrack: it.fast_track ?? (
+          it.fast_use_type || it.fast_use_amount
+            ? {
+              fast_use_type: it.fast_use_type,
+              fast_use_amount: it.fast_use_amount,
+            }
+            : null
+        ),
         key: `${it.id ?? it.txId ?? it.paymentID ?? 'usecoin'}-${idx}`,
       }
     })

@@ -51,7 +51,6 @@ function PackCampaign({ data }: PackCampaignProps) {
             notification.error({
                 message: 'เกิดข้อผิดพลาด',
                 description: 'ไม่สามารถโหลดข้อมูลโปรโมชั่นได้',
-                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
                 placement: 'topRight',
             });
         } finally {
@@ -93,7 +92,6 @@ function PackCampaign({ data }: PackCampaignProps) {
                 notification.success({
                     message: 'ซื้อสำเร็จ!',
                     description: 'ซื้อสำเร็จแล้ว',
-                    icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
                     placement: 'topRight',
                 });
             } else {
@@ -101,7 +99,6 @@ function PackCampaign({ data }: PackCampaignProps) {
                 notification.error({
                     message: 'ซื้อไม่สำเร็จ',
                     description: errMsg,
-                    icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
                     placement: 'topRight',
                 });
                 setPurchaseStatus('failed');
@@ -111,7 +108,6 @@ function PackCampaign({ data }: PackCampaignProps) {
             notification.error({
                 message: 'เกิดข้อผิดพลาด',
                 description: msg,
-                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
                 placement: 'topRight',
             });
             setPurchaseStatus('failed');

@@ -64,7 +64,6 @@ const LoginGoogle = () => {
       notification.error({
         message: 'เกิดข้อผิดพลาด',
         description: 'Google Sign-In SDK ยังไม่โหลด กรุณาลองใหม่อีกครั้ง',
-        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
         placement: 'topRight',
       });
       setLoading(false);
@@ -125,7 +124,6 @@ const LoginGoogle = () => {
         notification.error({
             message: 'เกิดข้อผิดพลาด',
             description: 'ไม่พบข้อมูลจาก Google',
-            icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
             placement: 'topRight',
         });
       }
@@ -134,7 +132,6 @@ const LoginGoogle = () => {
       notification.error({
         message: 'เกิดข้อผิดพลาด',
         description: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบผ่าน Google',
-        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
         placement: 'topRight',
     });
     }
@@ -192,7 +189,6 @@ const LoginGoogle = () => {
           notification.success({
             message: 'เข้าสู่ระบบสำเร็จ',
             description: 'เข้าสู่ระบบผ่าน Google เรียบร้อยแล้ว',
-            icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
             placement: 'topRight',
           });
 
@@ -210,7 +206,6 @@ const LoginGoogle = () => {
           notification.error({
             message: 'เข้าสู่ระบบไม่สำเร็จ',
             description: 'ไม่พบ token จาก Backend - กรุณาติดต่อผู้ดูแลระบบ',
-            icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
             placement: 'topRight',
           });
         }
@@ -219,7 +214,6 @@ const LoginGoogle = () => {
         notification.error({
             message: 'เข้าสู่ระบบไม่สำเร็จ',
             description: error.response?.data?.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ',
-            icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
             placement: 'topRight',
         });
     } finally {

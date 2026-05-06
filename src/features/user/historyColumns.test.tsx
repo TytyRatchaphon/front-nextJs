@@ -23,4 +23,16 @@ describe('historyColumns', () => {
 
     expect(columns.map((column) => column.key)).toEqual(['date', 'name', 'price']);
   });
+
+  it('separates fast track from total in use coin history columns', () => {
+    const columns = createHistoryColumns({ activeKey: '2' });
+
+    expect(columns.map((column) => column.key)).toEqual([
+      'date',
+      'bookTitle',
+      'epTitle',
+      'fastTrack',
+      'total',
+    ]);
+  });
 });

@@ -36,7 +36,6 @@ export function useSprofileSave({ notification }: UseSprofileSaveParams) {
       notification.error({
         message: 'เกิดข้อผิดพลาด',
         description: 'กรุณาเข้าสู่ระบบใหม่',
-        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
         placement: 'topRight',
       });
       return;
@@ -128,7 +127,6 @@ export function useSprofileSave({ notification }: UseSprofileSaveParams) {
         notification.open({
           message: <span className="font-primary font-bold text-green-600">บันทึกสำเร็จ</span>,
           description: <span className="font-primary text-gray-600">ข้อมูลของคุณถูกอัปเดตเรียบร้อยแล้ว</span>,
-          icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
           placement: 'topRight',
           duration: 3,
         });
@@ -162,7 +160,6 @@ export function useSprofileSave({ notification }: UseSprofileSaveParams) {
         notification.open({
           message: <span className="font-primary font-bold text-green-600">บันทึกสำเร็จ</span>,
           description: <span className="font-primary text-gray-600">ข้อมูลของคุณถูกอัปเดตเรียบร้อยแล้ว (Auto-recover)</span>,
-          icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
           placement: 'topRight',
           duration: 3,
         });
@@ -176,7 +173,6 @@ export function useSprofileSave({ notification }: UseSprofileSaveParams) {
       notification.error({
         message: 'เกิดข้อผิดพลาด',
         description: errMsg,
-        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
         placement: 'topRight',
       });
     } finally {

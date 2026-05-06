@@ -13,10 +13,16 @@
  * - articleApi.ts    → Articles
  * - campaignApi.ts   → Campaigns, promotions, banners
  * - rankingApi.ts    → Rankings
+ * - categoryApi.ts   → Categories, active category metadata
+ * - notificationApi.ts → Notifications and promotion follows
+ * - searchApi.ts     → Search history, popular searches, suggestions
+ * - faqApi.ts        → FAQ
+ * - activityApi.ts   → Activity logging
+ * - readingProgressApi.ts → Reader progress sync/update
  * - userApi.ts       → User profile, auth, shelve, writer
  * - writerApi.ts     → Writer finance (bank, withdraw)
  * - storeApi.ts      → Store, stickers, coupons
- * - miscApi.ts       → Logging, notifications, categories, search, reading progress, FAQ
+ * - miscApi.ts       → Backward-compatible re-exports only
  */
 
 export * from './api/homeApi';
@@ -27,6 +33,12 @@ export * from './api/threadApi';
 export * from './api/articleApi';
 export * from './api/campaignApi';
 export * from './api/rankingApi';
+export * from './api/categoryApi';
+export * from './api/notificationApi';
+export * from './api/searchApi';
+export * from './api/faqApi';
+export * from './api/activityApi';
+export * from './api/readingProgressApi';
 export * from './api/userApi';
 export * from './api/writerApi';
 export * from './api/storeApi';
@@ -34,3 +46,4 @@ export * from './api/miscApi';
 export * from './api/collectionApi';
 export * from './api/historyApi';
 export * from './api/episodePurchaseRewardApi';
+export * from './api/readingSessionApi';

@@ -174,28 +174,32 @@ export default function UserMenuPopover({
   variant = "popover",
 }: UserMenuPopoverProps) {
   const isDrawer = variant === "drawer";
-  const linkClass = "reader-user-popover-link group flex h-full items-center gap-3 rounded-lg px-4 py-3 text-black transition-all duration-200 hover:bg-gray-100";
+  const linkClass = "reader-user-popover-link group flex items-center gap-3 rounded-lg px-4 py-2.5 text-black transition-all duration-200 hover:bg-gray-100";
   const iconClass = "h-5 w-5 shrink-0 text-[#B01F1F]";
   const ProfileIcon = profileMenuItem.icon;
 
   return (
-    <div className={`reader-user-popover-content ${isDrawer ? "flex h-full w-[320px] flex-col bg-white" : "w-[320px] bg-white"}`}>
+    <div
+      className={`reader-user-popover-content overflow-hidden ${
+        isDrawer ? "flex h-full w-full flex-col bg-white" : "flex max-h-[calc(100vh-96px)] w-[320px] flex-col bg-white"
+      }`}
+    >
       <div
-        className="reader-user-popover-panel rounded-lg p-2"
-        style={{ width: "320px", backgroundColor: "#FFE8F0" }}
+        className={`reader-user-popover-panel rounded-lg p-2 ${isDrawer ? "mx-4 mt-4" : ""}`}
+        style={{ width: isDrawer ? "auto" : "320px", backgroundColor: "#FFE8F0" }}
       >
         <div
-          className="reader-user-popover-profile-card mb-2 rounded-full bg-white shadow-sm"
-          style={{ width: "304px", height: "65px" }}
+          className="reader-user-popover-profile-card mb-2 h-[65px] w-full rounded-full bg-white shadow-sm"
+          style={{ margin: isDrawer ? "0 auto 8px" : undefined }}
         >
           <div className="flex h-full items-center justify-between px-4">
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 items-center gap-3">
               <UserAvatar avatarSrc={avatarSrc} userFrameImage={userFrameImage} />
-              <span className="reader-user-popover-name font-primary text-base text-gray-900">
+              <span className="reader-user-popover-name min-w-0 truncate font-primary text-base text-gray-900">
                 {userFullname || "User00001"}
               </span>
             </div>
-            <button className="reader-user-popover-dots text-gray-800 hover:text-gray-600" aria-label="User menu">
+            <button className="reader-user-popover-dots ml-2 shrink-0 text-gray-800 hover:text-gray-600" aria-label="User menu">
               <MoreHorizontal className="h-4 w-4" />
             </button>
           </div>
@@ -225,19 +229,21 @@ export default function UserMenuPopover({
         />
       </div>
 
-      <div className="reader-user-popover-body flex-1 overflow-y-auto bg-white">
-        <Link href={profileMenuItem.href} onClick={onClose} className={linkClass}>
-          <ProfileIcon className={iconClass} />
-          <span className="font-primary text-black transition-colors group-hover:text-red-600">
-            {profileMenuItem.label}
-          </span>
-        </Link>
-
-        <div className="my-2 flex justify-center">
-          <div className="reader-user-popover-divider h-[1px] w-[250px] bg-gray-300" />
+      <div className={`reader-user-popover-body flex-1 overflow-y-auto bg-white ${isDrawer ? "px-4 mt-2" : ""}`}>
+        <div className={`${isDrawer ? "w-full" : "w-[274px] mx-auto"}`}>
+          <Link href={profileMenuItem.href} onClick={onClose} className={linkClass}>
+            <ProfileIcon className={iconClass} />
+            <span className="font-primary text-black transition-colors group-hover:text-red-600">
+              {profileMenuItem.label}
+            </span>
+          </Link>
         </div>
 
-        <div className="grid w-[274px] auto-rows-fr grid-cols-2 gap-x-2">
+        <div className="my-2 flex justify-center">
+          <div className={`reader-user-popover-divider h-[1px] bg-gray-300 ${isDrawer ? "w-full" : "w-[250px]"}`} />
+        </div>
+
+        <div className={`grid auto-rows-fr grid-cols-2 gap-x-2 ${isDrawer ? "w-full" : "w-[274px] mx-auto"}`}>
           {menuItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -251,7 +257,7 @@ export default function UserMenuPopover({
           })}
         </div>
 
-        <div className="w-[274px]">
+        <div className={`${isDrawer ? "w-full" : "w-[274px] mx-auto"}`}>
           {enableGifModeToggle && (
             <div className="px-4 py-2">
               <div className="reader-user-popover-toggle flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
@@ -269,13 +275,13 @@ export default function UserMenuPopover({
             </div>
           )}
 
-          <div className="reader-user-popover-divider my-2 h-[1px] bg-gray-200" />
+          <div className="reader-user-popover-divider my-2 h-[1px] bg-gray-200 w-full" />
           
           {onClearCache && (
             <button
               type="button"
               onClick={onClearCache}
-              className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-all duration-200 hover:bg-gray-100"
+              className="flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-left transition-all duration-200 hover:bg-gray-100"
             >
               <RefreshCw className="h-5 w-5 shrink-0 text-gray-500" />
               <span className="font-primary w-full text-gray-700">ล้างแคช</span>
@@ -285,7 +291,7 @@ export default function UserMenuPopover({
           <button
             type="button"
             onClick={onLogout}
-            className="reader-user-popover-logout flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-all duration-200 hover:bg-red-50"
+            className="reader-user-popover-logout flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-left transition-all duration-200 hover:bg-red-50"
           >
             <LogOut className="h-5 w-5 shrink-0 text-red-600" />
             <span className="font-primary w-full text-red-600">ออกจากระบบ</span>

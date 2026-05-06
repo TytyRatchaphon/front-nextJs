@@ -104,7 +104,6 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
       notification.success({
         message: 'เพิ่มลงตะกร้าเรียบร้อย',
         description: 'สินค้าได้ถูกเพิ่มลงในตะกร้าของคุณแล้ว',
-        icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
         placement: 'topRight',
       });
       queryClient.invalidateQueries({ queryKey: ['cartItems'] });
@@ -114,7 +113,6 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
       notification.error({
         message: 'เกิดข้อผิดพลาด',
         description: msg,
-        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
         placement: 'topRight',
       });
     }
@@ -175,7 +173,6 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
       notification.warning({
         message: 'กรุณาเข้าสู่ระบบก่อน',
         description: 'กรุณาเข้าสู่ระบบก่อน',
-        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
         placement: 'topRight',
       });
         return;
@@ -186,7 +183,6 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
         notification.warning({
           message: 'ไม่สามารถเพิ่มลงตะกร้าได้',
           description: 'ไม่พบรายการที่สามารถเลือกได้สำหรับแพ็กนี้',
-          icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
           placement: 'topRight',
         });
         return;

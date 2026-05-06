@@ -97,7 +97,6 @@ export function useNavbarRankRewards({
       description: `มีของรางวัลใหม่ที่รับได้ ${claimableRankRewardSnapshot.count.toLocaleString()} รายการ (กดเพื่อไปที่หน้าของฉัน)`,
       placement: "topRight",
       duration: 4.5,
-      icon: <CheckCircleOutlined style={{ color: "#52c41a" }} />,
       style: { cursor: "pointer" },
       onClick: onNavigateToRankRewards,
     });

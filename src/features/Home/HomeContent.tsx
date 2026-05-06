@@ -164,7 +164,6 @@ export default function HomeContent({
         notification.error({
           message: "เกิดข้อผิดพลาด",
           description: `ไม่สามารถโหลดข้อมูล${title}ได้`,
-          icon: <CloseCircleOutlined style={{ color: "#ff4d4f" }} />,
           placement: "topRight",
         });
       }

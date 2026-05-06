@@ -17,7 +17,7 @@ export function BookPurchaseRewardBadge({
   return (
     <span
       className={[
-        "absolute left-1 z-30 block aspect-square w-[22%] min-w-[24px] max-w-[44px]",
+        "absolute -right-2 z-30 block aspect-square w-[38%] min-w-[40px] max-w-[72px]",
         avoidBottomOverlay ? "bottom-10 md:bottom-11" : "bottom-1",
         className,
       ].filter(Boolean).join(" ")}

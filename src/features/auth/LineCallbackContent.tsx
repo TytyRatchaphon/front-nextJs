@@ -44,7 +44,6 @@ const LineCallbackContent = () => {
           notification.success({
             message: 'Login Successful',
             description: 'เข้าสู่ระบบเรียบร้อยแล้ว',
-            icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
             placement: 'topRight',
           });
           router.replace('/');
@@ -54,7 +53,6 @@ const LineCallbackContent = () => {
         notification.error({
           message: 'Login Failed',
           description: 'ไม่สามารถเข้าสู่ระบบผ่าน LINE ได้',
-          icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
           placement: 'topRight',
         });
         router.replace('/');
@@ -63,7 +61,6 @@ const LineCallbackContent = () => {
         notification.error({
           message: 'Login Failed',
           description: 'เกิดข้อผิดพลาดในการเชื่อมต่อ LINE',
-          icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
           placement: 'topRight',
         });
         router.replace('/');

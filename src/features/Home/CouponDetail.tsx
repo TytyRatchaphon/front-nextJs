@@ -46,7 +46,6 @@ const CouponDetail = () => {
             notification.success({
                 message: 'เก็บคูปองสำเร็จ!',
                 description: 'เก็บคูปองสำเร็จ!',
-                icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
                 placement: 'topRight',
             });
             setCouponCode('');
@@ -58,7 +57,6 @@ const CouponDetail = () => {
             notification.error({
                 message: 'เก็บคูปองไม่สำเร็จ!',
                 description: error?.response?.data?.message || 'ไม่สามารถใช้งานคูปองนี้ได้',
-                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
                 placement: 'topRight',
             });
         }

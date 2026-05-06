@@ -168,7 +168,6 @@ export function useReadEpisodePurchase({
         notification.success({
           message: respMsg,
           description: respMsg,
-          icon: <CheckCircleOutlined style={{ color: "#52c41a" }} />,
           placement: "topRight",
         });
 
@@ -198,7 +197,6 @@ export function useReadEpisodePurchase({
         notification.error({
           message: "ซื้อไม่สำเร็จ",
           description: res?.data?.message || "ซื้อไม่สำเร็จ",
-          icon: <CloseCircleOutlined style={{ color: "#ff4d4f" }} />,
           placement: "topRight",
         });
       }
@@ -206,7 +204,6 @@ export function useReadEpisodePurchase({
       notification.error({
         message: "ซื้อไม่สำเร็จ",
         description: "ยอดเหรียญไม่เพียงพอ",
-        icon: <CloseCircleOutlined style={{ color: "#ff4d4f" }} />,
         placement: "topRight",
       });
     } finally {

@@ -70,7 +70,7 @@ export function ReaderContentArea({
     <>
       <article
         ref={contentRef}
-        className={`episode-content episode-content-wrapper relative mt-5 ${allowTemporaryTextSelection ? "" : "select-none"} leading-loose lg:px-11 px-6 text-wrap whitespace-normal overflow-x-hidden main-read cursor-pointer`}
+        className={`episode-content episode-content-wrapper relative mt-5 pb-10 md:pb-14 ${allowTemporaryTextSelection ? "" : "select-none"} leading-loose lg:px-11 px-6 text-wrap whitespace-normal overflow-x-hidden main-read cursor-pointer`}
         style={{
           userSelect: allowTemporaryTextSelection ? "text" : "none",
           WebkitUserSelect: allowTemporaryTextSelection ? "text" : "none",

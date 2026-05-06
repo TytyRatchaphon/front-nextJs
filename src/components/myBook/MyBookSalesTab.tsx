@@ -92,6 +92,7 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
       const msg = err?.response?.data?.message || err?.message || 'ไม่สามารถดาวน์โหลดไฟล์ได้';
       api.error({ message: msg });
     } finally {
+      setExporting(false);
     }
   };
 
@@ -301,6 +302,7 @@ const MyBookSalesTab: React.FC<MyBookSalesTabProps> = ({ token }) => {
 
           <Button
             loading={exporting}
+            disabled={exporting}
             onClick={handleExport}
             style={{
               backgroundColor: '#28a745',

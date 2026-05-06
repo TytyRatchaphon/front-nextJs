@@ -30,7 +30,6 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
       notification.error({
         message: 'เกิดข้อผิดพลาด',
         description: 'รหัสผ่านไม่ตรงกัน',
-        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
         placement: 'topRight',
       });
       return;
@@ -63,7 +62,6 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
       notification.error({
         message: 'เกิดข้อผิดพลาด',
         description: errorMessage,
-        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
         placement: 'topRight',
       });
     } finally {

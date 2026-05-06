@@ -41,36 +41,65 @@ export const createHistoryColumns = ({
 
   if (activeKey === '2') {
     return [
-      { title: 'วัน-เวลา', dataIndex: 'date', key: 'date', width: 220 },
+      { title: 'วัน-เวลา', dataIndex: 'date', key: 'date', width: 170 },
       {
         title: 'ชื่อเรื่อง',
         dataIndex: 'bookTitle',
         key: 'bookTitle',
+        width: 300,
         render: (text: any, record: any) => (
-          <div style={{ whiteSpace: 'nowrap' }}>{text ?? record?.raw?.BookTran?.name ?? ''}</div>
+          <div className="max-w-[280px] whitespace-normal leading-5 text-gray-900">
+            {text ?? record?.raw?.BookTran?.name ?? ''}
+          </div>
         ),
       },
       {
         title: 'ชื่อตอน',
         dataIndex: 'epTitle',
         key: 'epTitle',
-        width: 240,
+        width: 380,
         render: (text: any, record: any) => (
-          <div style={{ whiteSpace: 'nowrap' }}>{text ?? record?.raw?.BookTranEp?.name ?? ''}</div>
+          <div className="max-w-[360px] whitespace-normal leading-5 text-gray-700">
+            {text ?? record?.raw?.BookTranEp?.name ?? ''}
+          </div>
         ),
+      },
+      {
+        title: 'Fast Track',
+        dataIndex: 'fastTrack',
+        key: 'fastTrack',
+        width: 150,
+        align: 'center' as const,
+        render: (fastTrack: any) => {
+          const fastUseType = fastTrack?.fast_use_type;
+          const fastUseAmount = Number(fastTrack?.fast_use_amount ?? 0);
+
+          if (!fastUseType || fastUseAmount <= 0) {
+            return <span className="text-xs text-gray-300">-</span>;
+          }
+
+          return (
+            <div className="inline-flex items-center justify-center gap-1.5 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+              <span>+{fastUseAmount.toLocaleString()}</span>
+              <CurrencyIcon type={fastUseType} settings={settings} size={16} fallback="fast_ticket" />
+            </div>
+          );
+        },
       },
       {
         title: 'Total',
         dataIndex: 'total',
         key: 'total',
-        width: 140,
+        width: 120,
         align: 'right' as const,
-        render: (text: any, record: any) => (
-          <div className="flex items-center justify-end gap-2">
-            <span>{text}</span>
-            <CurrencyIcon type={record.type} settings={settings} size={18} />
-          </div>
-        ),
+        render: (text: any, record: any) => {
+          return (
+            <div className="flex items-center justify-end gap-2">
+              <span className="font-semibold text-gray-900">{text}</span>
+              <CurrencyIcon type={record.type} settings={settings} size={18} />
+            </div>
+          );
+        },
       },
     ];
   }

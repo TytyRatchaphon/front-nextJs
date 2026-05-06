@@ -59,7 +59,6 @@ export default function UserTopupCoin({
             notification.success({
                 message: 'รับรางวัลสำเร็จ!',
                 description: 'รับรางวัลเรียบร้อยแล้ว',
-                icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
                 placement: 'topRight',
             });
             queryClient.invalidateQueries({ queryKey: ['user-event-summary'] })
@@ -68,7 +67,6 @@ export default function UserTopupCoin({
             notification.error({
                 message: 'รับรางวัลไม่สำเร็จ',
                 description: error?.response?.data?.message || 'รับรางวัลไม่สำเร็จ',
-                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
                 placement: 'topRight',
             });
         }

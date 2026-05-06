@@ -94,7 +94,6 @@ export default function CartDetail() {
             notification.error({
                 message: 'จำกัดการซื้อ',
                 description: error?.response?.data?.message || 'ไม่สามารถอัปเดตสินค้าได้',
-                icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
                 placement: 'topRight',
             });
         }
@@ -110,7 +109,6 @@ export default function CartDetail() {
              notification.success({
                 message: 'สำเร็จ',
                 description: 'ลบรายการสินค้าสำเร็จ',
-                icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
                 placement: 'topRight',
              });
         },
@@ -126,7 +124,6 @@ export default function CartDetail() {
              notification.success({
                 message: 'สำเร็จ',
                 description: 'ลบรายการสินค้าทั้งหมดสำเร็จ',
-                icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
                 placement: 'topRight',
              });
         },

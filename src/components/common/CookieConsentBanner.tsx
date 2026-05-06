@@ -67,21 +67,20 @@ export default function CookieConsentBanner() {
   return (
     <>
       {/* Banner at the bottom */}
-      <div className="fixed bottom-0 left-0 right-0 z-[2000] bg-white border-t border-gray-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] p-2.5 pb-3 md:p-3 transition-transform duration-500 transform translate-y-0">
-        <div className="container mx-auto max-w-6xl flex flex-col md:flex-row items-center justify-between gap-2 md:gap-3">
-          <div className="flex-1 text-[10px] md:text-xs text-gray-600 font-primary leading-snug md:leading-normal">
-            <p className="mb-0.5 text-xs md:text-sm font-bold text-gray-900">เราใช้คุกกี้เพื่อประสบการณ์ที่ดีของคุณ</p>
+      <div className="fixed bottom-0 left-0 right-0 z-[2000] bg-white border-t border-gray-200 shadow-[0_-8px_20px_rgba(0,0,0,0.08)] p-4 md:p-4 pb-safe transition-transform duration-500 transform translate-y-0 rounded-t-xl md:rounded-none">
+        <div className="container mx-auto max-w-6xl flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4">
+          <div className="flex-1 text-xs md:text-sm text-gray-600 font-primary leading-relaxed md:leading-normal w-full">
+            <p className="mb-1 text-sm md:text-base font-bold text-gray-900">เราใช้คุกกี้เพื่อประสบการณ์ที่ดีของคุณ</p>
             <span className="hidden md:inline">เว็บไซต์นี้ใช้คุกกี้เพื่อเพิ่มประสิทธิภาพ และประสบการณ์ที่ดีในการใช้งานเว็บไซต์ คุณสามารถเลือกตั้งค่าความยินยอมการใช้คุกกี้ได้ โดยคลิก <strong>&quot;ตั้งค่าคุกกี้&quot;</strong> หรืออ่านรายละเอียดเพิ่มเติมได้ที่{' '}</span>
             <span className="md:hidden">เราใช้คุกกี้เพื่อมอบประสบการณ์การใช้งานที่ดีที่สุดบนเว็บไซต์ของเรา อ่านรายละเอียดเพิ่มเติมได้ที่{' '}</span>
-            <Link href="/policy-privacy" target="_blank" className="text-red-600 underline font-semibold hover:text-red-700">
+            <Link href="/policy-privacy" target="_blank" className="text-red-600 underline font-semibold hover:text-red-700 whitespace-nowrap">
               นโยบายความเป็นส่วนตัว
             </Link>
           </div>
           
-          <div className="flex flex-row gap-2 w-full md:w-auto justify-end mt-1.5 md:mt-0">
+          <div className="flex flex-col-reverse md:flex-row gap-2 md:gap-3 w-full md:w-auto justify-end mt-2 md:mt-0 shrink-0">
             <Button 
-              className="flex-1 md:flex-none border-gray-300 font-primary text-xs" 
-              size="middle"
+              className="w-full md:w-auto border-gray-300 font-primary text-[13px] md:text-sm h-[40px] md:h-[38px] rounded-lg" 
               onClick={() => setIsSettingsOpen(true)}
             >
               ตั้งค่าคุกกี้
@@ -89,8 +88,7 @@ export default function CookieConsentBanner() {
             <Button 
               type="primary" 
               danger 
-              size="middle" 
-              className="flex-1 md:flex-none font-primary text-xs"
+              className="w-full md:w-auto font-primary text-[13px] md:text-sm h-[40px] md:h-[38px] font-bold rounded-lg shadow-sm"
               onClick={handleAcceptAll}
             >
               ยอมรับทั้งหมด

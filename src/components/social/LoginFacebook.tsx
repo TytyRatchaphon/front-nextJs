@@ -119,7 +119,6 @@ const LoginFacebook = () => {
       notification.error({
         message: 'เข้าสู่ระบบไม่สำเร็จ',
         description: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบผ่าน Facebook',
-        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
         placement: 'topRight',
       });
       setLoading(false);
@@ -166,7 +165,6 @@ const LoginFacebook = () => {
           notification.success({
             message: 'เข้าสู่ระบบสำเร็จ',
             description: 'เข้าสู่ระบบผ่าน Facebook เรียบร้อยแล้ว',
-            icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
             placement: 'topRight',
           });
           closeLoginModal();
@@ -182,7 +180,6 @@ const LoginFacebook = () => {
           notification.error({
             message: 'เข้าสู่ระบบไม่สำเร็จ',
             description: 'ไม่พบ token จาก Backend',
-            icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
             placement: 'topRight',
           });
         }
@@ -191,7 +188,6 @@ const LoginFacebook = () => {
       notification.error({
         message: 'เข้าสู่ระบบไม่สำเร็จ',
         description: error.response?.data?.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ',
-        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
         placement: 'topRight',
       });
     } finally {

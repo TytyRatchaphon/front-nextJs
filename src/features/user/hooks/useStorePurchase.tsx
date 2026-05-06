@@ -297,14 +297,12 @@ export function useStorePurchase({ notification, settings }: UseStorePurchasePar
                 )}
               </div>
             ),
-            icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
             placement: 'topRight',
           });
         }
         notification.success({
           message: `ซื้อ ${selectedPack.name} สำเร็จ`,
           description: `ได้รับสินค้าจำนวน ${selectedQty} ชิ้น เรียบร้อยแล้ว`,
-          icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
           placement: 'topRight',
         });
 

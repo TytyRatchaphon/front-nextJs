@@ -165,7 +165,7 @@ const LoginButtonHeader: React.FC = () => {
         message: 'เข้าสู่ระบบสำเร็จ!',
         placement: 'topRight',
         duration: 3,
-        icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />, // สีเขียว Success
+        // สีเขียว Success
       });
       // ---------------------------------------------------------
 
@@ -233,8 +233,7 @@ const LoginButtonHeader: React.FC = () => {
               description: '',
               placement: 'topRight',
               duration: 4,
-              icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
-            });
+              });
           }
         } else {
         }
@@ -250,8 +249,7 @@ const LoginButtonHeader: React.FC = () => {
         description: '',
         placement: 'topRight',
         duration: 4,
-        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
-      });
+        });
 
     },
   });
@@ -262,7 +260,6 @@ const LoginButtonHeader: React.FC = () => {
       api.success({
         message: 'สมัครสมาชิกสำเร็จ!',
         description: 'สมัครสมาชิกเรียบร้อยแล้ว',
-        icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
         placement: 'topRight',
       });
 
@@ -324,7 +321,6 @@ const LoginButtonHeader: React.FC = () => {
             api.success({
               message: 'เข้าสู่ระบบอัตโนมัติแล้ว',
               description: 'เข้าสู่ระบบเรียบร้อยแล้ว',
-              icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
               placement: 'topRight',
             });
             handleCancel();
@@ -333,7 +329,6 @@ const LoginButtonHeader: React.FC = () => {
             api.error({
               message: 'ไม่สามารถอ่านข้อมูลจาก Token ได้',
               description: 'ไม่สามารถอ่านข้อมูลจาก Token ได้',
-              icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
               placement: 'topRight',
             });
             handleViewChange('login');
@@ -354,7 +349,6 @@ const LoginButtonHeader: React.FC = () => {
         api.success({
           message: 'สมัครสมาชิกสำเร็จ',
           description: 'สมัครสมาชิกเรียบร้อยแล้ว',
-          icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
           placement: 'topRight',
         });
         handleViewChange('login');
@@ -362,7 +356,6 @@ const LoginButtonHeader: React.FC = () => {
         api.error({
           message: 'สมัครสมาชิกไม่สำเร็จ',
           description: errorMessage,
-          icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
           placement: 'topRight',
         });
       }
@@ -412,7 +405,6 @@ const LoginButtonHeader: React.FC = () => {
     api.error({
       message: 'เกิดข้อผิดพลาด',
       description: 'กรุณากรอกข้อมูลให้ครบถ้วน',
-      icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
       placement: 'topRight',
     });
   };

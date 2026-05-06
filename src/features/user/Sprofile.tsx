@@ -21,7 +21,7 @@ const items: TabsProps['items'] = [
   },
   {
     key: '2',
-    label: <span className='font-primary font-medium text-black text-lg'>เปลี่ยนรหัสผ่าน</span>,
+    label: <span className='font-primary font-medium text-black text-lg'>เปลี่ยนรหัสผ่านและอีเมล</span>,
     children: <SprofileChangePassword />,
   },
 ];
@@ -40,7 +40,6 @@ function Page() {
       notification.warning({
         message: 'เกิดข้อผิดพลาด',
         description: 'กรุณาเข้าสู่ระบบก่อนเข้าถึงหน้านี้',
-        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
         placement: 'topRight',
       });
       router.push('/');

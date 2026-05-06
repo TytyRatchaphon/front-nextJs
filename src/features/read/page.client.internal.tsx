@@ -40,6 +40,8 @@ import { ReaderTopBar } from "./components/ReaderTopBar";
 import { ReadEpisodeSidebarDrawer } from "./components/ReadEpisodeSidebarDrawer";
 import { ReaderGlobalStyles } from "./components/ReaderGlobalStyles";
 import { ReadEpisodeErrorState, ReadEpisodeLoadingState } from "./components/ReadEpisodeStatusStates";
+import { useReadingSession } from "@/hooks/reader/useReadingSession";
+import { ReadConflictModal } from "./components/ReadConflictModal";
 
 type Props = {
   bookId: string;
@@ -112,7 +114,42 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
 
   const { isFocused, setIsFocused } = useContentProtection(episode, handleProtectionBlur, true);
 
-  const { contentRef, showNav, setShowNav } = useReadingProgress(bookId, episodeId, user);
+  const {
+    isConflict,
+    conflictData,
+    handleConflict,
+    takeover,
+    updateProgressRef,
+    fetchSessions
+  } = useReadingSession(bookId, episodeId, user);
+
+  const { contentRef, showNav, setShowNav } = useReadingProgress(bookId, episodeId, user, (data) => {
+    handleConflict(data);
+  });
+
+  // Keep track of the current progress for heartbeat
+  useEffect(() => {
+    const trackProgress = () => {
+       if (!contentRef.current) return;
+       const element = contentRef.current;
+       const elementTop = element.getBoundingClientRect().top + window.scrollY;
+       const elementHeight = element.scrollHeight;
+       const windowHeight = window.innerHeight;
+       const scrollY = window.scrollY;
+       const totalScrollable = elementHeight - windowHeight;
+       if (totalScrollable <= 0) {
+           updateProgressRef(1);
+           return;
+       }
+       const relativeScroll = scrollY - elementTop;
+       const progress = Math.min(Math.max(relativeScroll / totalScrollable, 0), 1);
+       updateProgressRef(Number(progress.toFixed(4)));
+    };
+    window.addEventListener('scroll', trackProgress);
+    return () => window.removeEventListener('scroll', trackProgress);
+  }, [contentRef, updateProgressRef]);
+
+  const shouldShowContent = isFocused && !isConflict;
 
   const {
     fontSize, setFontSize,
@@ -170,7 +207,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     scrollToParagraph,
   } = useReaderParagraphTracking({
     contentRootRef: innerContentRef,
-    isFocused,
+    isFocused: shouldShowContent,
     renderedEpisodeHtml,
     bookmarks,
     notification,
@@ -541,7 +578,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
               currentFontFamily={currentFontFamily}
               isBold={isBold}
               textAlign={textAlign}
-              isFocused={isFocused}
+              isFocused={shouldShowContent}
               contentHeight={contentHeight}
               shouldDelayObfuscatedRender={shouldDelayObfuscatedRender}
               episode={episode}
@@ -623,6 +660,13 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
         onNoteChange={setBookmarkNote}
         onCancel={resetBookmarkEditorState}
         onSubmit={submitBookmarkModal}
+      />
+      <ReadConflictModal
+        open={isConflict}
+        bookId={bookId}
+        conflictData={conflictData}
+        onTakeover={takeover}
+        onRefreshList={fetchSessions}
       />
       <ReaderGlobalStyles />
     </div>

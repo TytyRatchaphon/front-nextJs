@@ -65,7 +65,6 @@ export default function UserUseCoin({
       notification.success({
         message: 'รับรางวัลสำเร็จ!',
         description: 'รับรางวัลเรียบร้อยแล้ว',
-        icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
         placement: 'topRight',
       });
 
@@ -131,7 +130,6 @@ export default function UserUseCoin({
       notification.error({
         message: 'เกิดข้อผิดพลาดในการรับรางวัล',
         description: error?.response?.data?.message || 'เกิดข้อผิดพลาดในการรับรางวัล',
-        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
         placement: 'topRight',
       });
     }
