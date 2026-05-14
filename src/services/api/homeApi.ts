@@ -135,7 +135,7 @@ export const trackUserBookhomeSectionClick = async ({
         book_id: bookId,
       },
       {
-        headers: { Authorization: `Bearer ${cleanedToken}` },
+        headers: { Authorization: cleanedToken },
       },
     );
   } catch (error) {

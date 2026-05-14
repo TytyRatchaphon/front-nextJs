@@ -16,9 +16,10 @@ import { computeEnded } from './bookCardUtils';
 interface CardBookImageOnlyProps {
   book: UniversalBook;
   onBookClick?: (book: UniversalBook) => void;
+  noShadow?: boolean;
 }
 
-function CardBookImageOnly({ book: rawBook, onBookClick }: CardBookImageOnlyProps) {
+function CardBookImageOnly({ book: rawBook, onBookClick, noShadow = false }: CardBookImageOnlyProps) {
   const book = React.useMemo(() => normalizeBookForCard(rawBook), [rawBook]);
   const showGif = useGifPreference(true);
   const imageUrl = resolveBookCoverImageSrc(book, '/images/ejb.png', 'tn', showGif);
@@ -40,7 +41,7 @@ function CardBookImageOnly({ book: rawBook, onBookClick }: CardBookImageOnlyProp
       >
         <div className="flex flex-col w-full group/card cursor-pointer relative overflow-visible">
           {/* Image Container */}
-          <div className="relative rounded-lg shadow-sm group-hover/card:shadow-md transition-shadow w-full">
+          <div className={`relative rounded-lg transition-shadow w-full ${noShadow ? '' : 'shadow-sm group-hover/card:shadow-md'}`}>
             <BookCoverImage
               src={imageUrl}
               alt={book.name ?? ''}

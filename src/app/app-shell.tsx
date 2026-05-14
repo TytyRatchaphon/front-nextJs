@@ -1,4 +1,4 @@
-"use client";
+// Server Component — composes client islands (Navbar, TokenUpdater, etc.) without needing 'use client'
 
 import type { ReactNode } from "react";
 import { Suspense } from "react";

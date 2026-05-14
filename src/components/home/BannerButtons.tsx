@@ -4,7 +4,26 @@ const BannerButtons = () => {
     <div className="w-full -mt-1 mb-1">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-4">
         {/* Discount */}
+        {/* Top Charts */}
         <Link href="/cat/all?type=tran&categoryId=all&tab=bestseller&limit=10&page=1" className="group flex items-center justify-center gap-3 bg-white border border-gray-100 shadow-sm hover:shadow-sm rounded-xl py-2 px-4 transition-all duration-300 hover:-translate-y-1">
+          <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center text-purple-500 group-hover:bg-purple-500 group-hover:text-white transition-colors duration-300">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M19.0603 18.67L16.9203 14.4L14.7803 18.67" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M15.1699 17.9099H18.6899" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M16.9198 22.0001C14.1198 22.0001 11.8398 19.73 11.8398 16.92C11.8398 14.12 14.1098 11.8401 16.9198 11.8401C19.7198 11.8401 21.9998 14.11 21.9998 16.92C21.9998 19.73 19.7298 22.0001 16.9198 22.0001Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M5.02 2H8.94C11.01 2 12.01 3.00002 11.96 5.02002V8.94C12.01 11.01 11.01 12.01 8.94 11.96H5.02C3 12 2 11 2 8.92999V5.01001C2 3.00001 3 2 5.02 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M9.01019 5.84985H4.9502" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M6.9707 5.16992V5.84991" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M7.99043 5.83997C7.99043 7.58997 6.62043 9.00995 4.94043 9.00995" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M9.01015 9.01001C8.28015 9.01001 7.62016 8.62 7.16016 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M2 15C2 18.87 5.13 22 9 22L7.95 20.25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M22 9C22 5.13 18.87 2 15 2L16.05 3.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <span className="font-bold text-gray-700 group-hover:text-purple-600 transition-colors text-sm lg:text-lg">นิยายแปล</span>
+        </Link>
+
+        <Link href="/cat/all?type=write&categoryId=all&tab=bestseller&limit=10&page=1" className="group flex items-center justify-center gap-3 bg-white border border-gray-100 shadow-sm hover:shadow-sm rounded-xl py-2 px-4 transition-all duration-300 hover:-translate-y-1">
           <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-500 group-hover:bg-red-500 group-hover:text-white transition-colors duration-300">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
               <g clipPath="url(#clip0_41_3681)">
@@ -21,25 +40,6 @@ const BannerButtons = () => {
             </svg>
           </div>
           <span className="font-bold text-gray-700 group-hover:text-red-600 transition-colors text-sm lg:text-lg">นิยายแต่ง</span>
-        </Link>
-
-        {/* Top Charts */}
-        <Link href="/cat/all?type=write&categoryId=all&tab=bestseller&limit=10&page=1" className="group flex items-center justify-center gap-3 bg-white border border-gray-100 shadow-sm hover:shadow-sm rounded-xl py-2 px-4 transition-all duration-300 hover:-translate-y-1">
-          <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center text-purple-500 group-hover:bg-purple-500 group-hover:text-white transition-colors duration-300">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M19.0603 18.67L16.9203 14.4L14.7803 18.67" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M15.1699 17.9099H18.6899" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M16.9198 22.0001C14.1198 22.0001 11.8398 19.73 11.8398 16.92C11.8398 14.12 14.1098 11.8401 16.9198 11.8401C19.7198 11.8401 21.9998 14.11 21.9998 16.92C21.9998 19.73 19.7298 22.0001 16.9198 22.0001Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M5.02 2H8.94C11.01 2 12.01 3.00002 11.96 5.02002V8.94C12.01 11.01 11.01 12.01 8.94 11.96H5.02C3 12 2 11 2 8.92999V5.01001C2 3.00001 3 2 5.02 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M9.01019 5.84985H4.9502" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M6.9707 5.16992V5.84991" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M7.99043 5.83997C7.99043 7.58997 6.62043 9.00995 4.94043 9.00995" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M9.01015 9.01001C8.28015 9.01001 7.62016 8.62 7.16016 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M2 15C2 18.87 5.13 22 9 22L7.95 20.25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M22 9C22 5.13 18.87 2 15 2L16.05 3.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-          <span className="font-bold text-gray-700 group-hover:text-purple-600 transition-colors text-sm lg:text-lg">นิยายแปล</span>
         </Link>
 
         {/* Campaign */}

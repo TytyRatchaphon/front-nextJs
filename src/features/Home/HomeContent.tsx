@@ -21,17 +21,18 @@ import { useAuthStore } from "@/stores/authStore";
 import { parseJwtToken } from "@/utils/jwtParser";
 import { resolveBookCoverImageSrc } from "@/utils/imageUtils";
 import {
-  fetchActiveCategories,
-  fetchBookUpdates,
-  fetchHomeData,
-  fetchRankingCategories,
-  fetchUserShelveContinue,
   HomeDataResponse,
   normalizeBookUpdateTab,
   normalizeRankingContentTab,
 } from "@/services/apiServices";
-import { fetchPinnedReviews } from "@/services/api/commentApi";
-import { useQuery } from "@tanstack/react-query";
+import {
+  useHomeData,
+  useBookUpdates,
+  useActiveCategories,
+  useRankingCategories,
+  useContinueBooks,
+  usePinnedReviews,
+} from "@/hooks/home/useHomeQueries";
 
 interface HomeContentProps {
   initialData: HomeDataResponse | null;
@@ -40,15 +41,7 @@ interface HomeContentProps {
   showSpotlightFeature?: boolean;
 }
 
-const hasRenderableHomeData = (homeData: HomeDataResponse | null | undefined) => {
-  const data = homeData?.data;
-  if (!data) return false;
-  return Boolean(
-    (Array.isArray(data.slides) && data.slides.length > 0) ||
-    (Array.isArray(data.groupBookHome) && data.groupBookHome.length > 0) ||
-    (Array.isArray(data.spotlight) && data.spotlight.length > 0),
-  );
-};
+// hasRenderableHomeData moved to useHomeQueries.ts
 
 export default function HomeContent({
   initialData,
@@ -96,62 +89,33 @@ export default function HomeContent({
     };
   }, []);
 
-  const { data: queriedHomeData, isLoading, error: homeDataError } = useQuery({
-    queryKey: ["homeData", contentType || "default", homeAudienceKey],
-    queryFn: async () => {
-      const data = await fetchHomeData(
-        shouldFetchAuthenticatedHome ? authToken : undefined,
-        contentType,
-        { skipAuth: !shouldFetchAuthenticatedHome },
-      );
-
-      if (hasRenderableHomeData(data)) return data;
-      if (shouldFetchAuthenticatedHome) {
-        const publicData = await fetchHomeData(undefined, contentType, { skipAuth: true });
-        if (hasRenderableHomeData(publicData)) return publicData;
-      }
-
-      return data ?? initialData;
-    },
+  const { homeData, isLoading, error: homeDataError } = useHomeData({
+    contentType,
+    audienceKey: homeAudienceKey,
+    authToken,
+    shouldFetchAuthenticated: shouldFetchAuthenticatedHome,
     initialData,
-    placeholderData: (previousData) => previousData ?? initialData,
-    staleTime: shouldFetchAuthenticatedHome ? 0 : 60 * 1000,
-    refetchOnMount: shouldFetchAuthenticatedHome ? "always" : false,
-    refetchOnWindowFocus: false,
   });
-  const homeData = hasRenderableHomeData(queriedHomeData) ? queriedHomeData : initialData;
+
+  const secondaryEnabled = !isLoading && enableSecondaryQueries;
 
   const {
     data: bookUpdates,
     isLoading: isBookUpdatesLoading,
     error: bookUpdatesError,
-  } = useQuery({
-    queryKey: ["bookUpdates", bookUpdateTab],
-    queryFn: () => fetchBookUpdates(bookUpdateTab),
-    enabled: !isLoading && enableSecondaryQueries,
-    staleTime: 10 * 60 * 1000,
-  });
+  } = useBookUpdates(bookUpdateTab, { enabled: secondaryEnabled });
 
   const {
     data: activeCategories,
     isLoading: isActiveCategoriesLoading,
     error: activeCategoriesError,
-  } = useQuery({
-    queryKey: ["activeCategories", categoryType],
-    queryFn: () => fetchActiveCategories(categoryType),
-    enabled: !isLoading && enableSecondaryQueries,
-    staleTime: 5 * 60 * 1000,
-  });
+  } = useActiveCategories(categoryType, { enabled: secondaryEnabled });
 
   const {
     data: rankingCategories,
     isLoading: isRankingCategoriesLoading,
     error: rankingCategoriesError,
-  } = useQuery({
-    queryKey: ["rankingCategories", rankingTab],
-    queryFn: () => fetchRankingCategories(rankingTab),
-    enabled: !isLoading && enableSecondaryQueries,
-  });
+  } = useRankingCategories(rankingTab, { enabled: secondaryEnabled });
   const rankingLeftCategoryId =
     rankingTab === "trancn" || rankingTab === "fiction"
       ? "all"
@@ -161,21 +125,13 @@ export default function HomeContent({
     data: continueBooks,
     isLoading: isContinueBooksLoading,
     error: continueBooksError,
-  } = useQuery({
-    queryKey: ["continueBooks"],
-    queryFn: () => fetchUserShelveContinue(10),
-    enabled: !isLoading && enableSecondaryQueries && !!user,
-    select: (data: any) => data?.books ?? [],
-  });
+  } = useContinueBooks({ enabled: secondaryEnabled && !!user });
+
   const {
     data: pinnedReviewsData,
     isLoading: isPinnedReviewsLoading,
     error: pinnedReviewsError,
-  } = useQuery({
-    queryKey: ["pinnedReviews", "latest", 10, 1],
-    queryFn: () => fetchPinnedReviews({ sort: "latest", limit: 10, page: 1 }),
-    enabled: !isLoading && enableSecondaryQueries,
-  });
+  } = usePinnedReviews({ enabled: secondaryEnabled });
 
   const pinnedReviews = pinnedReviewsData?.reviews || [];
 

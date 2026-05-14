@@ -1,10 +1,13 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { type ReactNode, lazy, Suspense } from "react";
 import type { DehydratedState } from "@tanstack/react-query";
 import { App, ConfigProvider } from "antd";
 import TanstackProvider from "./providers";
-import SocketProvider from "@/providers/SocketProvider";
+import { useAuthStore } from "@/stores/authStore";
+
+// Lazy-load SocketProvider — only downloaded when an authenticated user mounts it.
+const SocketProvider = lazy(() => import("@/providers/SocketProvider"));
 
 type ClientProvidersProps = {
   children: ReactNode;
@@ -12,13 +15,23 @@ type ClientProvidersProps = {
 };
 
 export default function ClientProviders({ children, dehydratedState }: ClientProvidersProps) {
+  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+
+  const content = (
+    <ConfigProvider theme={{ token: { colorPrimary: "#f5222d" } }}>
+      <App>{children}</App>
+    </ConfigProvider>
+  );
+
   return (
     <TanstackProvider dehydratedState={dehydratedState}>
-      <SocketProvider>
-        <ConfigProvider theme={{ token: { colorPrimary: "#f5222d" } }}>
-          <App>{children}</App>
-        </ConfigProvider>
-      </SocketProvider>
+      {isLoggedIn ? (
+        <Suspense fallback={content}>
+          <SocketProvider>{content}</SocketProvider>
+        </Suspense>
+      ) : (
+        content
+      )}
     </TanstackProvider>
   );
 }

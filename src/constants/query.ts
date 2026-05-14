@@ -78,6 +78,23 @@ export const queryKeys = {
     questDetail: (questId: number | string | null | undefined) =>
       ["rank-quest-detail", String(questId ?? '')] as const,
   },
+  home: {
+    dataRoot: () => ["homeData"] as const,
+    data: (contentType?: string | null, audienceKey?: string | null) =>
+      ["homeData", contentType || "default", audienceKey ?? "guest"] as const,
+    bookUpdatesRoot: () => ["bookUpdates"] as const,
+    bookUpdates: (tab?: string | null) =>
+      ["bookUpdates", tab ?? "novel"] as const,
+    activeCategoriesRoot: () => ["activeCategories"] as const,
+    activeCategories: (categoryType?: string | null) =>
+      ["activeCategories", categoryType ?? "all"] as const,
+    rankingCategoriesRoot: () => ["rankingCategories"] as const,
+    rankingCategories: (tab?: string | null) =>
+      ["rankingCategories", tab ?? "novel"] as const,
+    continueBooks: () => ["continueBooks"] as const,
+    pinnedReviews: (sort?: string | null, limit?: number, page?: number) =>
+      ["pinnedReviews", sort ?? "latest", limit ?? 10, page ?? 1] as const,
+  },
 } as const;
 
 /**

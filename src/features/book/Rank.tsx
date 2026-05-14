@@ -5,12 +5,12 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ConfigProvider, Empty, Pagination, Select } from "antd";
 import {
-  fetchActiveCategories,
   fetchLeaderboardUserRank,
   fetchLeaderboardUsers,
   fetchRankingBooks,
   RankingTimeRange,
 } from "@/services/apiServices";
+import { useActiveCategories } from "@/hooks/home/useHomeQueries";
 import { TagSwiper } from "@/components/swiper/ImageSlider";
 import GifLoader from "@/components/utility/GifLoader";
 import { useAuthStore } from "@/stores/authStore";
@@ -41,10 +41,7 @@ export default function Rank() {
   const [categoryId, setCategoryId] = useState<number | string | undefined>(undefined);
   const myUserId = useAuthStore((state) => state.user?.user_id);
 
-  const { data: categoryData } = useQuery({
-    queryKey: ["activeCategories"],
-    queryFn: () => fetchActiveCategories("all"),
-  });
+  const { data: categoryData } = useActiveCategories("all", { enabled: true });
 
   const categoryOptions = useMemo(() => {
     if (!categoryData) return [];

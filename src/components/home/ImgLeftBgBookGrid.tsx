@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import Image from "next/image";
+// import Image from "next/image";
 import Link from "next/link";
 import parse from "html-react-parser";
 import CardBookImageOnly from "../novelCard/CardBookImageOnly";
@@ -47,7 +47,7 @@ export default function ImgLeftBgBookGrid({ group, link, onBookClick }: ImgLeftB
 
         {link && (
           <Link 
-            href={link} 
+            href={link}
             className="text-gray-700 hover:text-red-600 text-sm sm:text-base font-medium flex items-center gap-1 bg-white/50 backdrop-blur-sm px-3 py-1 rounded-full transition-colors whitespace-nowrap flex-shrink-0"
           >
             ดูทั้งหมด
@@ -66,7 +66,7 @@ export default function ImgLeftBgBookGrid({ group, link, onBookClick }: ImgLeftB
           <div className="w-[180px] sm:w-[200px] md:w-[230px] lg:w-[260px] xl:w-[280px] flex-shrink-0 relative">
             {/* Absolute height to exactly match the 2 rows of the grid (excluding pb-4) */}
             <div className="absolute top-0 left-0 w-full bottom-4 flex items-center justify-center p-1">
-              <div className="relative max-w-full max-h-full rounded-[16px] sm:rounded-[24px] overflow-hidden shadow-lg flex">
+              <div className="relative max-w-full max-h-full rounded-[16px] sm:rounded-[24px] overflow-hidden flex">
                 <img 
                   src={group.img_left} 
                   alt={group.name || 'promotion banner'} 
@@ -111,7 +111,7 @@ export default function ImgLeftBgBookGrid({ group, link, onBookClick }: ImgLeftB
             {books.length > 0 ? (
               books.map((book: any, index: number) => (
                 <div key={book.book_id || index} className="snap-start w-[96px] sm:w-[110px] md:w-[120px] lg:w-[130px] xl:w-[140px]">
-                  <CardBookImageOnly book={book} onBookClick={onBookClick} />
+                  <CardBookImageOnly book={book} onBookClick={onBookClick} noShadow />
                 </div>
               ))
             ) : (

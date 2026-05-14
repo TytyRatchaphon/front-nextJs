@@ -148,7 +148,7 @@ export const useAuthStore = create<AuthState>()(
               if (!session?.authenticated || !session.token) return;
 
               const latestState = get();
-              if (!latestState.user && !latestState.token && !latestState.isLoggedIn) {
+              if (!latestState.user && !latestState.token && !latestState.isLoggedIn) {                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
                 get().updateToken(session.token);
               }
             })
