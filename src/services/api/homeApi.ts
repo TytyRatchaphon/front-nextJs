@@ -2,7 +2,8 @@
 import apiClient from "../apiClient";
 import type { BookTrans } from "@/types/api";
 import { parseJwtToken } from "@/utils/jwtParser";
-import { cachedRequest } from "../requestCache";
+import { homeSchemas } from "./apiResponseSchemas";
+import { validateApiPayload } from "./apiResponseValidation";
 
 export interface Slide {
   banner_id: number;
@@ -91,15 +92,24 @@ export const normalizeBookUpdateTab = (tab?: string | null): BookUpdateTab => (
 export const fetchHomeData = async (
   token?: string | null,
   contentType?: string,
+  options?: { skipAuth?: boolean },
 ): Promise<HomeDataResponse | null> => {
   try {
     const cleanedToken = parseJwtToken(token);
+    const headers: Record<string, string> = {};
+    if (cleanedToken && !options?.skipAuth) {
+      headers.Authorization = cleanedToken;
+    }
+    if (options?.skipAuth) {
+      headers['x-skip-auth'] = 'true';
+    }
+
     const config = {
-      ...(cleanedToken ? { headers: { Authorization: cleanedToken } } : {}),
+      ...(Object.keys(headers).length ? { headers } : {}),
       ...(contentType ? { params: { content_type: contentType } } : {}),
     };
     const response = await apiClient.get<HomeDataResponse>("/getAllBookHome", config);
-    return response.data;
+    return validateApiPayload(homeSchemas.homeData, response.data, "/getAllBookHome") as unknown as HomeDataResponse;
   } catch {
     return null;
   }
@@ -136,16 +146,11 @@ export const trackUserBookhomeSectionClick = async ({
 export const fetchBookUpdates = async (tab?: string | null): Promise<BookUpdate[]> => {
   try {
     const normalizedTab = normalizeBookUpdateTab(tab);
-    return await cachedRequest<BookUpdate[]>(
-      `home:book-updates:${normalizedTab}`,
-      async () => {
-        const response = await apiClient.get<{ data: BookUpdate[] }>("/getBookUpdate", {
-          params: { tab: normalizedTab },
-        });
-        return Array.isArray(response.data?.data) ? response.data.data : [];
-      },
-      { ttlMs: 5 * 60 * 1000 }
-    );
+    const response = await apiClient.get<{ data: BookUpdate[] }>("/getBookUpdate", {
+      params: { tab: normalizedTab },
+    });
+    const payload = validateApiPayload(homeSchemas.bookUpdates, response.data, "/getBookUpdate");
+    return payload.data as unknown as BookUpdate[];
   } catch {
     return [];
   }

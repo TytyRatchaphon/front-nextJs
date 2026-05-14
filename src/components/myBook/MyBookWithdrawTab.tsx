@@ -4,13 +4,16 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button, Tabs, Upload, Input, Select, Table, Tag, Modal, InputNumber, notification } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import '@/services/apiClient';
-import { getBankList, updateBankIdCardAccount, getBankIdCardAccount, postWriterWithdraw, fetchWriterWithdrawHistory, fetchWriterWithdrawSetting } from '@/services/apiServices';
+import { getBankList, updateBankIdCardAccount, getBankIdCardAccount, postWriterWithdraw, fetchWriterWithdrawHistory, fetchWriterWithdrawSetting, fetchWriterCheck } from '@/services/apiServices';
 import GifLoader from '@/components/utility/GifLoader';
+import { canWithdraw, getWithdrawRestrictionMessage } from '@/features/mybook/writerPermissionUtils';
 
 const { TextArea } = Input;
 const { Option } = Select;
+
+const normalizeThaiIdNumber = (value: string) => value.replace(/\D/g, '').slice(0, 13);
 
 interface MyBookWithdrawTabProps {
   token: string | null;
@@ -30,6 +33,7 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
   const [idCardFile, setIdCardFile] = useState<File | null>(null);
   const [idNumber, setIdNumber] = useState('');
   const [address, setAddress] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [saveLoading, setSaveLoading] = useState(false);
   const [existingBankCert, setExistingBankCert] = useState<string | null>(null);
   const [existingIdCard, setExistingIdCard] = useState<string | null>(null);
@@ -39,6 +43,16 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
   const [withdrawLoading, setWithdrawLoading] = useState(false);
 
   const [api, contextHolder] = notification.useNotification();
+  const queryClient = useQueryClient();
+
+  const { data: writerCheckData } = useQuery({
+    queryKey: ['writerCheck', token],
+    queryFn: fetchWriterCheck,
+    enabled: !!token,
+  });
+
+  const isWithdrawAllowed = canWithdraw(writerCheckData);
+  const withdrawRestrictionMessage = getWithdrawRestrictionMessage(writerCheckData);
 
   // Fetch Bank List
   const { data: bankList = [] } = useQuery({
@@ -66,7 +80,7 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
 
       setAccountName(acc_name || '');
       setAccountNumber(acc_number || '');
-      setIdNumber(IDcard || '');
+      setIdNumber(normalizeThaiIdNumber(String(IDcard || '')));
       setAddress(current_address || '');
       setExistingBankCert(acc_img || null);
       setExistingIdCard(IDcard_img || null);
@@ -76,6 +90,14 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
   const handleSaveAccountInfo = async () => {
     if (!bankName || !accountNumber || !accountName || !idNumber || !address) {
       api.error({ message: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
+      return;
+    }
+    if (idNumber.length !== 13) {
+      api.error({ message: 'กรุณากรอกเลขบัตรประชาชนเป็นตัวเลข 13 หลัก' });
+      return;
+    }
+    if (!currentPassword.trim()) {
+      api.error({ message: 'กรุณากรอกรหัสผ่านปัจจุบันเพื่อยืนยันการแก้ไขข้อมูลบัญชี' });
       return;
     }
 
@@ -91,6 +113,7 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
     formData.append('acc_number', accountNumber);
     formData.append('IDcard', idNumber);
     formData.append('current_address', address);
+    formData.append('current_password', currentPassword);
     
     if (bankCertFile) {
       formData.append('acc_img', bankCertFile);
@@ -104,6 +127,9 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
       const res = await updateBankIdCardAccount(formData);
       if (res && (res.code === 200 || res.status === 'success')) {
         api.success({ message: 'บันทึกข้อมูลสำเร็จ' });
+        setCurrentPassword('');
+        queryClient.invalidateQueries({ queryKey: ['accountInfo'] });
+        queryClient.invalidateQueries({ queryKey: ['writerCheck'] });
       } else {
         api.error({ message: res?.message || 'บันทึกข้อมูลไม่สำเร็จ' });
       }
@@ -151,6 +177,11 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
   });
 
   const handleConfirmWithdraw = async () => {
+    if (!isWithdrawAllowed) {
+      api.warning({ message: withdrawRestrictionMessage });
+      return;
+    }
+
     const amount = Number(withdrawAmount) || 0;
     const avail = Number(coinIncome) || 0;
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -278,27 +309,35 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
             </svg>
           }
           style={{
-            backgroundColor: '#E31C3D',
-            borderColor: '#E31C3D',
+            backgroundColor: isWithdrawAllowed ? '#E31C3D' : '#D1D5DB',
+            borderColor: isWithdrawAllowed ? '#E31C3D' : '#D1D5DB',
             borderRadius: '6px',
             height: '40px',
             fontSize: '14px',
             fontWeight: '500',
           }}
           onMouseEnter={(e) => {
+            if (!isWithdrawAllowed) return;
             e.currentTarget.style.backgroundColor = '#C41230';
             e.currentTarget.style.borderColor = '#C41230';
           }}
           onMouseLeave={(e) => {
+            if (!isWithdrawAllowed) return;
             e.currentTarget.style.backgroundColor = '#E31C3D';
             e.currentTarget.style.borderColor = '#E31C3D';
           }}
+          disabled={!isWithdrawAllowed}
           onClick={() => setShowWithdrawModal(true)}
         >
           แจ้งถอนเงิน
         </Button>
         
         <span className='text-sm text-red-600'>*ยอดขั้นต่ำที่สามารถถอนเงิน {minBaht ?? 100} บาท*</span>
+        {!isWithdrawAllowed && (
+          <span className='w-full text-sm text-amber-700 md:w-auto'>
+            {withdrawRestrictionMessage}
+          </span>
+        )}
         
         <div className='flex gap-4 ml-auto'>
           <Link href="/howto/howincome" className='inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-800'>
@@ -396,9 +435,12 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
                       <div>
                         <label className='block mb-2 text-sm'>เลขบัตรประจำตัวประชาชน <span className="text-red-500">*</span></label>
                         <Input 
-                          placeholder='กรอกเลขบัตร'
+                          placeholder='กรอกเลขบัตร 13 หลัก'
                           value={idNumber}
-                          onChange={(e) => setIdNumber(e.target.value)}
+                          onChange={(e) => setIdNumber(normalizeThaiIdNumber(e.target.value))}
+                          inputMode="numeric"
+                          pattern="\d*"
+                          maxLength={13}
                         />
                       </div>
 
@@ -511,6 +553,20 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
                           maxLength={15}
                         />
                       </div>
+
+                      {/* Current Password */}
+                      <div>
+                        <label className='block mb-2 text-sm'>รหัสผ่านปัจจุบัน <span className="text-red-500">*</span></label>
+                        <Input.Password
+                          placeholder='กรอกรหัสผ่านปัจจุบันเพื่อยืนยัน'
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          autoComplete="current-password"
+                        />
+                        <p className='mt-1 text-xs text-gray-500'>
+                          ต้องยืนยันรหัสผ่านทุกครั้งเมื่อแก้ไขข้อมูลบัญชีธนาคารหรือบัตรประชาชน
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -579,7 +635,7 @@ const MyBookWithdrawTab: React.FC<MyBookWithdrawTabProps> = ({ token, coinIncome
         onOk={handleConfirmWithdraw}
         okText="ยืนยัน"
         cancelText="ยกเลิก"
-        okButtonProps={{ style: { backgroundColor: '#E31C3D', borderColor: '#E31C3D', color: '#ffffff' }, loading: withdrawLoading }}
+        okButtonProps={{ style: { backgroundColor: '#E31C3D', borderColor: '#E31C3D', color: '#ffffff' }, loading: withdrawLoading, disabled: !isWithdrawAllowed }}
       >
         <div className='space-y-4'>
           <div className='flex justify-between'>

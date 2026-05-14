@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { Modal } from "antd";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/constants/query";
 import apiClient from "@/services/apiClient";
 import type { EpisodeBookmark } from "../readerContentUtils";
 
@@ -37,7 +38,7 @@ export function useEpisodeBookmarks({
   const [editingBookmarkId, setEditingBookmarkId] = useState<number | null>(null);
 
   const { data: bookmarks = [], isFetching: isFetchingBookmarks } = useQuery<EpisodeBookmark[]>({
-    queryKey: ["episodeBookmarks", episodeId],
+    queryKey: queryKeys.read.episodeBookmarks(episodeId),
     queryFn: async () => {
       const res = await apiClient.get("/user/bookmarks", { params: { ep_id: Number(episodeId) } });
       const list = Array.isArray(res?.data?.data) ? res.data.data : [];
@@ -57,7 +58,7 @@ export function useEpisodeBookmarks({
   });
 
   const invalidateEpisodeBookmarks = useCallback(() => {
-    return queryClient.invalidateQueries({ queryKey: ["episodeBookmarks", episodeId] });
+    return queryClient.invalidateQueries({ queryKey: queryKeys.read.episodeBookmarks(episodeId) });
   }, [queryClient, episodeId]);
 
   const resetBookmarkEditorState = useCallback(() => {

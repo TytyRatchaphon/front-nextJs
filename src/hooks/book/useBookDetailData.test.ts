@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { queryKeys } from "@/constants/query";
 
 const {
   keepPreviousDataMock,
@@ -241,21 +242,21 @@ describe("useBookDetailData", () => {
     expect(configs).toHaveLength(5);
     expect(configs[0]).toEqual(
       expect.objectContaining({
-        queryKey: ["bookDetail", ""],
+        queryKey: queryKeys.book.detail(""),
         enabled: false,
         placeholderData: keepPreviousDataMock,
       }),
     );
-    expect(configs[1]).toEqual(expect.objectContaining({ queryKey: ["userShelf", null], enabled: false }));
+    expect(configs[1]).toEqual(expect.objectContaining({ queryKey: queryKeys.user.shelf(null), enabled: false }));
     expect(configs[2]).toEqual(
       expect.objectContaining({
-        queryKey: ["bookEpisodes", ""],
+        queryKey: queryKeys.book.episodes(""),
         enabled: false,
         placeholderData: keepPreviousDataMock,
       }),
     );
-    expect(configs[3]).toEqual(expect.objectContaining({ queryKey: ["bookPurchaseDetails", "", null], enabled: false }));
-    expect(configs[4]).toEqual(expect.objectContaining({ queryKey: ["novelPackCheck", ""], enabled: false }));
+    expect(configs[3]).toEqual(expect.objectContaining({ queryKey: queryKeys.book.purchaseDetails("", null), enabled: false }));
+    expect(configs[4]).toEqual(expect.objectContaining({ queryKey: queryKeys.book.novelPackCheck(""), enabled: false }));
   });
 
   it("uses user fallback writer, default price, and empty tags when data is sparse", () => {

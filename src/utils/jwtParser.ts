@@ -1,4 +1,4 @@
-import { UserData } from "@/stores/authStore";
+import type { UserData } from "@/stores/authStore";
 
 export const parseJwtToken = (newToken: string | undefined | null): string | undefined => {
   if (!newToken) return undefined;

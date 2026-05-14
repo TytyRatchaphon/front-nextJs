@@ -2,7 +2,6 @@
 import apiClient from "../apiClient";
 import type { WebsiteSettingsResponse } from "@/types/api";
 import Cookies from 'js-cookie';
-import { cachedRequest } from "../requestCache";
 import axios from "axios";
 
 // --- Writer Registration & Check ---
@@ -54,6 +53,10 @@ export const updateWriter = async (data: Partial<WriterRegistrationData>, token:
 export interface WriterCheckResponse {
   is_writer: boolean;
   status: string | null;
+  reason?: string | null;
+  can_create_book?: boolean;
+  can_set_ep_price?: boolean;
+  can_withdraw?: boolean;
   message: string;
 }
 
@@ -100,7 +103,7 @@ export const changeUserPassword = async (payload: ChangePasswordPayload) => {
 };
 
 export const changeUserEmail = async (payload: ChangeEmailPayload) => {
-  return apiClient.post('/user/change-email', payload);
+  return apiClient.post('/change-email', payload);
 };
 
 export const updateUserAddress = async (formData: FormData, token: string) => {
@@ -380,17 +383,8 @@ export const refreshToken = async (tokenOverride?: string) => {
 
 export const fetchWebsiteSettings = async (): Promise<WebsiteSettingsResponse | null> => {
   try {
-    return await cachedRequest<WebsiteSettingsResponse | null>(
-      'website-settings',
-      async () => {
-        const response = await apiClient.get<WebsiteSettingsResponse>("/get_website");
-        return response.data || null;
-      },
-      {
-        ttlMs: 5 * 60 * 1000,
-        shouldCache: (value) => value !== null,
-      }
-    );
+    const response = await apiClient.get<WebsiteSettingsResponse>("/get_website");
+    return response.data || null;
   } catch (error) {
     console.error("fetchWebsiteSettings error:", error);
     return null;

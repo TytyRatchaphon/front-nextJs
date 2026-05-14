@@ -1,6 +1,8 @@
 
 import apiClient from "../apiClient";
 import type { BookTrans, BookDetail, BookDetailResponse, BookPurchaseDetailsResponse, LatestReadEpisodeResponse, BookPromotionOption, CategoryPagination, UniversalBook } from "@/types/api";
+import { bookSchemas } from "./apiResponseSchemas";
+import { validateApiPayload } from "./apiResponseValidation";
 
 export interface BookReportReason {
   id: number;
@@ -142,7 +144,8 @@ const filterBooksByContentType = (books: UniversalBook[], contentType: NewNovelC
 };
 
 const normalizeBooksNewResponse = (payload: any): NewNovelListData => {
-  const data = payload?.data;
+  const validatedPayload = validateApiPayload(bookSchemas.newNovels, payload, "/books/new");
+  const data = validatedPayload.data;
   if (!data || typeof data !== 'object') {
     throw new Error('Invalid /books/new response: missing data object');
   }
@@ -307,53 +310,23 @@ export const fetchBookTransById = async (id: string): Promise<BookTrans> => {
   }
 };
 
+const normalizeBookDetailPayload = (payload: BookDetailResponse | BookDetail | any): BookDetail | null => {
+  const data = payload?.data ?? payload;
+  if (!data || typeof data !== 'object') return null;
+  return data as BookDetail;
+};
+
 export const fetchBookDetail = async (bookId: string): Promise<BookDetail> => {
-  try {
-    try {
-      const resp = await apiClient.get(`/bookdetail/${bookId}`);
-      if (resp?.data) {
-        const payload = resp.data.data ?? resp.data;
-        if (payload) {
-          return payload as BookDetail;
-        }
-      }
-    } catch {
-    }
-
-    const response = await apiClient.get<BookDetailResponse>(`/bookdetail/${bookId}`);
-    if (response.data && response.data.data) {
-      return response.data.data;
-    }
-
+  const response = await apiClient.get<BookDetailResponse>(`/bookdetail/${bookId}`);
+  const validatedPayload = validateApiPayload(bookSchemas.detail, response.data, `/bookdetail/${bookId}`);
+  const book = normalizeBookDetailPayload(validatedPayload);
+  if (!book) {
     throw new Error('ไม่พบข้อมูลหนังสือ');
-  } catch (error) {
-    throw error;
   }
+  return book;
 };
 
-export const fetchMyBookDetail = async (bookId: string): Promise<BookDetail> => {
-  try {
-    try {
-      const resp = await apiClient.get(`/bookdetail/${bookId}`);
-      if (resp?.data) {
-        const payload = resp.data.data ?? resp.data;
-        if (payload) {
-          return payload as BookDetail;
-        }
-      }
-    } catch {
-    }
-
-    const response = await apiClient.get<BookDetailResponse>(`/bookdetail/${bookId}`);
-    if (response.data && response.data.data) {
-      return response.data.data;
-    }
-
-    throw new Error('ไม่พบข้อมูลหนังสือ');
-  } catch (error) {
-    throw error;
-  }
-};
+export const fetchMyBookDetail = fetchBookDetail;
 
 export const fetchBookEpisodes = async (bookId: string | number) => {
   try {
@@ -381,7 +354,8 @@ export const fetchBookEpisodes = async (bookId: string | number) => {
 export const fetchBookPurchaseDetails = async (bookId: string | number) => {
   try {
     const response = await apiClient.get<BookPurchaseDetailsResponse>(`/bookdetail/purchase/${bookId}`);
-    return response.data?.data;
+    const payload = validateApiPayload(bookSchemas.purchaseDetails, response.data, `/bookdetail/purchase/${bookId}`);
+    return payload.data as unknown as BookPurchaseDetailsResponse["data"];
   } catch {
     return null;
   }
@@ -399,11 +373,8 @@ export const fetchBookRecommendation = async (bookId: string | number): Promise<
     const response = await apiClient.get<BookRecommendationResponse>(`/bookdetail/recommend/${bookId}`, {
       params: { limit: 5 }
     });
-    
-    if (response.data && response.data.code === 200 && Array.isArray(response.data.data)) {
-        return response.data.data;
-    }
-    return [];
+    const payload = validateApiPayload(bookSchemas.recommendation, response.data, `/bookdetail/recommend/${bookId}`);
+    return payload.data;
   } catch {
     return [];
   }
@@ -412,14 +383,9 @@ export const fetchBookRecommendation = async (bookId: string | number): Promise<
 export const fetchBookPromotionOptions = async (bookId: number): Promise<BookPromotionOption[]> => {
   try {
     const response = await apiClient.get<any>(`/pack-campaign/buying-options/${bookId}`);
-
-    if (response.data && response.data.code === 200 && response.data.data) {
-      if (Array.isArray(response.data.data)) {
-        return response.data.data;
-      }
-      return [];
-    }
-    return [];
+    const payload = validateApiPayload(bookSchemas.promotionOptions, response.data, `/pack-campaign/buying-options/${bookId}`);
+    if (payload.code !== 200) return [];
+    return payload.data as unknown as BookPromotionOption[];
   } catch {
     return [];
   }
@@ -451,7 +417,7 @@ export const fetchNovelPackCheck = async (bookId: string | number): Promise<Nove
 export const fetchLatestReadEpisode = async (bookId: string | number): Promise<LatestReadEpisodeResponse | null> => {
   try {
     const response = await apiClient.get<LatestReadEpisodeResponse>(`/bookdetail/latest-read-ep/${bookId}`);
-    return response.data;
+    return validateApiPayload(bookSchemas.latestReadEpisode, response.data, `/bookdetail/latest-read-ep/${bookId}`) as unknown as LatestReadEpisodeResponse;
   } catch {
     return null;
   }
@@ -501,6 +467,36 @@ export const buyGroupPromotion = async (data: { dfb_id: number; payWith: string 
   } catch (error) {
     throw error;
   }
+};
+
+export type BuyEpisodesPayload = {
+  eps: number[];
+  payWith: "coin" | "freecoin";
+  fastPayWith?: Array<"ticket" | "coin">;
+};
+
+export const buyEpisodes = async (payload: BuyEpisodesPayload) => {
+  const response = await apiClient.post("/buy/eps", payload);
+  return response.data;
+};
+
+export const addBookToShelf = async (bookId: string | number) => {
+  const response = await apiClient.post(`/user/savebookshelve/add/${bookId}`);
+  return response.data;
+};
+
+export const removeBookFromShelf = async (bookId: string | number) => {
+  const response = await apiClient.post(`/user/savebookshelve/remove/${bookId}`);
+  return response.data;
+};
+
+export const saveBookShare = async (payload: {
+  userID: string | number;
+  bookID: string | number;
+  type: "facebook" | "twitter" | "line";
+}) => {
+  const response = await apiClient.post("gift/saveshare", payload);
+  return response.data;
 };
 
 export const postBookClick = async (bookId: string | number) => {

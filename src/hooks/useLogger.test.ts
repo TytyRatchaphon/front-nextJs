@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockUsePathname = vi.fn();
 const mockLogActivity = vi.fn();
@@ -116,6 +116,37 @@ describe("useLogger", () => {
         action: "click",
       })
     );
+  });
+
+  it("keeps logging best-effort when localStorage is unavailable", async () => {
+    const storage = {
+      getItem: vi.fn(() => {
+        throw new Error("storage blocked");
+      }),
+      setItem: vi.fn(),
+    };
+
+    (globalThis as any).localStorage = storage;
+    (globalThis as any).window.localStorage = storage;
+
+    const { log } = useLogger();
+
+    await expect(log("search")).resolves.toBeUndefined();
+    expect(mockLogActivity).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "search",
+        session_id: "app-session-uuid",
+        page_session_id: "page-session-uuid",
+      })
+    );
+  });
+
+  it("swallows logActivity failures so analytics cannot break pages", async () => {
+    mockLogActivity.mockRejectedValueOnce(new Error("analytics failed"));
+
+    const { log } = useLogger();
+
+    await expect(log("search")).resolves.toBeUndefined();
   });
 });
 

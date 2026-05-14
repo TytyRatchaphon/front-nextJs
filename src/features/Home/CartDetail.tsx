@@ -15,6 +15,7 @@ import StampPill from '@/components/utility/StampPill';
 import RPPill from '@/components/utility/RPPill';
 import CurrencyIcon from '@/components/common/CurrencyIcon';
 import { resolveStoreImageSrc } from '@/utils/imageUtils';
+import { queryKeys } from '@/constants/query';
 
 
 const { Title, Text } = Typography;
@@ -32,7 +33,7 @@ export default function CartDetail() {
   const { settings } = useWebsiteSettings();
     const { notification } = App.useApp();
     const { data: cartStores, isLoading } = useQuery({
-        queryKey: ['cartItems'],
+        queryKey: queryKeys.cart.items(),
         queryFn: fetchCartItems,
         refetchOnWindowFocus: true,
         refetchOnReconnect: true,
@@ -85,10 +86,10 @@ export default function CartDetail() {
     const updateMutation = useMutation({
         mutationFn: updateCartItem,
         onSuccess: () => {
-             queryClient.invalidateQueries({ queryKey: ['cartItems'] });
-             queryClient.invalidateQueries({ queryKey: ['cartSummary'] });
-             queryClient.invalidateQueries({ queryKey: ['checkoutItems'] });
-             queryClient.invalidateQueries({ queryKey: ['checkoutAddress'] });
+             queryClient.invalidateQueries({ queryKey: queryKeys.cart.items() });
+             queryClient.invalidateQueries({ queryKey: queryKeys.cart.summary() });
+             queryClient.invalidateQueries({ queryKey: queryKeys.cart.checkoutItems() });
+             queryClient.invalidateQueries({ queryKey: queryKeys.cart.checkoutAddress() });
         },
         onError: (error: any) => {
             notification.error({
@@ -102,10 +103,10 @@ export default function CartDetail() {
     const deleteMutation = useMutation({
         mutationFn: removeCartItem,
         onSuccess: () => {
-             queryClient.invalidateQueries({ queryKey: ['cartItems'] });
-             queryClient.invalidateQueries({ queryKey: ['cartSummary'] });
-             queryClient.invalidateQueries({ queryKey: ['checkoutItems'] });
-             queryClient.invalidateQueries({ queryKey: ['checkoutAddress'] });
+             queryClient.invalidateQueries({ queryKey: queryKeys.cart.items() });
+             queryClient.invalidateQueries({ queryKey: queryKeys.cart.summary() });
+             queryClient.invalidateQueries({ queryKey: queryKeys.cart.checkoutItems() });
+             queryClient.invalidateQueries({ queryKey: queryKeys.cart.checkoutAddress() });
              notification.success({
                 message: 'สำเร็จ',
                 description: 'ลบรายการสินค้าสำเร็จ',
@@ -117,10 +118,10 @@ export default function CartDetail() {
     const clearCartMutation = useMutation({
         mutationFn: clearCart,
         onSuccess: () => {
-             queryClient.invalidateQueries({ queryKey: ['cartItems'] });
-             queryClient.invalidateQueries({ queryKey: ['cartSummary'] });
-             queryClient.invalidateQueries({ queryKey: ['checkoutItems'] });
-             queryClient.invalidateQueries({ queryKey: ['checkoutAddress'] });
+             queryClient.invalidateQueries({ queryKey: queryKeys.cart.items() });
+             queryClient.invalidateQueries({ queryKey: queryKeys.cart.summary() });
+             queryClient.invalidateQueries({ queryKey: queryKeys.cart.checkoutItems() });
+             queryClient.invalidateQueries({ queryKey: queryKeys.cart.checkoutAddress() });
              notification.success({
                 message: 'สำเร็จ',
                 description: 'ลบรายการสินค้าทั้งหมดสำเร็จ',
@@ -216,10 +217,10 @@ export default function CartDetail() {
         );
 
         Promise.all(promises).then(() => {
-            queryClient.invalidateQueries({ queryKey: ['cartItems'] });
-            queryClient.invalidateQueries({ queryKey: ['cartSummary'] });
-            queryClient.invalidateQueries({ queryKey: ['checkoutItems'] });
-            queryClient.invalidateQueries({ queryKey: ['checkoutAddress'] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.cart.items() });
+            queryClient.invalidateQueries({ queryKey: queryKeys.cart.summary() });
+            queryClient.invalidateQueries({ queryKey: queryKeys.cart.checkoutItems() });
+            queryClient.invalidateQueries({ queryKey: queryKeys.cart.checkoutAddress() });
         });
     };
 
@@ -231,10 +232,10 @@ export default function CartDetail() {
         );
         
         Promise.all(promises).then(() => {
-            queryClient.invalidateQueries({ queryKey: ['cartItems'] });
-            queryClient.invalidateQueries({ queryKey: ['cartSummary'] });
-            queryClient.invalidateQueries({ queryKey: ['checkoutItems'] });
-            queryClient.invalidateQueries({ queryKey: ['checkoutAddress'] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.cart.items() });
+            queryClient.invalidateQueries({ queryKey: queryKeys.cart.summary() });
+            queryClient.invalidateQueries({ queryKey: queryKeys.cart.checkoutItems() });
+            queryClient.invalidateQueries({ queryKey: queryKeys.cart.checkoutAddress() });
         });
     };
 

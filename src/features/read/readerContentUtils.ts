@@ -1,6 +1,3 @@
-import AES from "crypto-js/aes";
-import encUtf8 from "crypto-js/enc-utf8";
-
 import { getRegularEpisodePrices } from "./purchaseUtils";
 
 export type EpisodeBookmark = {
@@ -52,7 +49,6 @@ export type ReadEpisodeListGroup = {
 };
 
 export const BANGKOK_TIME_ZONE = "Asia/Bangkok";
-export const READ_EPISODE_PUBLIC_SECRET_KEY = process.env.NEXT_PUBLIC_SECRET_KEY || "";
 export const READER_OBFUSCATION_CSS_ID = "reader-obfuscation-css";
 export const READER_OBFUSCATION_CSS_PRELOAD_ID = "reader-obfuscation-css-preload";
 export const READER_TEMP_DISABLED_FONT_KEYS = ["baijamjuree", "trirong", "maitree"] as const;
@@ -161,18 +157,7 @@ export const decryptEpisodePayloadOnClient = (payload: unknown): Record<string, 
     const parsed = JSON.parse(payload);
     return parsed && typeof parsed === "object" ? parsed : null;
   } catch {
-    if (!READ_EPISODE_PUBLIC_SECRET_KEY) return null;
-
-    try {
-      const bytes = AES.decrypt(payload, READ_EPISODE_PUBLIC_SECRET_KEY);
-      const decrypted = bytes.toString(encUtf8);
-      if (!decrypted) return null;
-
-      const parsed = JSON.parse(decrypted);
-      return parsed && typeof parsed === "object" ? parsed : null;
-    } catch {
-      return null;
-    }
+    return null;
   }
 };
 

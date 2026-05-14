@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/constants/query";
 import { fetchBookEpisodes } from '@/services/apiServices';
 
 export function useEpisodeNavigation(bookId: string, episodeId: string, episode: any) {
@@ -9,7 +10,7 @@ export function useEpisodeNavigation(bookId: string, episodeId: string, episode:
         error: episodesError,
         isLoading: isListLoading
     } = useQuery({
-        queryKey: ["bookEpisodes", bookId],
+        queryKey: queryKeys.book.episodes(bookId),
         queryFn: () => fetchBookEpisodes(bookId),
         enabled: !!bookId,
         staleTime: 5 * 60 * 1000,

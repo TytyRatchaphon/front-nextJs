@@ -1,6 +1,6 @@
 "use client";
 
-import type { RefObject, ReactNode } from "react";
+import type { CSSProperties, RefObject, ReactNode } from "react";
 
 import type { ReadPayMethod } from "../purchaseUtils";
 import { ReadPurchaseFallback } from "./ReadPurchaseFallback";
@@ -66,6 +66,27 @@ export function ReaderContentArea({
   showTrackedParagraphLabel,
   trackedParagraphIndex,
 }: ReaderContentAreaProps) {
+  const contentFontFamily = currentFontFamily?.family || "var(--font-sarabun), sans-serif";
+  const readerContentStyle: CSSProperties & { "--reader-content-font-family": string } = {
+    "--reader-content-font-family": contentFontFamily,
+    fontSize: `${fontSize}px`,
+    lineHeight: "1.8",
+    fontFamily: renderedEpisodeHtml && !isQuotaHardBlocked
+      ? contentFontFamily
+      : "var(--font-sarabun), sans-serif",
+    fontWeight: isBold ? "bold" : "normal",
+    textAlign,
+    whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    wordBreak: "break-word",
+    minHeight: !isFocused
+      ? contentHeight
+      : (shouldDelayObfuscatedRender ? 240 : undefined),
+    opacity: (isFocused && !shouldDelayObfuscatedRender) ? 1 : 0,
+    transition: "opacity 0.1s ease",
+    pointerEvents: (isFocused && !shouldDelayObfuscatedRender) ? "auto" : "none",
+  };
+
   return (
     <>
       <article
@@ -81,24 +102,7 @@ export function ReaderContentArea({
         <div
           ref={innerContentRef}
           className={renderedEpisodeHtml && !isQuotaHardBlocked ? "reader-font-surface" : undefined}
-          style={{
-            fontSize: `${fontSize}px`,
-            lineHeight: "1.8",
-            fontFamily: renderedEpisodeHtml && !isQuotaHardBlocked
-              ? (currentFontFamily?.family || "var(--font-sarabun), sans-serif")
-              : "var(--font-sarabun), sans-serif",
-            fontWeight: isBold ? "bold" : "normal",
-            textAlign,
-            whiteSpace: "normal",
-            overflowWrap: "anywhere",
-            wordBreak: "break-word",
-            minHeight: !isFocused
-              ? contentHeight
-              : (shouldDelayObfuscatedRender ? 240 : undefined),
-            opacity: (isFocused && !shouldDelayObfuscatedRender) ? 1 : 0,
-            transition: "opacity 0.1s ease",
-            pointerEvents: (isFocused && !shouldDelayObfuscatedRender) ? "auto" : "none",
-          }}
+          style={readerContentStyle}
         >
           {(isFocused && !shouldDelayObfuscatedRender) ? (
             renderedEpisodeHtml && !isQuotaHardBlocked ? (

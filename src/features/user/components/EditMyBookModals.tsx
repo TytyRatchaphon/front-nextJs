@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { DatePicker, InputNumber, Modal, Select } from "antd";
+import type { UserMyBookPermissions } from "@/services/apiServices";
 
 type EditGroupNameModalProps = {
 	open: boolean;
@@ -62,6 +63,8 @@ type EditBulkPriceModalProps = {
 	priceSelected: number | null;
 	priceSubmitting: boolean;
 	selectedEpisodeCount: number;
+	canSetEpisodePrice?: boolean;
+	restrictionMessage?: string;
 	onClose: () => void;
 	onPriceChange: (value: number | null) => void;
 	onSubmit: () => void;
@@ -72,6 +75,8 @@ export function EditBulkPriceModal({
 	priceSelected,
 	priceSubmitting,
 	selectedEpisodeCount,
+	canSetEpisodePrice = true,
+	restrictionMessage,
 	onClose,
 	onPriceChange,
 	onSubmit,
@@ -80,6 +85,11 @@ export function EditBulkPriceModal({
 		<Modal open={open} onCancel={onClose} footer={null} centered>
 			<div className="py-4 text-center">
 				<h3 className="text-lg text-amber-500 font-semibold mb-4">แก้ไขราคาทั้งหมดที่เลือก</h3>
+				{!canSetEpisodePrice && (
+					<div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+						{restrictionMessage ?? "ต้องยืนยันข้อมูลบัญชีนักเขียนก่อน จึงจะสามารถตั้งราคาตอนได้"}
+					</div>
+				)}
 				<div className="mx-auto w-48">
 					<Select
 						value={priceSelected ?? undefined}
@@ -87,6 +97,7 @@ export function EditBulkPriceModal({
 						options={[{ value: 0, label: "อ่านฟรี" }, ...Array.from({ length: 10 }, (_, i) => ({ value: i + 1, label: `${i + 1} เหรียญ` }))]}
 						style={{ width: "100%" }}
 						placeholder="เลือก..."
+						disabled={!canSetEpisodePrice}
 					/>
 					<div className="my-2 text-center text-gray-400 text-sm">หรือกำหนดเอง</div>
 					<InputNumber
@@ -95,16 +106,116 @@ export function EditBulkPriceModal({
 						onChange={(val) => onPriceChange(val)}
 						placeholder="ระบุราคาเอง"
 						style={{ width: "100%" }}
+						disabled={!canSetEpisodePrice}
 					/>
 				</div>
 				<div className="flex justify-center mt-6">
 					<button
 						onClick={onSubmit}
-						disabled={priceSubmitting || priceSelected === null || selectedEpisodeCount === 0}
+						disabled={priceSubmitting || !canSetEpisodePrice || priceSelected === null || selectedEpisodeCount === 0}
 						className="bg-rose-600 text-white px-6 py-2 rounded disabled:opacity-50 hover:bg-rose-700 transition-colors"
 						style={{ color: "#ffffff" }}
 					>
 						{priceSubmitting ? "กำลังอัปเดต..." : "แก้ไขราคา"}
+					</button>
+				</div>
+			</div>
+		</Modal>
+	);
+}
+
+export type FastAccessPriceFormValues = {
+	fast_ticket: number;
+	fast_ticket_daily_increase: number;
+	fast_coin: number;
+	fast_coin_daily_increase: number;
+};
+
+type EditFastAccessPriceModalProps = {
+	open: boolean;
+	values: FastAccessPriceFormValues;
+	permissions: UserMyBookPermissions | null | undefined;
+	submitting: boolean;
+	selectedEpisodeCount: number;
+	onClose: () => void;
+	onChange: (key: keyof FastAccessPriceFormValues, value: number) => void;
+	onSubmit: () => void;
+};
+
+export function EditFastAccessPriceModal({
+	open,
+	values,
+	permissions,
+	submitting,
+	selectedEpisodeCount,
+	onClose,
+	onChange,
+	onSubmit,
+}: EditFastAccessPriceModalProps) {
+	const canSetTicket = permissions?.set_fast_ticket === true;
+	const canSetTicketIncrease = permissions?.set_fast_ticket_daily_increase === true;
+	const canSetCoin = permissions?.set_fast_coin === true;
+	const canSetCoinIncrease = permissions?.set_fast_coin_daily_increase === true;
+	const hasAnyPermission = canSetTicket || canSetTicketIncrease || canSetCoin || canSetCoinIncrease;
+
+	const renderNumberInput = (
+		label: string,
+		key: keyof FastAccessPriceFormValues,
+		enabled: boolean,
+	) => (
+		<div className={!enabled ? "hidden" : ""}>
+			<label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+			<InputNumber
+				min={0}
+				value={values[key]}
+				onChange={(value) => onChange(key, Number(value ?? 0))}
+				className="w-full"
+			/>
+		</div>
+	);
+
+	return (
+		<Modal
+			open={open}
+			onCancel={onClose}
+			footer={null}
+			centered
+			width={620}
+			title={<div className="text-center text-rose-600 font-semibold text-lg">ตั้งราคาตอนล่วงหน้า</div>}
+		>
+			<div className="py-3">
+				<div className="mb-4 rounded-lg border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-gray-700">
+					กำลังตั้งค่าให้ตอนที่เลือก {selectedEpisodeCount} ตอน
+				</div>
+
+				{hasAnyPermission ? (
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						{renderNumberInput("ราคาปลดล็อคล่วงหน้าด้วยตั๋ว", "fast_ticket", canSetTicket)}
+						{renderNumberInput("จำนวนตั๋วที่เพิ่มต่อวัน", "fast_ticket_daily_increase", canSetTicketIncrease)}
+						{renderNumberInput("ราคาปลดล็อคล่วงหน้าด้วยเหรียญ", "fast_coin", canSetCoin)}
+						{renderNumberInput("จำนวนเหรียญที่เพิ่มต่อวัน", "fast_coin_daily_increase", canSetCoinIncrease)}
+					</div>
+				) : (
+					<div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500">
+						บัญชีนี้ยังไม่มีสิทธิ์ตั้งราคาตอนล่วงหน้า
+					</div>
+				)}
+
+				<div className="flex justify-center gap-3 mt-6">
+					<button
+						onClick={onClose}
+						disabled={submitting}
+						className="px-5 py-2 rounded border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+					>
+						ยกเลิก
+					</button>
+					<button
+						onClick={onSubmit}
+						disabled={submitting || selectedEpisodeCount === 0 || !hasAnyPermission}
+						className="bg-rose-600 text-white px-6 py-2 rounded disabled:opacity-50 hover:bg-rose-700 transition-colors"
+						style={{ color: "#ffffff" }}
+					>
+						{submitting ? "กำลังบันทึก..." : "บันทึก"}
 					</button>
 				</div>
 			</div>

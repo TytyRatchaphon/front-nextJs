@@ -6,9 +6,9 @@ import { CheckCircleOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import Cookies from "js-cookie";
 
+import { queryKeys } from "@/constants/query";
 import { fetchAllRanksData } from "@/services/api/userApi";
 import type { UserData } from "@/stores/authStore";
-import { getNavbarRankQueryKey } from "@/utils/rankRefresh";
 import {
   cleanNavbarRankToken,
   getClaimableRankRewardSnapshot,
@@ -32,7 +32,7 @@ export function useNavbarRankRewards({
 }: UseNavbarRankRewardsParams) {
   const { notification: api } = App.useApp();
   const rankQueryKey = React.useMemo(
-    () => getNavbarRankQueryKey(user?.user_id),
+    () => queryKeys.rank.navbarProfile(user?.user_id),
     [user?.user_id],
   );
   const cleanRankToken = React.useMemo(() => (

@@ -1,11 +1,14 @@
 import apiClient from "../apiClient";
 import type { CategoryDetail, CategoryAllResponse, CategoryBookListResponse } from "@/types/api";
 import type { Slide } from "./homeApi";
+import { categorySchemas } from "./apiResponseSchemas";
+import { validateApiPayload } from "./apiResponseValidation";
 
 export const fetchBookCategoryAll = async (): Promise<CategoryDetail[]> => {
   try {
     const response = await apiClient.get<CategoryAllResponse>("/book-category/all");
-    return response.data?.data || [];
+    const payload = validateApiPayload(categorySchemas.all, response.data, "/book-category/all");
+    return payload.data as unknown as CategoryDetail[];
   } catch {
     return [];
   }
@@ -14,7 +17,8 @@ export const fetchBookCategoryAll = async (): Promise<CategoryDetail[]> => {
 export const fetchAllCategories = async (): Promise<CategoryDetail[]> => {
   try {
     const response = await apiClient.get<CategoryAllResponse>('/book-category/all');
-    return response.data?.data ?? [];
+    const payload = validateApiPayload(categorySchemas.all, response.data, "/book-category/all");
+    return payload.data as unknown as CategoryDetail[];
   } catch {
     return [];
   }
@@ -32,7 +36,7 @@ export const fetchCategoryBooks = async (
     const response = await apiClient.get<CategoryBookListResponse>(`/book-category/list`, {
       params: { type, categoryId, tab, limit, page, period }
     });
-    return response.data;
+    return validateApiPayload(categorySchemas.bookList, response.data, "/book-category/list") as unknown as CategoryBookListResponse;
   } catch {
     return null;
   }
@@ -41,7 +45,8 @@ export const fetchCategoryBooks = async (
 export const fetchCategoryBanners = async (): Promise<Slide[]> => {
   try {
     const response = await apiClient.get<{ data?: Slide[] }>("/book-category/banner");
-    return Array.isArray(response.data?.data) ? response.data.data : [];
+    const payload = validateApiPayload(categorySchemas.banners, response.data, "/book-category/banner");
+    return payload.data as unknown as Slide[];
   } catch {
     return [];
   }
@@ -63,7 +68,8 @@ export interface ActiveCategory {
 export const fetchActiveTypes = async (): Promise<ActiveType[]> => {
   try {
     const response = await apiClient.get<{ code: number; data: ActiveType[] }>('/active-types');
-    return response.data?.data || [];
+    const payload = validateApiPayload(categorySchemas.activeTypes, response.data, "/active-types");
+    return payload.data as unknown as ActiveType[];
   } catch {
     return [];
   }
@@ -74,7 +80,8 @@ export const fetchActiveCategories = async (type: string = 'all'): Promise<Activ
     const response = await apiClient.get<{ code: number; data: ActiveCategory[] }>('/active-categories', {
       params: { type }
     });
-    return response.data?.data || [];
+    const payload = validateApiPayload(categorySchemas.activeCategories, response.data, "/active-categories");
+    return payload.data as unknown as ActiveCategory[];
   } catch {
     return [];
   }

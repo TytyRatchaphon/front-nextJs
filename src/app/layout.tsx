@@ -1,18 +1,14 @@
 import * as React from "react";
 import type { Metadata } from "next";
 import { GoogleAnalytics } from '@next/third-parties/google';
+import { dehydrate, QueryClient } from "@tanstack/react-query";
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 import 'antd/dist/reset.css';
 import "./globals.css";
-import TanstackProvider from "./providers";
 import { Bai_Jamjuree } from "next/font/google";
-import Navbar from "@/components/navbar/navbar";
-import FooterWrapper from "@/components/home/FooterWrapper";
-// import StyledComponentsRegistry from './AntdRegistry';
-import SocketProvider from "@/providers/SocketProvider";
-import { App, ConfigProvider } from 'antd';
+import ClientProviders from "./client-providers";
 
 const baiJamjuree = Bai_Jamjuree({
   weight: ["500"],
@@ -23,6 +19,8 @@ const baiJamjuree = Bai_Jamjuree({
 
 import { unstable_cache } from 'next/cache';
 import { fetchWebsiteSettings } from "@/services/api/userApi";
+import { queryKeys } from "@/constants/query";
+import { WEBSITE_SETTINGS_CACHE_TTL_MS } from "@/hooks/useWebsiteSettings";
 
 const getCachedSettings = unstable_cache(
   async () => {
@@ -48,21 +46,24 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-import TokenUpdater from "@/components/auth/TokenUpdater";
-import GlobalLogger from "@/components/utility/GlobalLogger";
-import RpQuestSocketListener from "@/components/socket/RpQuestSocketListener";
-import NotificationAlertSocketListener from "@/components/socket/NotificationAlertSocketListener";
-import { Suspense } from "react";
 import Script from 'next/script';
-import CookieConsentBanner from '@/components/common/CookieConsentBanner';
 
 // ... (existing imports)
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const queryClient = new QueryClient();
+
+  await queryClient.prefetchQuery({
+    queryKey: queryKeys.website.settings(),
+    queryFn: getCachedSettings,
+    staleTime: WEBSITE_SETTINGS_CACHE_TTL_MS,
+    gcTime: WEBSITE_SETTINGS_CACHE_TTL_MS,
+  });
+
   return (
     <html lang="en" className={`${baiJamjuree.variable} font-bai-jamjuree font-medium`}>
       <Script src="https://t.contentsquare.net/uxa/c765809e7d7ef.js" strategy="lazyOnload" />
@@ -109,32 +110,7 @@ export default function RootLayout({
           />
         </noscript>
         
-          <TanstackProvider>
-            <SocketProvider>
-              <ConfigProvider theme={{ token: { colorPrimary: '#f5222d' } }}>
-                <App>
-                  <Suspense fallback={null}>
-                    <TokenUpdater />
-                  </Suspense>
-                  <Suspense fallback={null}>
-                    <Navbar />
-                  </Suspense>
-                  <Suspense fallback={null}>
-                    <GlobalLogger />
-                  </Suspense>
-                  <Suspense fallback={null}>
-                    <RpQuestSocketListener />
-                  </Suspense>
-                  <Suspense fallback={null}>
-                    <NotificationAlertSocketListener />
-                  </Suspense>
-                  {children}
-                  <FooterWrapper />
-                  <CookieConsentBanner />
-                </App>
-              </ConfigProvider>
-            </SocketProvider>
-          </TanstackProvider>
+        <ClientProviders dehydratedState={dehydrate(queryClient)}>{children}</ClientProviders>
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID || "G-RTWVKZ2MVF"} />
       </body>
     </html>

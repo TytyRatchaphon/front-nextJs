@@ -142,7 +142,7 @@ const DailyPromoPopup: React.FC = () => {
 
     const initPopup = async () => {
       try {
-        const homeData = await fetchHomeData();
+        const homeData = await fetchHomeData(undefined, undefined, { skipAuth: true });
         const popupList = homeData?.data?.popup ?? [];
 
         if (popupList.length === 0) {

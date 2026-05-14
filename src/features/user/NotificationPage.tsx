@@ -10,6 +10,7 @@ import {
   deleteAllNotifications,
   NotificationTab,
 } from "@/services/apiServices";
+import { queryKeys } from "@/constants/query";
 import { Button, Tag, Pagination, Tabs, App } from "antd";
 import {
   BellOutlined,
@@ -87,7 +88,7 @@ const NotificationPage: React.FC = () => {
   }, [activeTab, page]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["allNotifications", activeTab, page],
+    queryKey: queryKeys.notifications.all(activeTab, page),
     queryFn: () => fetchAllNotifications(page, 20, activeTab),
     staleTime: 30000,
     refetchOnWindowFocus: true,
@@ -100,16 +101,16 @@ const NotificationPage: React.FC = () => {
   const markReadMutation = useMutation({
     mutationFn: markNotificationAsRead,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["allNotifications"] });
-      queryClient.invalidateQueries({ queryKey: ["navbarNotifications"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.allRoot() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.navbar() });
     },
   });
 
   const markAllReadMutation = useMutation({
     mutationFn: (tab: NotificationTab) => markAllNotificationsAsRead(tab),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["allNotifications"] });
-      queryClient.invalidateQueries({ queryKey: ["navbarNotifications"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.allRoot() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.navbar() });
     },
   });
 
@@ -117,8 +118,8 @@ const NotificationPage: React.FC = () => {
     mutationFn: (ids: number[]) => deleteNotifications(ids),
     onSuccess: (_, ids) => {
       setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)));
-      queryClient.invalidateQueries({ queryKey: ["allNotifications"] });
-      queryClient.invalidateQueries({ queryKey: ["navbarNotifications"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.allRoot() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.navbar() });
       notification.success({ message: ids.length > 1 ? "ลบการแจ้งเตือนที่เลือกแล้ว" : "ลบการแจ้งเตือนแล้ว" });
     },
     onError: () => {
@@ -130,8 +131,8 @@ const NotificationPage: React.FC = () => {
     mutationFn: deleteAllNotifications,
     onSuccess: () => {
       setSelectedIds([]);
-      queryClient.invalidateQueries({ queryKey: ["allNotifications"] });
-      queryClient.invalidateQueries({ queryKey: ["navbarNotifications"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.allRoot() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.navbar() });
       notification.success({ message: "ลบการแจ้งเตือนทั้งหมดแล้ว" });
     },
     onError: () => {

@@ -57,10 +57,10 @@ export default function CategoryTypeSwiper() {
           onSwiper={setSwiper}
         >
           {categoryTypes.map((type) => (
-            <SwiperSlide key={type.type} className="!w-auto">
+            <SwiperSlide key={type.type} className="!w-1/2 sm:!w-auto">
               <Link
                 href={buildTypeHref(type.type)}
-                className={`block px-6 py-2 text-[15px] whitespace-nowrap rounded-t-lg border transition-all ${
+                className={`block px-4 sm:px-6 py-2 text-center text-[15px] whitespace-nowrap rounded-t-lg border transition-all ${
                   currentType === type.type
                     ? 'bg-white text-red-600 border-gray-200 border-b-white font-bold relative z-10 -mb-[1px]'
                     : 'bg-gray-50 text-gray-600 border-transparent hover:text-red-600'

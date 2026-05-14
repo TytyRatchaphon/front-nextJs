@@ -61,29 +61,52 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
   const { isLoggedIn } = useAuthStore();
 
   const fetchApiHistory = useCallback(async () => {
-    if (isLoggedIn) {
-      const history = await getSearchHistory();
-      setSearchHistory(history);
-    } else {
+    try {
+      if (isLoggedIn) {
+        const history = await getSearchHistory();
+        setSearchHistory(history);
+        return;
+      }
+
+      setSearchHistory([]);
+    } catch {
       setSearchHistory([]);
     }
   }, [isLoggedIn]);
 
   useEffect(() => {
+    let isMounted = true;
+
     fetchApiHistory();
     // Fetch popular searches on mount
-    fetchPopularSearches(5).then((data: PopularSearchItem[]) => {
-      setPopularSearches(data);
-    });
+    fetchPopularSearches(5)
+      .then((data: PopularSearchItem[]) => {
+        if (isMounted) {
+          setPopularSearches(data);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setPopularSearches([]);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [fetchApiHistory]);
 
   // --- Suggestion Fetching ---
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       if (searchQuery.trim()) {
-        fetchSearchSuggestions(searchQuery).then((data: PopularSearchItem[]) => {
-          setSearchSuggestions(data);
-        });
+        fetchSearchSuggestions(searchQuery)
+          .then((data: PopularSearchItem[]) => {
+            setSearchSuggestions(data);
+          })
+          .catch(() => {
+            setSearchSuggestions([]);
+          });
       } else {
         setSearchSuggestions([]);
       }

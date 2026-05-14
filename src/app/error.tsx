@@ -3,6 +3,35 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 
+const AUTO_RELOAD_KEY = 'enjoybook:auto-reload-after-app-error';
+
+const isLikelyStaleDeploymentError = (error: Error & { digest?: string }) => {
+    const errorText = [
+        error.name,
+        error.message,
+        error.stack,
+        error.digest,
+    ].filter(Boolean).join('\n');
+
+    return /ChunkLoadError|Loading chunk|CSS_CHUNK_LOAD_FAILED|dynamically imported module|buildId|Failed to fetch/i.test(errorText);
+};
+
+const shouldAutoReloadOnce = () => {
+    try {
+        const currentPath = window.location.pathname + window.location.search;
+        const previousPath = window.sessionStorage.getItem(AUTO_RELOAD_KEY);
+
+        if (previousPath === currentPath) {
+            return false;
+        }
+
+        window.sessionStorage.setItem(AUTO_RELOAD_KEY, currentPath);
+        return true;
+    } catch {
+        return false;
+    }
+};
+
 export default function Error({
     error,
     reset,
@@ -13,7 +42,20 @@ export default function Error({
     useEffect(() => {
         // Log the error to an error reporting service if needed
         console.error('Unhandled App Error:', error);
+
+        if (isLikelyStaleDeploymentError(error) && shouldAutoReloadOnce()) {
+            window.location.reload();
+        }
     }, [error]);
+
+    const handleRetry = () => {
+        try {
+            window.sessionStorage.removeItem(AUTO_RELOAD_KEY);
+        } catch {
+        }
+
+        window.location.reload();
+    };
 
     return (
         <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 font-primary text-center">
@@ -42,7 +84,7 @@ export default function Error({
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <button
-                    onClick={() => reset()}
+                    onClick={handleRetry}
                     className="bg-white border-2 border-red-500 text-red-600 hover:bg-red-50 font-semibold py-2.5 px-8 rounded-full transition-all duration-300 w-full sm:w-auto"
                 >
                     ลองใหม่อีกครั้ง

@@ -3,6 +3,7 @@
 import * as React from "react";
 import { App } from "antd";
 import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/constants/query";
 
 import { useSocket } from "@/providers/SocketProvider";
 import { useAuthStore } from "@/stores/authStore";
@@ -119,21 +120,16 @@ export default function NotificationAlertSocketListener() {
       if (rewardEpIds.length === 0) return;
 
       queryClient.setQueriesData(
-        { queryKey: ["bookEpisodes"] },
+        { queryKey: queryKeys.book.episodesRoot() },
         (cacheData: unknown) => markRewardEpisodesInBookEpisodeCache(cacheData, rewardEpIds),
       );
 
       rewardEpIds.forEach((epId) => {
         queryClient.setQueryData(
-          ["episodeContent", String(epId)],
+          queryKeys.read.episodeContent(epId),
           (cacheData: unknown) => markEpisodeContentPurchased(cacheData, epId),
         );
-        queryClient.setQueryData(
-          ["episodeContent", epId],
-          (cacheData: unknown) => markEpisodeContentPurchased(cacheData, epId),
-        );
-        void queryClient.invalidateQueries({ queryKey: ["episodeContent", String(epId)], exact: true });
-        void queryClient.invalidateQueries({ queryKey: ["episodeContent", epId], exact: true });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.read.episodeContent(epId), exact: true });
       });
     };
 

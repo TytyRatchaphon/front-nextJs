@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Alert, Tag } from 'antd';
 import { Eye, Clock, Share2, ChevronRight } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { fetchArticleDetail } from '@/services/apiServices';
 import type { ArticleResponse } from '@/types/api';
 import GifLoader from '@/components/utility/GifLoader';
@@ -26,58 +27,21 @@ const formatDate = (dateString: string) => {
 };
 
 export default function ArticleDetail({ id, initialData = null }: { id: string; initialData?: ArticleResponse | null }) {
-  const [data, setData] = useState<ArticleResponse['data'] | null>(() => initialData?.data ?? null);
-  const [loading, setLoading] = useState(() => !initialData);
-  const [error, setError] = useState<string | null>(() => {
-    if (!initialData) return null;
-    return initialData.code === 200 ? null : 'Article not found';
+  const initialDetailId = initialData?.data?.result?.[0]?.id;
+  const shouldUseInitialData = initialData?.code === 200 && initialDetailId && String(initialDetailId) === String(id);
+  const {
+    data: articleResponse,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["articleDetail", String(id ?? "")],
+    queryFn: () => fetchArticleDetail(id),
+    enabled: Boolean(id),
+    initialData: shouldUseInitialData ? initialData : undefined,
+    staleTime: 60 * 1000,
   });
   const { log } = useLogger();
-
-  useEffect(() => {
-    let isCancelled = false;
-
-    if (!id) {
-      return () => {
-        isCancelled = true;
-      };
-    }
-
-    const initialDetailId = initialData?.data?.result?.[0]?.id;
-    if (initialData?.code === 200 && initialDetailId && String(initialDetailId) === String(id)) {
-      return () => {
-        isCancelled = true;
-      };
-    }
-
-    const fetchData = async () => {
-      try {
-        setError(null);
-        setLoading(true);
-        const result = await fetchArticleDetail(id);
-        if (isCancelled) return;
-        if (result && result.code === 200 && result.data) {
-          setData(result.data);
-        } else {
-          setData(null);
-          setError('ไม่พบข้อมูลบทความ');
-        }
-      } catch {
-        if (isCancelled) return;
-        setData(null);
-        setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
-      } finally {
-        if (isCancelled) return;
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [id, initialData]);
+  const data = articleResponse?.code === 200 ? articleResponse.data : null;
 
   useEffect(() => {
     if (data?.result?.[0]) {
@@ -95,7 +59,7 @@ export default function ArticleDetail({ id, initialData = null }: { id: string; 
     }
   }, [data, id, log]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <GifLoader />
@@ -103,10 +67,10 @@ export default function ArticleDetail({ id, initialData = null }: { id: string; 
     );
   }
 
-  if (error || !data) {
+  if (isError || !data) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <Alert message="Error" description={error || 'ไม่พบข้อมูลบทความ'} type="error" showIcon />
+        <Alert message="Error" description={isError ? 'เกิดข้อผิดพลาดในการโหลดข้อมูล' : 'ไม่พบข้อมูลบทความ'} type="error" showIcon />
       </div>
     );
   }

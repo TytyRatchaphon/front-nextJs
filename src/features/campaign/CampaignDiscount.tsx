@@ -1,20 +1,15 @@
 "use client";
-import { useEffect, useState } from 'react';
 import Link from "next/link";
 import Image from "next/image";
+import { useQuery } from "@tanstack/react-query";
 import { fetchCampaignsDiscount } from "@/services/apiServices";
-import { CampaignDiscount as CampaignDiscountType } from "@/types/api";
 
 export default function CampaignDiscount() {
-    const [campaigns, setCampaigns] = useState<CampaignDiscountType[]>([]);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            const data = await fetchCampaignsDiscount();
-            setCampaigns(data);
-        };
-        fetchData();
-    }, []);
+    const { data: campaigns = [] } = useQuery({
+        queryKey: ["campaignsDiscount"],
+        queryFn: fetchCampaignsDiscount,
+        staleTime: 60 * 1000,
+    });
 
     return (
         <>

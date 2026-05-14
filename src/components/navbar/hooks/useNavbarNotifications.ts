@@ -7,8 +7,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSocket } from "@/providers/SocketProvider";
 import { fetchAllNotifications } from "@/services/api/miscApi";
 import type { NotificationData } from "@/services/api/miscApi";
+import { queryKeys } from "@/constants/query";
 
-const NAVBAR_NOTIFICATIONS_QUERY_KEY = ["navbarNotifications"] as const;
+const NAVBAR_NOTIFICATIONS_QUERY_KEY = queryKeys.notifications.navbar();
 const NOTIFICATION_ROOM_REFRESH_MS = 45_000;
 const NAVBAR_NOTIFICATION_PREVIEW_LIMIT = 10;
 

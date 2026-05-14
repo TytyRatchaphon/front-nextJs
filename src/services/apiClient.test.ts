@@ -177,6 +177,29 @@ describe('apiClient', () => {
     expect(result.headers.Authorization).toBe('jwt-from-cookie')
   })
 
+  it('skips auth header when x-skip-auth is set', async () => {
+    const { handlers, mocks } = await setupApiClientModule({
+      browser: true,
+      stateToken: 'state-token',
+      parsedToken: 'parsed-token',
+      deviceId: 'device-99',
+    })
+    const config = {
+      headers: {
+        'x-skip-auth': 'true',
+        Authorization: 'stale-token',
+      } as Record<string, string>,
+    }
+
+    const result = await handlers.requestSuccess(config)
+
+    expect(mocks.getDeviceIdMock).toHaveBeenCalledTimes(1)
+    expect(mocks.parseJwtTokenMock).not.toHaveBeenCalled()
+    expect(result.headers['x-device-id']).toBe('device-99')
+    expect(result.headers['x-skip-auth']).toBeUndefined()
+    expect(result.headers.Authorization).toBeUndefined()
+  })
+
   it('continues request when device id resolution fails', async () => {
     const { handlers, mocks } = await setupApiClientModule({
       browser: true,
@@ -216,7 +239,7 @@ describe('apiClient', () => {
     expect(logSpy).toHaveBeenCalled()
   })
 
-  it('opens duplicate login modal and resolves with dummy response', async () => {
+  it('emits duplicate-login event and rejects the original error', async () => {
     const { handlers, mocks } = await setupApiClientModule({ browser: true })
     const error = {
       config: { url: '/secure' },
@@ -226,14 +249,11 @@ describe('apiClient', () => {
       },
     }
 
-    const result = await handlers.responseError(error)
-
+    await expect(handlers.responseError(error)).rejects.toBe(error)
     expect(mocks.emitApiClientEvent).toHaveBeenCalledWith('duplicate-login')
-    expect(result.status).toBe(200)
-    expect(result.data).toBeNull()
   })
 
-  it('opens blocked-user modal and resolves with dummy response', async () => {
+  it('emits blocked-user event and rejects the original error', async () => {
     const { handlers, mocks } = await setupApiClientModule({ browser: true })
     const error = {
       config: { url: '/secure' },
@@ -243,11 +263,8 @@ describe('apiClient', () => {
       },
     }
 
-    const result = await handlers.responseError(error)
-
+    await expect(handlers.responseError(error)).rejects.toBe(error)
     expect(mocks.emitApiClientEvent).toHaveBeenCalledWith('blocked-user')
-    expect(result.status).toBe(200)
-    expect(result.data).toBeNull()
   })
 
   it('logs SSR response errors and rejects unknown errors', async () => {

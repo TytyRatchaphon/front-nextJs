@@ -4,10 +4,12 @@ import Image from 'next/image';
 import { Input, Button, notification, Upload, Select, Steps, ConfigProvider } from 'antd';
 import { UploadOutlined, UserOutlined, BankOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
-import { registerWriter, updateWriter, fetchWriterProfile, checkWriterStatus, getBankList, getBankIdCardAccount, updateBankIdCardAccount } from '@/services/apiServices';
+import { registerWriter, updateWriter, fetchWriterProfile, getBankList, getBankIdCardAccount, updateBankIdCardAccount } from '@/services/apiServices';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 const { Option } = Select;
+
+const normalizeThaiIdNumber = (value: string) => value.replace(/\D/g, '').slice(0, 13);
 
 interface MyBookWriterInfoTabProps {
   user: any;
@@ -65,15 +67,6 @@ const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, 
     refetchOnWindowFocus: false,
   });
 
-  // Fetch writer status
-  const { data: writerStatus } = useQuery({
-    queryKey: ['writerStatus', token],
-    queryFn: () => checkWriterStatus(token),
-    enabled: !!token,
-    staleTime: 60000,
-    refetchOnWindowFocus: false,
-  });
-
   // Fetch Bank List
   const { data: bankList = [] } = useQuery({
     queryKey: ['bankList'],
@@ -123,7 +116,7 @@ const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, 
 
       if (data.acc_name) setAccountName(data.acc_name);
       if (data.acc_number) setAccountNumber(data.acc_number);
-      if (data.IDcard) setIdNumber(data.IDcard);
+      if (data.IDcard) setIdNumber(normalizeThaiIdNumber(String(data.IDcard)));
       
       if (data.acc_img) setExistingBankCert(data.acc_img);
       if (data.IDcard_img) setExistingIdCard(data.IDcard_img);
@@ -220,12 +213,11 @@ const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const [isSuccessLocal, setIsSuccessLocal] = useState(false);
-
   const handleFinalSubmit = async () => {
     // Validation for Step 2
     if ((!idCardFile && !existingIdCard)) { api.error({ message: 'กรุณาอัปโหลดรูปหน้าบัตรประชาชน' }); return; }
     if (!idNumber) { api.error({ message: 'กรุณาระบุเลขบัตรประจำตัวประชาชน' }); return; }
+    if (idNumber.length !== 13) { api.error({ message: 'กรุณากรอกเลขบัตรประชาชนเป็นตัวเลข 13 หลัก' }); return; }
     
     if ((!bankCertFile && !existingBankCert)) { api.error({ message: 'กรุณาอัปโหลดรูปสมุดบัญชี' }); return; }
     if (!accountName) { api.error({ message: 'กรุณาระบุชื่อบัญชี' }); return; }
@@ -277,9 +269,21 @@ const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, 
                   message: 'สมัครนักเขียนและบันทึกข้อมูลเรียบร้อย',
                   description: 'ข้อมูลของท่านกำลังอยู่ระหว่างการตรวจสอบ',
               });
-              setIsSuccessLocal(true); // Immediate feedback
-              queryClient.invalidateQueries({ queryKey: ['writerProfile'] });
-              queryClient.invalidateQueries({ queryKey: ['accountInfo'] });
+              queryClient.setQueryData(['writerCheck', token], (current: any) => ({
+                ...(current ?? {}),
+                is_writer: true,
+                status: 'wait',
+                can_create_book: true,
+                can_set_ep_price: false,
+                can_withdraw: false,
+                message: current?.message || 'รอการอนุมัติจากระบบ',
+              }));
+              await Promise.all([
+                queryClient.invalidateQueries({ queryKey: ['writerProfile'] }),
+                queryClient.invalidateQueries({ queryKey: ['accountInfo'] }),
+                queryClient.invalidateQueries({ queryKey: ['writerCheck'] }),
+              ]);
+              await queryClient.refetchQueries({ queryKey: ['writerCheck', token], type: 'active' });
           } else {
               api.warning({
                   message: 'บันทึกข้อมูลส่วนตัวสำเร็จ แต่บันทึกข้อมูลบัญชีไม่สำเร็จ',
@@ -301,34 +305,6 @@ const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, 
       setIsSubmitting(false);
     }
   };
-
-  const isWaitingForApproval = (writerStatus?.data?.status === 'wait' || isSuccessLocal) && !isWriter;
-
-  if (isWaitingForApproval) {
-     return (
-      <div className='py-16 flex flex-col items-center justify-center min-h-[500px] animate-fade-in'>
-         <div className="bg-white border border-yellow-100 rounded-3xl p-10 text-center max-w-2xl w-full shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-500">
-            {/* ... Waiting UI ... */}
-            <div className="w-24 h-24 bg-yellow-50 rounded-full flex items-center justify-center mx-auto mb-8 relative">
-              <div className="absolute w-full h-full rounded-full bg-yellow-100 animate-ping opacity-20"></div>
-              <svg className="w-10 h-10 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h3 className="text-3xl font-bold text-gray-800 mb-4 font-primary">ได้รับข้อมูลเรียบร้อยแล้ว</h3>
-            <div className="w-16 h-1 bg-yellow-400 mx-auto rounded-full mb-6"></div>
-            <p className="text-gray-500 text-lg mb-8 leading-relaxed max-w-md mx-auto">
-              ระบบกำลังตรวจสอบข้อมูลการสมัครนักเขียนของท่าน <br/>
-              กรุณารอการอนุมัติจากผู้ดูแลระบบ
-            </p>
-            <div className="bg-yellow-50 text-yellow-700 py-3 px-6 rounded-xl inline-flex items-center gap-3 text-sm font-medium">
-               <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span>
-               สถานะ: รอการอนุมัติ
-            </div>
-         </div>
-      </div>
-    );
-  }
 
   return (
     <ConfigProvider theme={{ token: { colorPrimary: '#E31C3D' } }}>
@@ -539,7 +515,9 @@ const MyBookWriterInfoTab: React.FC<MyBookWriterInfoTabProps> = ({ user, token, 
                         <Input 
                             placeholder='กรอกเลขบัตร 13 หลัก'
                             value={idNumber}
-                            onChange={(e) => setIdNumber(e.target.value)}
+                            onChange={(e) => setIdNumber(normalizeThaiIdNumber(e.target.value))}
+                            inputMode="numeric"
+                            pattern="\d*"
                             maxLength={13}
                             size="large"
                         />

@@ -206,7 +206,7 @@ export default function AchievementPageClient() {
                           ? 'bg-gray-100 text-gray-400' 
                           : 'bg-green-100 text-green-600'
                       }`}>
-                        {item.is_claimed ? 'รับแล้ว' : 'สิทธิ์คงค้าง'}
+                        {item.is_claimed ? 'รับแล้ว' : 'สำเร็จ'}
                       </span>
                     )}
                   </div>

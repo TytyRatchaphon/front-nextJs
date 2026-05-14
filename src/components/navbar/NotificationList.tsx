@@ -15,6 +15,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { navigateSafely } from '@/utils/navigationUtils';
 import { formatNavbarNotificationBadgeCount } from './hooks/useNavbarNotifications';
+import { queryKeys } from '@/constants/query';
 
 const NOTIFICATION_PREVIEW_LIMIT = 10;
 
@@ -84,7 +85,7 @@ const NotificationList: React.FC<{ onClose?: () => void; mode?: 'popover' | 'dra
         onSuccess: () => {
             // Wait a bit for animation to likely finish before refetching implies removal
             setTimeout(() => {
-                queryClient.invalidateQueries({ queryKey: ['navbarNotifications'] });
+                queryClient.invalidateQueries({ queryKey: queryKeys.notifications.navbar() });
             }, 300);
         }
     });
@@ -92,7 +93,7 @@ const NotificationList: React.FC<{ onClose?: () => void; mode?: 'popover' | 'dra
     const markAllReadMutation = useMutation({
         mutationFn: (tab: NotificationTab) => markAllNotificationsAsRead(tab),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['navbarNotifications'] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.notifications.navbar() });
         }
     });
 

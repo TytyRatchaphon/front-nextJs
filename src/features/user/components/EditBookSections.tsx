@@ -128,6 +128,8 @@ export function EditBookGroupsSection({
 
 type EditBookPromotionsSectionProps = {
 	display: any;
+	isRefreshing?: boolean;
+	onRefreshPromotions: () => void;
 	openPromoId: any;
 	onAddPromotion: () => void;
 	onOpenPromoChange: (id: any | null) => void;
@@ -137,6 +139,8 @@ type EditBookPromotionsSectionProps = {
 
 export function EditBookPromotionsSection({
 	display,
+	isRefreshing = false,
+	onRefreshPromotions,
 	openPromoId,
 	onAddPromotion,
 	onOpenPromoChange,
@@ -163,7 +167,28 @@ export function EditBookPromotionsSection({
 		<section className="mb-8 bg-white border border-gray-100 rounded shadow-sm">
 			<div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
 				<h3 className="font-semibold">จัดการโปรโมชั่น</h3>
-				<ActionButton variant="danger" onClick={onAddPromotion}>เพิ่มโปรโมชั่น</ActionButton>
+				<div className="flex items-center gap-2">
+					<button
+						type="button"
+						onClick={onRefreshPromotions}
+						disabled={isRefreshing}
+						className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-60"
+					>
+						<svg
+							className={isRefreshing ? "animate-spin" : ""}
+							width="14"
+							height="14"
+							viewBox="0 0 24 24"
+							fill="none"
+							xmlns="http://www.w3.org/2000/svg"
+						>
+							<path d="M20 11A8.1 8.1 0 0 0 4.5 8M4 4v4h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+							<path d="M4 13a8.1 8.1 0 0 0 15.5 3M20 20v-4h-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+						</svg>
+						รีเฟรช
+					</button>
+					<ActionButton variant="danger" onClick={onAddPromotion}>เพิ่มโปรโมชั่น</ActionButton>
+				</div>
 			</div>
 			<div className="p-4">
 				{items.length === 0 ? (

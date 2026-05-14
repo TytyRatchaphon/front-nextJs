@@ -10,6 +10,15 @@ interface MessageApi {
 	info: (content: unknown) => void;
 }
 
+const normalizeGroupIds = (value: unknown): string[] => {
+	if (Array.isArray(value)) return value.map(String).map((item) => item.trim()).filter(Boolean);
+	if (typeof value === 'number') return [String(value)];
+	if (typeof value === 'string') return value.split(',').map((item) => item.trim()).filter(Boolean);
+	return [];
+};
+
+const formatPromotionDate = (date: dayjs.Dayjs) => date.format('YYYY/MM/DD HH:mm:ss');
+
 export function useEditBookPromotions(
 	bookId: string | null | undefined,
 	messageApi: MessageApi,
@@ -68,13 +77,7 @@ export function useEditBookPromotions(
 		setPromoStart(parseDate(promo.start));
 		setPromoEnd(parseDate(promo.end));
 		setPromoDiscount(promo.discount_percent);
-		if (promo.groupIDs) {
-			setPromoSelectedGroups(String(promo.groupIDs).split(','));
-		} else if (promo.group_ids) {
-			setPromoSelectedGroups(String(promo.group_ids).split(','));
-		} else {
-			setPromoSelectedGroups([]);
-		}
+		setPromoSelectedGroups(normalizeGroupIds(promo.groupIDs ?? promo.group_ids));
 		setPromoModalOpen(true);
 	};
 
@@ -82,28 +85,32 @@ export function useEditBookPromotions(
 		if (!promoName.trim()) return messageApi.error('กรุณากรอกชื่อโปรโมชั่น');
 		if (!promoDiscount) return messageApi.error('กรุณากรอกส่วนลด');
 		if (!promoStart || !promoEnd) return messageApi.error('กรุณาเลือกวันเวลา');
+		const selectedGroupIds = normalizeGroupIds(promoSelectedGroups);
+		if (selectedGroupIds.length === 0) return messageApi.error('กรุณาเลือกกลุ่มหนังสือ');
+		const numericBookId = Number(bookId);
+		if (!Number.isFinite(numericBookId)) return messageApi.error('ไม่พบ bookId');
 		try {
 			setCreatingPromo(true);
 			if (editingPromoId) {
 				const payload = {
 					dfb_id: editingPromoId,
-					groupIDs: promoSelectedGroups.join(','),
-					subject: promoName,
-					start_date: promoStart.format('YYYY/MM/DD HH:mm'),
-					end_date: promoEnd.format('YYYY/MM/DD HH:mm'),
-					discount_percent: promoDiscount,
-					book_id: bookId ?? undefined
+					groupIDs: selectedGroupIds,
+					subject: promoName.trim(),
+					start_date: formatPromotionDate(promoStart),
+					end_date: formatPromotionDate(promoEnd),
+					discount_percent: String(promoDiscount),
+					book_id: numericBookId
 				};
 				await updatePromotion(payload);
 				messageApi.success('แก้ไขโปรโมชั่นเรียบร้อย');
 			} else {
 				const payload = {
-					group_ids: promoSelectedGroups.join(','),
-					subject: promoName,
-					start_date: promoStart.format('YYYY/MM/DD HH:mm'),
-					end_date: promoEnd.format('YYYY/MM/DD HH:mm'),
-					discount_percent: promoDiscount,
-					book_id: bookId ?? undefined
+					group_ids: selectedGroupIds,
+					subject: promoName.trim(),
+					start_date: formatPromotionDate(promoStart),
+					end_date: formatPromotionDate(promoEnd),
+					discount_percent: String(promoDiscount),
+					book_id: numericBookId
 				};
 				await createPromotion(payload);
 				messageApi.success('สร้างโปรโมชั่นเรียบร้อย');

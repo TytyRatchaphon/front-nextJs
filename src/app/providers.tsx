@@ -4,9 +4,9 @@ import * as React from "react";
 
 import '@ant-design/v5-patch-for-react-19';
 import { useState } from 'react';
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { HydrationBoundary, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { DehydratedState } from "@tanstack/react-query";
 
-import { prefetchWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import ApiAuthEventBridge from '@/components/auth/ApiAuthEventBridge';
 import BlockedUserModal from '@/components/auth/BlockedUserModal';
 
@@ -16,7 +16,13 @@ const ReactQueryDevtoolsLazy = React.lazy(() =>
   }))
 );
 
-export default function TanstackProvider({ children }: { children: React.ReactNode }) {
+export default function TanstackProvider({
+  children,
+  dehydratedState,
+}: {
+  children: React.ReactNode;
+  dehydratedState?: DehydratedState;
+}) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -31,9 +37,7 @@ export default function TanstackProvider({ children }: { children: React.ReactNo
       })
   );
 
-  // Initial fetch for website settings
   React.useEffect(() => {
-    void prefetchWebsiteSettings(queryClient);
     try {
       localStorage.removeItem('searchHistory');
       localStorage.removeItem('search_history');
@@ -44,7 +48,7 @@ export default function TanstackProvider({ children }: { children: React.ReactNo
   return (
     <QueryClientProvider client={queryClient}>
       <ApiAuthEventBridge />
-      {children}
+      <HydrationBoundary state={dehydratedState}>{children}</HydrationBoundary>
       {process.env.NODE_ENV === 'development' && (
         <React.Suspense fallback={null}>
           <ReactQueryDevtoolsLazy initialIsOpen={false} />

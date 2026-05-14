@@ -159,8 +159,16 @@ export function useContentProtection(episodeData: any, onBlur?: () => void, enab
     const handleKeyDown = (event: KeyboardEvent) => {
       const key = (event.key || "").toLowerCase();
       const isOsKey = key === "meta" || key === "os" || event.keyCode === 91 || event.keyCode === 92;
+      const isDevtoolsShortcut =
+        key === "f12"
+        || event.keyCode === 123
+        || (event.ctrlKey && event.shiftKey && ["i", "j", "c"].includes(key))
+        || (event.metaKey && event.altKey && ["i", "j", "c"].includes(key))
+        || (event.ctrlKey && key === "u")
+        || (event.metaKey && event.altKey && key === "u");
 
-      if (isOsKey) {
+      if (isOsKey || isDevtoolsShortcut) {
+        event.preventDefault();
         if (onBlur) onBlur();
         setFocusStateSafely(false);
         if (focusRestoreTimeout) {
@@ -174,6 +182,7 @@ export function useContentProtection(episodeData: any, onBlur?: () => void, enab
     };
 
     window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("contextmenu", disableRightClick);
     document.addEventListener("contextmenu", disableRightClick);
 
     const timer = window.setTimeout(() => {
@@ -183,6 +192,7 @@ export function useContentProtection(episodeData: any, onBlur?: () => void, enab
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("contextmenu", disableRightClick);
       document.removeEventListener("contextmenu", disableRightClick);
       window.clearTimeout(timer);
       if (focusRestoreTimeout) {

@@ -118,31 +118,14 @@ const NewBook: React.FC = () => {
     // Configs
     const IMAGE_BOOK_URL = process.env.NEXT_PUBLIC_IMAGE_BOOK_URL as string;
 
-    const applySuggestConfig = (contentType: string, permissionData?: MyBookPermissionData) => {
-        const source = permissionData || permissions;
-        const matched = source.suggest_configs?.find((item) => item.content_type === contentType);
-        if (!matched) return;
-
-        const nextValues: Record<string, any> = {};
-        if (source.set_fast_ticket && typeof matched.fast_ticket === 'number') {
-            nextValues.fast_ticket = matched.fast_ticket;
-        }
-        if (source.set_fast_coin && typeof matched.fast_coin === 'number') {
-            nextValues.fast_coin = matched.fast_coin;
-        }
-        if (typeof matched.fast_ticket_daily_increase === 'number') {
-            nextValues.fast_ticket_daily_increase = matched.fast_ticket_daily_increase;
-        }
-        if (typeof matched.fast_coin_daily_increase === 'number') {
-            nextValues.fast_coin_daily_increase = matched.fast_coin_daily_increase;
-        }
-        if (typeof matched.fast_ep_days === 'number') {
-            nextValues.fast_ep_days = matched.fast_ep_days;
-        }
-
-        if (Object.keys(nextValues).length > 0) {
-            formNewBook.setFieldsValue(nextValues);
-        }
+    const resetFastUnlockDefaults = () => {
+        formNewBook.setFieldsValue({
+            fast_ticket: 0,
+            fast_coin: 0,
+            fast_ticket_daily_increase: 0,
+            fast_coin_daily_increase: 0,
+            fast_ep_days: 0,
+        });
     };
 
     // --- Fetch Initial Data (แทนการใช้ Context) ---
@@ -207,12 +190,13 @@ const NewBook: React.FC = () => {
                     imgBook: '',
                     bgimg: '',
                     img_gif: '',
+                    fast_ticket: 0,
+                    fast_coin: 0,
+                    fast_ticket_daily_increase: 0,
+                    fast_coin_daily_increase: 0,
+                    fast_ep_days: 0,
                     ...(defaultContentType ? { content_type: defaultContentType } : {}),
                 });
-
-                if (defaultContentType) {
-                    applySuggestConfig(defaultContentType, permissionData);
-                }
 
             } catch (error: any) {
                 // ---------------------------------------------------------
@@ -705,7 +689,7 @@ const NewBook: React.FC = () => {
                                                 <Form.Item name='content_type'>
                                                     <Select
                                                         placeholder="Select content type"
-                                                        onChange={(value: string) => applySuggestConfig(value)}
+                                                        onChange={() => resetFastUnlockDefaults()}
                                                     >
                                                         <Select.Option value='novel'>รายตอน</Select.Option>
                                                         <Select.Option value='novel_pack'>มัดแพ็ค</Select.Option>
@@ -724,7 +708,6 @@ const NewBook: React.FC = () => {
                                                 {permissions.set_fast_ticket && (
                                                     <div>
                                                         <span className='body-text'>ราคาปลดล็อคตอนล่วงหน้าด้วยตั๋ว</span>
-                                                        <p className='mt-1 text-sm text-red-500'>ใส่ 0 เพื่อปิดใช้งาน</p>
                                                         <Form.Item name='fast_ticket'>
                                                             <Input type='number' min={0} className='input' />
                                                         </Form.Item>
@@ -734,7 +717,6 @@ const NewBook: React.FC = () => {
                                                 {permissions.set_fast_coin && (
                                                     <div>
                                                         <span className='body-text'>ราคาตอนปลดล็อคตอนล่วงหน้าด้วยเหรียญ</span>
-                                                        <p className='mt-1 text-sm text-red-500'>ใส่ 0 เพื่อปิดใช้งาน</p>
                                                         <Form.Item name='fast_coin'>
                                                             <Input type='number' min={0} className='input' />
                                                         </Form.Item>
@@ -743,13 +725,11 @@ const NewBook: React.FC = () => {
 
                                                 <div>
                                                     <span className='body-text'>เปิดอ่านล่วงหน้าได้กี่วัน</span>
-                                                    <p className='mt-1 text-sm text-gray-400'>กรอกราคาเพื่อเปิดใช้งานช่องนี้</p>
                                                     <Form.Item name='fast_ep_days'>
                                                         <Input
                                                             type='number'
                                                             min={0}
                                                             className='input'
-                                                            placeholder='เช่น 7'
                                                             disabled={!showFastEpDays}
                                                         />
                                                     </Form.Item>
@@ -759,7 +739,7 @@ const NewBook: React.FC = () => {
                                                     <div>
                                                         <span className='body-text'>จำนวนตั๋วที่เพิ่มต่อวัน</span>
                                                         <Form.Item name='fast_ticket_daily_increase'>
-                                                            <Input type='number' min={0} className='input' placeholder='เช่น 1' />
+                                                            <Input type='number' min={0} className='input' />
                                                         </Form.Item>
                                                     </div>
                                                 )}
@@ -768,7 +748,7 @@ const NewBook: React.FC = () => {
                                                     <div>
                                                         <span className='body-text'>จำนวนเหรียญที่เพิ่มต่อวัน</span>
                                                         <Form.Item name='fast_coin_daily_increase'>
-                                                            <Input type='number' min={0} className='input' placeholder='เช่น 5' />
+                                                            <Input type='number' min={0} className='input' />
                                                         </Form.Item>
                                                     </div>
                                                 )}

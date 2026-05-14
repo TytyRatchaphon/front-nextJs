@@ -35,14 +35,8 @@ export function BookStatusBadges({
 
   const pxClass = size === 'sm' ? 'px-2 py-0.5' : 'px-3 py-1';
   const textClass = size === 'sm' ? 'text-[10px]' : 'text-xs';
-  const saleClass =
-    size === 'sm'
-      ? 'w-[2.4rem] h-[3.4rem] md:w-[2.8rem] md:h-[3.9rem]'
-      : 'w-[2.8rem] h-[3.9rem]';
-  const salePos =
-    size === 'sm'
-      ? 'absolute top-0 right-1 md:top-0 md:right-2 z-20'
-      : 'absolute top-0 right-2 z-20';
+  const saleClass = 'w-[1.8rem] h-[2.6rem] sm:w-[2.2rem] sm:h-[3.1rem] md:w-[2.8rem] md:h-[3.9rem]';
+  const salePos = 'absolute top-0 right-1 sm:right-2 z-20';
 
   // Badge definitions
   const badges = {
@@ -50,13 +44,13 @@ export function BookStatusBadges({
       src: '/images/bestseller.png',
       width: 46,
       height: 54,
-      className: 'absolute -top-2 -right-0',
+      className: 'absolute top-0 right-0 w-[32px] sm:w-[38px] md:w-[46px]',
     },
     new: {
       src: '/images/new.png',
       width: 50,
       height: 50,
-      className: 'absolute top-2 right-1',
+      className: 'absolute top-2 right-1 w-[34px] sm:w-[42px] md:w-[50px]',
     },
     discount: (percent: number | string) => ({
       component: (
@@ -71,7 +65,7 @@ export function BookStatusBadges({
         <div
           className={`absolute top-2 ${
             pos === 'left' ? 'left-2' : 'right-2'
-          } bg-gradient-to-r from-emerald-400 to-teal-500 text-white ${pxClass} rounded-full ${textClass} font-medium shadow-md z-20`}
+          } bg-gradient-to-r from-emerald-400 to-teal-500 text-white px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[9px] sm:text-[10px] md:text-xs font-medium shadow-md z-20`}
         >
           จบแล้ว
         </div>
@@ -81,7 +75,7 @@ export function BookStatusBadges({
 
   // Logic Determination (same as original CardBook)
   if (isBestSeller && discount) {
-    leftBadge = { ...badges.bestSeller, className: 'absolute -top-[10px] left-2' };
+    leftBadge = { ...badges.bestSeller, className: 'absolute top-0 left-1 sm:left-2 w-[32px] sm:w-[38px] md:w-[46px]' };
     rightBadge = badges.discount(discount);
   } else if (isBestSeller) {
     rightBadge = badges.bestSeller;
@@ -109,7 +103,7 @@ export function BookStatusBadges({
               alt="badge"
               width={leftBadge.width}
               height={leftBadge.height}
-              className="object-contain drop-shadow-md"
+              className="w-full h-auto object-contain drop-shadow-md"
             />
           </div>
         ))}
@@ -123,7 +117,7 @@ export function BookStatusBadges({
               alt="badge"
               width={rightBadge.width}
               height={rightBadge.height}
-              className="object-contain drop-shadow-md"
+              className="w-full h-auto object-contain drop-shadow-md"
             />
           </div>
         ))}

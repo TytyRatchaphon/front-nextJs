@@ -5,12 +5,14 @@ import { Form, Input, Select, DatePicker, notification, Modal } from "antd";
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 
 // Import TextEditor
 import TextEditorTiny from "@/components/editor/TextEditorTiny";
 import GifLoader from '@/components/utility/GifLoader';
-import { fetchGroupEpisodes } from "@/services/apiServices";
+import { fetchGroupEpisodes, fetchWriterCheck } from "@/services/apiServices";
 import secureProxyClient from "@/services/secureProxyClient";
+import { canSetEpisodePrice, getEpisodePriceRestrictionMessage } from "./writerPermissionUtils";
 
 dayjs.extend(customParseFormat);
 
@@ -49,6 +51,13 @@ const EditChapter: React.FC<EditChapterProps> = ({ epID }) => {
     const [spinLoading, setSpinLoading] = useState<boolean>(false);
     const [nextEpId, setNextEpId] = useState<string | number | null>(null);
     const [prevEpId, setPrevEpId] = useState<string | number | null>(null);
+    const { data: writerCheckData } = useQuery({
+        queryKey: ['writerCheck'],
+        queryFn: fetchWriterCheck,
+        staleTime: 60_000,
+    });
+    const canSetEpPrice = canSetEpisodePrice(writerCheckData);
+    const priceRestrictionMessage = getEpisodePriceRestrictionMessage(writerCheckData);
 
     // Modal Success
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
@@ -57,6 +66,12 @@ const EditChapter: React.FC<EditChapterProps> = ({ epID }) => {
     // Style Variables
     const bodyTextStyle = 'mb-1 text-md';
     const inputStyle = 'input';
+
+    useEffect(() => {
+        if (!canSetEpPrice) {
+            formEditChapter.setFieldValue('coin', '0');
+        }
+    }, [canSetEpPrice, formEditChapter]);
 
     // --- Helper: สร้าง Headers ---
 
@@ -79,7 +94,7 @@ const EditChapter: React.FC<EditChapterProps> = ({ epID }) => {
                             groupID: data.group_id,
                             epID: data.ep_id,
                             bookID: data.book_id,
-                            coin: String(data.coin ?? '0'),
+                            coin: canSetEpPrice ? String(data.coin ?? '0') : '0',
                             publishDate: data.publish_datetime ? dayjs(data.publish_datetime) : dayjs(),
                             publishTime: data.publish_datetime ? dayjs(data.publish_datetime).format('HH:mm') : '00:00',
                             detail: data.detail || '',
@@ -140,7 +155,7 @@ const EditChapter: React.FC<EditChapterProps> = ({ epID }) => {
         };
 
         fetchData();
-    }, [epID, formEditChapter, api]); // dependency เอาเฉพาะที่จำเป็น
+    }, [epID, formEditChapter, api, canSetEpPrice]); // dependency เอาเฉพาะที่จำเป็น
 
     // --- Submit Form (UPDATE Logic) ---
     const onFinish = async (values: ChapterFormValues) => {
@@ -157,7 +172,7 @@ const EditChapter: React.FC<EditChapterProps> = ({ epID }) => {
                 ep_id: Number(epID), // **สำคัญ: ต้องส่ง ep_id ไปด้วยสำหรับ Update**
                 name: values.name,
                 detail: values.detail,
-                coin: Number(values.coin || 0),
+                coin: canSetEpPrice ? Number(values.coin || 0) : 0,
                 order_by: Number(values.order_by || 1),
                 publish_datetime: publishDateTime,
                 // ถ้า API ต้องการ publish status ด้วย (ปกติควรส่ง)
@@ -269,8 +284,18 @@ const EditChapter: React.FC<EditChapterProps> = ({ epID }) => {
                                     <div>
                                         <p className={bodyTextStyle}>ราคาขาย (เหรียญ)</p>
                                         <Form.Item name='coin'>
-                                            <Select placeholder="เลือก" options={priceCoin} className="custom-select" />
+                                            <Select
+                                                placeholder="เลือก"
+                                                options={canSetEpPrice ? priceCoin : [priceCoin[0]]}
+                                                className="custom-select"
+                                                disabled={!canSetEpPrice}
+                                            />
                                         </Form.Item>
+                                        {!canSetEpPrice && (
+                                            <p className="mt-1 text-xs leading-5 text-amber-600">
+                                                {priceRestrictionMessage}
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="col-span-2">

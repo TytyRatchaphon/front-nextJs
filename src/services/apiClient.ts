@@ -1,12 +1,13 @@
 import axios from "axios";
-import { useUIStore } from "@/stores/uiStore";
 import { getDeviceId } from "@/utils/deviceUtils";
 import Cookies from "js-cookie";
 import { useAuthStore } from "@/stores/authStore";
 import { parseJwtToken } from "@/utils/jwtParser";
+import { emitApiClientEvent } from "@/services/apiEvents";
 
 let cachedDeviceId: string | null = null;
 let deviceIdRequest: Promise<string | null> | null = null;
+const DUPLICATE_LOGIN_MESSAGE = "มีการเข้าสู่ระบบจากอุปกรณ์อื่น";
 
 const resolveDeviceId = async (): Promise<string | null> => {
     if (cachedDeviceId) return cachedDeviceId;
@@ -44,6 +45,12 @@ apiClient.interceptors.request.use(
         }
 
         // เช็คว่าอยู่ใน browser environment
+        const skipAuth = config.headers['x-skip-auth'] === 'true';
+        if (skipAuth) {
+            delete config.headers['x-skip-auth'];
+            delete config.headers.Authorization;
+        }
+
         if (typeof window !== 'undefined') {
             // Add device ID header
             const deviceId = await resolveDeviceId();
@@ -51,10 +58,12 @@ apiClient.interceptors.request.use(
                 config.headers['x-device-id'] = deviceId;
             }
 
-            const stateToken = useAuthStore.getState().token;
-            const tokenValue = parseJwtToken(stateToken || Cookies.get('token'));
-            if (tokenValue) {
-                config.headers.Authorization = `${tokenValue}`;
+            if (!skipAuth) {
+                const stateToken = useAuthStore.getState().token;
+                const tokenValue = parseJwtToken(stateToken || Cookies.get('token'));
+                if (tokenValue) {
+                    config.headers.Authorization = `${tokenValue}`;
+                }
             }
         }
         return config;
@@ -87,23 +96,12 @@ apiClient.interceptors.response.use(
         }
         // Handle Duplicate Login (400 + specific message)
 
-        if (error.response?.status === 400 && error.response?.data?.message === "มีการเข้าสู่ระบบจากอุปกรณ์อื่น") {
+        if (error.response?.status === 400 && error.response?.data?.message === DUPLICATE_LOGIN_MESSAGE) {
 
             if (typeof window !== 'undefined') {
-                useUIStore.getState().openDuplicateLoginModal();
+                emitApiClientEvent('duplicate-login');
             }
-            // Return a dummy resolved promise to prevent error propagation (and other toasts)
-            return { data: null, status: 200, headers: {}, config: error.config };
         }
-
-        // Debug Error Response
-        // Debug Error Response
-        /* console.log('API Error Interceptor:', {
-            status: error.response?.status,
-            code: error.response?.data?.code,
-            message: error.response?.data?.message,
-            url: error.config?.url
-        }); */
 
         // Handle Blocked User (401001 or specific message)
         const isBlocked = error.response?.data?.code === 401001 || 
@@ -112,16 +110,8 @@ apiClient.interceptors.response.use(
 
         if (isBlocked) {
             if (typeof window !== 'undefined') {
-                 useUIStore.getState().openBlockedUserModal();
+                 emitApiClientEvent('blocked-user');
             }
-             // Return a dummy resolved promise to prevent error propagation
-            return { data: null, status: 200, headers: {}, config: error.config };
-        }
-
-        // For 401, do NOT forcibly clear auth or redirect from the client here.
-        // Backend may respond invalid token; let caller decide how to handle (show message, logout, etc.).
-        if (error.response?.status === 401) {
-
         }
 
         return Promise.reject(error);

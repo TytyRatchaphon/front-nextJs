@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import apiClient from "../apiClient";
-import { cachedRequest } from "../requestCache";
 import {
   clearSearchHistory,
   deleteAllNotifications,
@@ -42,17 +41,12 @@ vi.mock("../apiClient", () => ({
   },
 }));
 
-vi.mock("../requestCache", () => ({
-  cachedRequest: vi.fn(),
-}));
-
 const mockedApiClient = apiClient as unknown as {
   get: ReturnType<typeof vi.fn>;
   post: ReturnType<typeof vi.fn>;
   patch: ReturnType<typeof vi.fn>;
   delete: ReturnType<typeof vi.fn>;
 };
-const mockedCachedRequest = cachedRequest as unknown as ReturnType<typeof vi.fn>;
 
 describe("miscApi", () => {
   beforeEach(() => {
@@ -135,6 +129,30 @@ describe("miscApi", () => {
 
       mockedApiClient.get.mockRejectedValueOnce(new Error("category-books-failed"));
       await expect(fetchCategoryBooks("write", "all")).resolves.toBeNull();
+    });
+
+    it("fetchCategoryBooks accepts nullable banner for all-category responses", async () => {
+      const response = {
+        code: 200,
+        status: "success",
+        message: "ok",
+        data: {
+          pagination: {
+            page: 1,
+            limit: 20,
+            total: 1,
+            totalPages: 1,
+            nextPage: null,
+            prevPage: null,
+          },
+          books: [{ book_id: 1, name: "Demo" }],
+          banner: null,
+        },
+      };
+
+      mockedApiClient.get.mockResolvedValueOnce({ data: response });
+
+      await expect(fetchCategoryBooks("tran", "all", "topchart", 1, 20, "30")).resolves.toEqual(response);
     });
 
     it("fetchCategoryBanners validates array payload", async () => {
@@ -313,15 +331,14 @@ describe("miscApi", () => {
   });
 
   describe("faq and search", () => {
-    it("fetchFaqs uses cachedRequest and returns fallback []", async () => {
-      mockedCachedRequest.mockResolvedValueOnce([{ id: 1, question: "Q", answer: "A" }]);
+    it("fetchFaqs returns payload data and fallback []", async () => {
+      mockedApiClient.get.mockResolvedValueOnce({
+        data: { data: [{ id: 1, question: "Q", answer: "A" }] },
+      });
       await expect(fetchFaqs()).resolves.toEqual([{ id: 1, question: "Q", answer: "A" }]);
-      const [cacheKey, fetcher, options] = mockedCachedRequest.mock.calls[0];
-      expect(cacheKey).toBe("faq:list");
-      expect(typeof fetcher).toBe("function");
-      expect(options).toEqual({ ttlMs: 10 * 60 * 1000 });
+      expect(mockedApiClient.get).toHaveBeenCalledWith("/faq");
 
-      mockedCachedRequest.mockRejectedValueOnce(new Error("faq-cache-failed"));
+      mockedApiClient.get.mockRejectedValueOnce(new Error("faq-failed"));
       await expect(fetchFaqs()).resolves.toEqual([]);
     });
 

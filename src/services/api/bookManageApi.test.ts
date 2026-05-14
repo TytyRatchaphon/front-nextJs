@@ -1,8 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import apiClient from "../apiClient";
-import axios from "axios";
-import Cookies from "js-cookie";
 import {
   createGroup,
   createGroupEpisodePromotion,
@@ -16,9 +14,11 @@ import {
   fetchBookGroups,
   fetchBookStats,
   fetchGroupEpisodes,
+  fetchUserMyBookPermissions,
   fetchUserMyBookInfo,
   fetchUserMyBookListNames,
   fetchUserMyBooks,
+  updateEpisodesFastAccessPrice,
   updateEpisodesPrice,
   updateGroup,
   updatePromotion,
@@ -33,31 +33,11 @@ vi.mock("../apiClient", () => ({
   },
 }));
 
-vi.mock("axios", () => ({
-  default: {
-    put: vi.fn(),
-  },
-}));
-
-vi.mock("js-cookie", () => ({
-  default: {
-    get: vi.fn(),
-  },
-}));
-
 const mockedApiClient = apiClient as unknown as {
   get: ReturnType<typeof vi.fn>;
   post: ReturnType<typeof vi.fn>;
   put: ReturnType<typeof vi.fn>;
   delete: ReturnType<typeof vi.fn>;
-};
-
-const mockedAxios = axios as unknown as {
-  put: ReturnType<typeof vi.fn>;
-};
-
-const mockedCookies = Cookies as unknown as {
-  get: ReturnType<typeof vi.fn>;
 };
 
 describe("bookManageApi", () => {
@@ -167,27 +147,14 @@ describe("bookManageApi", () => {
       });
     });
 
-    it("updateGroup throws when token is missing", async () => {
-      mockedCookies.get.mockReturnValueOnce(undefined);
-      await expect(updateGroup(1, "new name")).rejects.toThrow();
-    });
-
-    it("updateGroup strips token quotes and calls axios.put", async () => {
-      vi.stubEnv("NEXT_PUBLIC_API_BASE_URL", "https://api.example.com");
-      mockedCookies.get.mockReturnValueOnce("'token-value'");
-      mockedAxios.put.mockResolvedValueOnce({ data: { ok: true } });
+    it("updateGroup uses apiClient so auth/device interceptors stay consistent", async () => {
+      mockedApiClient.put.mockResolvedValueOnce({ data: { ok: true } });
 
       await expect(updateGroup(10, "name")).resolves.toEqual({ ok: true });
-      expect(mockedAxios.put).toHaveBeenCalledWith(
-        "https://api.example.com/user/managebook/group/update",
-        { group_id: 10, name: "name" },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: "token-value",
-          },
-        }
-      );
+      expect(mockedApiClient.put).toHaveBeenCalledWith("/user/managebook/group/update", {
+        group_id: 10,
+        name: "name",
+      });
     });
 
     it("updateEpisodesPrice supports array and csv ids", async () => {
@@ -204,6 +171,80 @@ describe("bookManageApi", () => {
         ep_ids: "3,4",
         coin: 5,
       });
+    });
+
+    it("fetchUserMyBookPermissions returns permission payload or null fallback", async () => {
+      mockedApiClient.get.mockResolvedValueOnce({
+        data: {
+          data: {
+            set_fast_ticket: true,
+            set_fast_coin: false,
+            suggest_configs: [],
+          },
+        },
+      });
+
+      await expect(fetchUserMyBookPermissions()).resolves.toEqual({
+        set_content_type: false,
+        set_fast_ticket: true,
+        set_fast_coin: false,
+        set_fast_ticket_daily_increase: false,
+        set_fast_coin_daily_increase: false,
+        set_fast_ep_days: false,
+        suggest_configs: [],
+      });
+      expect(mockedApiClient.get).toHaveBeenCalledWith("/user/mybook-permissions");
+
+      mockedApiClient.get.mockResolvedValueOnce({
+        data: {
+          data: {
+            set_content_type: 1,
+            set_fast_ticket: "true",
+            set_fast_coin: "0",
+            set_fast_ticket_daily_increase: "yes",
+            set_fast_coin_daily_increase: "Y",
+            set_fast_ep_days: 1,
+            suggest_configs: null,
+          },
+        },
+      });
+
+      await expect(fetchUserMyBookPermissions()).resolves.toEqual({
+        set_content_type: true,
+        set_fast_ticket: true,
+        set_fast_coin: false,
+        set_fast_ticket_daily_increase: true,
+        set_fast_coin_daily_increase: true,
+        set_fast_ep_days: true,
+        suggest_configs: [],
+      });
+
+      mockedApiClient.get.mockRejectedValueOnce(new Error("permissions-failed"));
+      await expect(fetchUserMyBookPermissions()).resolves.toBeNull();
+    });
+
+    it("updateEpisodesFastAccessPrice sends csv ids and fast access payload", async () => {
+      mockedApiClient.put.mockResolvedValueOnce({ data: { ok: true } });
+
+      await expect(
+        updateEpisodesFastAccessPrice([99999999, 100000000], {
+          fast_ticket: 0,
+          fast_ticket_daily_increase: 1,
+          fast_coin: 2,
+          fast_coin_daily_increase: 3,
+        })
+      ).resolves.toEqual({ ok: true });
+
+      expect(mockedApiClient.put).toHaveBeenCalledWith(
+        "/user/managebook/eps/fast-access-price",
+        {
+          ep_ids: "99999999,100000000",
+          fast_ticket: 0,
+          fast_ticket_daily_increase: 1,
+          fast_coin: 2,
+          fast_coin_daily_increase: 3,
+        }
+      );
     });
 
     it("deleteGroupEpisode succeeds from first delete endpoint", async () => {
@@ -261,32 +302,43 @@ describe("bookManageApi", () => {
       mockedApiClient.post.mockResolvedValueOnce({ data: { ok: true } });
       await expect(
         createPromotion({
-          group_ids: "1,2",
+          group_ids: ["1", 2],
           subject: "promo",
           start_date: "2026-01-01",
           end_date: "2026-01-31",
           discount_percent: 20,
+          book_id: "5051",
         })
       ).resolves.toEqual({ ok: true });
       expect(mockedApiClient.post).toHaveBeenCalledWith(
         "/user/managebook/groups/promotion",
-        expect.objectContaining({ group_ids: "1,2" })
+        expect.objectContaining({
+          book_id: 5051,
+          group_ids: [1, 2],
+          discount_percent: "20",
+        })
       );
 
       mockedApiClient.put.mockResolvedValueOnce({ data: { ok: true } });
       await expect(
         updatePromotion({
           dfb_id: 1,
-          groupIDs: "1,2",
+          groupIDs: ["1", 2],
           subject: "promo2",
           start_date: "2026-02-01",
           end_date: "2026-02-28",
           discount_percent: 15,
+          book_id: "5051",
         })
       ).resolves.toEqual({ ok: true });
       expect(mockedApiClient.put).toHaveBeenCalledWith(
         "/user/managebook/groups/promotion",
-        expect.objectContaining({ dfb_id: 1 })
+        expect.objectContaining({
+          book_id: 5051,
+          dfb_id: 1,
+          groupIDs: [1, 2],
+          discount_percent: "15",
+        })
       );
 
       mockedApiClient.delete.mockResolvedValueOnce({ data: { ok: true } });
@@ -294,6 +346,26 @@ describe("bookManageApi", () => {
       expect(mockedApiClient.delete).toHaveBeenCalledWith(
         "/user/managebook/groups/promotion",
         { data: { dfb_id: 99 } }
+      );
+    });
+
+    it("createPromotion sends group_ids as array for backend map compatibility", async () => {
+      mockedApiClient.post.mockResolvedValueOnce({ data: { ok: true } });
+
+      await expect(
+        createPromotion({
+          group_ids: "11680",
+          subject: "promo",
+          start_date: "2026/05/11 00:00:00",
+          end_date: "2026/05/12 23:59:00",
+          discount_percent: "30",
+          book_id: 5051,
+        })
+      ).resolves.toEqual({ ok: true });
+
+      expect(mockedApiClient.post).toHaveBeenCalledWith(
+        "/user/managebook/groups/promotion",
+        expect.objectContaining({ group_ids: [11680] })
       );
     });
 
@@ -359,11 +431,8 @@ describe("bookManageApi", () => {
       await expect(fetchUserMyBookInfo()).resolves.toEqual({ fullname: "writer2" });
       expect(mockedApiClient.get).toHaveBeenCalledWith("/user/writer/info", {});
 
-      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
       mockedApiClient.get.mockRejectedValueOnce(new Error("writer-info-failed"));
       await expect(fetchUserMyBookInfo()).resolves.toBeNull();
-      expect(consoleErrorSpy).toHaveBeenCalled();
-      consoleErrorSpy.mockRestore();
     });
   });
 });

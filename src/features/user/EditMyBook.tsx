@@ -9,6 +9,12 @@ import { useEditBookData } from './hooks/useEditBookData'
 import { useEditBookGroups } from './hooks/useEditBookGroups'
 import { useEditBookPromotions } from './hooks/useEditBookPromotions'
 import GifLoader from '@/components/utility/GifLoader'
+import {
+	fetchUserMyBookPermissions,
+	fetchWriterCheck,
+	updateEpisodesFastAccessPrice,
+} from '@/services/apiServices'
+import { canSetEpisodePrice, getEpisodePriceRestrictionMessage } from '@/features/mybook/writerPermissionUtils'
 import { EditBookOverview } from './components/EditBookOverview'
 import { EditBookEpisodesModal } from './components/EditBookEpisodesModal'
 import { EditBookGroupsSection, EditBookPromotionsSection, EditBookTagsSection } from './components/EditBookSections'
@@ -16,9 +22,11 @@ import {
 	EditBulkPriceModal,
 	EditCancelEpisodePromotionModal,
 	EditEpisodePromotionModal,
+	EditFastAccessPriceModal,
 	EditGroupNameModal,
 	EditPromotionFormModal,
 	EditSuccessModal,
+	type FastAccessPriceFormValues,
 } from './components/EditMyBookModals'
 export default function EditMyBook({ book: initialBook, bookId }: { book?: Partial<BookDetail> | null; bookId?: string | null }) {
 	const router = useRouter()
@@ -32,7 +40,15 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 
 	const { display, computedVisibleEps, getBookName, query, purchaseQuery, groupsQuery } = useEditBookData(initialBook, bookId)
 
-	const groups = useEditBookGroups(bookId, groupsQuery, messageApi, modalApi)
+	const writerCheckQuery = useQuery({
+		queryKey: ['writerCheck'],
+		queryFn: fetchWriterCheck,
+		staleTime: 60_000,
+	})
+	const canSetEpPrice = canSetEpisodePrice(writerCheckQuery.data)
+	const episodePriceRestrictionMessage = getEpisodePriceRestrictionMessage(writerCheckQuery.data)
+
+	const groups = useEditBookGroups(bookId, groupsQuery, messageApi, modalApi, canSetEpPrice, episodePriceRestrictionMessage)
 	const {
 		selectedGroupId, isGroupModalOpen, editingGroup, addGroupModalOpen, newGroupName,
 		creatingGroup, newGroupError, deletingId, confirmModalOpen, selectedIds, selectAllChecked,
@@ -47,6 +63,29 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 		handleBulkDelete, handleDeleteGroup, handleSubmitGroup,
 		handleUpdatePrice, handleMenuClick,
 	} = groups
+
+	const myBookPermissionsQuery = useQuery({
+		queryKey: ['user-mybook-permissions'],
+		queryFn: fetchUserMyBookPermissions,
+		staleTime: 5 * 60 * 1000,
+	})
+	const myBookPermissions = myBookPermissionsQuery.data ?? null
+	const canSetFastAccessPrice = useMemo(() => {
+		return Boolean(
+			myBookPermissions?.set_fast_ticket ||
+			myBookPermissions?.set_fast_coin ||
+			myBookPermissions?.set_fast_ticket_daily_increase ||
+			myBookPermissions?.set_fast_coin_daily_increase
+		)
+	}, [myBookPermissions])
+	const [fastAccessModalOpen, setFastAccessModalOpen] = useState(false)
+	const [fastAccessSubmitting, setFastAccessSubmitting] = useState(false)
+	const [fastAccessValues, setFastAccessValues] = useState<FastAccessPriceFormValues>({
+		fast_ticket: 0,
+		fast_ticket_daily_increase: 0,
+		fast_coin: 0,
+		fast_coin_daily_increase: 0,
+	})
 
 	const clearSelection = () => { setSelectedIds(new Set()); setSelectAllChecked(false) }
 	const promos = useEditBookPromotions(
@@ -69,6 +108,49 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 		handleCreatePromotion, handleBulkSetPromotion, handleBulkCancelPromotion,
 	} = promos
 
+	const resetFastAccessValues = () => {
+		setFastAccessValues({
+			fast_ticket: 0,
+			fast_ticket_daily_increase: 0,
+			fast_coin: 0,
+			fast_coin_daily_increase: 0,
+		})
+	}
+
+	const handleFastAccessValueChange = (key: keyof FastAccessPriceFormValues, value: number) => {
+		setFastAccessValues((prev) => ({
+			...prev,
+			[key]: Number.isFinite(value) ? value : 0,
+		}))
+	}
+
+	const handleSubmitFastAccessPrice = async () => {
+		const selectedIdArray = Array.from(selectedIds)
+		if (selectedIdArray.length === 0) {
+			messageApi.info('กรุณาเลือกตอนที่ต้องการตั้งราคาตอนล่วงหน้า')
+			return
+		}
+		if (!canSetFastAccessPrice) {
+			messageApi.warning('บัญชีนี้ยังไม่มีสิทธิ์ตั้งราคาตอนล่วงหน้า')
+			return
+		}
+
+		try {
+			setFastAccessSubmitting(true)
+			await updateEpisodesFastAccessPrice(selectedIdArray, fastAccessValues)
+			messageApi.success('ตั้งราคาตอนล่วงหน้าสำเร็จ')
+			setFastAccessModalOpen(false)
+			resetFastAccessValues()
+			clearSelection()
+			groupEpisodesQuery.refetch()
+			groupsQuery.refetch()
+		} catch (error: any) {
+			messageApi.error(error?.response?.data?.message ?? 'ไม่สามารถตั้งราคาตอนล่วงหน้าได้')
+		} finally {
+			setFastAccessSubmitting(false)
+		}
+	}
+
 	const handleFullMenuClick: NonNullable<MenuProps['onClick']> = (info) => {
 		const { key } = info
 		if (key === 'set_promotion') {
@@ -78,6 +160,12 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 		} else if (key === 'cancel_promotion') {
 			if (Array.from(selectedIds).length === 0) return messageApi.info('กรุณาเลือกตอนที่ต้องการยกเลิกส่วนลด')
 			setCancelPromoEpModalOpen(true)
+			return
+		} else if (key === 'set_fast_access_price') {
+			if (Array.from(selectedIds).length === 0) return messageApi.info('กรุณาเลือกตอนที่ต้องการตั้งราคาตอนล่วงหน้า')
+			if (!canSetFastAccessPrice) return messageApi.warning('บัญชีนี้ยังไม่มีสิทธิ์ตั้งราคาตอนล่วงหน้า')
+			resetFastAccessValues()
+			setFastAccessModalOpen(true)
 			return
 		}
 		handleMenuClick(info)
@@ -109,9 +197,21 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 				priceSelected={priceSelected}
 				priceSubmitting={priceSubmitting}
 				selectedEpisodeCount={modalSelectedEpIds.length}
+				canSetEpisodePrice={canSetEpPrice}
+				restrictionMessage={episodePriceRestrictionMessage}
 				onClose={() => setPriceModalOpen(false)}
 				onPriceChange={setPriceSelected}
 				onSubmit={handleUpdatePrice}
+			/>
+			<EditFastAccessPriceModal
+				open={fastAccessModalOpen}
+				values={fastAccessValues}
+				permissions={myBookPermissions}
+				submitting={fastAccessSubmitting}
+				selectedEpisodeCount={selectedIds.size}
+				onClose={() => setFastAccessModalOpen(false)}
+				onChange={handleFastAccessValueChange}
+				onSubmit={handleSubmitFastAccessPrice}
 			/>
 			<EditSuccessModal
 				open={confirmModalOpen}
@@ -157,6 +257,7 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 				selectedIds={selectedIds}
 				selectAllChecked={selectAllChecked}
 				deletingId={deletingId}
+				canSetFastAccessPrice={canSetFastAccessPrice}
 				onClose={closeGroupModal}
 				onFilterChange={setEpisodeFilter}
 				onClearSelection={() => {
@@ -182,6 +283,11 @@ export default function EditMyBook({ book: initialBook, bookId }: { book?: Parti
 			/>
 			<EditBookPromotionsSection
 				display={display}
+				isRefreshing={query.isFetching || purchaseQuery.isFetching}
+				onRefreshPromotions={() => {
+					query.refetch()
+					purchaseQuery.refetch()
+				}}
 				openPromoId={openPromoId}
 				onAddPromotion={() => setPromoModalOpen(true)}
 				onOpenPromoChange={setOpenPromoId}

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { App } from "antd";
 import parse from "html-react-parser";
+import { queryKeys } from "@/constants/query";
 import { BackToTopButton } from "@/components/utility/BackToTopButton";
 import EpisodeCommentSection from "@/components/bookdetail/EpisodeCommentSection";
 import { modifiedHtml, addParagraphIndexes, obfuscateClipboardText, obfuscateHtmlTextNodes } from "@/utils/htmlUtils";
@@ -64,7 +65,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     isError,
     error,
   } = useQuery({
-    queryKey: ["episodeContent", episodeId],
+    queryKey: queryKeys.read.episodeContent(episodeId),
     queryFn: () => fetchEpisodeContent(episodeId),
     enabled: !!episodeId,
     staleTime: 10 * 60 * 1000,
@@ -72,7 +73,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
   });
 
   const { data: bookDetail } = useQuery({
-    queryKey: ["bookDetail", bookId],
+    queryKey: queryKeys.book.detail(bookId),
     queryFn: () => fetchBookDetail(bookId),
     enabled: !!bookId,
     staleTime: 10 * 60 * 1000,
@@ -328,7 +329,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     !freeReadQuota.hasShownTopupPrompt;
 
   const { data: hasPaymentHistory } = useQuery({
-    queryKey: ["hasPaymentHistory", user?.user_id],
+    queryKey: queryKeys.user.hasPaymentHistory(user?.user_id),
     queryFn: fetchHasPaymentHistory,
     enabled: shouldCheckPaymentHistory,
     staleTime: 5 * 60 * 1000,

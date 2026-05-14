@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import apiClient from "../apiClient";
 import {
+  addBookToShelf,
+  buyEpisodes,
   buyGroupPromotion,
   fetchBookDetail,
   fetchBookEpisodes,
@@ -16,8 +18,10 @@ import {
   fetchMyBookDetail,
   fetchNovelPackCheck,
   postBookClick,
+  removeBookFromShelf,
   resolveBookId,
   resolveEpisodeId,
+  saveBookShare,
 } from "./bookApi";
 
 vi.mock("../apiClient", () => ({
@@ -182,42 +186,38 @@ describe("bookApi", () => {
   });
 
   describe("fetchBookDetail and fetchMyBookDetail", () => {
-    it("returns first-request payload when available", async () => {
+    it("returns book payload from the single detail request", async () => {
       mockedApiClient.get.mockResolvedValueOnce({
         data: { data: { book_id: 100 } },
       });
       await expect(fetchBookDetail("100")).resolves.toEqual({ book_id: 100 });
+      expect(mockedApiClient.get).toHaveBeenCalledTimes(1);
+      expect(mockedApiClient.get).toHaveBeenCalledWith("/bookdetail/100");
 
       mockedApiClient.get.mockResolvedValueOnce({
         data: { data: { book_id: 101 } },
       });
       await expect(fetchMyBookDetail("101")).resolves.toEqual({ book_id: 101 });
+      expect(mockedApiClient.get).toHaveBeenCalledTimes(2);
+      expect(mockedApiClient.get).toHaveBeenLastCalledWith("/bookdetail/101");
     });
 
-    it("falls back to second request when first request fails", async () => {
-      mockedApiClient.get
-        .mockRejectedValueOnce(new Error("first-failed"))
-        .mockResolvedValueOnce({ data: { data: { book_id: 200 } } });
+    it("supports direct object payloads without retrying the same endpoint", async () => {
+      mockedApiClient.get.mockResolvedValueOnce({ data: { book_id: 200 } });
+
       await expect(fetchBookDetail("200")).resolves.toEqual({ book_id: 200 });
-      expect(mockedApiClient.get).toHaveBeenNthCalledWith(1, "/bookdetail/200");
-      expect(mockedApiClient.get).toHaveBeenNthCalledWith(2, "/bookdetail/200");
-
-      mockedApiClient.get
-        .mockRejectedValueOnce(new Error("first-failed"))
-        .mockResolvedValueOnce({ data: { data: { book_id: 201 } } });
-      await expect(fetchMyBookDetail("201")).resolves.toEqual({ book_id: 201 });
+      expect(mockedApiClient.get).toHaveBeenCalledTimes(1);
+      expect(mockedApiClient.get).toHaveBeenCalledWith("/bookdetail/200");
     });
 
-    it("throws when both attempts fail or payload is missing", async () => {
-      mockedApiClient.get
-        .mockRejectedValueOnce(new Error("first-failed"))
-        .mockResolvedValueOnce({ data: {} });
+    it("throws when request fails or payload is missing", async () => {
+      mockedApiClient.get.mockResolvedValueOnce({ data: null });
       await expect(fetchBookDetail("300")).rejects.toThrow();
+      expect(mockedApiClient.get).toHaveBeenCalledTimes(1);
 
-      mockedApiClient.get
-        .mockRejectedValueOnce(new Error("first-failed"))
-        .mockRejectedValueOnce(new Error("second-failed"));
-      await expect(fetchMyBookDetail("301")).rejects.toThrow("second-failed");
+      mockedApiClient.get.mockRejectedValueOnce(new Error("detail-failed"));
+      await expect(fetchMyBookDetail("301")).rejects.toThrow("detail-failed");
+      expect(mockedApiClient.get).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -354,6 +354,32 @@ describe("bookApi", () => {
       await expect(buyGroupPromotion({ dfb_id: 1, payWith: "coin" })).rejects.toThrow(
         "buy-group-failed"
       );
+    });
+
+    it("buyEpisodes posts payload and returns response data", async () => {
+      const payload = { eps: [1, 2], payWith: "coin" as const };
+      mockedApiClient.post.mockResolvedValueOnce({ data: { code: 200, data: { token: "next" } } });
+
+      await expect(buyEpisodes(payload)).resolves.toEqual({ code: 200, data: { token: "next" } });
+      expect(mockedApiClient.post).toHaveBeenCalledWith("/buy/eps", payload);
+    });
+
+    it("shelf helpers call add/remove endpoints", async () => {
+      mockedApiClient.post.mockResolvedValueOnce({ data: { code: 200 } });
+      await expect(addBookToShelf(12)).resolves.toEqual({ code: 200 });
+      expect(mockedApiClient.post).toHaveBeenCalledWith("/user/savebookshelve/add/12");
+
+      mockedApiClient.post.mockResolvedValueOnce({ data: { code: 200 } });
+      await expect(removeBookFromShelf("12")).resolves.toEqual({ code: 200 });
+      expect(mockedApiClient.post).toHaveBeenCalledWith("/user/savebookshelve/remove/12");
+    });
+
+    it("saveBookShare posts share analytics payload", async () => {
+      const payload = { userID: 1, bookID: 2, type: "facebook" as const };
+      mockedApiClient.post.mockResolvedValueOnce({ data: { ok: true } });
+
+      await expect(saveBookShare(payload)).resolves.toEqual({ ok: true });
+      expect(mockedApiClient.post).toHaveBeenCalledWith("gift/saveshare", payload);
     });
 
     it("postBookClick ignores invalid ids and posts valid ones", async () => {

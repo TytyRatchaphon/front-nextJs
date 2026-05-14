@@ -15,6 +15,8 @@ export function useEditBookGroups(
 	groupsQuery: ReturnType<typeof useQuery<any[], any>>,
 	messageApi: MessageApi,
 	modalApi: any,
+	canSetEpisodePrice = true,
+	episodePriceRestrictionMessage = 'ต้องยืนยันข้อมูลบัญชีนักเขียนก่อน จึงจะสามารถตั้งราคาตอนได้',
 ) {
 	const [selectedGroupId, setSelectedGroupId] = useState<string | number | null>(null);
 	const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
@@ -174,7 +176,7 @@ export function useEditBookGroups(
 			setEditingGroup(null);
 			groupsQuery.refetch();
 		} catch (e: any) {
-			messageApi.error(e?.response?.data?.message ?? 'ไม่สามารถสร้างเล่มได้');
+			messageApi.error(e?.response?.data?.message ?? (editingGroup ? 'ไม่สามารถแก้ไขชื่อเล่มได้' : 'ไม่สามารถสร้างเล่มได้'));
 		} finally {
 			setCreatingGroup(false);
 		}
@@ -182,6 +184,7 @@ export function useEditBookGroups(
 
 	const handleUpdatePrice = async () => {
 		if (!modalSelectedEpIds || modalSelectedEpIds.length === 0) { messageApi.info('ไม่มีตอนที่เลือก'); return; }
+		if (!canSetEpisodePrice) { messageApi.warning(episodePriceRestrictionMessage); return; }
 		if (priceSelected === null) { messageApi.error('โปรดเลือกราคา'); return; }
 		try {
 			setPriceSubmitting(true);
@@ -211,6 +214,7 @@ export function useEditBookGroups(
 			});
 		} else if (key === 'editPrice') {
 			if (selectedIdArray.length === 0) { messageApi.info('กรุณาเลือกตอนที่ต้องการแก้ไขราคาก่อน'); return; }
+			if (!canSetEpisodePrice) { messageApi.warning(episodePriceRestrictionMessage); return; }
 			setModalSelectedEpIds(selectedIdArray.map((x: any) => String(x)));
 			setPriceSelected(null);
 			setPriceModalOpen(true);

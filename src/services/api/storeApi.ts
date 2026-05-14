@@ -1,11 +1,14 @@
 
 import apiClient from "../apiClient";
 import type { StoreCategory, StoreResponse, StickerSet, StickerResponse } from "@/types/api";
+import { storeSchemas } from "./apiResponseSchemas";
+import { validateApiPayload } from "./apiResponseValidation";
 
 export const fetchStoreData = async (): Promise<StoreCategory[]> => {
   try {
     const response = await apiClient.get<StoreResponse>('/user/store');
-    return response.data?.data || [];
+    const payload = validateApiPayload(storeSchemas.store, response.data, "/user/store");
+    return payload.data as unknown as StoreCategory[];
   } catch {
     return [];
   }
@@ -44,7 +47,8 @@ export const buyStorePackNow = async (
 export const fetchStickers = async (): Promise<StickerSet[]> => {
   try {
     const response = await apiClient.get<StickerResponse>("/stickers");
-    return response.data?.data ?? [];
+    const payload = validateApiPayload(storeSchemas.stickers, response.data, "/stickers");
+    return payload.data as unknown as StickerSet[];
   } catch {
     return [];
   }
@@ -95,7 +99,8 @@ export interface Coupon {
 export const fetchAvailableCoupons = async (): Promise<Coupon[]> => {
   try {
     const response = await apiClient.get<{ code: number; status: string; message: string; data: Coupon[] }>("/user/coupon/available");
-    return response.data?.data || [];
+    const payload = validateApiPayload(storeSchemas.coupons, response.data, "/user/coupon/available");
+    return payload.data as unknown as Coupon[];
   } catch {
     return [];
   }
@@ -104,7 +109,8 @@ export const fetchAvailableCoupons = async (): Promise<Coupon[]> => {
 export const fetchUserCoupons = async (): Promise<Coupon[]> => {
   try {
     const response = await apiClient.get<{ code: number; status: string; message: string; data: Coupon[] }>("/user/coupon/mine");
-    return response.data?.data || [];
+    const payload = validateApiPayload(storeSchemas.coupons, response.data, "/user/coupon/mine");
+    return payload.data as unknown as Coupon[];
   } catch {
     return [];
   }

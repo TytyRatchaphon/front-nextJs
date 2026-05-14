@@ -266,6 +266,7 @@ export const BookEpisodesTab = ({
                       hasEarlyAccess && Number.isFinite(publishTimestamp) && publishTimestamp > Date.now();
                     const publishDateLabel = formatThaiDate(episode.publish_datetime);
                     const publishDateTimeLabel = formatThaiDate(episode.publish_datetime, true);
+                    const isRead = episode?.isRead === true;
 
                     const bookUseFreecoin = (bookDetail as any)?.use_freecoin;
                     const episodeUseFreecoin = (episode as any)?.use_freecoin;
@@ -286,7 +287,7 @@ export const BookEpisodesTab = ({
                       >
                         <div className="min-w-0 w-full md:flex-1 md:pr-4">
                           <div className="flex flex-wrap items-start gap-2">
-                            <p className="min-w-0 flex-1 text-sm font-medium text-gray-900 transition-colors group-hover:text-red-600">
+                            <p className={`min-w-0 flex-1 text-sm font-medium transition-colors group-hover:text-red-600 ${isRead ? "text-gray-400" : "text-gray-900"}`}>
                               {episode.name.trim()}
                             </p>
                             {episode.isBuy && (

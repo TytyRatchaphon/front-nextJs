@@ -29,7 +29,7 @@ const AllQuestPage = () => {
       <main className="flex min-h-screen flex-col items-center justify-center bg-white px-4 text-center font-primary">
         <h1 className="text-2xl font-black text-slate-950">กรุณาเข้าสู่ระบบก่อนดูเควส</h1>
         <p className="mt-2 max-w-md text-sm text-slate-500">
-          ภารกิจเพิ่ม RP จะอ้างอิงความคืบหน้าจากบัญชีของคุณ
+          ภารกิจเพิ่มแต้ม จะอ้างอิงความคืบหน้าจากบัญชีของคุณ
         </p>
         <Link href="/" className="mt-5 inline-flex">
           <Button type="primary" danger className="h-11 rounded-full px-6 font-bold">

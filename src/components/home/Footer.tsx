@@ -45,6 +45,7 @@ export default function Footer() {
             <ul className="space-y-2 text-gray-600 text-sm">
               <li><Link href="/policy-privacy" className="hover:text-red-500">นโยบายความเป็นส่วนตัว</Link></li>
               <li><Link href="/policy-conditions" className="hover:text-red-500">ข้อกำหนดการใช้งาน</Link></li>
+              <li><Link href="/other-policy" className="hover:text-red-500">ข้อกำหนดอื่นๆ</Link></li>
             </ul>
           </div>
           <div className="flex flex-col">

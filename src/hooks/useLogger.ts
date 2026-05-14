@@ -2,6 +2,28 @@ import { useEffect, useCallback, useRef } from 'react';
 import { logActivity, LogActivityPayload } from '@/services/apiServices';
 import { usePathname } from 'next/navigation';
 
+const generateSessionId = () => {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+};
+
+const safeGetPathname = (fallback: string | null) => {
+    if (fallback) return fallback;
+
+    try {
+        return typeof window !== 'undefined' ? window.location.pathname : '';
+    } catch {
+        return '';
+    }
+};
+
 export const useLogger = () => {
     const pathname = usePathname();
     const pathnameRef = useRef(pathname);
@@ -12,41 +34,26 @@ export const useLogger = () => {
 
     const pageSessionIdRef = useRef<string | null>(null);
 
-    // Generic UUID generator fallback
-
     // Initialize or retrieve Application Session ID (persists across tabs/reloads until cleared manually or expires logic if added)
     const getAppSessionId = () => {
         if (typeof window === 'undefined') return '';
-        let sid = localStorage.getItem('app_session_id');
-        if (!sid) {
-            // Check if crypto.randomUUID is supported, else use fallback
-            if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-                sid = crypto.randomUUID();
-            } else {
-                 // Simple fallback if crypto.randomUUID is missing (e.g. older browsers / insecure context)
-                sid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                    const r = Math.random() * 16 | 0;
-                    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-                    return v.toString(16);
-                });
+
+        try {
+            let sid = window.localStorage.getItem('app_session_id');
+            if (!sid) {
+                sid = generateSessionId();
+                window.localStorage.setItem('app_session_id', sid);
             }
-            localStorage.setItem('app_session_id', sid);
+            return sid;
+        } catch {
+            return generateSessionId();
         }
-        return sid;
     };
 
     // Initialize Page Session ID (unique per component mount / logic flow)
     const getPageSessionId = () => {
         if (!pageSessionIdRef.current) {
-             if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-                pageSessionIdRef.current = crypto.randomUUID();
-            } else {
-                pageSessionIdRef.current = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                    const r = Math.random() * 16 | 0;
-                    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-                    return v.toString(16);
-                });
-            }
+            pageSessionIdRef.current = generateSessionId();
         }
         return pageSessionIdRef.current;
     };
@@ -64,13 +71,16 @@ export const useLogger = () => {
             action,
             target_type: targetType,
             target_id: targetId,
-            path: pathnameRef.current || window.location.pathname,
+            path: safeGetPathname(pathnameRef.current),
             metadata,
             ...(duration !== undefined && { duration }),
         };
 
-        // Optional: Include duration or other metrics if passed in metadata or handled here
-        await logActivity(payload);
+        try {
+            await logActivity(payload);
+        } catch {
+            // Logging is non-critical and must never break page rendering.
+        }
     }, []);
 
     const trackTimeSpent = useCallback((
@@ -95,12 +105,14 @@ export const useLogger = () => {
                 action: 'time_spent',
                 target_type: targetType,
                 target_id: targetId,
-                path: window.location.pathname, // use window location to get current path at unmount
+                path: safeGetPathname(null),
                 duration: durationInSeconds,
                 metadata
             };
             
-            logActivity(payload);
+            void logActivity(payload).catch(() => {
+                // Logging is best-effort during route changes/unmounts.
+            });
         };
     }, []);
 

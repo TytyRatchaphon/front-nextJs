@@ -58,11 +58,8 @@ describe("collectionApi", () => {
       await expect(fetchCollectionBooks(10)).resolves.toBeNull();
       expect(mockedApiClient.get).toHaveBeenCalledWith("/user/collections/10");
 
-      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
       mockedApiClient.get.mockRejectedValueOnce(new Error("collections-failed"));
       await expect(fetchUserCollections()).resolves.toBeNull();
-      expect(consoleErrorSpy).toHaveBeenCalled();
-      consoleErrorSpy.mockRestore();
     });
 
     it("fetchCollectionComments passes params and rethrows errors", async () => {
@@ -92,11 +89,8 @@ describe("collectionApi", () => {
       mockedApiClient.get.mockResolvedValueOnce({ data: {} });
       await expect(fetchHiddenBooks(7)).resolves.toBeNull();
 
-      const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
       mockedApiClient.get.mockRejectedValueOnce(new Error("hidden-failed"));
       await expect(fetchHiddenBooks(7)).resolves.toBeNull();
-      expect(consoleErrorSpy).toHaveBeenCalled();
-      consoleErrorSpy.mockRestore();
     });
   });
 

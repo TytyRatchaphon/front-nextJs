@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolveBackendUrl } from "../../../_utils/backendUrl";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const BACKEND_URL = process.env.API_URL || process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "";
-let didWarnPublicFallback = false;
+const BACKEND_URL = resolveBackendUrl();
 
 const buildNoStoreHeaders = () => {
   const headers = new Headers();
@@ -17,17 +17,6 @@ const buildNoStoreHeaders = () => {
   // Keep parity with episode route for auth-sensitive read assets.
   headers.set("Vary", "Authorization, Cookie, Accept-Encoding");
   return headers;
-};
-
-const warnPublicFallbackIfNeeded = () => {
-  if (process.env.NODE_ENV !== "production" || didWarnPublicFallback) {
-    return;
-  }
-
-  if (!process.env.API_URL && !process.env.API_BASE_URL && process.env.NEXT_PUBLIC_API_BASE_URL) {
-    console.warn("[read-reader-assets-proxy] Using NEXT_PUBLIC_API_BASE_URL fallback. Prefer server-only API_URL/API_BASE_URL.");
-  }
-  didWarnPublicFallback = true;
 };
 
 type RouteContext = {
@@ -43,15 +32,6 @@ type RouteContext = {
 const resolveParams = async <T>(value: T | Promise<T>): Promise<T> => Promise.resolve(value);
 
 export async function GET(_request: NextRequest, context: RouteContext) {
-  warnPublicFallbackIfNeeded();
-
-  if (!BACKEND_URL) {
-    return NextResponse.json(
-      { message: "Server is missing API base url configuration" },
-      { status: 500, headers: buildNoStoreHeaders() },
-    );
-  }
-
   const { assetPath } = await resolveParams(context.params);
   const segments = Array.isArray(assetPath) ? assetPath.filter(Boolean) : [];
   if (segments.length === 0) {
@@ -62,7 +42,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
   }
 
   const encodedPath = segments.map((segment) => encodeURIComponent(segment)).join("/");
-  const endpoint = `${BACKEND_URL.replace(/\/+$/, "")}/reader-assets/${encodedPath}`;
+  const endpoint = `${BACKEND_URL}/reader-assets/${encodedPath}`;
 
   try {
     const upstreamResponse = await fetch(endpoint, {

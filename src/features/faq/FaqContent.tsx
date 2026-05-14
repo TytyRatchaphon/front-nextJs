@@ -1,6 +1,7 @@
 "use client";
 import { Collapse } from 'antd';
-import type { FaqItem } from '@/services/apiServices';
+import { useQuery } from '@tanstack/react-query';
+import { fetchFaqs, type FaqItem } from '@/services/apiServices';
 import { PlusOutlined, MinusOutlined } from '@ant-design/icons';
 import { sanitizeUserGeneratedHtml } from '@/utils/sanitizeHtml';
 
@@ -9,7 +10,12 @@ interface FaqContentProps {
 }
 
 export default function FaqContent({ initialFaqs = [] }: FaqContentProps) {
-    const faqs = initialFaqs;
+    const { data: faqs = [] } = useQuery({
+        queryKey: ["faqs"],
+        queryFn: fetchFaqs,
+        initialData: initialFaqs,
+        staleTime: 10 * 60 * 1000,
+    });
 
     return (
         <div className="min-h-screen bg-[#FDFDFD] font-primary">

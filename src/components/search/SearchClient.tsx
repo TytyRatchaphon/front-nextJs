@@ -22,12 +22,55 @@ interface SearchParams {
   order: string;
 }
 
+interface SearchBooksResponse {
+  items: unknown[];
+  total: number;
+}
+
+const EMPTY_SEARCH_RESPONSE: SearchBooksResponse = {
+  items: [],
+  total: 0,
+};
+
+const parseNumberListParam = (value: string | null) => {
+  if (!value) return [];
+
+  return value
+    .split(',')
+    .map((item) => Number(item))
+    .filter((item) => Number.isFinite(item) && item > 0);
+};
+
+const parseStringListParam = (value: string | null) => {
+  if (!value) return [];
+
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
+
+const parsePageParam = (value: string | null) => {
+  const page = Number(value);
+  return Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+};
+
+const getSearchParamsFromUrl = (searchParamsUrl: ReturnType<typeof useSearchParams>): SearchParams => ({
+  query: searchParamsUrl?.get('q') || "",
+  categories: parseNumberListParam(searchParamsUrl?.get('categories') || null),
+  types: parseStringListParam(searchParamsUrl?.get('types') || null),
+  content_type: parseStringListParam(searchParamsUrl?.get('content_type') || null),
+  status: parseStringListParam(searchParamsUrl?.get('status') || null),
+  end: searchParamsUrl?.get('end') || "all",
+  sortBy: searchParamsUrl?.get('sortBy') || "date_at",
+  order: searchParamsUrl?.get('order') || "DESC",
+});
 
 const searchBooks = async (
   params: SearchParams,
   page: number,
   limit: number
-) => {
+): Promise<SearchBooksResponse> => {
   const { query, categories, types, content_type, status, end, sortBy, order } = params;
 
   // --- กรณีที่ 2: ถ้าไม่มีคำค้นหา (ใช้ระบบ API เดิมของคุณ) ---
@@ -45,31 +88,39 @@ const searchBooks = async (
   queryParams.append("limit", limit.toString());
 
 
-  const response = await apiClient.get(`/book/search?${queryParams.toString()}`);
+  try {
+    const response = await apiClient.get(`/book/search?${queryParams.toString()}`, {
+      headers: {
+        'x-skip-auth': 'true',
+      },
+    });
 
-  const data = response.data;
+    const data = response.data;
 
-  if (data.code === 200 && data.data) {
-    return data.data;
+    if (data.code === 200 && data.data) {
+      return {
+        items: Array.isArray(data.data.items) ? data.data.items : [],
+        total: Number(data.data.total || 0),
+      };
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[search] Invalid response format', data);
+    }
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[search] Failed to fetch search results', error);
+    }
   }
 
-  throw new Error("Invalid response format");
+  return EMPTY_SEARCH_RESPONSE;
 };
 
 export default function SearchClient() {
   const searchParamsUrl = useSearchParams();
-  const [currentPage, setCurrentPage] = useState(Number(searchParamsUrl?.get('page')) || 1);
+  const [currentPage, setCurrentPage] = useState(parsePageParam(searchParamsUrl?.get('page') || null));
 
-  const [searchParams, setSearchParams] = useState<SearchParams>({
-    query: searchParamsUrl?.get('q') || "",
-    categories: searchParamsUrl?.get('categories')?.split(',').map(Number) || [],
-    types: searchParamsUrl?.get('types')?.split(',') || [],
-    content_type: searchParamsUrl?.get('content_type')?.split(',') || [],
-    status: searchParamsUrl?.get('status')?.split(',') || [],
-    end: searchParamsUrl?.get('end') || "all",
-    sortBy: searchParamsUrl?.get('sortBy') || "date_at",
-    order: searchParamsUrl?.get('order') || "DESC",
-  });
+  const [searchParams, setSearchParams] = useState<SearchParams>(() => getSearchParamsFromUrl(searchParamsUrl));
 
   const topRef = useRef<HTMLDivElement>(null);
   const pageSize = 20;
@@ -96,7 +147,7 @@ export default function SearchClient() {
     if (hasLoggedRef.current === logKey) return;
     hasLoggedRef.current = logKey;
 
-    log('search', 'book', '', {
+    void log('search', 'book', '', {
       query: searchParams.query,
       categories: searchParams.categories,
       types: searchParams.types,
@@ -104,21 +155,15 @@ export default function SearchClient() {
       end: searchParams.end,
       sortBy: searchParams.sortBy,
       order: searchParams.order,
+    }).catch(() => {
+      // Logging is best-effort and should not affect the search page.
     });
   }, [searchParams, currentPage, log]);
 
   // Update state when URL changes (e.g. navigation from navbar)
   React.useEffect(() => {
-    const paramsFromUrl: SearchParams = {
-      query: searchParamsUrl?.get('q') || "",
-      categories: searchParamsUrl?.get('categories')?.split(',').map(Number) || [],
-      types: searchParamsUrl?.get('types')?.split(',') || [],
-      content_type: searchParamsUrl?.get('content_type')?.split(',') || [],
-      status: searchParamsUrl?.get('status')?.split(',') || [],
-      end: searchParamsUrl?.get('end') || "all",
-      sortBy: searchParamsUrl?.get('sortBy') || "date_at",
-      order: searchParamsUrl?.get('order') || "DESC",
-    };
+    const paramsFromUrl = getSearchParamsFromUrl(searchParamsUrl);
+    const pageFromUrl = parsePageParam(searchParamsUrl?.get('page') || null);
 
     setSearchParams((prev) => {
       if (JSON.stringify(prev) === JSON.stringify(paramsFromUrl)) {
@@ -128,6 +173,7 @@ export default function SearchClient() {
       // But for now just sync state.
       return paramsFromUrl;
     });
+    setCurrentPage((prev) => prev === pageFromUrl ? prev : pageFromUrl);
   }, [searchParamsUrl]);
 
   const {
@@ -139,6 +185,9 @@ export default function SearchClient() {
     queryKey: ["searchBooks", searchParams, currentPage],
     queryFn: () => searchBooks(searchParams, currentPage, pageSize),
     staleTime: 5 * 60 * 1000,
+    retry: 1,
+    throwOnError: false,
+    placeholderData: (previousData) => previousData,
   });
 
   const novels = useMemo(() => {
@@ -277,9 +326,9 @@ export default function SearchClient() {
                 <div
                   className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-y-8 gap-x-4 justify-items-center"
                 >
-                  {novels.map((novel: any) => {
+                  {novels.map((novel: any, index: number) => {
                     // novels are already normalized above; pass through to CardBook
-                    return <CardBook key={novel.book_id || novel.bookID} book={novel} />;
+                    return <CardBook key={`${novel.book_id || novel.bookID || 'book'}-${index}`} book={novel} />;
                   })}
                 </div>
 

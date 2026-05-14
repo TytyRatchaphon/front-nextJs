@@ -159,11 +159,64 @@ describe('cartService', () => {
     (apiClient.get as any)
       .mockResolvedValueOnce({ data: { data: { items: [] } } })
       .mockResolvedValueOnce({ data: { data: { address: null } } })
-      .mockResolvedValueOnce({ data: { data: { totals: {} } } });
+      .mockResolvedValueOnce({ data: { data: { total_cost: {}, can_purchase: true } } });
 
     await expect(fetchCheckoutItems()).resolves.toEqual({ items: [] });
-    await expect(fetchCheckoutAddress()).resolves.toEqual({ address: null });
-    await expect(fetchCheckoutSummary()).resolves.toEqual({ totals: {} });
+    await expect(fetchCheckoutAddress()).resolves.toEqual({
+      has_physical_items: false,
+      phone: '',
+      address: null,
+      shipping_items: [],
+    });
+    await expect(fetchCheckoutSummary()).resolves.toEqual({
+      total_cost: {},
+      wallet_before: {
+        coin: 0,
+        freecoin: 0,
+        stamp: 0,
+        coupon: 0,
+      },
+      wallet_after: {
+        coin: 0,
+        freecoin: 0,
+        stamp: 0,
+        coupon: 0,
+      },
+      can_purchase: true,
+      limit_error: null,
+    });
+  });
+
+  it('fetch checkout endpoints return safe fallbacks on invalid payloads', async () => {
+    (apiClient.get as any)
+      .mockResolvedValueOnce({ data: { data: { items: null } } })
+      .mockResolvedValueOnce({ data: { data: null } })
+      .mockRejectedValueOnce(new Error('summary-failed'));
+
+    await expect(fetchCheckoutItems()).resolves.toEqual({ items: [] });
+    await expect(fetchCheckoutAddress()).resolves.toEqual({
+      has_physical_items: false,
+      phone: '',
+      address: '',
+      shipping_items: [],
+    });
+    await expect(fetchCheckoutSummary()).resolves.toEqual({
+      total_cost: {},
+      wallet_before: {
+        coin: 0,
+        freecoin: 0,
+        stamp: 0,
+        coupon: 0,
+      },
+      wallet_after: {
+        coin: 0,
+        freecoin: 0,
+        stamp: 0,
+        coupon: 0,
+      },
+      can_purchase: false,
+      limit_error: 'ไม่สามารถโหลดข้อมูลสรุปรายการได้',
+    });
   });
 
   it('confirmCheckout posts and returns nested data payload', async () => {

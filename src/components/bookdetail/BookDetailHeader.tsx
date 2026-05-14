@@ -5,7 +5,7 @@ import axios from "axios";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Image as AntImage, App, Modal, Dropdown, Select, Input, Checkbox } from "antd";
-import apiClient from "@/services/apiClient";
+import { useAddBookToShelfMutation, useRemoveBookFromShelfMutation, useSaveBookShareMutation } from "@/hooks/book/useBookWriteMutations";
 import { fetchLatestReadEpisode, fetchBookReportTypes, submitBookReport } from "@/services/apiServices";
 import type { BookReportType } from "@/services/apiServices";
 import { fetchUserCollections, addBooksToCollection } from "@/services/api/collectionApi";
@@ -16,8 +16,10 @@ import { useUIStore } from "@/stores/uiStore";
 import { FacebookShareButton, TwitterShareButton, LineShareButton } from "react-share";
 import { TagSwiper } from "@/components/swiper/ImageSlider";
 import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
+import { normalizeEpisodeEarlyAccess } from "@/utils/earlyAccessUtils";
 
 interface BookDetailHeaderProps {
+  episodesData?: any;
   book: {
     id?: number | string;
     isAddedToShelf?: boolean;
@@ -55,11 +57,68 @@ interface BookDetailHeaderProps {
   };
 }
 
-const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
+type ReadingProgressLine = {
+  key: "normal" | "early";
+  text: string;
+  tone: "normal" | "early";
+};
+
+const getEpisodeDisplayName = (episode: any) => {
+  return String(episode?.name ?? episode?.title ?? "").trim();
+};
+
+const getReadingProgressLines = (episodesData: any): ReadingProgressLine[] => {
+  const orderedEpisodes = Array.isArray(episodesData?.groups)
+    ? episodesData.groups.flatMap((group: any) => (Array.isArray(group?.list) ? group.list : []))
+    : [];
+
+  if (orderedEpisodes.length === 0) return [];
+
+  const regularEpisodes = orderedEpisodes.filter((episode: any) => !normalizeEpisodeEarlyAccess(episode).isEarlyAccess);
+  const earlyEpisodes = orderedEpisodes.filter((episode: any) => normalizeEpisodeEarlyAccess(episode).isEarlyAccess);
+  const lines: ReadingProgressLine[] = [];
+
+  if (regularEpisodes.length > 0) {
+    const latestRegularEpisode = regularEpisodes[regularEpisodes.length - 1];
+    const unreadRegularCount = regularEpisodes.filter((episode: any) => episode?.isRead !== true).length;
+    const latestRegularName = getEpisodeDisplayName(latestRegularEpisode);
+    const suffix = latestRegularName ? ` · ถึง${latestRegularName}` : "";
+
+    lines.push({
+      key: "normal",
+      text: unreadRegularCount > 0
+        ? `อ่านต่อได้อีก ${unreadRegularCount} ตอน${suffix}`
+        : `อ่านถึงตอนล่าสุดแล้ว${suffix}`,
+      tone: "normal",
+    });
+  }
+
+  if (earlyEpisodes.length > 0) {
+    const latestEarlyEpisode = earlyEpisodes[earlyEpisodes.length - 1];
+    const unreadEarlyCount = earlyEpisodes.filter((episode: any) => episode?.isRead !== true).length;
+    const latestEarlyName = getEpisodeDisplayName(latestEarlyEpisode);
+    const suffix = latestEarlyName ? ` · ถึง${latestEarlyName}` : "";
+
+    lines.push({
+      key: "early",
+      text: unreadEarlyCount > 0
+        ? `อ่านล่วงหน้าต่อได้อีก ${unreadEarlyCount} ตอน${suffix}`
+        : `อ่านตอนล่วงหน้าครบแล้ว${suffix}`,
+      tone: "early",
+    });
+  }
+
+  return lines;
+};
+
+const BookDetailHeaderContent = ({ book, episodesData }: BookDetailHeaderProps) => {
   const isDeleted = book.status?.toLowerCase().trim() === 'delete';
   const { notification } = App.useApp();
   const { token, hasMounted, user } = useAuthStore() as any;
   const { openLoginModal } = useUIStore();
+  const addBookToShelfMutation = useAddBookToShelfMutation(book.id);
+  const removeBookFromShelfMutation = useRemoveBookFromShelfMutation(book.id);
+  const saveBookShareMutation = useSaveBookShareMutation();
   const [isAdded, setIsAdded] = useState(book.isAddedToShelf || false);
   const [loading, setLoading] = useState(false);
   const [isFollowed, setIsFollowed] = useState(book.writer?.isFollowing || false);
@@ -265,12 +324,12 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
     try {
       if (isAdded) {
         // Remove
-        await apiClient.post(`/user/savebookshelve/remove/${book.id}`);
+        await removeBookFromShelfMutation.mutateAsync();
         setIsAdded(false);
         notification.success({ message: "นำออกจากชั้นหนังสือแล้ว" });
       } else {
         // Add
-        await apiClient.post(`/user/savebookshelve/add/${book.id}`);
+        await addBookToShelfMutation.mutateAsync();
         setIsAdded(true);
         notification.success({ message: "เพิ่มเข้าชั้นหนังสือแล้ว" });
       }
@@ -321,15 +380,16 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
   };
 
   const coverImageUrl = resolveBookCoverImageSrc(book, "/images/book.png", "book");
+  const readingProgressLines = getReadingProgressLines(episodesData);
 
   const handleTrackShare = (platform: 'facebook' | 'twitter' | 'line') => {
     // Track share
     if (currentUserId && book.id) {
-      apiClient.post('gift/saveshare', {
+      saveBookShareMutation.mutate({
         userID: currentUserId,
         bookID: book.id,
         type: platform,
-      }).catch(() => { });
+      });
     }
   };
 
@@ -531,6 +591,27 @@ const BookDetailHeaderContent = ({ book }: BookDetailHeaderProps) => {
                     </button>
                   )}
                 </div>
+
+                {readingProgressLines.length > 0 && (
+                  <div className="mt-6 flex flex-col gap-4 text-xs leading-5 sm:text-sm">
+                    {readingProgressLines.map((line) => (
+                      <p
+                        key={line.key}
+                        className={`flex items-start gap-2 ${
+                          line.tone === "early" ? "text-amber-700" : "text-slate-600"
+                        }`}
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={`mt-[0.55em] h-1.5 w-1.5 shrink-0 rounded-full ${
+                            line.tone === "early" ? "bg-amber-400" : "bg-slate-400"
+                          }`}
+                        />
+                        <span>{line.text}</span>
+                      </p>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 

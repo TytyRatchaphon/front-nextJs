@@ -494,9 +494,6 @@ export function useReadingTheme(
 
         const applyStyles = () => {
             if (cancelled) return false;
-            const nav = document.getElementById("Navbar");
-            const navbarWrapper = document.getElementById("GlobalNavbarWrapper");
-            if (!nav || !navbarWrapper) return false;
 
             let styleEl = document.getElementById(styleId) as HTMLStyleElement | null;
             if (!styleEl) {

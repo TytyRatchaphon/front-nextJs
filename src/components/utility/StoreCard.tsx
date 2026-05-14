@@ -10,6 +10,7 @@ import AddToCartSvg from '@/components/utility/AddToCartSvg';
 import { addToCart, fetchCartItems } from '@/services/cartService';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { resolveStoreImageSrc } from '@/utils/imageUtils';
+import { queryKeys } from '@/constants/query';
 
 
 interface StoreCardProps {
@@ -28,7 +29,7 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
   const [selectedStorePackListIds, setSelectedStorePackListIds] = React.useState<Array<number | string>>([]);
 
   const { data: cartStores } = useQuery({
-    queryKey: ['cartItems'],
+    queryKey: queryKeys.cart.items(),
     queryFn: fetchCartItems,
     enabled: !!token, // Only fetch if logged in
     refetchOnWindowFocus: true,
@@ -106,7 +107,7 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
         description: 'สินค้าได้ถูกเพิ่มลงในตะกร้าของคุณแล้ว',
         placement: 'topRight',
       });
-      queryClient.invalidateQueries({ queryKey: ['cartItems'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.cart.items() });
     },
     onError: (error: any) => {
       const msg = error?.response?.data?.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่';

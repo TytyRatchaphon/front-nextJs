@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/constants/query";
 import { formatScheduledPublishCountdown } from "../readerContentUtils";
 
 type UseReadScheduledReleaseParams = {
@@ -54,8 +55,8 @@ export function useReadScheduledRelease({
 
     const timeoutId = window.setTimeout(() => {
       setScheduleNowMs(Date.now());
-      queryClient.invalidateQueries({ queryKey: ["episodeContent", episodeId] });
-      queryClient.invalidateQueries({ queryKey: ["bookEpisodes", bookId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.read.episodeContent(episodeId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.book.episodes(bookId) });
     }, Math.min(remainingMs + 1000, 2147483647));
 
     return () => window.clearTimeout(timeoutId);

@@ -45,3 +45,8 @@ next-env.d.ts
 # generated dependency graph artifacts
 graphify-out/
 src/graphify-out/
+
+# rar
+.rar
+.rar.rar
+.next.rar

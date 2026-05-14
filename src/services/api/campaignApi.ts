@@ -1,7 +1,6 @@
 
 import apiClient from "../apiClient";
 import type { CampaignDetailResponse, CampaignDetailData, CampaignDiscount, PackCampaignDetail } from "@/types/api";
-import { cachedRequest } from "../requestCache";
 
 export interface CampaignData {
   cp_id: number;
@@ -19,43 +18,28 @@ export interface CampaignData {
 }
 
 export const fetchCampaigns = async (): Promise<CampaignData[]> => {
-  return cachedRequest<CampaignData[]>(
-    'campaigns:list',
-    async () => {
-      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/campaigns`;
-      const response = await fetch(url);
+  const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/campaigns`;
+  const response = await fetch(url);
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch campaigns');
-      }
+  if (!response.ok) {
+    throw new Error('Failed to fetch campaigns');
+  }
 
-      const result = await response.json();
-      if (result.code === 200 && result.data) {
-        return result.data;
-      }
+  const result = await response.json();
+  if (result.code === 200 && result.data) {
+    return result.data;
+  }
 
-      throw new Error(result.message || 'Failed to load data');
-    },
-    { ttlMs: 60 * 1000 }
-  );
+  throw new Error(result.message || 'Failed to load data');
 };
 
 export const fetchPackCampaignDetail = async (id: string): Promise<PackCampaignDetail | null> => {
   try {
-    return await cachedRequest<PackCampaignDetail | null>(
-      `pack-campaign:${id}`,
-      async () => {
-        const response = await apiClient.get<{ code: number; data: PackCampaignDetail }>(`/pack-campaign/${id}`);
-        if (response.data?.code !== 200) {
-          return null;
-        }
-        return response.data.data;
-      },
-      {
-        ttlMs: 60 * 1000,
-        shouldCache: (value) => value !== null,
-      }
-    );
+    const response = await apiClient.get<{ code: number; data: PackCampaignDetail }>(`/pack-campaign/${id}`);
+    if (response.data?.code !== 200) {
+      return null;
+    }
+    return response.data.data;
   } catch {
     return null;
   }
@@ -63,17 +47,11 @@ export const fetchPackCampaignDetail = async (id: string): Promise<PackCampaignD
 
 export const fetchCampaignsDiscount = async (): Promise<CampaignDiscount[]> => {
   try {
-    return await cachedRequest<CampaignDiscount[]>(
-      'campaigns:discount',
-      async () => {
-        const response = await apiClient.get<{ code: number; data: CampaignDiscount[] }>("/campaigns-discount");
-        if (response.data?.code !== 200) {
-          return [];
-        }
-        return response.data.data || [];
-      },
-      { ttlMs: 60 * 1000 }
-    );
+    const response = await apiClient.get<{ code: number; data: CampaignDiscount[] }>("/campaigns-discount");
+    if (response.data?.code !== 200) {
+      return [];
+    }
+    return response.data.data || [];
   } catch {
     return [];
   }
@@ -116,14 +94,8 @@ export interface PromotingGroup {
 
 export const fetchPromotingGroups = async (): Promise<PromotingGroup[]> => {
   try {
-    return await cachedRequest<PromotingGroup[]>(
-      'promoting-groups',
-      async () => {
-        const response = await apiClient.get<{ code: number; data: PromotingGroup[] }>("/promoting-groups");
-        return response.data?.data || [];
-      },
-      { ttlMs: 5 * 60 * 1000 }
-    );
+    const response = await apiClient.get<{ code: number; data: PromotingGroup[] }>("/promoting-groups");
+    return response.data?.data || [];
   } catch {
     return [];
   }

@@ -1,4 +1,5 @@
 import apiClient from "../apiClient";
+import { warnApiFallback } from "./apiFallback";
 
 export interface NotificationType {
   noti_type_id: number;
@@ -48,8 +49,10 @@ export const fetchRecentNotifications = async (tab: NotificationTab = 'all'): Pr
       return response.data.data.recent_notifications;
     }
 
+    warnApiFallback('/user/notifications/recent/unread', '[]', response.data);
     return [];
-  } catch {
+  } catch (error) {
+    warnApiFallback('/user/notifications/recent/unread', '[]', error);
     return [];
   }
 };
@@ -64,12 +67,14 @@ export const fetchAllNotifications = async (page: number = 1, limit: number = 20
       if (Array.isArray(response.data.data)) {
         return { notifications: response.data.data, pagination: response.data.pagination || response.data.meta };
       }
-      if (response.data.data.notifications) {
+      if (Array.isArray(response.data.data.notifications)) {
         return { notifications: response.data.data.notifications, pagination: response.data.data.pagination };
       }
     }
+    warnApiFallback('/user/notifications', '{ notifications: [] }', response.data);
     return { notifications: [] };
-  } catch {
+  } catch (error) {
+    warnApiFallback('/user/notifications', '{ notifications: [] }', error);
     return { notifications: [] };
   }
 };

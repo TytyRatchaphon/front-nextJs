@@ -4,59 +4,79 @@
  */
 
 /**
- * Query keys for React Query
- * Use these constants instead of hardcoded strings
- */
-export const QUERY_KEYS = {
-  // User & Auth
-  USER_EVENT_SUMMARY: 'user-event-summary',
-  USER_PROFILE: 'user-profile',
-  
-  // Books
-  BOOK_DETAIL: 'book-detail',
-  BOOK_EPISODES: 'book-episodes',
-  BOOK_REVIEWS: 'book-reviews',
-  
-  // Cart & Store
-  CART: 'cart',
-  CART_SUMMARY: 'cart-summary',
-  
-  // Coupons
-  AVAILABLE_COUPONS: 'available-coupons',
-  USER_COUPONS: 'user-coupons',
-  
-  // Shelves
-  SHELVE_BOOKS: 'shelve-books',
-  CONTINUE_READING: 'continue-reading',
-  PURCHASED_BOOKS: 'purchased-books',
-  
-  // Home
-  HOME_DATA: 'home-data',
-
-  // Website
-  WEBSITE_SETTINGS: 'website-settings',
-
-  // Rank
-  RANK_QUESTS: 'rank-quests',
-  RANK_QUEST_DETAIL: 'rank-quest-detail',
-  
-  // Search
-  SEARCH_RESULTS: 'search-results',
-} as const;
-
-/**
  * Query key factories
  * Use these when a query key is shared between hooks, prefetching, and invalidation.
  */
 export const queryKeys = {
+  book: {
+    detailRoot: () => ["bookDetail"] as const,
+    detail: (bookId: number | string | null | undefined) =>
+      ["bookDetail", String(bookId ?? "")] as const,
+    episodesRoot: () => ["bookEpisodes"] as const,
+    episodes: (bookId: number | string | null | undefined) =>
+      ["bookEpisodes", String(bookId ?? "")] as const,
+    episodesForUser: (
+      bookId: number | string | null | undefined,
+      authScope?: string | null,
+    ) => ["bookEpisodes", String(bookId ?? ""), authScope ?? null] as const,
+    purchaseDetails: (
+      bookId: number | string | null | undefined,
+      authScope?: string | null,
+    ) => ["bookPurchaseDetails", String(bookId ?? ""), authScope ?? null] as const,
+    novelPackCheck: (bookId: number | string | null | undefined) =>
+      ["novelPackCheck", String(bookId ?? "")] as const,
+  },
+  user: {
+    eventSummaryRoot: () => ["user-event-summary"] as const,
+    eventSummary: (authScope?: string | null) =>
+      ["user-event-summary", authScope ?? null] as const,
+    shelfRoot: () => ["userShelf"] as const,
+    shelf: (authScope?: string | null) => ["userShelf", authScope ?? null] as const,
+    shelveRoot: () => ["userShelve"] as const,
+    shelve: (page?: number | string | null) => ["userShelve", page ?? null] as const,
+    shelveContinueRoot: () => ["userShelveContinue"] as const,
+    shelveContinue: (
+      userId: number | string | null | undefined,
+      page?: number | string | null,
+    ) => ["userShelveContinue", userId ?? null, page ?? null] as const,
+    shelveBuyRoot: () => ["userShelveBuy"] as const,
+    shelveBuy: (
+      userId: number | string | null | undefined,
+      page?: number | string | null,
+    ) => ["userShelveBuy", userId ?? null, page ?? null] as const,
+    hasPaymentHistory: (userId: number | string | null | undefined) =>
+      ["hasPaymentHistory", String(userId ?? "")] as const,
+  },
+  cart: {
+    items: () => ["cartItems"] as const,
+    summary: () => ["cartSummary"] as const,
+    checkoutItems: () => ["checkoutItems"] as const,
+    checkoutAddress: () => ["checkoutAddress"] as const,
+    checkoutSummary: () => ["checkoutSummary"] as const,
+  },
+  notifications: {
+    navbar: () => ["navbarNotifications"] as const,
+    allRoot: () => ["allNotifications"] as const,
+    all: (tab?: string | null, page?: number | string | null) =>
+      ["allNotifications", tab ?? null, page ?? null] as const,
+  },
+  read: {
+    episodeContent: (episodeId: number | string | null | undefined) =>
+      ["episodeContent", String(episodeId ?? "")] as const,
+    episodeBookmarks: (episodeId: number | string | null | undefined) =>
+      ["episodeBookmarks", String(episodeId ?? "")] as const,
+  },
   website: {
-    settings: () => [QUERY_KEYS.WEBSITE_SETTINGS] as const,
+    settings: () => ["website-settings"] as const,
   },
   rank: {
-    quests: () => [QUERY_KEYS.RANK_QUESTS] as const,
-    questDetails: () => [QUERY_KEYS.RANK_QUEST_DETAIL] as const,
+    navbarProfileRoot: () => ["navbarRankProfile"] as const,
+    navbarProfile: (userId?: number | string | null) =>
+      ["navbarRankProfile", userId ?? "anonymous"] as const,
+    quests: () => ["rank-quests"] as const,
+    questDetails: () => ["rank-quest-detail"] as const,
     questDetail: (questId: number | string | null | undefined) =>
-      [QUERY_KEYS.RANK_QUEST_DETAIL, String(questId ?? '')] as const,
+      ["rank-quest-detail", String(questId ?? '')] as const,
   },
 } as const;
 
@@ -87,4 +107,11 @@ export const QUERY_CONFIG = {
 /**
  * Type helper for query keys
  */
-export type QueryKey = typeof QUERY_KEYS[keyof typeof QUERY_KEYS];
+type QueryKeyFactory = (...args: any[]) => readonly unknown[];
+type ExtractQueryKeys<T> = T extends QueryKeyFactory
+  ? ReturnType<T>
+  : T extends Record<string, unknown>
+    ? { [K in keyof T]: ExtractQueryKeys<T[K]> }[keyof T]
+    : never;
+
+export type QueryKey = ExtractQueryKeys<typeof queryKeys>;

@@ -32,6 +32,9 @@ const getBackHref = (contentType?: string | null) => {
   return "/";
 };
 
+const hasHomeGroups = (homeData: Awaited<ReturnType<typeof fetchHomeData>> | null | undefined) =>
+  Array.isArray(homeData?.data?.groupBookHome) && homeData.data.groupBookHome.length > 0;
+
 const getBackLabel = (contentType?: string | null) => {
   if (contentType === "novel_pack") return "กลับไปหน้ามัดแพ็ค";
   if (contentType === "trancn") return "กลับไปหน้านิยายแปล";
@@ -44,13 +47,32 @@ export default function HomeGroupPage() {
   const searchParams = useSearchParams();
   const contentType = searchParams.get("content_type") || undefined;
   const sectionKind = searchParams.get("section");
-  const { token, isLoggedIn } = useAuthStore();
+  const { token, isLoggedIn, hasMounted, user } = useAuthStore();
   const authToken = parseJwtToken(token);
+  const shouldFetchAuthenticatedHome = hasMounted && isLoggedIn && Boolean(authToken);
 
   const { data: homeData, isLoading } = useQuery({
-    queryKey: ["homeGroupPage", params.id, contentType || "default", isLoggedIn ? "auth" : "guest"],
-    queryFn: () => fetchHomeData(isLoggedIn ? authToken : undefined, contentType),
-    staleTime: isLoggedIn ? 0 : 60 * 1000,
+    queryKey: [
+      "homeGroupPage",
+      params.id,
+      contentType || "default",
+      shouldFetchAuthenticatedHome ? `auth:${user?.user_id ?? "user"}` : "guest",
+    ],
+    queryFn: async () => {
+      const data = await fetchHomeData(
+        shouldFetchAuthenticatedHome ? authToken : undefined,
+        contentType,
+        { skipAuth: !shouldFetchAuthenticatedHome },
+      );
+      if (hasHomeGroups(data)) return data;
+      if (shouldFetchAuthenticatedHome) {
+        const publicData = await fetchHomeData(undefined, contentType, { skipAuth: true });
+        if (hasHomeGroups(publicData)) return publicData;
+      }
+      return data;
+    },
+    placeholderData: (previousData) => previousData,
+    staleTime: shouldFetchAuthenticatedHome ? 0 : 60 * 1000,
     refetchOnWindowFocus: false,
   });
 

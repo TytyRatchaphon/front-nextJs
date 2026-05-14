@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import AES from "crypto-js/aes";
 import encUtf8 from "crypto-js/enc-utf8";
+import { resolveBackendUrl } from "../../../_utils/backendUrl";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const BACKEND_URL = process.env.API_URL || process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "";
-let didWarnPublicFallback = false;
+const BACKEND_URL = resolveBackendUrl();
+const READ_EPISODE_SECRET_KEY = process.env.SECRET_KEY?.trim() || "";
 
 const buildNoStoreHeaders = () => {
   const headers = new Headers();
@@ -21,27 +22,12 @@ const buildNoStoreHeaders = () => {
   return headers;
 };
 
-const warnPublicFallbackIfNeeded = () => {
-  if (process.env.NODE_ENV !== "production" || didWarnPublicFallback) {
-    return;
-  }
-
-  if (!process.env.API_URL && !process.env.API_BASE_URL && process.env.NEXT_PUBLIC_API_BASE_URL) {
-    console.warn("[read-episode-proxy] Using NEXT_PUBLIC_API_BASE_URL fallback. Prefer server-only API_URL/API_BASE_URL.");
-  }
-  didWarnPublicFallback = true;
-};
-
 const normalizeToken = (value: string | null | undefined): string | null => {
   if (!value) return null;
   const trimmed = value.trim();
   const withoutBearer = trimmed.replace(/^Bearer\s+/i, "");
   const withoutQuotes = withoutBearer.replace(/^['"]+|['"]+$/g, "");
   return withoutQuotes || null;
-};
-
-const getReadEpisodeSecretKey = () => {
-  return process.env.SECRET_KEY || process.env.NEXT_PUBLIC_SECRET_KEY || "";
 };
 
 const resolveEpisodePayload = (payload: unknown): unknown => {
@@ -67,13 +53,8 @@ const resolveEpisodePayload = (payload: unknown): unknown => {
     }
   }
 
-  const secretKey = getReadEpisodeSecretKey();
-  if (!secretKey) {
-    return payload;
-  }
-
   try {
-    const bytes = AES.decrypt(trimmed, secretKey);
+    const bytes = AES.decrypt(trimmed, READ_EPISODE_SECRET_KEY);
     const decrypted = bytes.toString(encUtf8);
     if (!decrypted) {
       return payload;
@@ -112,18 +93,16 @@ const buildUpstreamAuthHeaders = (token: string | null) => {
 };
 
 export async function GET(request: NextRequest, context: RouteContext) {
-  warnPublicFallbackIfNeeded();
-
-  if (!BACKEND_URL) {
+  if (!READ_EPISODE_SECRET_KEY) {
     return NextResponse.json(
-      { message: "Server is missing API base url configuration" },
+      { message: "Server is missing SECRET_KEY configuration" },
       { status: 500, headers: buildNoStoreHeaders() },
     );
   }
 
   const { episodeId } = await resolveParams(context.params);
   const safeEpisodeId = encodeURIComponent(episodeId);
-  const endpoint = `${BACKEND_URL.replace(/\/+$/, "")}/readep/${safeEpisodeId}`;
+  const endpoint = `${BACKEND_URL}/readep/${safeEpisodeId}`;
 
   const incomingAuthorization = normalizeToken(request.headers.get("authorization"));
   const cookieAuthorization = normalizeToken(request.cookies.get("token")?.value);

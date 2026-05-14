@@ -13,6 +13,7 @@ type EditBookEpisodesModalProps = {
 	selectedIds: Set<string>;
 	selectAllChecked: boolean;
 	deletingId: string | number | null | undefined;
+	canSetFastAccessPrice?: boolean;
 	onClose: () => void;
 	onFilterChange: (value: any) => void;
 	onClearSelection: () => void;
@@ -31,6 +32,7 @@ export function EditBookEpisodesModal({
 	selectedIds,
 	selectAllChecked,
 	deletingId,
+	canSetFastAccessPrice = false,
 	onClose,
 	onFilterChange,
 	onClearSelection,
@@ -50,7 +52,8 @@ export function EditBookEpisodesModal({
 			return rawId ?? `ep_${String(selectedGroupId ?? "g")}_${index}`;
 		});
 
-	const menuItems = [
+	const menuItems: MenuProps["items"] = [
+		...(canSetFastAccessPrice ? [{ key: "set_fast_access_price", label: "ตั้งราคาตอนล่วงหน้า" }] : []),
 		{ key: "editPrice", label: "แก้ไขราคาเลือกทั้งหมด" },
 		{ key: "set_promotion", label: "ตั้งค่าส่วนลด" },
 		{ key: "cancel_promotion", label: "ยกเลิกส่วนลดที่เลือกทั้งหมด", danger: true },
@@ -164,7 +167,10 @@ export function EditBookEpisodesModal({
 							</svg>
 							<span className="text-sm">แก้ไข</span>
 						</button>
-						{renderEpisodePrice(episode, coin)}
+						<div className="flex flex-col items-end gap-1">
+							{renderEpisodePrice(episode, coin)}
+							{renderFastAccessPrice(episode)}
+						</div>
 					</div>
 				</div>
 			);
@@ -274,6 +280,58 @@ function renderEpisodePrice(episode: any, coin: number | null) {
 				<Image src="/images/e-coin.png" alt="Coin" width={24} height={24} />
 			</span>
 			{regularPrice === 0 ? <span className="text-emerald-600 font-medium">อ่านฟรี</span> : <span className="font-medium text-gray-700">{regularPrice}</span>}
+		</div>
+	);
+}
+
+function renderFastAccessPrice(episode: any) {
+	const ft = episode.fast_track;
+	if (!ft) return null;
+
+	const hasTicket = ft.fast_ticket > 0;
+	const hasCoin = ft.fast_coin > 0;
+	const hasTicketIncrease = ft.fast_ticket_daily_increase > 0;
+	const hasCoinIncrease = ft.fast_coin_daily_increase > 0;
+
+	if (!hasTicket && !hasCoin) return null;
+
+	return (
+		<div className="flex flex-col items-end gap-1.5 mt-1">
+			<div className="flex items-center gap-2">
+				<span className="bg-blue-50 text-blue-600 text-[10px] px-1.5 py-0.5 rounded border border-blue-100 font-bold tracking-wide whitespace-nowrap">อ่านล่วงหน้า</span>
+				{hasTicket && (
+					<span className="flex items-center gap-1">
+						<span className="text-sm font-bold text-gray-700 leading-none">{ft.fast_ticket}</span>
+						<Image src="/images/fast_ticket.png" alt="Ticket" width={16} height={16} />
+					</span>
+				)}
+				{hasTicket && hasCoin && <span className="text-gray-300 text-xs leading-none">/</span>}
+				{hasCoin && (
+					<span className="flex items-center gap-1">
+						<span className="text-sm font-bold text-gray-700 leading-none">{ft.fast_coin}</span>
+						<Image src="/images/e-coin.png" alt="Coin" width={16} height={16} />
+					</span>
+				)}
+			</div>
+			
+			{(hasTicketIncrease || hasCoinIncrease) && (
+				<div className="flex items-center gap-1.5 opacity-90">
+					<span className="text-[10px] text-gray-500 font-medium whitespace-nowrap">ราคาเพิ่มวันละ</span>
+					{hasTicketIncrease && (
+						<span className="flex items-center gap-1">
+							<span className="text-xs font-semibold text-gray-600 leading-none">{ft.fast_ticket_daily_increase}</span>
+							<Image src="/images/fast_ticket.png" alt="Ticket" width={14} height={14} />
+						</span>
+					)}
+					{hasTicketIncrease && hasCoinIncrease && <span className="text-gray-300 text-[10px] leading-none">/</span>}
+					{hasCoinIncrease && (
+						<span className="flex items-center gap-1">
+							<span className="text-xs font-semibold text-gray-600 leading-none">{ft.fast_coin_daily_increase}</span>
+							<Image src="/images/e-coin.png" alt="Coin" width={14} height={14} />
+						</span>
+					)}
+				</div>
+			)}
 		</div>
 	);
 }

@@ -37,9 +37,9 @@ export default function SaleGroupSVG({ className, percent }: SaleGroupSVGProps) 
                     </clipPath>
                 </defs>
             </svg>
-            <div className="absolute inset-0 flex items-center justify-center pt-2">
-                <div className="text-white font-bold text-xs leading-none flex flex-col items-center">
-                    <span className="text-sm drop-shadow-md">{percent}%</span>
+            <div className="absolute inset-0 flex items-center justify-center pt-2 sm:pt-2.5">
+                <div className="text-white font-bold leading-none flex flex-col items-center">
+                    <span className="text-[10px] sm:text-[11px] md:text-sm drop-shadow-md">{percent}%</span>
                 </div>
             </div>
         </div>

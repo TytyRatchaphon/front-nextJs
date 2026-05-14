@@ -152,10 +152,10 @@ describe("useContentProtection", () => {
 
     expect(preventDefault).toHaveBeenCalled();
     expect(onBlur).toHaveBeenCalled();
-    expect(setIsFocusedMock).toHaveBeenCalledWith(false);
+    expect(isFocusedValue).toBe(false);
 
     vi.advanceTimersByTime(2000);
-    expect(setIsFocusedMock).toHaveBeenCalledWith(true);
+    expect(isFocusedValue).toBe(true);
 
     const observers = (globalThis as any).__TEST_MUTATION_OBSERVERS__ as Array<any>;
     const iframeNode = new (globalThis as any).Node("iframe");

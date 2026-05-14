@@ -40,6 +40,16 @@ interface HomeContentProps {
   showSpotlightFeature?: boolean;
 }
 
+const hasRenderableHomeData = (homeData: HomeDataResponse | null | undefined) => {
+  const data = homeData?.data;
+  if (!data) return false;
+  return Boolean(
+    (Array.isArray(data.slides) && data.slides.length > 0) ||
+    (Array.isArray(data.groupBookHome) && data.groupBookHome.length > 0) ||
+    (Array.isArray(data.spotlight) && data.spotlight.length > 0),
+  );
+};
+
 export default function HomeContent({
   initialData,
   contentType,
@@ -47,13 +57,17 @@ export default function HomeContent({
   showSpotlightFeature = true,
 }: HomeContentProps) {
   const { notification } = App.useApp();
-  const { user, token, isLoggedIn } = useAuthStore();
+  const { user, token, isLoggedIn, hasMounted } = useAuthStore();
   const bookUpdateTab = normalizeBookUpdateTab(contentType);
   const rankingTab = normalizeRankingContentTab(contentType);
   const [selectedSpotlightId, setSelectedSpotlightId] = React.useState<number | string | null>(null);
   const [enableSecondaryQueries, setEnableSecondaryQueries] = React.useState(false);
   const [isPending, startTransition] = React.useTransition();
   const authToken = parseJwtToken(token);
+  const shouldFetchAuthenticatedHome = hasMounted && isLoggedIn && Boolean(authToken);
+  const homeAudienceKey = shouldFetchAuthenticatedHome
+    ? `auth:${user?.user_id ?? "user"}`
+    : "guest";
   const categoryType =
     contentType === "trancn"
       ? "tran"
@@ -82,14 +96,30 @@ export default function HomeContent({
     };
   }, []);
 
-  const { data: homeData, isLoading, error: homeDataError } = useQuery({
-    queryKey: ["homeData", contentType || "default", isLoggedIn ? "auth" : "guest"],
-    queryFn: () => fetchHomeData(isLoggedIn ? authToken : undefined, contentType),
+  const { data: queriedHomeData, isLoading, error: homeDataError } = useQuery({
+    queryKey: ["homeData", contentType || "default", homeAudienceKey],
+    queryFn: async () => {
+      const data = await fetchHomeData(
+        shouldFetchAuthenticatedHome ? authToken : undefined,
+        contentType,
+        { skipAuth: !shouldFetchAuthenticatedHome },
+      );
+
+      if (hasRenderableHomeData(data)) return data;
+      if (shouldFetchAuthenticatedHome) {
+        const publicData = await fetchHomeData(undefined, contentType, { skipAuth: true });
+        if (hasRenderableHomeData(publicData)) return publicData;
+      }
+
+      return data ?? initialData;
+    },
     initialData,
-    staleTime: isLoggedIn ? 0 : 60 * 1000,
-    refetchOnMount: isLoggedIn ? "always" : false,
+    placeholderData: (previousData) => previousData ?? initialData,
+    staleTime: shouldFetchAuthenticatedHome ? 0 : 60 * 1000,
+    refetchOnMount: shouldFetchAuthenticatedHome ? "always" : false,
     refetchOnWindowFocus: false,
   });
+  const homeData = hasRenderableHomeData(queriedHomeData) ? queriedHomeData : initialData;
 
   const {
     data: bookUpdates,

@@ -1,22 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolveBackendUrl } from "../../_utils/backendUrl";
 
-const BACKEND_URL = process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || "";
-const ACCESS_TOKEN = process.env.ACCESS_TOKEN || process.env.NEXT_PUBLIC_ACCESS_TOKEN || "";
-let didWarnPublicFallback = false;
-
-const warnPublicFallbackIfNeeded = () => {
-  if (process.env.NODE_ENV !== "production" || didWarnPublicFallback) {
-    return;
-  }
-
-  if (!process.env.API_BASE_URL && process.env.NEXT_PUBLIC_API_BASE_URL) {
-    console.warn("[secure-proxy] Using NEXT_PUBLIC_API_BASE_URL fallback. Prefer server-only API_BASE_URL.");
-  }
-  if (!process.env.ACCESS_TOKEN && process.env.NEXT_PUBLIC_ACCESS_TOKEN) {
-    console.warn("[secure-proxy] Using NEXT_PUBLIC_ACCESS_TOKEN fallback. Prefer server-only ACCESS_TOKEN.");
-  }
-  didWarnPublicFallback = true;
-};
+const BACKEND_URL = resolveBackendUrl();
+const ACCESS_TOKEN = process.env.ACCESS_TOKEN?.trim() || "";
 
 const ALLOWED_PATHS: RegExp[] = [
   /^category$/i,
@@ -47,18 +33,9 @@ const isAllowedPath = (path: string): boolean => {
 };
 
 const proxyRequest = async (request: NextRequest, paramsPath: string[] | undefined) => {
-  warnPublicFallbackIfNeeded();
-
-  if (!BACKEND_URL) {
-    return NextResponse.json(
-      { message: "Server is missing API base url configuration" },
-      { status: 500 },
-    );
-  }
-
   if (!ACCESS_TOKEN) {
     return NextResponse.json(
-      { message: "Server is missing access token configuration" },
+      { message: "Server is missing ACCESS_TOKEN configuration" },
       { status: 500 },
     );
   }
@@ -70,7 +47,7 @@ const proxyRequest = async (request: NextRequest, paramsPath: string[] | undefin
 
   const incomingUrl = new URL(request.url);
   const targetUrl = new URL(
-    `${BACKEND_URL.replace(/\/+$/, "")}/${targetPath}${incomingUrl.search}`,
+    `${BACKEND_URL}/${targetPath}${incomingUrl.search}`,
   );
 
   const headers = new Headers();

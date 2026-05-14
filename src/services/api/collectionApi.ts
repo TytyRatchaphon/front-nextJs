@@ -1,4 +1,5 @@
 import apiClient from "../apiClient";
+import { warnApiFallback } from "./apiFallback";
 
 // --- Types ---
 
@@ -110,9 +111,12 @@ export interface CollectionDetailResponse {
 export const fetchUserCollections = async (): Promise<CollectionItem[] | null> => {
   try {
     const response = await apiClient.get<CollectionsResponse>('/user/collections');
-    return response.data?.data ?? null;
+    const payload = response.data?.data;
+    if (Array.isArray(payload)) return payload;
+    warnApiFallback('/user/collections', 'null', response.data);
+    return null;
   } catch (error) {
-    console.error('fetchUserCollections error:', error);
+    warnApiFallback('/user/collections', 'null', error);
     return null;
   }
 };
@@ -123,9 +127,12 @@ export const fetchCollectionBooks = async (
 ): Promise<CollectionBook[] | null> => {
   try {
     const response = await apiClient.get<CollectionDetailResponse>(`/user/collections/${collectionId}`);
-    return response.data?.data ?? null;
+    const payload = response.data?.data;
+    if (Array.isArray(payload)) return payload;
+    warnApiFallback(`/user/collections/${collectionId}`, 'null', response.data);
+    return null;
   } catch (error) {
-    console.error('fetchCollectionBooks error:', error);
+    warnApiFallback(`/user/collections/${collectionId}`, 'null', error);
     return null;
   }
 };
@@ -393,9 +400,12 @@ export const fetchHiddenBooks = async (
 ): Promise<CollectionBook[] | null> => {
   try {
     const response = await apiClient.get<{ code: number; status: string; message: string; data: CollectionBook[] }>(`/user/collections/${collectionId}/hidden`);
-    return response.data?.data ?? null;
+    const payload = response.data?.data;
+    if (Array.isArray(payload)) return payload;
+    warnApiFallback(`/user/collections/${collectionId}/hidden`, 'null', response.data);
+    return null;
   } catch (error: any) {
-    console.error('fetchHiddenBooks error:', error);
+    warnApiFallback(`/user/collections/${collectionId}/hidden`, 'null', error);
     return null;
   }
 };

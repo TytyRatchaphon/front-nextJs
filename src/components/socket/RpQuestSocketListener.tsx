@@ -8,7 +8,6 @@ import { useRouter } from "next/navigation";
 import { queryKeys } from "@/constants/query";
 import { useSocket } from "@/providers/SocketProvider";
 import { useAuthStore } from "@/stores/authStore";
-import { getNavbarRankQueryKey } from "@/utils/rankRefresh";
 
 type CompletedQuest = {
   name?: string;
@@ -64,7 +63,7 @@ export default function RpQuestSocketListener() {
 
       queryClient.invalidateQueries({ queryKey: queryKeys.rank.quests() });
       queryClient.invalidateQueries({ queryKey: queryKeys.rank.questDetails() });
-      queryClient.invalidateQueries({ queryKey: getNavbarRankQueryKey(user?.user_id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.rank.navbarProfile(user?.user_id) });
     };
 
     socket.on("rp_quest_progress_info", handleQuestCompleted);

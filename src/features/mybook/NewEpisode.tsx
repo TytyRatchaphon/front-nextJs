@@ -6,8 +6,10 @@ import type { Dayjs } from "dayjs";
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { useRouter } from "next/navigation"; // ✨ เพิ่ม useRouter
-import { fetchGroupEpisodes } from "@/services/apiServices";
+import { useQuery } from "@tanstack/react-query";
+import { fetchGroupEpisodes, fetchWriterCheck } from "@/services/apiServices";
 import secureProxyClient from "@/services/secureProxyClient";
+import { canSetEpisodePrice, getEpisodePriceRestrictionMessage } from "./writerPermissionUtils";
 
 // Import TextEditor
 import TextEditorTiny from "@/components/editor/TextEditorTiny";
@@ -48,6 +50,13 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
 
     const [groupName, setGroupName] = useState<string>('');
     const [spinLoading, setSpinLoading] = useState<boolean>(false);
+    const { data: writerCheckData } = useQuery({
+        queryKey: ['writerCheck'],
+        queryFn: fetchWriterCheck,
+        staleTime: 60_000,
+    });
+    const canSetEpPrice = canSetEpisodePrice(writerCheckData);
+    const priceRestrictionMessage = getEpisodePriceRestrictionMessage(writerCheckData);
 
     // ✨ State สำหรับควบคุม Modal Success
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
@@ -56,6 +65,12 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
     // Style Variables
     const bodyTextStyle = 'mb-1 text-md';
     const inputStyle = 'input';
+
+    useEffect(() => {
+        if (!canSetEpPrice) {
+            formEditChapter.setFieldValue('coin', '0');
+        }
+    }, [canSetEpPrice, formEditChapter]);
 
     // --- Helper: สร้าง Headers ---
 
@@ -140,7 +155,7 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
                 book_id: bookID,
                 name: values.name,
                 detail: values.detail,
-                coin: Number(values.coin || 0),
+                coin: canSetEpPrice ? Number(values.coin || 0) : 0,
                 order_by: Number(values.order_by || 1),
                 publish_datetime: publishDateTime,
                 publish: values.publish || 'publish', // Default to publish as requested
@@ -257,8 +272,18 @@ const NewChapter: React.FC<NewChapterProps> = ({ groupID, bookID, epID }) => {
                                     <div>
                                         <p className={bodyTextStyle}>ราคาขาย (เหรียญ)</p>
                                         <Form.Item name='coin'>
-                                            <Select placeholder="เลือก" options={priceCoin} className="custom-select" />
+                                            <Select
+                                                placeholder="เลือก"
+                                                options={canSetEpPrice ? priceCoin : [priceCoin[0]]}
+                                                className="custom-select"
+                                                disabled={!canSetEpPrice}
+                                            />
                                         </Form.Item>
+                                        {!canSetEpPrice && (
+                                            <p className="mt-1 text-xs leading-5 text-amber-600">
+                                                {priceRestrictionMessage}
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="col-span-2">

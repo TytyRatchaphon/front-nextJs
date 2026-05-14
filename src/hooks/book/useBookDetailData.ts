@@ -1,5 +1,6 @@
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useMemo } from "react";
+import { queryKeys } from "@/constants/query";
 import {
     fetchBookDetail,
     fetchBookEpisodes,
@@ -17,7 +18,7 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
         isError: isErrorDetail,
         error: errorDetail,
     } = useQuery({
-        queryKey: ["bookDetail", bookId],
+        queryKey: queryKeys.book.detail(bookId),
         queryFn: async () => {
             const data = await fetchBookDetail(bookId);
             return data;
@@ -29,7 +30,7 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
 
     // User Shelf
     const { data: userShelf } = useQuery({
-        queryKey: ["userShelf", token],
+        queryKey: queryKeys.user.shelf(token),
         queryFn: () => fetchUserShelve(),
         enabled: !!token && isReady,
         staleTime: 5 * 60 * 1000,
@@ -37,7 +38,7 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
 
     // Episodes
     const { data: episodesData, isLoading: isLoadingEpisodes, isError: isErrorEpisodes } = useQuery({
-        queryKey: ["bookEpisodes", bookId],
+        queryKey: queryKeys.book.episodes(bookId),
         queryFn: () => fetchBookEpisodes(bookId),
         enabled: !!bookId && isReady,
         staleTime: 5 * 60 * 1000,
@@ -46,7 +47,7 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
 
     // Purchase Details
     const { data: purchaseDetails } = useQuery({
-        queryKey: ["bookPurchaseDetails", bookId, token],
+        queryKey: queryKeys.book.purchaseDetails(bookId, token),
         queryFn: () => fetchBookPurchaseDetails(bookId),
         enabled: !!bookId && isReady,
         staleTime: 5 * 60 * 1000,
@@ -54,7 +55,7 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
 
     // Reading Mode (Episode vs Pack)
     const { data: novelPackCheck } = useQuery({
-        queryKey: ["novelPackCheck", bookId],
+        queryKey: queryKeys.book.novelPackCheck(bookId),
         queryFn: () => fetchNovelPackCheck(bookId),
         enabled: !!bookId && isReady,
         staleTime: 5 * 60 * 1000,

@@ -7,6 +7,7 @@ import ExclusiveSwiper from "@/components/swiper/ExclusiveSwiper";
 import RecommendSwiper from "@/components/swiper/RecommendSwiper";
 import ArticleSwiper from "@/components/swiper/ArticleSwiper";
 import RewardSwiper from "@/components/swiper/RewardSwiper";
+import ImgLeftBgBookGrid from "@/components/home/ImgLeftBgBookGrid";
 import Image from "next/image";
 import Link from "next/link";
 import { trackUserBookhomeSectionClick } from "@/services/apiServices";
@@ -169,6 +170,17 @@ export default function BookGroups({ groupBookHome, contentType }: BookGroupsPro
                   canFollow={group.can_follow}
                   isInitiallyFollowed={group.is_followed}
                   initialNow={rewardInitialNow}
+                />
+              </div>
+            );
+          }
+          if (group.type === 'img_left_bg_book_grid_2row') {
+            return (
+              <div key={index} className="w-full mb-6 mt-6">
+                <ImgLeftBgBookGrid
+                  group={group}
+                  link={moreLink}
+                  onBookClick={onBookClick}
                 />
               </div>
             );

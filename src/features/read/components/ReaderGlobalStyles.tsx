@@ -10,6 +10,10 @@ export function ReaderGlobalStyles() {
         word-break: break-word;
         max-width: 100%;
       }
+      .reader-font-surface,
+      .reader-font-surface * {
+        font-family: var(--reader-content-font-family, var(--font-sarabun), sans-serif) !important;
+      }
       .reader-font-surface p {
         margin: 0 0 1.1em;
         text-indent: 2.1em;

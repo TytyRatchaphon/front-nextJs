@@ -10,12 +10,12 @@ import "swiper/css";
 import "swiper/css/free-mode";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { queryKeys } from "@/constants/query";
 import { useAuthStore } from "@/stores/authStore";
 import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
 import { fetchAllRanksData, claimRankReward, claimAllRankRewards } from "@/services/api/userApi";
 import type { AllRanksData, RankItem, RankProfileResponse } from "@/services/api/userApi";
 import { useSocket } from "@/providers/SocketProvider";
-import { getNavbarRankQueryKey } from "@/utils/rankRefresh";
 
 interface UserRankShowcaseProps {
   className?: string;
@@ -245,7 +245,7 @@ export default function UserRankShowcase({
   const [claimAllResult, setClaimAllResult] = useState<RankRewardClaimResponse | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const cardRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
-  const navbarRankQueryKey = useMemo(() => getNavbarRankQueryKey(user?.user_id), [user?.user_id]);
+  const navbarRankQueryKey = useMemo(() => queryKeys.rank.navbarProfile(user?.user_id), [user?.user_id]);
   const userRp = Number(user?.total_rp ?? user?.current_rp ?? 0);
   const fallbackRankData = useMemo(() => createMinimalRankData(userRp), [userRp]);
   const effectiveRankData = rankData ?? fallbackRankData;

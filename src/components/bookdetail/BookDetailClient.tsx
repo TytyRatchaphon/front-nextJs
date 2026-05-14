@@ -254,7 +254,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
       {/* Full-width Header Container - Responsive */}
       <div className="w-full">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-4 sm:py-0">
-          <BookDetailHeader book={book} />
+          <BookDetailHeader book={book} episodesData={episodesData} />
         </div>
       </div>
 

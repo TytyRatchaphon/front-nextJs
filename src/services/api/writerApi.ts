@@ -1,12 +1,15 @@
 
 import apiClient from "../apiClient";
+import { warnApiFallback } from "./apiFallback";
 
 // --- Bank & ID Card ---
 
 export const getBankList = async () => {
   try {
     const response = await apiClient.get('/writer/bank_list');
-    return response.data?.data ?? [];
+    if (Array.isArray(response.data?.data)) return response.data.data;
+    warnApiFallback('/writer/bank_list', '[]', response.data);
+    return [];
   } catch (error: any) {
     throw error;
   }
@@ -54,10 +57,14 @@ export const postWriterWithdraw = async (amount: number) => {
 
 export const fetchWriterWithdrawHistory = async () => {
   const response = await apiClient.get('/writer/withdraw');
-  return response.data?.data ?? [];
+  if (Array.isArray(response.data?.data)) return response.data.data;
+  warnApiFallback('/writer/withdraw', '[]', response.data);
+  return [];
 };
 
 export const fetchWriterWithdrawSetting = async () => {
   const response = await apiClient.get('/writer/withdraw/setting');
-  return response.data?.data ?? null;
+  if (response.data?.data) return response.data.data;
+  warnApiFallback('/writer/withdraw/setting', 'null', response.data);
+  return null;
 };

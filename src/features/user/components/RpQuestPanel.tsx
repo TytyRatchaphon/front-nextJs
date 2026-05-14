@@ -30,7 +30,6 @@ import {
   fetchRankQuests,
   type RankQuest,
 } from "@/services/api/rankQuestApi";
-import { getNavbarRankQueryKey } from "@/utils/rankRefresh";
 
 const QUEST_IMAGE_FALLBACK = "/images/book.png";
 const RP_ICON_FALLBACK = "/images/rp.png";
@@ -290,7 +289,7 @@ const RpQuestPanel = ({
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.rank.quests() }),
         queryClient.invalidateQueries({ queryKey: queryKeys.rank.questDetail(selectedQuest?.rp_quest_id) }),
-        queryClient.invalidateQueries({ queryKey: getNavbarRankQueryKey(user?.user_id) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.rank.navbarProfile(user?.user_id) }),
       ]);
     },
     onError: (error: any) => {
@@ -335,7 +334,7 @@ const RpQuestPanel = ({
       await Promise.all([
         questListQuery.refetch(),
         questDetailQuery.refetch(),
-        queryClient.invalidateQueries({ queryKey: getNavbarRankQueryKey(user?.user_id) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.rank.navbarProfile(user?.user_id) }),
       ]);
     } finally {
       setIsRefreshingQuest(false);
@@ -364,10 +363,10 @@ const RpQuestPanel = ({
             RP Quest
           </div>
           <h2 className="text-2xl font-black tracking-tight text-slate-950 md:text-3xl">
-            ภารกิจเพิ่ม RP
+            ภารกิจเพิ่มแต้ม
           </h2>
           <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">
-            ทำภารกิจจากหนังสือที่กำหนดเพื่อสะสม RP และไต่อันดับของคุณ
+            ทำภารกิจจากหนังสือที่กำหนดเพื่อสะสมแต้มและไต่อันดับของคุณ
           </p>
           {isPreviewMode ? (
             <Link

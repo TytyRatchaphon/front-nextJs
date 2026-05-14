@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
 import { fetchUserMyBookInfo, fetchUserMyBookListNames, fetchUserMyBooks, fetchWriterCheck } from '@/services/apiServices';
+import type { WriterCheckResponse } from '@/services/api/userApi';
 import Cookies from 'js-cookie';
 
 import MyBookHeader from '../../components/myBook/MyBookHeader';
@@ -15,6 +16,42 @@ import MyBookStatsTab from '../../components/myBook/MyBookStatsTab';
 import MyBookSalesTab from '../../components/myBook/MyBookSalesTab';
 import MyBookWithdrawTab from '../../components/myBook/MyBookWithdrawTab';
 import MyBookWriterInfoTab from '../../components/myBook/MyBookWriterInfoTab';
+
+type WriterReviewBanner = {
+  title: string;
+  message: string;
+  tone: 'warning' | 'danger';
+};
+
+const getWriterReviewBanner = (writerCheckData: WriterCheckResponse | null | undefined): WriterReviewBanner | null => {
+  if (!writerCheckData?.is_writer) return null;
+
+  if (writerCheckData.status === 'reject') {
+    const reasonText = writerCheckData.reason ? ` เหตุผล: ${writerCheckData.reason}` : '';
+
+    return {
+      title: 'บัญชีนักเขียนไม่ผ่านการอนุมัติ',
+      message: `${writerCheckData.message || 'กรุณาแก้ไขข้อมูลนักเขียนแล้วส่งตรวจใหม่'}${reasonText} ระหว่างนี้ยังเข้า “นิยายของฉัน” สร้างนิยาย และสร้าง/แก้ไขตอนฟรีได้ แต่ยังตั้งราคาตอนและถอนเงินไม่ได้`,
+      tone: 'danger',
+    };
+  }
+
+  if (
+    writerCheckData.status === 'wait' ||
+    writerCheckData.can_set_ep_price === false ||
+    writerCheckData.can_withdraw === false
+  ) {
+    const message = writerCheckData.message || 'บัญชีนักเขียนอยู่ระหว่างรอแอดมินอนุมัติ';
+
+    return {
+      title: 'บัญชีนักเขียนยังรอการยืนยัน',
+      message: `${message} คุณสามารถสร้างนิยายและสร้าง/แก้ไขตอนฟรีได้ตามปกติ แต่ยังตั้งราคาตอนและถอนเงินไม่ได้จนกว่าข้อมูลจะได้รับการยืนยัน`,
+      tone: 'warning',
+    };
+  }
+
+  return null;
+};
 
 function MyBook() {
   const router = useRouter();
@@ -55,6 +92,8 @@ function MyBook() {
     if (!writerCheckData) return false;
     return !!writerCheckData.is_writer;
   }, [writerCheckData]);
+
+  const writerReviewBanner = useMemo(() => getWriterReviewBanner(writerCheckData), [writerCheckData]);
 
   // Should we show the form?
   // Show form if:
@@ -308,6 +347,19 @@ function MyBook() {
           tokenProfileImage={(writerInfoData as any)?.data?.profile_image ?? (writerInfoData as any)?.data?.img ?? userProfileImage}
           tokenTotalFollowers={(writerInfoData as any)?.data?.total_followers ?? userTotalFollowers}
         />
+
+        {writerReviewBanner && (
+          <div
+            className={`mb-6 rounded-2xl border px-5 py-4 text-sm leading-6 ${
+              writerReviewBanner.tone === 'danger'
+                ? 'border-red-200 bg-red-50 text-red-900'
+                : 'border-amber-200 bg-amber-50 text-amber-900'
+            }`}
+          >
+            <div className="font-semibold">{writerReviewBanner.title}</div>
+            <div>{writerReviewBanner.message}</div>
+          </div>
+        )}
 
         {/* Tabs */}
         <Tabs

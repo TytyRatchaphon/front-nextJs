@@ -224,12 +224,12 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                         end: bookData.end,
                         status: bookData.status,
                         ...(permissionData.set_content_type ? { content_type: bookData.content_type || 'novel' } : {}),
-                        ...(permissionData.set_fast_ticket ? { fast_ticket: bookData.fast_ticket } : {}),
-                        ...(permissionData.set_fast_coin ? { fast_coin: bookData.fast_coin } : {}),
+                        ...(permissionData.set_fast_ticket ? { fast_ticket: bookData.fast_ticket ?? 0 } : {}),
+                        ...(permissionData.set_fast_coin ? { fast_coin: bookData.fast_coin ?? 0 } : {}),
                         ...(permissionData.set_fast_ticket || permissionData.set_fast_coin ? {
-                            fast_ticket_daily_increase: bookData.fast_ticket_daily_increase,
-                            fast_coin_daily_increase: bookData.fast_coin_daily_increase,
-                            fast_ep_days: bookData.fast_ep_days,
+                            fast_ticket_daily_increase: bookData.fast_ticket_daily_increase ?? 0,
+                            fast_coin_daily_increase: bookData.fast_coin_daily_increase ?? 0,
+                            fast_ep_days: bookData.fast_ep_days ?? 0,
                         } : {}),
                     });
 
@@ -764,7 +764,6 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                                             {permissions.set_fast_ticket && (
                                                 <div>
                                                     <span className='body-text'>ราคาปลดล็อคตอนล่วงหน้าด้วยตั๋ว</span>
-                                                    <p className='mt-1 text-sm text-red-500'>ใส่ 0 เพื่อปิดใช้งาน</p>
                                                     <Form.Item name='fast_ticket'>
                                                         <Input type='number' min={0} className='input' />
                                                     </Form.Item>
@@ -774,7 +773,6 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                                             {permissions.set_fast_coin && (
                                                 <div>
                                                     <span className='body-text'>ราคาตอนปลดล็อคตอนล่วงหน้าด้วยเหรียญ</span>
-                                                    <p className='mt-1 text-sm text-red-500'>ใส่ 0 เพื่อปิดใช้งาน</p>
                                                     <Form.Item name='fast_coin'>
                                                         <Input type='number' min={0} className='input' />
                                                     </Form.Item>
@@ -783,13 +781,11 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
 
                                             <div>
                                                 <span className='body-text'>เปิดอ่านล่วงหน้าได้กี่วัน</span>
-                                                <p className='mt-1 text-sm text-gray-400'>กรอกราคาเพื่อเปิดใช้งานช่องนี้</p>
                                                 <Form.Item name='fast_ep_days'>
                                                     <Input
                                                         type='number'
                                                         min={0}
                                                         className='input'
-                                                        placeholder='เช่น 7'
                                                         disabled={!showFastEpDays}
                                                     />
                                                 </Form.Item>
@@ -799,7 +795,7 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                                                 <div>
                                                     <span className='body-text'>จำนวนตั๋วที่เพิ่มต่อวัน</span>
                                                     <Form.Item name='fast_ticket_daily_increase'>
-                                                        <Input type='number' min={0} className='input' placeholder='เช่น 1' />
+                                                        <Input type='number' min={0} className='input' />
                                                     </Form.Item>
                                                 </div>
                                             )}
@@ -808,7 +804,7 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                                                 <div>
                                                     <span className='body-text'>จำนวนเหรียญที่เพิ่มต่อวัน</span>
                                                     <Form.Item name='fast_coin_daily_increase'>
-                                                        <Input type='number' min={0} className='input' placeholder='เช่น 5' />
+                                                        <Input type='number' min={0} className='input' />
                                                     </Form.Item>
                                                 </div>
                                             )}

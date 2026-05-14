@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { queryKeys } from "@/constants/query";
 
 const mockUseQuery = vi.fn();
 const mockFetchBookEpisodes = vi.fn();
@@ -48,7 +49,7 @@ describe("useEpisodeNavigation", () => {
     const result = useEpisodeNavigation("4007", "20", null);
 
     expect(mockUseQuery).toHaveBeenCalledWith({
-      queryKey: ["bookEpisodes", "4007"],
+      queryKey: queryKeys.book.episodes("4007"),
       queryFn: expect.any(Function),
       enabled: true,
       staleTime: 5 * 60 * 1000,

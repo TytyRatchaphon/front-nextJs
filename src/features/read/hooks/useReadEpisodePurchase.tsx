@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from "react";
 import Image from "next/image";
 import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/constants/query";
 import apiClient from "@/services/apiClient";
 import {
   fetchEpisodePurchaseRewardPreview,
@@ -16,6 +17,7 @@ import {
   type ReadFastPayMethod,
   type ReadPayMethod,
 } from "../purchaseUtils";
+import { fetchEpisodeContent } from "../readerApi";
 
 type PurchaseNotificationArgs = {
   message: string;
@@ -47,6 +49,113 @@ type UseReadEpisodePurchaseParams = {
     metadata?: Record<string, unknown>,
     duration?: number,
   ) => Promise<void>;
+};
+
+const PURCHASED_EPISODE_REFETCH_ATTEMPTS = 4;
+const PURCHASED_EPISODE_REFETCH_DELAY_MS = 450;
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const getEpisodeCacheId = (episode: any) => String(
+  episode?.ep_id
+  ?? episode?.epID
+  ?? episode?.data?.ep_id
+  ?? episode?.data?.epID
+  ?? "",
+);
+
+const hasReadableEpisodeContent = (episode: any) => {
+  const content = typeof episode?.des === "string"
+    ? episode.des
+    : (typeof episode?.content === "string" ? episode.content : "");
+  return content.trim().length > 0;
+};
+
+const markEpisodePurchased = (episode: any, targetEpisodeId: string) => {
+  if (getEpisodeCacheId(episode) !== targetEpisodeId) return episode;
+
+  return {
+    ...episode,
+    isBuy: true,
+    is_buy: true,
+    purchased: true,
+  };
+};
+
+const markPurchasedEpisodeInListCache = (cacheData: any, targetEpisodeId: string) => {
+  if (!cacheData) return cacheData;
+
+  const markGroupList = (group: any) => ({
+    ...group,
+    list: Array.isArray(group?.list)
+      ? group.list.map((episode: any) => markEpisodePurchased(episode, targetEpisodeId))
+      : group?.list,
+  });
+
+  if (Array.isArray(cacheData?.groups)) {
+    return {
+      ...cacheData,
+      groups: cacheData.groups.map(markGroupList),
+    };
+  }
+
+  if (Array.isArray(cacheData?.data?.groups)) {
+    return {
+      ...cacheData,
+      data: {
+        ...cacheData.data,
+        groups: cacheData.data.groups.map(markGroupList),
+      },
+    };
+  }
+
+  return cacheData;
+};
+
+const markPurchasedEpisodeInContentCache = (cacheData: any, targetEpisodeId: string) => {
+  if (!cacheData || getEpisodeCacheId(cacheData) !== targetEpisodeId) return cacheData;
+  if (cacheData?.data && typeof cacheData.data === "object") {
+    return {
+      ...cacheData,
+      data: markEpisodePurchased(cacheData.data, targetEpisodeId),
+    };
+  }
+  return markEpisodePurchased(cacheData, targetEpisodeId);
+};
+
+const refreshPurchasedEpisodeContent = async (
+  queryClient: QueryClient,
+  episodeId: string,
+) => {
+  const queryKey = queryKeys.read.episodeContent(episodeId);
+  let lastRefreshError: unknown = null;
+
+  for (let attempt = 0; attempt < PURCHASED_EPISODE_REFETCH_ATTEMPTS; attempt += 1) {
+    if (attempt > 0) {
+      await delay(PURCHASED_EPISODE_REFETCH_DELAY_MS * attempt);
+    }
+
+    try {
+      const freshEpisode = await queryClient.fetchQuery({
+        queryKey,
+        queryFn: () => fetchEpisodeContent(episodeId),
+        staleTime: 0,
+      });
+
+      if (hasReadableEpisodeContent(freshEpisode)) {
+        queryClient.setQueryData(queryKey, freshEpisode);
+        return true;
+      }
+    } catch (error) {
+      lastRefreshError = error;
+    }
+  }
+
+  if (lastRefreshError) {
+    console.warn("[read-purchase] purchased episode content was not ready after retries", lastRefreshError);
+  }
+  await queryClient.invalidateQueries({ queryKey, exact: true });
+  return false;
 };
 
 export function useReadEpisodePurchase({
@@ -182,7 +291,7 @@ export function useReadEpisodePurchase({
           const updatedUser = { ...currentUser, coin: finalCoin, freecoin: finalFreeCoin };
           const maybeToken = res?.data?.data?.token ?? res?.data?.token;
           if (maybeToken) {
-            updateToken(maybeToken);
+            await updateToken(maybeToken);
           } else {
             useAuthStore.getState().login(updatedUser, useAuthStore.getState().token || "");
           }
@@ -190,9 +299,23 @@ export function useReadEpisodePurchase({
 
         setConfirmOpen(false);
         setRewardPreview(null);
-        await queryClient.invalidateQueries({ queryKey: ["episodeContent", episodeId] });
-        await queryClient.invalidateQueries({ queryKey: ["bookEpisodes", bookId] });
-        await requestNavbarRankRefresh(queryClient);
+        queryClient.setQueriesData(
+          { queryKey: queryKeys.book.episodesRoot() },
+          (cacheData: unknown) => markPurchasedEpisodeInListCache(cacheData, epId),
+        );
+        queryClient.setQueryData(
+          queryKeys.read.episodeContent(epId),
+          (cacheData: unknown) => markPurchasedEpisodeInContentCache(cacheData, epId),
+        );
+        try {
+          await queryClient.invalidateQueries({ queryKey: queryKeys.book.episodes(bookId) });
+          await refreshPurchasedEpisodeContent(queryClient, epId);
+          await requestNavbarRankRefresh(queryClient);
+        } catch (refreshError) {
+          console.warn("[read-purchase] episode purchased but content refresh is pending", refreshError);
+          void queryClient.invalidateQueries({ queryKey: queryKeys.read.episodeContent(epId), exact: true });
+          void queryClient.invalidateQueries({ queryKey: queryKeys.book.episodes(bookId) });
+        }
       } else {
         notification.error({
           message: "ซื้อไม่สำเร็จ",

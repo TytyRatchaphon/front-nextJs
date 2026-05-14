@@ -7,6 +7,8 @@ const { mockCookieGet, mockCookieSet, mockCookieRemove } = vi.hoisted(() => ({
   mockCookieRemove: vi.fn(),
 }))
 
+const mockFetch = vi.fn()
+
 vi.mock('js-cookie', () => ({
   default: {
     get: mockCookieGet,
@@ -52,6 +54,10 @@ Object.defineProperty(globalThis, 'window', {
   },
   writable: true,
 })
+Object.defineProperty(globalThis, 'fetch', {
+  value: mockFetch,
+  writable: true,
+})
 
 import { useAuthStore } from '@/stores/authStore'
 import type { UserData } from '@/stores/authStore'
@@ -75,6 +81,10 @@ describe('authStore', () => {
     })
     localStorageMock.clear()
     vi.clearAllMocks()
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ authenticated: false, token: null }),
+    })
   })
 
   // -------------------------------------------------------------------
@@ -102,17 +112,21 @@ describe('authStore', () => {
     expect(state.user).toBeTruthy()
   })
 
-  it('login clears legacy localStorage and stores token in cookie', () => {
+  it('login clears legacy localStorage and stores token through the server session route', () => {
     const user = makeUser()
     useAuthStore.getState().login(user, 'persist-token')
 
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('authToken')
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('userData')
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('token')
-    expect(mockCookieSet).toHaveBeenCalledWith(
-      'token',
-      'persist-token',
-      expect.objectContaining({ sameSite: 'lax', path: '/' }),
+    expect(mockCookieSet).not.toHaveBeenCalled()
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/auth/session',
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'same-origin',
+        body: JSON.stringify({ token: 'persist-token' }),
+      }),
     )
   })
 
@@ -188,8 +202,9 @@ describe('authStore', () => {
   // -------------------------------------------------------------------
   // setMounted
   // -------------------------------------------------------------------
-  it('setMounted sets hasMounted to true', () => {
+  it('setMounted sets hasMounted to true', async () => {
     useAuthStore.getState().setMounted()
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(useAuthStore.getState().hasMounted).toBe(true)
   })
@@ -205,5 +220,26 @@ describe('authStore', () => {
     expect(state.isLoggedIn).toBe(true)
     expect(state.token).toBe('backup-token')
     expect(state.user?.fullname).toBe('Decoded User')
+  })
+
+  it('setMounted recovers from httpOnly server session when legacy cookie is unavailable', async () => {
+    mockCookieGet.mockReturnValue(undefined)
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ authenticated: true, token: 'server-session-token' }),
+    })
+
+    useAuthStore.setState({ user: null, token: null, isLoggedIn: false, hasMounted: false })
+    useAuthStore.getState().setMounted()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    const state = useAuthStore.getState()
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/auth/session',
+      expect.objectContaining({ method: 'GET', credentials: 'same-origin' }),
+    )
+    expect(state.hasMounted).toBe(true)
+    expect(state.isLoggedIn).toBe(true)
+    expect(state.token).toBe('server-session-token')
   })
 })

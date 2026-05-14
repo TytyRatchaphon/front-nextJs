@@ -10,6 +10,7 @@ import { CartItem } from '@/interfaces/cart.interface';
 import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import { resolveStoreImageSrc } from '@/utils/imageUtils';
+import { queryKeys } from '@/constants/query';
 
 
 interface CartPopoverProps {
@@ -30,7 +31,7 @@ const CartPopover: React.FC<CartPopoverProps> = ({ onClose }) => {
     const { notification } = App.useApp();
 
     const { data: cartStores, isLoading } = useQuery({
-        queryKey: ['cartItems'],
+        queryKey: queryKeys.cart.items(),
         queryFn: fetchCartItems,
         refetchOnWindowFocus: true,
         refetchOnReconnect: true,
@@ -39,20 +40,20 @@ const CartPopover: React.FC<CartPopoverProps> = ({ onClose }) => {
     const updateMutation = useMutation({
         mutationFn: updateCartItem,
         onSuccess: () => {
-             queryClient.invalidateQueries({ queryKey: ['cartItems'] });
-             queryClient.invalidateQueries({ queryKey: ['cartSummary'] });
-             queryClient.invalidateQueries({ queryKey: ['checkoutItems'] });
-             queryClient.invalidateQueries({ queryKey: ['checkoutAddress'] });
+             queryClient.invalidateQueries({ queryKey: queryKeys.cart.items() });
+             queryClient.invalidateQueries({ queryKey: queryKeys.cart.summary() });
+             queryClient.invalidateQueries({ queryKey: queryKeys.cart.checkoutItems() });
+             queryClient.invalidateQueries({ queryKey: queryKeys.cart.checkoutAddress() });
         },
     });
 
     const deleteMutation = useMutation({
         mutationFn: removeCartItem,
         onSuccess: () => {
-             queryClient.invalidateQueries({ queryKey: ['cartItems'] });
-             queryClient.invalidateQueries({ queryKey: ['cartSummary'] });
-             queryClient.invalidateQueries({ queryKey: ['checkoutItems'] });
-             queryClient.invalidateQueries({ queryKey: ['checkoutAddress'] });
+             queryClient.invalidateQueries({ queryKey: queryKeys.cart.items() });
+             queryClient.invalidateQueries({ queryKey: queryKeys.cart.summary() });
+             queryClient.invalidateQueries({ queryKey: queryKeys.cart.checkoutItems() });
+             queryClient.invalidateQueries({ queryKey: queryKeys.cart.checkoutAddress() });
              notification.success({
                 message: 'ลบสินค้าเรียบร้อย',
                 description: 'ลบสินค้าเรียบร้อยแล้ว',

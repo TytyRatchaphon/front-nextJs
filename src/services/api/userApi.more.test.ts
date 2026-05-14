@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import apiClient from "../apiClient";
 import Cookies from "js-cookie";
-import { cachedRequest } from "../requestCache";
 import axios from "axios";
 import {
   changeUserPassword,
@@ -42,10 +41,6 @@ vi.mock("js-cookie", () => ({
   },
 }));
 
-vi.mock("../requestCache", () => ({
-  cachedRequest: vi.fn(),
-}));
-
 vi.mock("axios", () => ({
   default: {
     get: vi.fn(),
@@ -62,7 +57,6 @@ const mockedCookies = Cookies as unknown as {
   get: ReturnType<typeof vi.fn>;
 };
 
-const mockedCachedRequest = cachedRequest as unknown as ReturnType<typeof vi.fn>;
 const mockedAxios = axios as unknown as {
   get: ReturnType<typeof vi.fn>;
   post: ReturnType<typeof vi.fn>;
@@ -347,29 +341,18 @@ describe("userApi more coverage", () => {
   });
 
   describe("website settings and authenticated writer APIs", () => {
-    it("fetchWebsiteSettings uses cachedRequest options and maps fetcher", async () => {
-      mockedCachedRequest.mockResolvedValueOnce({ status: "success", data: { title: "site" } });
+    it("fetchWebsiteSettings returns response data from apiClient", async () => {
+      mockedApiClient.get.mockResolvedValueOnce({ data: { status: "success", data: { title: "site" } } });
       await expect(fetchWebsiteSettings()).resolves.toEqual({
         status: "success",
         data: { title: "site" },
       });
-
-      const [cacheKey, fetcher, options] = mockedCachedRequest.mock.calls[0];
-      expect(cacheKey).toBe("website-settings");
-      expect(typeof fetcher).toBe("function");
-      expect(options).toMatchObject({ ttlMs: 5 * 60 * 1000 });
-      expect(options.shouldCache(null)).toBe(false);
-      expect(options.shouldCache({})).toBe(true);
-
-      mockedCachedRequest.mockImplementationOnce(async (_k, fetcherFn) => fetcherFn());
-      mockedApiClient.get.mockResolvedValueOnce({ data: { status: "success" } });
-      await expect(fetchWebsiteSettings()).resolves.toEqual({ status: "success" });
       expect(mockedApiClient.get).toHaveBeenCalledWith("/get_website");
     });
 
-    it("fetchWebsiteSettings returns null and logs when cache wrapper throws", async () => {
+    it("fetchWebsiteSettings returns null and logs when api request throws", async () => {
       const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
-      mockedCachedRequest.mockRejectedValueOnce(new Error("cache-failed"));
+      mockedApiClient.get.mockRejectedValueOnce(new Error("request-failed"));
       await expect(fetchWebsiteSettings()).resolves.toBeNull();
       expect(consoleErrorSpy).toHaveBeenCalled();
       consoleErrorSpy.mockRestore();
