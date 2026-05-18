@@ -1,5 +1,7 @@
+"use client";
+
 import * as React from "react";
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useId, useState } from 'react';
 import { imageUploadHandler } from '@/components/editor/editor_api';
 
 // 1. ประกาศ Interface สำหรับ Props
@@ -13,6 +15,34 @@ interface TextEditorTinyProps {
 
 type TinyOnChange = (content: string, index?: any) => void;
 
+const TINYMCE_SCRIPT_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.5/tinymce.min.js';
+let tinymceLoadPromise: Promise<void> | null = null;
+
+const loadTinyMce = () => {
+  if (typeof window === 'undefined') return Promise.reject(new Error('TinyMCE requires a browser'));
+  if ((window as any).tinymce) return Promise.resolve();
+
+  if (!tinymceLoadPromise) {
+    tinymceLoadPromise = new Promise((resolve, reject) => {
+      const existingScript = document.querySelector<HTMLScriptElement>(`script[src="${TINYMCE_SCRIPT_SRC}"]`);
+      const script = existingScript ?? document.createElement('script');
+
+      script.async = true;
+      script.src = TINYMCE_SCRIPT_SRC;
+      script.addEventListener('load', () => resolve(), { once: true });
+      script.addEventListener('error', () => {
+        tinymceLoadPromise = null;
+        reject(new Error('Failed to load TinyMCE'));
+      }, { once: true });
+
+      if (!existingScript) {
+        document.head.appendChild(script);
+      }
+    });
+  }
+
+  return tinymceLoadPromise;
+};
 
 
 const TextEditorTiny: React.FC<TextEditorTinyProps> = ({ 
@@ -25,15 +55,17 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
 
   const editorRef = useRef<any>(null);
   const indexRef = useRef<any>(contentSelected);
-  const scriptLoadedRef = useRef<boolean>(false);
   const onChangeRef = useRef<TinyOnChange>(() => {});
   const onBlurRef = useRef(onBlur);
   const valueRef = useRef<string>(value ?? '');
   const lastSyncedContentRef = useRef<string>('');
   const [thaiWordCount, setThaiWordCount] = useState<number>(0);
+  const [isEditorReady, setIsEditorReady] = useState(false);
+  const [editorLoadFailed, setEditorLoadFailed] = useState(false);
   
-  // Use a unique ID for each instance
-  const [editorId] = useState(() => `tiny-editor-${Math.random().toString(36).substr(2, 9)}`);
+  // Stable across SSR/client hydration and unique for each editor instance.
+  const reactId = useId();
+  const editorId = `tiny-editor-${reactId.replace(/:/g, '')}`;
 
   const countThaiWords = (html: string) => {
     if (typeof window === 'undefined') return 0;
@@ -73,6 +105,9 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
 
   useEffect(() => {
     valueRef.current = value ?? '';
+    if (!editorRef.current) {
+      setThaiWordCount(countThaiWords(value ?? ''));
+    }
   }, [value]);
 
   const thaiFonts = [
@@ -88,8 +123,10 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
 
   // Load TinyMCE script เมื่อ component mount
   useEffect(() => {
+    let isMounted = true;
+
     const initializeTinyMCE = () => {
-      if (!(window as any).tinymce) return;
+      if (!isMounted || !(window as any).tinymce) return;
 
       const existingEditor = (window as any).tinymce.get(editorId);
       if (existingEditor) {
@@ -127,7 +164,14 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
 
         setup: (editor: any) => {
           editor.on('init', () => {
+            if (!isMounted) {
+              editor.remove();
+              return;
+            }
+
             editorRef.current = editor;
+            setIsEditorReady(true);
+            setEditorLoadFailed(false);
 
             const initialContent = valueRef.current || '';
             editor.setContent(initialContent);
@@ -156,25 +200,21 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
       });
     };
 
-    if (!scriptLoadedRef.current) {
-      if ((window as any).tinymce) {
+    setIsEditorReady(false);
+    setEditorLoadFailed(false);
+
+    loadTinyMce()
+      .then(() => {
         initializeTinyMCE();
-        scriptLoadedRef.current = true;
-      } else {
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.5/tinymce.min.js';
-        script.async = true;
-        script.onload = () => {
-          scriptLoadedRef.current = true;
-          initializeTinyMCE();
-        };
-        script.onerror = () => {
-        };
-        document.head.appendChild(script);
-      }
-    }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setEditorLoadFailed(true);
+        }
+      });
 
     return () => {
+        isMounted = false;
         try {
             if ((window as any).tinymce) {
                 const editor = (window as any).tinymce.get(editorId);
@@ -185,6 +225,7 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
         } catch {
         }
         editorRef.current = null;
+        setIsEditorReady(false);
     };
   }, [editorId, fontFormats, height, importUrl]);
 
@@ -202,7 +243,31 @@ const TextEditorTiny: React.FC<TextEditorTinyProps> = ({
 
   return (
     <div>
-      <textarea id={editorId} style={{ visibility: 'hidden' }} />
+      <textarea
+        id={editorId}
+        value={value ?? ''}
+        onChange={(event) => {
+          const content = event.target.value;
+          lastSyncedContentRef.current = content;
+          setThaiWordCount(countThaiWords(content));
+          onChangeRef.current(content);
+        }}
+        onBlur={(event) => {
+          if (onBlurRef.current) {
+            onBlurRef.current(event.target.value, indexRef.current);
+          }
+        }}
+        className="w-full rounded-md border border-gray-300 px-3 py-2 text-base leading-7 outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
+        style={{
+          minHeight: typeof height === 'number' ? height : undefined,
+          display: isEditorReady ? 'none' : undefined,
+        }}
+      />
+      {!isEditorReady && (
+        <p className={`mt-1 text-xs ${editorLoadFailed ? 'text-amber-600' : 'text-gray-400'}`}>
+          {editorLoadFailed ? 'Editor toolbar could not load. You can still edit content in this basic text area.' : 'Loading editor toolbar...'}
+        </p>
+      )}
       <div className="mt-1 text-right text-xs text-gray-500">{thaiWordCount.toLocaleString('th-TH')} คำ</div>
     </div>
   );

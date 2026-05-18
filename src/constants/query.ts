@@ -95,6 +95,27 @@ export const queryKeys = {
     pinnedReviews: (sort?: string | null, limit?: number, page?: number) =>
       ["pinnedReviews", sort ?? "latest", limit ?? 10, page ?? 1] as const,
   },
+  bookUpdates: {
+    calendar: (scope?: string | null, contentType?: string | null) =>
+      ["book-update-calendar", scope ?? "all", contentType ?? "all"] as const,
+    daily: (
+      date?: string | null,
+      scope?: string | null,
+      contentType?: string | null,
+      page?: number | string | null,
+      limit?: number | string | null,
+      sort?: string | null,
+    ) =>
+      [
+        "book-update-daily",
+        date ?? "",
+        scope ?? "all",
+        contentType ?? "all",
+        page ?? 1,
+        limit ?? 20,
+        sort ?? "publish_time",
+      ] as const,
+  },
 } as const;
 
 /**

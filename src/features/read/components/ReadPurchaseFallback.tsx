@@ -124,7 +124,7 @@ export function ReadPurchaseFallback({
       )}
       <div className="flex items-center justify-center gap-3">
         {canUseFreecoin && !isEarlyAccess && (
-          <button onClick={() => onOpenConfirm("freecoin", freecoinPrice)} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg">
+          <button onClick={() => onOpenConfirm("freecoin", freecoinPrice)} className="flex items-center gap-2 px-4 py-2 bg-red-600 !text-white rounded-lg [&_*]:!text-white">
             <Image src={settings?.freecoin || "/images/money-bag.png"} alt="Coin Icon" width={20} height={20} unoptimized />
             ซื้อด้วยถุงเงิน {freecoinPrice ? `(${freecoinPrice})` : ""}
           </button>

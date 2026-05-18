@@ -75,7 +75,7 @@ const CartPopover: React.FC<CartPopoverProps> = ({ onClose }) => {
 
     const getCartItemCover = React.useCallback((item: CartItem) => {
         const selectedOption = item.store_pack?.selectable_options?.find((option) => option.selected && option.item_img);
-        return selectedOption?.item_img || item.book_cover || item.store_pack?.img || null;
+        return item.store_pack?.img || selectedOption?.item_img || item.book_cover || null;
     }, []);
     
     // Calculate totals by currency type

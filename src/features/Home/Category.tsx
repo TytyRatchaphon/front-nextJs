@@ -280,7 +280,7 @@ export default function Category() {
   return (
     <div className="min-h-screen bg-white pb-20">
       {/* Mobile Type Swiper */}
-      <div className="sticky top-[100px] lg:top-[80px] z-[1000] bg-white shadow-sm">
+      <div className="sticky top-[60px] lg:top-[80px] z-[1000] bg-white shadow-sm">
         <CategoryTypeSwiper />
         <CategoryGenreSwiper />
       </div>
@@ -312,7 +312,7 @@ export default function Category() {
         )}
 
         {/* Tabs - Sticky Swiper */}
-        <div className="sticky top-[150px] lg:top-[170px] z-[990] bg-white border-b border-gray-200 mb-8 pt-2 flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-2">
+        <div className="bg-white border-b border-gray-200 mb-8 pt-2 flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-2">
           <Swiper
             spaceBetween={20}
             slidesPerView="auto"

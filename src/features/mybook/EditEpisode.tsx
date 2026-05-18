@@ -42,6 +42,10 @@ const priceCoin = Array.from({ length: 11 }, (_, i) => ({
     value: `${i}`
 }));
 
+const getEpisodeDisplayName = (episode: any): string => {
+    return String(episode?.title ?? episode?.name ?? episode?.ep_name ?? '');
+};
+
 const EditChapter: React.FC<EditChapterProps> = ({ epID }) => {
     const router = useRouter();
     const [api, contextHolder] = notification.useNotification();
@@ -90,7 +94,7 @@ const EditChapter: React.FC<EditChapterProps> = ({ epID }) => {
                         setGroupName(data.groupName || '');
 
                         formEditChapter.setFieldsValue({
-                            name: data.name,
+                            name: getEpisodeDisplayName(data),
                             groupID: data.group_id,
                             epID: data.ep_id,
                             bookID: data.book_id,
@@ -122,6 +126,13 @@ const EditChapter: React.FC<EditChapterProps> = ({ epID }) => {
                                     const currentIndex = episodes.findIndex((e: any) =>
                                         String(e.ep_id ?? e.id ?? e.eid) === String(epID)
                                     );
+
+                                    if (currentIndex !== -1) {
+                                        const currentEpisodeName = getEpisodeDisplayName(episodes[currentIndex]);
+                                        if (currentEpisodeName) {
+                                            formEditChapter.setFieldValue('name', currentEpisodeName);
+                                        }
+                                    }
 
                                     // Next Episode
                                     if (currentIndex !== -1 && currentIndex + 1 < episodes.length) {

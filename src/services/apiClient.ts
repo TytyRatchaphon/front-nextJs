@@ -4,6 +4,7 @@ import Cookies from "js-cookie";
 import { useAuthStore } from "@/stores/authStore";
 import { parseJwtToken } from "@/utils/jwtParser";
 import { emitApiClientEvent } from "@/services/apiEvents";
+import { getAuthSession } from "@/services/authPersistence";
 
 let cachedDeviceId: string | null = null;
 let deviceIdRequest: Promise<string | null> | null = null;
@@ -60,7 +61,10 @@ apiClient.interceptors.request.use(
 
             if (!skipAuth) {
                 const stateToken = useAuthStore.getState().token;
-                const tokenValue = parseJwtToken(stateToken || Cookies.get('token'));
+                let tokenValue: string | null | undefined = parseJwtToken(stateToken || Cookies.get('token'));
+                if (!tokenValue) {
+                    tokenValue = (await getAuthSession())?.token || undefined;
+                }
                 if (tokenValue) {
                     config.headers.Authorization = `${tokenValue}`;
                 }

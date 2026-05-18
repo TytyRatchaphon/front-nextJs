@@ -3,7 +3,7 @@ import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchCartItems, updateCartItem, removeCartItem, clearCart } from '@/services/cartService';
 import { CartItem, SelectableOption } from '@/interfaces/cart.interface';
-import { Table, Checkbox, Button, InputNumber, Image as AntImage, Typography, Popconfirm, App, Empty, Collapse } from 'antd';
+import { Table, Checkbox, Button, InputNumber, Image as AntImage, Typography, Popconfirm, App, Empty, Collapse, Modal } from 'antd';
 import { DeleteOutlined, ShopOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/authStore';
@@ -135,6 +135,12 @@ export default function CartDetail() {
         if (!cartStores) return [];
         return cartStores.flatMap(store => store.items || []);
     }, [cartStores]);
+    const [selectionModalItemId, setSelectionModalItemId] = React.useState<number | null>(null);
+    const [draftSelectedOptionIds, setDraftSelectedOptionIds] = React.useState<Array<number | string>>([]);
+    const selectionModalItem = React.useMemo(
+        () => allItems.find((item) => item.cart_item_id === selectionModalItemId) || null,
+        [allItems, selectionModalItemId],
+    );
 
     const getSelectedStorePackListIds = React.useCallback((item: CartItem): Array<number | string> => {
         const options = item.store_pack?.selectable_options;
@@ -145,10 +151,42 @@ export default function CartDetail() {
             .map((option) => option.store_pack_list_id);
     }, []);
 
+    React.useEffect(() => {
+        setDraftSelectedOptionIds(selectionModalItem ? getSelectedStorePackListIds(selectionModalItem) : []);
+    }, [getSelectedStorePackListIds, selectionModalItem]);
+
     const getSelectionLimit = React.useCallback((item: CartItem): number => {
         const rawLimit = item.store_pack?.selection_limit;
         return typeof rawLimit === 'number' && rawLimit > 0 ? rawLimit : 1;
     }, []);
+
+    const handleDraftSelectableOptionChange = React.useCallback((item: CartItem, option: SelectableOption, checked: boolean) => {
+        if (option.can_select === false) return;
+
+        const selectionLimit = getSelectionLimit(item);
+        const optionId = option.store_pack_list_id;
+
+        setDraftSelectedOptionIds((currentSelectedIds) => {
+            if (selectionLimit <= 1) {
+                return checked ? [optionId] : [];
+            }
+
+            if (checked) {
+                if (currentSelectedIds.includes(optionId)) return currentSelectedIds;
+                if (currentSelectedIds.length >= selectionLimit) {
+                    notification.warning({
+                        message: 'เลือกเกินจำนวนที่กำหนด',
+                        description: `แพ็กนี้เลือกได้สูงสุด ${selectionLimit} รายการ`,
+                        placement: 'topRight',
+                    });
+                    return currentSelectedIds;
+                }
+                return [...currentSelectedIds, optionId];
+            }
+
+            return currentSelectedIds.filter((id) => id !== optionId);
+        });
+    }, [getSelectionLimit, notification]);
 
     const buildSelectionPayload = React.useCallback((item: CartItem, selected: boolean) => {
         const selectedStorePackListIds = getSelectedStorePackListIds(item);
@@ -207,6 +245,20 @@ export default function CartDetail() {
         });
     };
 
+    const handleConfirmSelectionModal = () => {
+        if (!selectionModalItem) return;
+
+        updateMutation.mutate(
+            {
+                cart_item_id: selectionModalItem.cart_item_id,
+                selected_store_pack_list_ids: draftSelectedOptionIds,
+            },
+            {
+                onSuccess: () => setSelectionModalItemId(null),
+            },
+        );
+    };
+
     // Handle Store Selection
     const handleSelectStore = (storeId: number, checked: boolean) => {
         const store = cartStores?.find(s => s.store_id === storeId);
@@ -241,7 +293,7 @@ export default function CartDetail() {
 
     const getSelectedOptionCover = React.useCallback((item: CartItem) => {
         const selectedOption = item.store_pack?.selectable_options?.find((option) => option.selected && option.item_img);
-        return selectedOption?.item_img || item.book_cover || item.store_pack?.img || null;
+        return item.store_pack?.img || selectedOption?.item_img || item.book_cover || null;
     }, []);
 
     const renderCoverImage = React.useCallback((
@@ -290,28 +342,70 @@ export default function CartDetail() {
                     <Text type="secondary" className="text-[11px]">
                         เลือกได้สูงสุด {selectionLimit} รายการ
                     </Text>
-                    <span>เลือกแล้ว {options.filter((option) => option.selected).length}</span>
+                    <span>เลือกแล้ว {draftSelectedOptionIds.length}/{selectionLimit}</span>
                 </div>
-                <div className="mt-2 flex flex-col gap-2">
+                <div className="mt-2 grid max-h-[60vh] grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
                     {options.map((option) => {
                         const disabled = option.can_select === false || updateMutation.isPending;
+                        const checked = draftSelectedOptionIds.includes(option.store_pack_list_id);
                         return (
                             <label
                                 key={option.store_pack_list_id}
-                                className={`flex items-start gap-3 rounded-lg border px-2.5 py-2 text-xs transition ${option.selected ? 'border-red-200 bg-red-50/80 shadow-sm' : 'border-gray-200 bg-white hover:border-red-100'} ${disabled ? 'opacity-50' : 'cursor-pointer'}`}
+                                className={`flex min-w-0 items-start gap-3 rounded-xl border px-3 py-2.5 text-xs transition ${checked ? 'border-red-200 bg-red-50/80 shadow-sm' : 'border-gray-200 bg-white hover:border-red-100'} ${disabled ? 'opacity-50' : 'cursor-pointer'}`}
                             >
                                 <Checkbox
-                                    checked={option.selected}
+                                    checked={checked}
                                     disabled={disabled}
-                                    onChange={(event) => handleSelectableOptionChange(record, option, event.target.checked)}
+                                    onChange={(event) => handleDraftSelectableOptionChange(record, option, event.target.checked)}
                                     className="[&_.ant-checkbox-checked_.ant-checkbox-inner]:!bg-red-500 [&_.ant-checkbox-checked_.ant-checkbox-inner]:!border-red-500 hover:[&_.ant-checkbox-inner]:!border-red-500"
                                 />
-                                {renderCoverImage(option.item_img, option.item_name, 'h-14 w-11 sm:h-16 sm:w-12')}
-                                <span className="min-w-0 line-clamp-3 pt-1 text-gray-800">{option.item_name}</span>
+                                {renderCoverImage(option.item_img, option.item_name, 'h-16 w-12')}
+                                <span className="min-w-0 line-clamp-3 pt-1 leading-snug text-gray-800">{option.item_name}</span>
                             </label>
                         );
                     })}
                 </div>
+            </div>
+        );
+    };
+
+    const renderSelectedOptionsPreview = (record: CartItem) => {
+        const options = record.store_pack?.selectable_options;
+        if (!record.store_pack?.is_selection || !Array.isArray(options) || options.length === 0) {
+            return null;
+        }
+
+        const selectionLimit = getSelectionLimit(record);
+        const selectedOptions = options.filter((option) => option.selected);
+
+        return (
+            <div className="mt-3 rounded-xl border border-red-100 bg-red-50/40 p-3">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-xs font-medium text-gray-600">เลือกแล้ว {selectedOptions.length}/{selectionLimit} รายการ</span>
+                    <Button
+                        size="small"
+                        type="default"
+                        onClick={() => setSelectionModalItemId(record.cart_item_id)}
+                        className="rounded-full border-red-200 px-3 text-xs font-medium text-red-600 hover:!border-red-400 hover:!text-red-600"
+                    >
+                        เลือกรายการสินค้าใหม่
+                    </Button>
+                </div>
+                {selectedOptions.length > 0 ? (
+                    <div className="flex max-w-[420px] flex-col gap-2">
+                        {selectedOptions.slice(0, 3).map((option) => (
+                            <div key={option.store_pack_list_id} className="flex min-w-0 items-center gap-2 rounded-lg bg-white/85 p-2 ring-1 ring-red-100">
+                                {renderCoverImage(option.item_img, option.item_name, 'h-12 w-9')}
+                                <span className="min-w-0 flex-1 line-clamp-2 text-xs leading-snug text-gray-800">{option.item_name}</span>
+                            </div>
+                        ))}
+                        {selectedOptions.length > 3 && (
+                            <span className="text-xs text-gray-500">และอีก {selectedOptions.length - 3} รายการ</span>
+                        )}
+                    </div>
+                ) : (
+                    <Text type="secondary" className="text-xs">ยังไม่ได้เลือกรายการสินค้า</Text>
+                )}
             </div>
         );
     };
@@ -344,7 +438,7 @@ export default function CartDetail() {
                     )}
                     <div className="flex min-w-0 flex-col">
                         <Text strong className="line-clamp-2">{text}</Text>
-                        {renderSelectableOptions(record)}
+                        {renderSelectedOptionsPreview(record)}
                         <Text type="secondary" className="text-xs">รหัสสินค้า: {record.book_id}</Text>
                     </div>
                 </div>
@@ -560,7 +654,7 @@ export default function CartDetail() {
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            {renderSelectableOptions(item)}
+                                                            {renderSelectedOptionsPreview(item)}
                                                         </div>
                                                     );
                                                 })}
@@ -667,6 +761,49 @@ export default function CartDetail() {
                     </div>
                 </div>
             </div>
+
+            <Modal
+                title={selectionModalItem?.book_name || 'เลือกรายการสินค้า'}
+                open={!!selectionModalItem}
+                onCancel={() => setSelectionModalItemId(null)}
+                footer={null}
+                width={720}
+                destroyOnHidden
+            >
+                {selectionModalItem && (
+                    <div className="space-y-4">
+                        <div className="flex items-start gap-3 rounded-2xl bg-red-50/60 p-3">
+                            {renderCoverImage(getSelectedOptionCover(selectionModalItem), selectionModalItem.book_name, 'h-20 w-16')}
+                            <div className="min-w-0 flex-1">
+                                <Text strong className="line-clamp-2 text-base">{selectionModalItem.book_name}</Text>
+                                <Text type="secondary" className="mt-1 block text-xs">เลือกเรื่องที่ต้องการรับในแพ็กนี้</Text>
+                            </div>
+                        </div>
+                        {renderSelectableOptions(selectionModalItem)}
+                        <div className="flex items-center gap-3 pt-1">
+                            <Button
+                                block
+                                size="large"
+                                onClick={() => setSelectionModalItemId(null)}
+                                className="rounded-xl font-bold"
+                            >
+                                ยกเลิก
+                            </Button>
+                            <Button
+                                block
+                                size="large"
+                                type="primary"
+                                danger
+                                loading={updateMutation.isPending}
+                                onClick={handleConfirmSelectionModal}
+                                className="rounded-xl font-bold"
+                            >
+                                ยืนยันการเลือก
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
             
 
         </div>

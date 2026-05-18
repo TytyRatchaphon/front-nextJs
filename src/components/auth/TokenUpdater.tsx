@@ -6,9 +6,8 @@ import { useAuthStore } from '@/stores/authStore'
 import { notification } from 'antd'
 import DuplicateLoginModal from './DuplicateLoginModal'
 import { refreshToken } from '@/services/apiServices'
+import { getAuthSession } from '@/services/authPersistence'
 
-import Cookies from 'js-cookie'
-import { CheckCircleOutlined } from '@ant-design/icons'
 import { parseJwtToken } from '@/utils/jwtParser'
 
 const getTokenUserId = (token: string | null | undefined): string | null => {
@@ -40,43 +39,47 @@ export default function TokenUpdater() {
         const incomingRawToken = searchParams.get('token') || searchParams.get('tk');
         if (!incomingRawToken) return;
 
-        // Clean query token from URL immediately to reduce leakage risk.
-        const newParams = new URLSearchParams(searchParams.toString());
-        newParams.delete('token');
-        newParams.delete('tk');
-        const newQuery = newParams.toString();
-        const newUrl = newQuery ? `${pathname}?${newQuery}` : pathname;
-        router.replace(newUrl);
+        const handleIncomingToken = async () => {
+            // Clean query token from URL immediately to reduce leakage risk.
+            const newParams = new URLSearchParams(searchParams.toString());
+            newParams.delete('token');
+            newParams.delete('tk');
+            const newQuery = newParams.toString();
+            const newUrl = newQuery ? `${pathname}?${newQuery}` : pathname;
+            router.replace(newUrl);
 
-        const incomingToken = parseJwtToken(incomingRawToken);
-        const currentToken =
-            useAuthStore.getState().token ||
-            parseJwtToken(Cookies.get('token'));
+            const incomingToken = parseJwtToken(incomingRawToken);
+            const currentToken =
+                useAuthStore.getState().token ||
+                (await getAuthSession())?.token;
 
-        // Do not allow URL token to bootstrap a new login session.
-        if (!incomingToken || !currentToken || incomingToken === currentToken) return;
+            // Do not allow URL token to bootstrap a new login session.
+            if (!incomingToken || !currentToken || incomingToken === currentToken) return;
 
-        const incomingUserId = getTokenUserId(incomingToken);
-        const currentUserId = getTokenUserId(currentToken);
+            const incomingUserId = getTokenUserId(incomingToken);
+            const currentUserId = getTokenUserId(currentToken);
 
-        // Accept token update only when it belongs to current account.
-        if (incomingUserId && currentUserId && incomingUserId !== currentUserId) return;
+            // Accept token update only when it belongs to current account.
+            if (incomingUserId && currentUserId && incomingUserId !== currentUserId) return;
 
-        updateToken(incomingToken);
-        notification.success({
-            message: 'อัปเดตยอดเงินสำเร็จ',
-            description: 'อัปเดตยอดเงินเรียบร้อยแล้ว',
-            placement: 'topRight',
-        });
+            updateToken(incomingToken);
+            notification.success({
+                message: 'อัปเดตยอดเงินสำเร็จ',
+                description: 'อัปเดตยอดเงินเรียบร้อยแล้ว',
+                placement: 'topRight',
+            });
+        };
+
+        void handleIncomingToken();
     }, [searchParams, router, pathname, updateToken]);
 
     useEffect(() => {
         const fetchRefreshToken = async () => {
-            const savedToken = Cookies.get('token');
+            const savedToken = useAuthStore.getState().token || (await getAuthSession())?.token;
             if (!savedToken) return;
 
             try {
-                const res = await refreshToken();
+                const res = await refreshToken(savedToken);
                 if (res?.code === 200 && typeof res.data === 'string') {
                     updateToken(res.data);
                 } else if (res?.data?.token) {

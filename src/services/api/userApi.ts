@@ -3,6 +3,7 @@ import apiClient from "../apiClient";
 import type { WebsiteSettingsResponse } from "@/types/api";
 import Cookies from 'js-cookie';
 import axios from "axios";
+import { getAuthSession } from "@/services/authPersistence";
 
 // --- Writer Registration & Check ---
 
@@ -362,6 +363,10 @@ export const refreshToken = async (tokenOverride?: string) => {
     if (!token) {
         const rawToken = Cookies.get('token');
         token = rawToken ? rawToken.replace(/^['"]+|['"]+$/g, '') : '';
+    }
+
+    if (!token) {
+        token = (await getAuthSession())?.token || '';
     }
 
     if (!token) throw new Error("No token");
