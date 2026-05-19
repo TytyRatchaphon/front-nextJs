@@ -1,6 +1,11 @@
 "use client";
 
 import type { EpisodePurchaseRewardPreviewResult } from "@/services/api/episodePurchaseRewardApi";
+import type {
+  FullBookCouponOption,
+  FullBookPurchaseOptionsData,
+  FullBookPurchasePreviewData,
+} from "@/services/api/bookApi";
 import type { EpisodeGroup } from "@/types/api";
 import type { FastPaymentMethod, PaymentMethod } from "./BookInfoCard.types";
 import BookInfoCardBuyAllConfirmModal from "./BookInfoCardBuyAllConfirmModal";
@@ -37,6 +42,14 @@ type BookInfoCardPurchaseModalsProps = {
   buyAllFastTicketCount: number;
   buyAllRewardPreviewLoading: boolean;
   buyAllRewardPreview: EpisodePurchaseRewardPreviewResult | null;
+  fullBookOptions: FullBookPurchaseOptionsData | null;
+  fullBookPreview: FullBookPurchasePreviewData | null;
+  fullBookCoupons: FullBookCouponOption[];
+  selectedFullBookCouponId: number | null;
+  fullBookOptionsLoading: boolean;
+  fullBookPreviewLoading: boolean;
+  fullBookOptionsError: string | null;
+  fullBookPreviewError: string | null;
   bulkPurchaseMode: "all" | "early";
   buyLoading: boolean;
   hasEarlyAccessEpisodes: boolean;
@@ -51,6 +64,7 @@ type BookInfoCardPurchaseModalsProps = {
   onCloseBuyAllConfirm: () => void;
   onConfirmBuyAllPurchase: () => void | Promise<void>;
   onPayWithChange: (value: PaymentMethod) => void;
+  onFullBookCouponChange: (value: number | null) => void;
   onFastPayWithChange: (value: FastPaymentMethod) => void;
   getEpisodesForSelectionMode: (group: EpisodeGroup) => any[];
   getProgressiveSelectableIds: (episodes: any[], seedSelection?: readonly number[]) => number[];
@@ -83,6 +97,14 @@ export default function BookInfoCardPurchaseModals({
   buyAllFastTicketCount,
   buyAllRewardPreviewLoading,
   buyAllRewardPreview,
+  fullBookOptions,
+  fullBookPreview,
+  fullBookCoupons,
+  selectedFullBookCouponId,
+  fullBookOptionsLoading,
+  fullBookPreviewLoading,
+  fullBookOptionsError,
+  fullBookPreviewError,
   bulkPurchaseMode,
   buyLoading,
   hasEarlyAccessEpisodes,
@@ -97,6 +119,7 @@ export default function BookInfoCardPurchaseModals({
   onCloseBuyAllConfirm,
   onConfirmBuyAllPurchase,
   onPayWithChange,
+  onFullBookCouponChange,
   onFastPayWithChange,
   getEpisodesForSelectionMode,
   getProgressiveSelectableIds,
@@ -161,9 +184,18 @@ export default function BookInfoCardPurchaseModals({
         buyLoading={buyLoading}
         rewardPreviewLoading={buyAllRewardPreviewLoading}
         rewardPreview={buyAllRewardPreview}
+        fullBookOptions={fullBookOptions}
+        fullBookPreview={fullBookPreview}
+        fullBookCoupons={fullBookCoupons}
+        selectedFullBookCouponId={selectedFullBookCouponId}
+        fullBookOptionsLoading={fullBookOptionsLoading}
+        fullBookPreviewLoading={fullBookPreviewLoading}
+        fullBookOptionsError={fullBookOptionsError}
+        fullBookPreviewError={fullBookPreviewError}
         onClose={onCloseBuyAllConfirm}
         onConfirm={onConfirmBuyAllPurchase}
         onPayWithChange={onPayWithChange}
+        onFullBookCouponChange={onFullBookCouponChange}
       />
     </>
   );

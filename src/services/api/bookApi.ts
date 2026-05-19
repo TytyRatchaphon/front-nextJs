@@ -469,6 +469,112 @@ export const buyGroupPromotion = async (data: { dfb_id: number; payWith: string 
   }
 };
 
+export type FullBookPayMethod = "coin" | "freecoin";
+export type FullBookPricingMode = "NORMAL" | "COUPON";
+
+export type FullBookCouponOption = {
+  user_coupon_id: number;
+  coupon_id?: number;
+  name: string;
+  description?: string | null;
+  discount_percent?: number | null;
+  estimated_discount_amount?: number | null;
+  estimated_final_price?: number | null;
+  expires_at?: string | null;
+};
+
+export type FullBookPurchaseOptionsData = {
+  book_id: number | string;
+  episode_count: number;
+  origin_price: number;
+  final_paid_price: number;
+  payment_methods: FullBookPayMethod[];
+  balances?: Partial<Record<FullBookPayMethod, number>>;
+  options?: {
+    normal?: {
+      pricing_mode: FullBookPricingMode;
+      origin_price: number;
+      discount_amount: number;
+      final_paid_price: number;
+    };
+    coupons?: FullBookCouponOption[];
+  };
+  coupons?: FullBookCouponOption[];
+  rules?: Record<string, unknown>;
+};
+
+export type FullBookPurchasePreviewData = {
+  book_id: number | string;
+  pricing_mode: FullBookPricingMode;
+  episode_count: number;
+  pay_with: FullBookPayMethod;
+  origin_price: number;
+  discount_percent: number;
+  discount_amount: number;
+  final_discount_amount: number;
+  final_paid_price: number;
+  balance: number;
+  can_purchase: boolean;
+  coupon: FullBookCouponOption | null;
+  rules?: Record<string, unknown>;
+};
+
+export type FullBookPurchaseResultData = {
+  purchase_id?: number;
+  book_id: number | string;
+  pricing_mode: FullBookPricingMode;
+  user_coupon_id?: number | null;
+  coupon_id?: number | null;
+  coupon_discount_percent?: number | null;
+  coupon_discount_amount?: number | null;
+  final_discount_amount?: number | null;
+  origin_price: number;
+  final_paid_price: number;
+  paid_coin?: number;
+  paid_freecoin?: number;
+  paid_total?: number;
+  episodes_count: number;
+  ep_ids: number[];
+  writer_income?: number;
+  rp_earned?: number;
+  rank_reward_alerts?: unknown[];
+  token?: string | null;
+};
+
+export type FullBookApiEnvelope<T> = {
+  code?: number;
+  status?: string;
+  message?: string;
+  data: T;
+};
+
+export type FullBookPurchasePayload = {
+  book_id: number | string;
+  payWith: FullBookPayMethod;
+  user_coupon_id?: number | null;
+};
+
+export const fetchFullBookPurchaseOptions = async (
+  bookId: number | string,
+): Promise<FullBookApiEnvelope<FullBookPurchaseOptionsData>> => {
+  const response = await apiClient.post("/buy/full-book/options", { book_id: bookId });
+  return response.data;
+};
+
+export const previewFullBookPurchase = async (
+  payload: FullBookPurchasePayload,
+): Promise<FullBookApiEnvelope<FullBookPurchasePreviewData>> => {
+  const response = await apiClient.post("/buy/full-book/preview", payload);
+  return response.data;
+};
+
+export const buyFullBook = async (
+  payload: FullBookPurchasePayload,
+): Promise<FullBookApiEnvelope<FullBookPurchaseResultData>> => {
+  const response = await apiClient.post("/buy/full-book", payload);
+  return response.data;
+};
+
 export type BuyEpisodesPayload = {
   eps: number[];
   payWith: "coin" | "freecoin";

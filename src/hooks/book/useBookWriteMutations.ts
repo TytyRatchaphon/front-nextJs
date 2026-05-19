@@ -1,11 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   addBookToShelf,
+  buyFullBook,
   buyEpisodes,
   buyGroupPromotion,
   removeBookFromShelf,
   saveBookShare,
   type BuyEpisodesPayload,
+  type FullBookPurchasePayload,
 } from "@/services/api/bookApi";
 import { queryKeys } from "@/constants/query";
 
@@ -28,6 +30,19 @@ export const useBuyEpisodesMutation = (bookId?: string | number | null) => {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.book.episodes(bookId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.book.detail(bookId) });
+    },
+  });
+};
+
+export const useBuyFullBookMutation = (bookId?: string | number | null) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: FullBookPurchasePayload) => buyFullBook(payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.book.episodes(bookId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.book.detail(bookId) });
+      void queryClient.invalidateQueries({ queryKey: ["bookPurchaseDetails", String(bookId ?? "")] });
     },
   });
 };

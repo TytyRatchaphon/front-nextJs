@@ -1,12 +1,21 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { App } from "antd";
 import { useQueryClient } from "@tanstack/react-query";
 import SuccessAnimation from "@/components/utility/SuccessAnimation";
-import { useBuyEpisodesMutation, useBuyGroupPromotionMutation } from "@/hooks/book/useBookWriteMutations";
+import { useBuyEpisodesMutation, useBuyFullBookMutation, useBuyGroupPromotionMutation } from "@/hooks/book/useBookWriteMutations";
 import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
 import { refreshToken } from "@/services/apiServices";
+import {
+  fetchFullBookPurchaseOptions,
+  previewFullBookPurchase,
+  type FullBookCouponOption,
+  type FullBookPurchaseOptionsData,
+  type FullBookPurchasePreviewData,
+  type FullBookPayMethod,
+} from "@/services/api/bookApi";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
 import "@/types/errors";
@@ -32,6 +41,25 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
   const { settings } = useWebsiteSettings();
   const buyGroupPromotionMutation = useBuyGroupPromotionMutation(bookId);
   const buyEpisodesMutation = useBuyEpisodesMutation(bookId);
+  const buyFullBookMutation = useBuyFullBookMutation(bookId);
+  const [fullBookOptions, setFullBookOptions] = useState<FullBookPurchaseOptionsData | null>(null);
+  const [fullBookPreview, setFullBookPreview] = useState<FullBookPurchasePreviewData | null>(null);
+  const [selectedFullBookCouponId, setSelectedFullBookCouponId] = useState<number | null>(null);
+  const [fullBookOptionsLoading, setFullBookOptionsLoading] = useState(false);
+  const [fullBookPreviewLoading, setFullBookPreviewLoading] = useState(false);
+  const [fullBookOptionsError, setFullBookOptionsError] = useState<string | null>(null);
+  const [fullBookPreviewError, setFullBookPreviewError] = useState<string | null>(null);
+
+  const fullBookRequestBookId = useMemo(() => {
+    const numericBookId = Number(bookId);
+    return Number.isFinite(numericBookId) && numericBookId > 0 ? numericBookId : String(bookId ?? "");
+  }, [bookId]);
+
+  const fullBookCoupons = useMemo<FullBookCouponOption[]>(() => (
+    fullBookOptions?.coupons
+    || fullBookOptions?.options?.coupons
+    || []
+  ), [fullBookOptions]);
 
   const messageApi = {
     success: (content: unknown) => notification.success({ message: String(content ?? "") }),
@@ -104,6 +132,88 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
     openLoginModal,
     messageApi,
   });
+
+  useEffect(() => {
+    if (!buyAllModalOpen || bulkPurchaseMode !== "all" || !isLoggedIn) return;
+
+    let ignore = false;
+    setFullBookOptionsLoading(true);
+    setFullBookOptionsError(null);
+    setFullBookPreview(null);
+    setFullBookPreviewError(null);
+    setSelectedFullBookCouponId(null);
+
+    fetchFullBookPurchaseOptions(fullBookRequestBookId)
+      .then((response) => {
+        if (ignore) return;
+        if (response?.code && response.code !== 200) {
+          throw new Error(response.message || "ไม่สามารถโหลดตัวเลือกซื้อทั้งเล่มได้");
+        }
+
+        const optionsData = response.data;
+        setFullBookOptions(optionsData);
+        const allowedMethods = optionsData.payment_methods || [];
+        if (allowedMethods.length > 0 && !allowedMethods.includes("coin")) {
+          setPayWith(allowedMethods[0]);
+        }
+      })
+      .catch((error: any) => {
+        if (ignore) return;
+        setFullBookOptions(null);
+        setFullBookOptionsError(error?.response?.data?.message || error?.message || "ไม่สามารถโหลดตัวเลือกซื้อทั้งเล่มได้");
+      })
+      .finally(() => {
+        if (!ignore) setFullBookOptionsLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [bulkPurchaseMode, buyAllModalOpen, fullBookRequestBookId, isLoggedIn, setPayWith]);
+
+  useEffect(() => {
+    if (!buyAllModalOpen || bulkPurchaseMode !== "all" || !fullBookOptions || !isLoggedIn) return;
+
+    const allowedMethods = fullBookOptions.payment_methods || [];
+    if (allowedMethods.length > 0 && !allowedMethods.includes(payWith as FullBookPayMethod)) return;
+
+    let ignore = false;
+    setFullBookPreviewLoading(true);
+    setFullBookPreviewError(null);
+
+    previewFullBookPurchase({
+      book_id: fullBookRequestBookId,
+      payWith: payWith as FullBookPayMethod,
+      ...(selectedFullBookCouponId ? { user_coupon_id: selectedFullBookCouponId } : {}),
+    })
+      .then((response) => {
+        if (ignore) return;
+        if (response?.code && response.code !== 200) {
+          throw new Error(response.message || "ไม่สามารถคำนวณราคาซื้อทั้งเล่มได้");
+        }
+        setFullBookPreview(response.data);
+      })
+      .catch((error: any) => {
+        if (ignore) return;
+        setFullBookPreview(null);
+        setFullBookPreviewError(error?.response?.data?.message || error?.message || "ไม่สามารถคำนวณราคาซื้อทั้งเล่มได้");
+      })
+      .finally(() => {
+        if (!ignore) setFullBookPreviewLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [
+    bulkPurchaseMode,
+    buyAllModalOpen,
+    fullBookOptions,
+    fullBookRequestBookId,
+    isLoggedIn,
+    payWith,
+    selectedFullBookCouponId,
+  ]);
 
   const notifyRpEarned = (rpEarned?: number) => {
     if (!rpEarned || rpEarned <= 0) return;
@@ -245,6 +355,85 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
 
   const handleConfirmBuyAllPurchase = async () => {
     try {
+      if (bulkPurchaseMode === "all") {
+        if (fullBookPreviewLoading || fullBookOptionsLoading) return;
+        if (fullBookOptionsError || fullBookPreviewError) {
+          messageApi.error(fullBookOptionsError || fullBookPreviewError || "ไม่สามารถซื้อทั้งเล่มได้");
+          return;
+        }
+        if (!fullBookPreview?.can_purchase) {
+          messageApi.error(fullBookPreviewError || "ยอดเงินไม่พอ หรือไม่สามารถซื้อทั้งเล่มได้");
+          return;
+        }
+
+        setBuyLoading(true);
+        const res = await buyFullBookMutation.mutateAsync({
+          book_id: fullBookRequestBookId,
+          payWith: payWith as FullBookPayMethod,
+          ...(selectedFullBookCouponId ? { user_coupon_id: selectedFullBookCouponId } : {}),
+        });
+
+        if (res?.code && res.code !== 200) {
+          messageApi.error(res?.message || "ไม่สามารถทำการซื้อได้");
+          return;
+        }
+
+        const result = res.data;
+        log("buy_full_book", "book", String(bookId), {
+          episodes_count: result.episodes_count,
+          total: result.final_paid_price,
+          method: payWith,
+          pricing_mode: result.pricing_mode,
+          user_coupon_id: selectedFullBookCouponId,
+          book_title: book?.title,
+        });
+
+        setShowSuccess(true);
+        refreshNavbarRank();
+        notifyRpEarned(result.rp_earned);
+
+        const newToken = result.token;
+        if (newToken) {
+          const decoded = decodeToken(newToken);
+
+          if (user) {
+            let finalCoin = Number(decoded.coin ?? decoded.coins ?? decoded.goldCoins ?? decoded.gold_coin ?? 0);
+            let finalFreeCoin = Number(decoded.freecoin ?? 0);
+
+            if (payWith === "coin") {
+              const paidCoin = Number(result.paid_coin ?? result.final_paid_price ?? 0);
+              const expectedCoin = (Number(user.coin) || 0) - paidCoin;
+              if (finalCoin > expectedCoin) finalCoin = expectedCoin;
+            } else if (payWith === "freecoin") {
+              const paidFreeCoin = Number(result.paid_freecoin ?? result.final_paid_price ?? 0);
+              const expectedFreeCoin = (Number(user.freecoin) || 0) - paidFreeCoin;
+              if (finalFreeCoin > expectedFreeCoin) finalFreeCoin = expectedFreeCoin;
+            }
+
+            useAuthStore.getState().login(
+              {
+                ...user,
+                ...decoded,
+                coin: finalCoin >= 0 ? finalCoin : 0,
+                freecoin: finalFreeCoin >= 0 ? finalFreeCoin : 0,
+              },
+              newToken,
+            );
+          } else {
+            updateToken(newToken);
+          }
+        } else {
+          await refreshAuthToken();
+        }
+
+        closeBuyAllConfirmModal();
+        setBuyAllIds([]);
+        setSelectedFullBookCouponId(null);
+        setFullBookOptions(null);
+        setFullBookPreview(null);
+        return;
+      }
+
       if (buyAllFastTicketCount > 0 && payWith === "freecoin") {
         messageApi.error("ตอนล่วงหน้าต้องใช้ FastTicket + เหรียญ");
         return;
@@ -364,6 +553,14 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
               buyAllFastTicketCount={buyAllFastTicketCount}
               buyAllRewardPreviewLoading={buyAllRewardPreviewLoading}
               buyAllRewardPreview={buyAllRewardPreview}
+              fullBookOptions={fullBookOptions}
+              fullBookPreview={fullBookPreview}
+              fullBookCoupons={fullBookCoupons}
+              selectedFullBookCouponId={selectedFullBookCouponId}
+              fullBookOptionsLoading={fullBookOptionsLoading}
+              fullBookPreviewLoading={fullBookPreviewLoading}
+              fullBookOptionsError={fullBookOptionsError}
+              fullBookPreviewError={fullBookPreviewError}
               bulkPurchaseMode={bulkPurchaseMode}
               buyLoading={buyLoading}
               hasEarlyAccessEpisodes={hasEarlyAccessEpisodes}
@@ -378,6 +575,7 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
               onCloseBuyAllConfirm={closeBuyAllConfirmModal}
               onConfirmBuyAllPurchase={handleConfirmBuyAllPurchase}
               onPayWithChange={setPayWith}
+              onFullBookCouponChange={setSelectedFullBookCouponId}
               onFastPayWithChange={setFastPayWith}
               getEpisodesForSelectionMode={getEpisodesForSelectionMode}
               getProgressiveSelectableIds={getProgressiveSelectableIds}
