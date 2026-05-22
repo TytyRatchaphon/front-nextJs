@@ -26,6 +26,14 @@ export const queryKeys = {
     novelPackCheck: (bookId: number | string | null | undefined) =>
       ["novelPackCheck", String(bookId ?? "")] as const,
   },
+  bookQuest: {
+    listRoot: () => ["book-quest-list"] as const,
+    list: (bookId?: number | string | null) =>
+      ["book-quest-list", String(bookId ?? "")] as const,
+    detailRoot: () => ["book-quest-detail"] as const,
+    detail: (questId?: number | string | null) =>
+      ["book-quest-detail", String(questId ?? "")] as const,
+  },
   user: {
     eventSummaryRoot: () => ["user-event-summary"] as const,
     eventSummary: (authScope?: string | null) =>

@@ -18,6 +18,7 @@ export const useBuyGroupPromotionMutation = (bookId?: string | number | null) =>
     mutationFn: (payload: { dfb_id: number; payWith: string }) => buyGroupPromotion(payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.book.detail(bookId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.bookQuest.list(bookId) });
     },
   });
 };
@@ -30,6 +31,7 @@ export const useBuyEpisodesMutation = (bookId?: string | number | null) => {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.book.episodes(bookId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.book.detail(bookId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.bookQuest.list(bookId) });
     },
   });
 };
@@ -43,6 +45,7 @@ export const useBuyFullBookMutation = (bookId?: string | number | null) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.book.episodes(bookId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.book.detail(bookId) });
       void queryClient.invalidateQueries({ queryKey: ["bookPurchaseDetails", String(bookId ?? "")] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.bookQuest.list(bookId) });
     },
   });
 };

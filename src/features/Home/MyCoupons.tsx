@@ -8,6 +8,7 @@ import { Ticket, Percent, Coins, BookOpenCheck, CheckCircle2, AlertCircle, Clock
 import GifLoader from '@/components/utility/GifLoader';
 import CouponCard from '@/components/coupon/CouponCard';
 import { processCoupons, CouponUI } from '@/utils/couponUtils';
+import CouponApplicableBooks from './CouponApplicableBooks';
 import dayjs from 'dayjs';
 import 'dayjs/locale/th';
 import { useAuthStore } from '@/stores/authStore';
@@ -252,6 +253,9 @@ const MyCoupons = () => {
         );
     }
 
+    const isFullBookPercentCoupon = selectedCoupon?.couponType === 'FULL_BOOK_PERCENT'
+        || selectedCoupon?.applyScope === 'FULL_BOOK';
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4 min-h-[60vh] content-start">
             {userCoupons.map((coupon) => (
@@ -279,6 +283,7 @@ const MyCoupons = () => {
                 footer={null}
                 centered
                 zIndex={3000}
+                width={560}
             >
                 {selectedCoupon && (
                     <div className="space-y-4 pt-2">
@@ -324,7 +329,9 @@ const MyCoupons = () => {
                                  </div>
                              </div>
 
-                             {selectedCoupon.rewards && selectedCoupon.rewards.length > 0 && (
+                             <CouponApplicableBooks books={selectedCoupon.applicable_books} />
+
+                             {(!selectedCoupon.applicable_books || selectedCoupon.applicable_books.length === 0) && selectedCoupon.rewards && selectedCoupon.rewards.length > 0 && (
                                  <div className="mt-4 border-t border-gray-100 pt-4">
                                      <h4 className="font-semibold text-gray-700 text-sm mb-3 flex items-center gap-2">
                                          <Coins size={16} className="text-yellow-500" /> ของรางวัลที่จะได้รับ
@@ -434,6 +441,14 @@ const MyCoupons = () => {
                              )}
                          </div>
 
+                        {isFullBookPercentCoupon ? (
+                            <div className="pt-4 mt-4 border-t border-gray-100">
+                                <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-center">
+                                    <Ticket size={16} className="mr-2" />
+                                    <span className='font-medium'>คูปองนี้ใช้เป็นส่วนลดตอนซื้อทั้งเรื่องในหน้าหนังสือ</span>
+                                </div>
+                            </div>
+                        ) : (
                         <div className="pt-4 mt-4 border-t border-gray-100">
                              <Button 
                                 type="primary" 
@@ -449,6 +464,7 @@ const MyCoupons = () => {
                                 {selectedCoupon?.status === 'USED' ? 'ใช้สิทธิ์คูปองนี้แล้ว' : 'ยืนยันการใช้คูปอง'}
                             </Button>
                         </div>
+                        )}
                     </div>
                 )}
             </Modal>

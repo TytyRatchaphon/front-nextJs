@@ -2,9 +2,6 @@ import * as React from "react";
 import type { Metadata } from "next";
 import { GoogleAnalytics } from '@next/third-parties/google';
 import { dehydrate, QueryClient } from "@tanstack/react-query";
-import 'swiper/css';
-import 'swiper/css/pagination';
-import 'swiper/css/navigation';
 import 'antd/dist/reset.css';
 import "./globals.css";
 import { Bai_Jamjuree } from "next/font/google";
@@ -65,7 +62,7 @@ export default async function RootLayout({
   });
 
   return (
-    <html lang="en" className={`${baiJamjuree.variable} font-bai-jamjuree font-medium`}>
+    <html lang="th" className={`${baiJamjuree.variable} font-bai-jamjuree font-medium`}>
       <Script src="https://t.contentsquare.net/uxa/c765809e7d7ef.js" strategy="lazyOnload" />
       
       {/* Google Ads Tag */}

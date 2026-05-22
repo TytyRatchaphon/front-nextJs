@@ -45,7 +45,6 @@ const buildHomeGroupMoreLink = (group: any, contentType?: string) => {
 };
 
 export default function BookGroups({ groupBookHome, contentType }: BookGroupsProps) {
-  const rewardInitialNow = Date.now();
   const { token, isLoggedIn } = useAuthStore();
   const authToken = parseJwtToken(token);
 
@@ -169,7 +168,7 @@ export default function BookGroups({ groupBookHome, contentType }: BookGroupsPro
                   groupId={group.home_group_id}
                   canFollow={group.can_follow}
                   isInitiallyFollowed={group.is_followed}
-                  initialNow={rewardInitialNow}
+                  initialNow={0}
                 />
               </div>
             );

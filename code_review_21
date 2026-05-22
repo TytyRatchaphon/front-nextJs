@@ -1,0 +1,850 @@
+# EnjoyBook Frontend — Staff-Level Code Review
+
+> **Reviewer mindset**: Senior Staff Frontend Engineer, FAANG-level bar.
+> **Stack reviewed**: Next.js 16.1 (App Router), React 19, Zustand 5, TanStack Query 5, Axios, Tailwind v4, Ant Design 5, Socket.io
+>
+> **Last updated**: 2026-05-21 — BookUpdatesPage decomposition applied ✅
+
+---
+
+## SECTION 1 — PROJECT STRUCTURE REVIEW
+
+### 1.1 Hybrid Feature/Component Split — Inconsistent Boundaries
+**Severity: High**
+
+The project has **both** `src/features/` and `src/components/` but the boundary between them is blurred and inconsistent:
+
+```
+src/features/bookUpdates/BookUpdatesPage.tsx   ← a full page (feature)
+src/components/collection/CollectionDetail.tsx  ← also a full page (should be feature)
+src/components/novelCard/CardBook.tsx           ← true shared UI component
+```
+
+`CollectionDetail.tsx` is a 548-line page component with its own data fetching, mutations, routing, and modals — yet it lives under `components/`. Meanwhile `BookUpdatesPage.tsx` correctly lives under `features/`.
+
+**Impact**: Team members cannot predict where to find or place code. "Components" becomes a dumping ground. This gets exponentially worse with team growth.
+
+**Correct approach**:
+```
+src/features/
+  collection/
+    CollectionDetailPage.tsx       ← page logic
+    components/
+      SortableBookCard.tsx
+      AddBookToCollectionModal.tsx
+      CollectionCommentSection.tsx
+    hooks/
+      useCollectionBooks.ts
+    api/
+      collectionApi.ts
+
+  bookUpdates/
+    BookUpdatesPage.tsx
+    components/
+      CalendarStrip.tsx
+      TimelineBookCard.tsx
+      BookUpdatesSwiper.tsx
+
+src/components/                    ← truly shared, leaf-level UI
+  ui/                              ← Button, Modal, Skeleton, etc.
+  novelCard/
+  navbar/
+```
+
+### 1.2 Dual Type Directories — `types/` AND `interfaces/`
+**Severity: Medium**
+
+```
+src/types/      ← 15 files (api.ts, book.ts, campaign.ts…)
+src/interfaces/ ← 1 file (cart.interface.ts)
+```
+
+Two directories for the same purpose. `interfaces/` has a single file using a Java-style `.interface.ts` suffix.
+
+**Impact**: Type discovery confusion. Developers will waste time searching both locations.
+
+**Fix**: Merge `interfaces/cart.interface.ts` → `types/cart.ts`. Delete `interfaces/`.
+
+### 1.3 Barrel Re-export Bomb — `apiServices.ts`
+**Severity: Medium**
+
+[apiServices.ts](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/services/apiServices.ts) re-exports **everything** from 20+ API modules:
+
+```typescript
+export * from './api/homeApi';
+export * from './api/bookApi';
+export * from './api/bookManageApi';
+// ... 17 more
+```
+
+**Impact**: 
+- **Tree-shaking degradation**: Any consumer that imports one function forces the bundler to process the entire barrel.
+- **Namespace collision risk**: When 20+ modules wildcard-export, naming conflicts are inevitable.
+- **Circular dependency risk**: As modules grow and reference each other.
+
+**Fix**: Delete the barrel. Import directly: `import { fetchBookDetail } from '@/services/api/bookApi'`. The barrel file provides zero value to DX when the underlying files are already well-organized.
+
+### 1.4 Hooks Scattered Across Three Locations
+**Severity: Medium**
+
+```
+src/hooks/                     ← top-level hooks
+src/hooks/book/                ← nested by domain
+src/hooks/home/                ← nested by domain
+src/hooks/reader/              ← nested by domain
+```
+
+Some hooks are at the root (`useWebsiteSettings.ts`), some are nested by domain. The domain-nested hooks should be colocated with their feature.
+
+### 1.5 No `loading.tsx` or `error.tsx` per Route
+**Severity: Medium**
+
+Only the root `src/app/error.tsx` exists. There are **no** `loading.tsx` files and no per-route error boundaries anywhere in the 34+ public routes, 14+ reader routes, etc.
+
+**Impact**: Every route renders a blank screen until all data resolves. No granular error recovery.
+
+**Fix**: Add `loading.tsx` with skeleton UI to high-traffic routes. Add route-specific `error.tsx` where failure modes differ.
+
+---
+
+## SECTION 2 — NEXT.JS APP ROUTER REVIEW
+
+### 2.1 Massive `"use client"` Pages Destroy SSR Benefits
+**Severity: Critical**
+
+Almost every feature page is a `"use client"` monolith:
+
+- [BookUpdatesPage.tsx](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/features/bookUpdates/BookUpdatesPage.tsx) — 948 lines, `"use client"`, entire page is client JS
+- [CollectionDetail.tsx](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/components/collection/CollectionDetail.tsx) — 548 lines, `"use client"`
+- [HomePage.tsx](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/features/Home/HomePage.tsx) — likely also `"use client"`
+
+The route pages in `src/app/(public)/book-updates/page.tsx` are just:
+```tsx
+export default function Page() {
+  return <BookUpdatesPage />; // ← entire page is client-rendered
+}
+```
+
+**Impact**:
+- **Zero SSR**: The initial HTML is an empty shell. Search engines see nothing. TTFB advantage of RSC is wasted.
+- **Huge JS bundle**: 948 lines of JSX + Swiper + Ant Design Select + Lucide icons — ALL shipped as client JS.
+- **Contradicts the entire purpose of App Router**: You're paying the complexity tax of RSC without any benefit.
+
+**Correct approach**: 
+```tsx
+// app/(public)/book-updates/page.tsx — Server Component
+export default async function Page() {
+  // Prefetch calendar data on server
+  const queryClient = new QueryClient();
+  await queryClient.prefetchQuery({
+    queryKey: queryKeys.bookUpdates.calendar('all', 'all'),
+    queryFn: () => fetchBookUpdateCalendar({ scope: 'all', contentType: 'all' }),
+  });
+
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <BookUpdatesHero />           {/* Server Component: static hero */}
+      <BookUpdatesFilters />         {/* Client: interactive filters */}
+      <BookUpdatesCalendarStrip />   {/* Client: swiper calendar */}
+      <BookUpdatesList />            {/* Client: dynamic book list */}
+    </HydrationBoundary>
+  );
+}
+```
+
+### 2.2 ~~`<html lang="en">` on a Thai Website~~ ✅ FIXED
+**Severity: Medium**
+
+~~[layout.tsx L68](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/app/layout.tsx#L68):~~
+```tsx
+// BEFORE:
+<html lang="en" className={...}>
+// AFTER (fixed):
+<html lang="th" className={...}>
+```
+
+The entire site content is in Thai. The `lang` attribute is wrong.
+
+**Impact**: Screen readers announce content using English phonetics. SEO metadata signals English content. Accessibility violation (WCAG).
+
+**Fix**: `<html lang="th">`
+
+### 2.3 Root Layout Prefetches on Every Request
+**Severity: High**
+
+[layout.tsx L58-65](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/app/layout.tsx#L58-L65):
+```typescript
+export default async function RootLayout({ children }) {
+  const queryClient = new QueryClient(); // ← NEW client per render
+  await queryClient.prefetchQuery({...}); // ← blocks every navigation
+  return (
+    <ClientProviders dehydratedState={dehydrate(queryClient)}>
+      {children}
+    </ClientProviders>
+  );
+}
+```
+
+Creating a new `QueryClient` in the root layout and prefetching on every server render is correct for SSR, but this blocks EVERY navigation with a server round-trip for website settings.
+
+Combined with `unstable_cache` using `revalidate: 300`, the `prefetchQuery` call is redundant most of the time — the data is already cached by `unstable_cache`.
+
+**Deeper issue**: The dehydrated state from this root layout `QueryClient` is passed to `ClientProviders`, but the client already has its own `QueryClient` in `TanstackProvider`. This means the dehydrated data is applied once on initial load and then the client's own staleTime/gcTime governs refetches. The flow is correct but the mental model is fragile.
+
+### 2.4 Duplicate Antd ConfigProvider
+**Severity: Low**
+
+Two `ConfigProvider` instances with **conflicting** theme configs:
+
+1. [AntdRegistry.tsx](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/app/AntdRegistry.tsx#L17-L29) — `colorLink: '#000000'`
+2. [client-providers.tsx](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/app/client-providers.tsx#L17) — `colorPrimary: '#f5222d'`
+
+And `AntdRegistry.tsx` isn't even used in the layout anymore — it's imported nowhere. Dead code.
+
+### 2.5 No Suspense/Streaming for Heavy Pages
+**Severity: High**
+
+No usage of `<Suspense>` boundaries within page content. No streaming. The `AppShell` wraps client components in Suspense, but the actual page content is all-or-nothing client rendering.
+
+---
+
+## SECTION 3 — DATA FETCHING REVIEW
+
+### 3.1 ALL Data Fetching is Client-Side via Axios
+**Severity: Critical**
+
+Every single API call goes through [apiClient.ts](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/services/apiClient.ts), which is an Axios instance. Axios does **not** integrate with Next.js's fetch cache, ISR revalidation, or RSC data fetching.
+
+This means:
+- **No server-side caching** via Next.js built-in mechanisms
+- **No ISR/revalidation** possible for API data
+- **No request deduplication** that `fetch()` provides in RSC
+- The `unstable_cache` wrapper in layout.tsx calls `fetchWebsiteSettings()` which internally uses `apiClient.get()` — it works but bypasses Next.js's fetch-level cache semantics
+
+**Impact**: You're running a SPA with Next.js overhead. The entire SSR/ISR/RSC capability of Next.js 16 is unused for data.
+
+**Correct approach for public data**:
+```typescript
+// services/api/bookUpdatesApi.server.ts
+export async function fetchBookUpdateCalendar(params: {...}) {
+  const res = await fetch(`${process.env.API_BASE_URL}/book-updates/calendar?...`, {
+    next: { revalidate: 60 }, // ISR: revalidate every 60s
+  });
+  if (!res.ok) throw new Error('Failed to fetch');
+  const json = await res.json();
+  return assertSuccess(json, '...');
+}
+```
+
+### 3.2 Auth Token Waterfall in Request Interceptor
+**Severity: High**
+
+[apiClient.ts L55-71](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/services/apiClient.ts#L55-L71):
+```typescript
+// In the request interceptor:
+const deviceId = await resolveDeviceId();        // ← async fingerprint
+const stateToken = useAuthStore.getState().token; // ← zustand
+let tokenValue = parseJwtToken(stateToken || Cookies.get('token'));
+if (!tokenValue) {
+  tokenValue = (await getAuthSession())?.token;   // ← SECOND async call
+}
+```
+
+**Every single API request** potentially triggers:
+1. An async fingerprint resolution
+2. Zustand state read
+3. Cookie read
+4. A **fetch** to `/api/auth/session` (if no token found)
+
+This is a request waterfall **inside an interceptor**. The `getAuthSession()` fetch is particularly expensive — it means a non-authenticated user's every request makes a round-trip to the server to check for a session.
+
+**Impact**: Latency tax on every single API call.
+
+**Fix**: Resolve token once at mount and cache in memory. Never call `getAuthSession()` in an interceptor — the store's `setMounted()` should be the only place this happens.
+
+### 3.3 ~~`LIMIT = 200` — Over-Fetching Time Bomb~~ ✅ FIXED
+**Severity: High**
+
+~~You just changed `LIMIT` from 20 to 200 in `BookUpdatesPage.tsx`. This has been reverted back to 20.~~
+
+~~**Impact**:~~
+- 200 book objects with images, categories, tags = massive payload
+- Mobile users on 3G download megabytes of JSON
+- React renders 200 book cards in a Swiper — no virtualization
+- Memory pressure on low-end devices
+
+### 3.4 Missing Error Handling in Mutations
+**Severity: Medium**
+
+In [CollectionDetail.tsx](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/components/collection/CollectionDetail.tsx), mutations like `deleteCollectionMutation` show a notification on error but don't handle network failures, timeouts, or retry:
+
+```typescript
+const deleteCollectionMutation = useMutation({
+  mutationFn: () => deleteCollection(Number(collectionId)),
+  onSuccess: () => { ... },
+  onError: () => {
+    notification.error({ message: 'ไม่สามารถลบคอลเลคชั่นได้' });
+  },
+});
+```
+
+No differentiation between network error, 401, 403, 500. User gets the same generic message for everything.
+
+---
+
+## SECTION 4 — ZUSTAND REVIEW
+
+### 4.1 Auth Store Contains Side Effects and Async Logic
+**Severity: High**
+
+[authStore.ts](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/stores/authStore.ts) has:
+
+1. **Cookie manipulation** inside store actions (`clearAuthTokenCookies`, `setAuthTokenCookie`)
+2. **JWT parsing** inside store actions
+3. **Async HTTP call** (`getAuthSession()`) inside `setMounted()`
+4. **`window.location.reload()`** inside `logout()`
+
+```typescript
+logout: () => {
+  clearLegacyLocalAuthStorage();
+  clearAuthTokenCookies();
+  set({ user: null, token: null, isLoggedIn: false });
+  window.location.reload(); // ← side effect in store
+},
+```
+
+**Impact**: 
+- Store is untestable without mocking fetch, cookies, window, and localStorage
+- `logout()` force-reloads the page — this destroys any in-flight work and is a terrible UX
+- `setMounted()` fires an untracked async chain that updates state after the sync call returns
+
+**Correct approach**:
+```typescript
+// Store should be pure state
+logout: () => set({ user: null, token: null, isLoggedIn: false }),
+
+// Side effects belong in an effect hook or action layer
+const handleLogout = () => {
+  clearLegacyLocalAuthStorage();
+  clearAuthTokenCookies();
+  useAuthStore.getState().logout();
+  queryClient.clear();
+  router.push('/');
+};
+```
+
+### 4.2 UIStore is a Modal Registry Anti-Pattern
+**Severity: Medium**
+
+[uiStore.ts](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/stores/uiStore.ts) has:
+```
+isLoginModalOpen, isRegisterModalOpen, isDailyPopupOpen,
+isDuplicateLoginModalOpen, isBlockedUserModalOpen, isCheckinModalOpen
+```
+
+Six boolean flags + their open/close action pairs = 18 properties for modal state.
+
+**Impact**: Every new modal adds 3 more properties. Any component subscribing to `useUIStore` re-renders when ANY modal toggles.
+
+**Fix**: Use a single set or stack:
+```typescript
+type ModalType = 'login' | 'register' | 'daily-popup' | 'blocked-user' | 'checkin';
+
+interface UIState {
+  openModals: Set<ModalType>;
+  openModal: (modal: ModalType) => void;
+  closeModal: (modal: ModalType) => void;
+}
+```
+
+### 4.3 Zustand Selectors — Missing `useShallow`
+**Severity: Medium**
+
+Across the codebase, selectors extract single primitive values, which is fine:
+```typescript
+const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+```
+
+But in `SocketProvider.tsx`:
+```typescript
+const { token: authToken, user } = useAuthStore() as any; // ← subscribes to EVERYTHING
+```
+
+**Impact**: `SocketProvider` re-renders on every Zustand state change (balance updates, login state changes, etc.).
+
+---
+
+## SECTION 5 — TANSTACK QUERY REVIEW
+
+### 5.1 Hardcoded Query Keys in CollectionDetail
+**Severity: Medium**
+
+[CollectionDetail.tsx](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/components/collection/CollectionDetail.tsx#L46-L64) uses inline string keys:
+
+```typescript
+queryKey: ['userCollections'],        // ← raw string
+queryKey: ['collectionBooks', collectionId],
+queryKey: ['hiddenCollectionBooks', collectionId],
+```
+
+While `queryKeys` factory in [query.ts](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/constants/query.ts) has no collection entries.
+
+**Impact**: Invalidation is fragile. Typo in one place = stale cache. No type safety.
+
+### 5.2 No Mutation Invalidation Strategy
+**Severity: Medium**
+
+Mutations manually call `invalidateQueries` with inline keys:
+```typescript
+onSuccess: () => {
+  queryClient.invalidateQueries({ queryKey: ['collectionBooks', collectionId] });
+  queryClient.invalidateQueries({ queryKey: ['userCollections'] });
+}
+```
+
+This is scattered across 6+ mutation definitions in one file. No centralized invalidation map.
+
+### 5.3 `staleTime` vs `gcTime` Mismatch
+**Severity: Low**
+
+In [providers.tsx](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/app/providers.tsx#L30-L34):
+```typescript
+staleTime: 60 * 1000,   // 1 minute
+gcTime: 5 * 60 * 1000,  // 5 minutes
+```
+
+But in [BookUpdatesPage.tsx](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/features/bookUpdates/BookUpdatesPage.tsx):
+```typescript
+// calendarQuery
+staleTime: 60_000,  // matches default
+// dailyQuery
+staleTime: 30_000,  // shorter than default — intentional?
+```
+
+No `gcTime` override, so it uses the global 5-min default. The data fetched with `LIMIT=200` hangs in memory for 5 minutes after the component unmounts.
+
+### 5.4 `QUERY_CONFIG` Constants — Defined but Not Uniformly Used
+**Severity: Low**
+
+[query.ts](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/constants/query.ts#L133-L151) defines:
+```typescript
+STALE_TIME_SHORT: 10_000,
+STALE_TIME_MEDIUM: 30_000,
+// etc.
+```
+
+But across the codebase, raw numbers are used instead of these constants.
+
+---
+
+## SECTION 6 — PERFORMANCE REVIEW
+
+### 6.1 ~~BookUpdatesPage is a 948-Line God Component~~ ✅ PARTIALLY FIXED
+**Severity: High → Medium**
+
+[BookUpdatesPage.tsx](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/features/bookUpdates/BookUpdatesPage.tsx) has been decomposed from a single ~948-line client monolith into a page controller plus focused feature components:
+
+```
+src/features/bookUpdates/
+  BookUpdatesPage.tsx
+  bookUpdatesConstants.ts
+  bookUpdatesUtils.ts
+  components/
+    CalendarStrip.tsx
+    FilterBar.tsx
+    FilterPill.tsx
+    BookUpdatesSwiper.tsx
+    TimelineBookCard.tsx
+    TimelineStackPreview.tsx
+    TimelineTimeGroup.tsx
+    BookUpdatesSkeletons.tsx
+```
+
+**What improved**:
+- Page-level file now owns query/state/handlers instead of all presentation detail.
+- `CalendarStrip`, `FilterBar`, `BookUpdatesSwiper`, and timeline cards can be reviewed and tested independently.
+- Stack-card behavior and Swiper behavior are isolated from page data flow.
+- Refactor was intentionally behavior-preserving; API contract and query flow remain unchanged.
+
+**Remaining issue**:
+- The route is still a client-rendered page island. The next architectural step is splitting static/server-renderable pieces into RSC + `HydrationBoundary`.
+- Swiper-heavy timeline still renders all visible API items; virtualization or server paging UX remains a future performance task.
+
+### 6.2 No Virtualization for Large Lists
+**Severity: High**
+
+With `LIMIT = 200`, up to 200 book cards are rendered into a Swiper. Each card includes:
+- `<Image>` with `fill` + `sizes="210px"`
+- Hover overlay with categories and tags
+- Multiple conditional renders
+
+**No virtualization**. All 200 DOM nodes exist simultaneously.
+
+**Fix**: Use `react-window` or Swiper's `virtual` module.
+
+### 6.3 Global CSS Import of Swiper in Root Layout
+**Severity: Medium**
+
+[layout.tsx L5-7](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/app/layout.tsx#L5-L7):
+```typescript
+import 'swiper/css';
+import 'swiper/css/pagination';
+import 'swiper/css/navigation';
+```
+
+Swiper CSS is loaded on **every single page** of the application, even pages that don't use Swiper.
+
+**Fix**: Import Swiper CSS only in components that use it — which [BookUpdatesPage.tsx](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/features/bookUpdates/BookUpdatesPage.tsx#L39-L41) already does correctly. Remove from layout.
+
+### 6.4 No Dynamic Imports for Heavy Libraries
+**Severity: Medium**
+
+- `apexcharts` (339KB) is in dependencies but likely only used on one or two pages
+- `recharts` (similar) 
+- `@dnd-kit` only used in CollectionDetail
+- `socket.io-client` wraps the entire app via `SocketProvider`
+
+None of these are dynamically imported.
+
+---
+
+## SECTION 7 — TYPESCRIPT REVIEW
+
+### 7.1 `any` Usage is Rampant and ESLint Rule is Disabled
+**Severity: Critical**
+
+[eslint.config.mjs](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/eslint.config.mjs#L19):
+```javascript
+"@typescript-eslint/no-explicit-any": "off",
+```
+
+Combined with:
+```javascript
+"@typescript-eslint/no-unused-vars": "off",
+"@typescript-eslint/ban-ts-comment": "off",
+"react-hooks/exhaustive-deps": "off",
+```
+
+**Every major safety net is disabled.**
+
+Evidence of `any` abuse:
+- [bookApi.ts L40](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/services/api/bookApi.ts#L40): `normalizeBookReportTypes = (payload: BookReportTypesResponse | any)`
+- [bookApi.ts L146](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/services/api/bookApi.ts#L146): `normalizeBooksNewResponse = (payload: any)`
+- [bookApi.ts L345](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/services/api/bookApi.ts#L345): `catch (error: any)`
+- [SocketProvider.tsx L58](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/providers/SocketProvider.tsx#L58): `const { token: authToken, user } = useAuthStore() as any`
+- [CollectionDetail.tsx L501](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/components/collection/CollectionDetail.tsx#L501): `<CardBook book={b as any} />`
+- Every API mutation return type is `Promise<any>`
+
+**Impact**: TypeScript is being used as a syntactic layer without any of its type-safety benefits. Runtime crashes from shape mismatches are guaranteed.
+
+### 7.2 BookUpdateDailyBook Uses Index Signature
+**Severity: Medium**
+
+[bookUpdatesApi.ts L42](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/services/api/bookUpdatesApi.ts#L42):
+```typescript
+export type BookUpdateDailyBook = {
+  [key: string]: unknown;  // ← THIS
+  book_id: number;
+  name: string;
+  // ...
+};
+```
+
+The index signature `[key: string]: unknown` destroys type safety. Any property access `book.anything` becomes valid at compile time.
+
+### 7.3 Zod Schemas Are Too Loose
+**Severity: Medium**
+
+[apiResponseSchemas.ts](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/services/api/apiResponseSchemas.ts):
+```typescript
+const looseObjectSchema = z.object({}).passthrough();
+const looseRecordSchema = z.record(z.string(), z.unknown());
+```
+
+Every schema uses `.passthrough()` and `looseRecordSchema` — they accept literally anything. Validation exists but validates almost nothing.
+
+---
+
+## SECTION 8 — SECURITY REVIEW
+
+### 8.1 CRITICAL: Private Keys and Secrets Committed to Repository
+**Severity: Critical 🚨**
+
+[.env.development](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/.env.development):
+
+```env
+FACEBOOK_APP_SECRET=744e9f9ae49f3e11d813a97121986933
+GOOGLE_CLIENT_SECRET=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
+APPLE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----
+MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQg6q3m8GTVFTC/8Qgk...
+-----END PRIVATE KEY-----
+ACCESS_TOKEN=4f203ebc-b62f-49c3-846b-a8bfb868ac51
+SECRET_KEY=6cffb7afd89e640694e4cf34e0e67b42
+```
+
+While `.gitignore` includes `.env*`, the file exists in the workspace. If this was EVER committed to git history, these secrets are permanently exposed. The Apple private key in plaintext is especially dangerous.
+
+> [!CAUTION]
+> **IMMEDIATE ACTION REQUIRED**: Rotate ALL secrets listed above — Facebook App Secret, Google Client Secret, Apple Private Key, ACCESS_TOKEN, and SECRET_KEY. Check `git log` to verify they were never committed. Use a secrets manager.
+
+### 8.2 Client-Side Secret Key Exposed
+**Severity: High**
+
+```env
+NEXT_PUBLIC_SECRET_KEY=6cffb7afd89e640694e4cf34e0e67b42
+```
+
+Any `NEXT_PUBLIC_*` variable is embedded in the client JavaScript bundle and visible to every user. This is labeled "SECRET_KEY" — used for episode decryption. Any user can extract this key from the JS bundle and decrypt content without paying.
+
+**Fix**: Move decryption to a server-side API route. Client should request decrypted content from the server.
+
+### 8.3 Authorization Header Without `Bearer` Prefix
+**Severity: Medium**
+
+[apiClient.ts L69](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/services/apiClient.ts#L69):
+```typescript
+config.headers.Authorization = `${tokenValue}`; // ← no "Bearer " prefix
+```
+
+The raw JWT is sent as the Authorization header value. Standard is `Bearer <token>`. While the backend clearly accepts this, it means:
+- Any middleware or proxy expecting standard auth headers will fail
+- Token could be logged as a non-standard header value
+
+### 8.4 No CSRF Protection on Mutations
+**Severity: Medium**
+
+All mutation endpoints (`POST`, `DELETE`, `PATCH`) have no CSRF token. The Axios client has no CSRF header setup. Cookies are set without `SameSite=Strict`.
+
+### 8.5 `FingerprintJS` on Every Request
+**Severity: Medium**
+
+Every API request awaits `resolveDeviceId()` which uses `@fingerprintjs/fingerprintjs`. This:
+- Adds latency to every request
+- Sends a tracking fingerprint as `x-device-id`
+- May conflict with privacy regulations (GDPR, PDPA)
+
+---
+
+## SECTION 9 — CODE QUALITY REVIEW
+
+### 9.1 ~~Dead Code: AntdRegistry.tsx~~ ✅ FIXED
+**Severity: Low**
+
+~~`AntdRegistry.tsx` was 43 lines of dead code with `@ant-design/cssinjs` SSR cache, imported nowhere. **Deleted.**~~
+
+### 9.2 Copy-Paste API Functions
+**Severity: Medium**
+
+In [userApi.ts](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/services/api/userApi.ts):
+```typescript
+// Lines 239-303: THREE nearly identical functions
+export const fetchUserShelve = async (limit, page) => {
+  try {
+    const resp = await apiClient.get('/user/getbookshelve', { params: { limit, page } });
+    const payload = resp.data?.data ?? resp.data;
+    if (payload && Array.isArray(payload.books)) return payload;
+    if (Array.isArray(payload)) return { books: payload, paginate: null };
+    return { books: [], paginate: null };
+  } catch (err: any) { throw err; }
+}
+
+export const fetchUserShelveContinue = async (limit, page) => { /* identical structure */ }
+export const fetchUserShelveBuy = async (limit, page, order) => { /* identical structure */ }
+```
+
+Three functions with the same normalization logic. Classic copy-paste.
+
+**Fix**: Extract a `fetchShelveEndpoint(url, params)` utility.
+
+### 9.3 `catch (error) { throw error; }` — Pointless Try-Catch
+**Severity: Low**
+
+Multiple API functions:
+```typescript
+export const buyGroupPromotion = async (data) => {
+  try {
+    const response = await apiClient.post("/buy/groupPromotion", data);
+    return response.data;
+  } catch (error) {
+    throw error; // ← does nothing
+  }
+};
+```
+
+The try-catch adds no value — it just re-throws. 14+ instances in the codebase.
+
+### 9.4 Empty Catch Blocks and Commented-Out Console Logs
+**Severity: Low**
+
+```typescript
+// bookApi.ts L338-339
+if (groups.length > 0 && groups[0].list && groups[0].list.length > 0) {
+  // empty block — was once a console.log
+}
+
+// SocketProvider.tsx L116-119
+/* console.log('Socket Initial Query:', { ... }); */
+```
+
+Commented-out debug code and empty conditionals throughout.
+
+### 9.5 `useEffect` with `[queryClient]` Dependency
+**Severity: Low**
+
+[providers.tsx L40-46](file:///c:/Users/MyPc/Documents/GitHub/front-nextJs/src/app/providers.tsx#L40-L46):
+```typescript
+React.useEffect(() => {
+  try {
+    localStorage.removeItem('searchHistory');
+    localStorage.removeItem('search_history');
+  } catch {}
+}, [queryClient]); // ← queryClient is stable, so this runs once
+```
+
+The dependency array `[queryClient]` is misleading — `queryClient` is created with `useState` and never changes. This effectively runs once on mount. Should be `[]`.
+
+---
+
+## SECTION 10 — FINAL ARCHITECTURE SCORE
+
+| Category | Score (0–10) | Notes |
+|---|---|---|
+| **Overall Architecture** | **4.0** | SPA shoehorned into App Router |
+| **Scalability** | **3.5** | God components, no code splitting, barrel exports |
+| **Performance** | **3.0** | No SSR data, no virtualization, LIMIT=200, no dynamic imports |
+| **Maintainability** | **4.5** | Good test files exist, but 948-line files, `any` everywhere |
+| **DX (Developer Experience)** | **5.0** | Reasonable folder structure, query key factories, some Zod |
+| **Production Readiness** | **3.0** | Exposed secrets, no CSRF, client-side decryption key |
+
+---
+
+### Top 10 Biggest Problems
+
+| # | Problem | Severity |
+|---|---|---|
+| 1 | 🚨 Private keys and secrets in `.env.development` potentially in git history | Critical |
+| 2 | `NEXT_PUBLIC_SECRET_KEY` exposes decryption key to all users | Critical |
+| 3 | Zero SSR — every page is `"use client"` monolith | Critical |
+| 4 | All data fetching via Axios, bypassing Next.js cache/ISR | Critical |
+| 5 | `any` is everywhere, ESLint safety rules all disabled | Critical |
+| 6 | BookUpdatesPage still fully client-rendered, but god component split is done | Medium |
+| 7 | Auth interceptor waterfall (fingerprint + session check on every request) | High |
+| 8 | `LIMIT = 200` with no virtualization | High |
+| 9 | Zustand stores contain side effects (page reload, cookie writes, HTTP) | High |
+| 10 | No `loading.tsx`, no per-route error boundaries, no streaming | High |
+
+---
+
+### Top 10 Highest Impact Improvements
+
+| # | Improvement | Impact |
+|---|---|---|
+| 1 | **Rotate all exposed secrets immediately** | Security |
+| 2 | **Move content decryption to server-side API route** | Security |
+| 3 | **Break pages into RSC + client islands** — server-render layout/hero, hydrate interactive parts | Performance, SEO, Bundle |
+| 4 | **Use `fetch()` with `next: { revalidate }` for public data** (home, book updates, rankings) | Performance, Caching |
+| 5 | **Split God components** — BookUpdatesPage → 8+ files ✅ done for BookUpdates | Maintainability |
+| 6 | **Enable `no-explicit-any` and `exhaustive-deps`** ESLint rules | Type Safety |
+| 7 | **Add `loading.tsx` skeletons** to top 5 routes | UX |
+| 8 | **Cache auth token in memory; remove `getAuthSession()` from interceptor** | Performance |
+| 9 | **Set `LIMIT` back to 20; add infinite scroll or pagination** | Performance |
+| 10 | **Dynamic-import heavy deps** (apexcharts, recharts, dnd-kit, socket.io) | Bundle Size |
+
+---
+
+### Refactor Roadmap
+
+#### 🔴 Immediate (This Week)
+- [ ] Rotate all secrets (Facebook, Google, Apple, ACCESS_TOKEN, SECRET_KEY)
+- [ ] Verify `.env.development` was never committed; if it was, use `git filter-branch` or BFG
+- [x] ~~Revert `LIMIT` from 200 to 20~~ ✅
+- [x] ~~Fix `<html lang="en">` → `<html lang="th">`~~ ✅
+- [x] ~~Remove dead `AntdRegistry.tsx`~~ ✅
+- [x] ~~Remove Swiper CSS imports from root layout~~ ✅
+
+#### 🟡 Short-Term (2–4 Weeks)
+- [x] ~~Extract BookUpdatesPage into 8+ component files~~ ✅
+- [ ] Move query keys for collections into `queryKeys` factory
+- [ ] Refactor auth interceptor: remove `getAuthSession()`, cache token in memory
+- [ ] Refactor `authStore.logout()` to not call `window.location.reload()`
+- [ ] Enable `no-explicit-any` ESLint rule (fix incrementally)
+- [ ] Add `loading.tsx` to top 5 traffic routes
+- [ ] Merge `interfaces/` into `types/`
+- [ ] Delete `apiServices.ts` barrel; update imports
+
+#### 🟢 Long-Term (1–3 Months)
+- [ ] Implement RSC + client island pattern for all public pages
+- [ ] Create server-side fetch layer using `fetch()` for public data with ISR
+- [ ] Move content decryption to server-side API route
+- [ ] Add virtualization (react-window) for large lists
+- [ ] Dynamic import heavy libraries (charts, dnd-kit, socket.io)
+- [ ] Replace UIStore modal booleans with modal stack pattern
+- [ ] Add per-feature Zod schemas with strict validation (not passthrough)
+- [ ] Implement CSRF protection for mutations
+- [ ] Add Sentry or similar error tracking (replace `console.error`)
+- [ ] Establish feature-based architecture with colocated hooks/api/components
+
+---
+
+### Suggested Ideal Architecture
+
+```
+src/
+  app/
+    (public)/
+      layout.tsx                 ← Server Component: AppShell
+      page.tsx                   ← RSC: prefetch + dehydrate
+      book-updates/
+        page.tsx                 ← RSC: prefetch calendar
+        loading.tsx              ← Skeleton UI
+        error.tsx                ← Route-specific error
+      book/[id]/
+        page.tsx                 ← RSC: prefetch book detail
+        loading.tsx
+    (auth)/
+    (reader)/
+    api/
+      auth/session/route.ts     ← httpOnly cookie session
+      secure/[...proxy]/route.ts
+
+  features/
+    book-updates/
+      BookUpdatesPage.client.tsx ← Client island
+      components/
+        CalendarStrip.tsx
+        TimelineBookCard.tsx
+        BookUpdatesSwiper.tsx
+        FilterBar.tsx
+      hooks/
+        useBookUpdateFilters.ts
+      api/
+        bookUpdatesApi.ts        ← Client fetch (Axios)
+        bookUpdatesApi.server.ts ← Server fetch (native fetch + ISR)
+
+    collection/
+      CollectionDetailPage.client.tsx
+      components/ ...
+      hooks/ ...
+
+  shared/
+    components/                  ← Truly reusable leaf UI
+      ui/ Button, Modal, Skeleton
+      novelCard/
+      navbar/
+    hooks/
+    utils/
+    types/
+
+  lib/
+    api-client.ts               ← Axios instance (client)
+    query-keys.ts               ← Centralized query key factory
+    query-config.ts             ← Centralized staleTime/gcTime
+
+  stores/
+    auth-store.ts               ← Pure state only
+    ui-store.ts                 ← Modal stack pattern
+
+  providers/
+    QueryProvider.tsx
+    SocketProvider.tsx           ← Lazy loaded, auth-gated
+```

@@ -81,6 +81,8 @@ export interface Coupon {
   createdBy: number;
   createdAt: string;
   updatedAt: string;
+  couponType?: string;
+  applyScope?: string;
   rewards: {
       id: number;
       couponId: number;
@@ -91,6 +93,12 @@ export interface Coupon {
           img: string;
           img_full: string;
       };
+  }[];
+  applicable_books?: {
+      book_id: number;
+      name: string;
+      img: string | null;
+      img_full: string | null;
   }[];
   isClaimable: boolean;
   claimStatus: string;

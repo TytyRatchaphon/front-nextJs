@@ -6,6 +6,7 @@ import { Ticket, Percent, Coins, BookOpenCheck, AlertCircle, Clock } from 'lucid
 import GifLoader from '@/components/utility/GifLoader';
 import CouponCard from '@/components/coupon/CouponCard';
 import { processCoupons, CouponUI } from '@/utils/couponUtils';
+import CouponApplicableBooks from './CouponApplicableBooks';
 import dayjs from 'dayjs';
 import 'dayjs/locale/th';
 import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
@@ -117,6 +118,7 @@ const AvailableCoupons = () => {
                 footer={null}
                 centered
                 zIndex={2200}
+                width={560}
             >
                 {selectedCoupon && (
                     <div className="space-y-4 pt-2">
@@ -150,7 +152,9 @@ const AvailableCoupons = () => {
                                  </div>
                              </div>
 
-                             {selectedCoupon.rewards && selectedCoupon.rewards.length > 0 && (
+                             <CouponApplicableBooks books={selectedCoupon.applicable_books} />
+
+                             {(!selectedCoupon.applicable_books || selectedCoupon.applicable_books.length === 0) && selectedCoupon.rewards && selectedCoupon.rewards.length > 0 && (
                                  <div className="mt-4 border-t border-gray-100 pt-4">
                                      <h4 className="font-semibold text-gray-700 text-sm mb-3 flex items-center gap-2">
                                          <Coins size={16} className="text-yellow-500" /> ของรางวัลที่จะได้รับ

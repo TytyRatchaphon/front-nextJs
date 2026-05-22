@@ -87,4 +87,4 @@ export const getHasRankRewardNotification = (rankData: any) => {
 };
 
 export const getRankRpValue = (rankData: any, user: any) =>
-  Number(rankData?.total_rp ?? user?.current_rp ?? user?.total_rp ?? 0);
+  Number(user?.current_rp ?? user?.total_rp ?? rankData?.total_rp ?? 0);

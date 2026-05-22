@@ -317,38 +317,40 @@ export default function CollectionDetail({ collectionId }: Props) {
                 </div>
               </div>
 
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:mt-6 md:grid-cols-3">
-                <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
+              <div className="mt-4 grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 md:mt-6 md:grid-cols-3">
+                <div className="flex min-h-[132px] flex-col justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gray-400">Visible</p>
                   <p className="mt-2 text-2xl font-semibold text-gray-950">{visibleCount}</p>
                   <p className="mt-1 text-xs text-gray-500">รายการที่กำลังแสดงในคอลเลคชั่น</p>
                 </div>
-                <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
+                <div className="flex min-h-[132px] flex-col justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gray-400">Hidden</p>
                   <p className="mt-2 text-2xl font-semibold text-gray-950">{hiddenCount}</p>
                   <p className="mt-1 text-xs text-gray-500">รายการที่ซ่อนไว้ชั่วคราว</p>
                 </div>
-                <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 mb-2">
+                <div className="flex min-h-[132px] flex-col justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gray-400">Status</p>
                   <p className="mt-2 text-lg font-semibold text-gray-950">{collection.is_public ? 'พร้อมแชร์' : 'ใช้งานส่วนตัว'}</p>
                   <p className="mt-1 text-xs text-gray-500">ปรับการเผยแพร่ได้จากเมนูแก้ไข</p>
                 </div>
               </div>
 
-              <button
-                onClick={handleDeleteCollection}
-                disabled={deleteCollectionMutation.isPending}
-                className="mt-4 inline-flex h-10 w-fit items-center gap-2 rounded-full border border-gray-200 bg-white px-4 text-sm font-medium text-red-700 transition-all hover:border-red-300 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 md:mt-6 md:h-11"
-                title="ลบคอลเลคชั่น"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="3 6 5 6 21 6" />
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                  <line x1="10" y1="11" x2="10" y2="17" />
-                  <line x1="14" y1="11" x2="14" y2="17" />
-                </svg>
-                {deleteCollectionMutation.isPending ? 'กำลังลบ...' : 'ลบคอลเลคชั่น'}
-              </button>
+              <div className="mt-6 flex justify-end md:mt-8">
+                <button
+                  onClick={handleDeleteCollection}
+                  disabled={deleteCollectionMutation.isPending}
+                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border border-red-600 bg-red-600 px-4 text-sm font-semibold !text-white shadow-sm transition-all hover:border-red-700 hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-fit md:h-11"
+                  title="ลบคอลเลคชั่น"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    <line x1="10" y1="11" x2="10" y2="17" />
+                    <line x1="14" y1="11" x2="14" y2="17" />
+                  </svg>
+                  {deleteCollectionMutation.isPending ? 'กำลังลบ...' : 'ลบคอลเลคชั่น'}
+                </button>
+              </div>
             </div>
           </div>
         </section>

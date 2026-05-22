@@ -138,6 +138,7 @@ const BookDetailHeaderContent = ({ book, episodesData }: BookDetailHeaderProps) 
   const [reportReasonByTypeId, setReportReasonByTypeId] = useState<Record<number, number[]>>({});
   const [reportDetail, setReportDetail] = useState('');
   const [submittingReport, setSubmittingReport] = useState(false);
+  const bookshelfButtonClass = 'border-red-800 bg-white !text-[#B01F1F] hover:bg-red-50';
 
   useEffect(() => {
     // Wait for hydration to complete to avoid double fetching (guest -> user)
@@ -649,20 +650,18 @@ const BookDetailHeaderContent = ({ book, episodesData }: BookDetailHeaderProps) 
                 <button
                   onClick={handleToggleBookshelf}
                   disabled={loading}
-                  className={`bg-white border border-red-800 text-gray-700 px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm hover:bg-gray-50 transition flex items-center gap-1.5 sm:gap-2 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={`border px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm transition flex items-center gap-1.5 sm:gap-2 ${bookshelfButtonClass} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {isAdded ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <path d="M14 2C16 2 17 3.01 17 5.03V12.08C17 14.07 15.59 14.84 13.86 13.8L12.54 13C12.24 12.82 11.76 12.82 11.46 13L10.14 13.8C8.41 14.84 7 14.07 7 12.08V5.03C7 3.01 8 2 10 2H14Z" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M6.82 4.98996C3.41 5.55996 2 7.65996 2 11.9V14.93C2 19.98 4 22 9 22H15C20 22 22 19.98 22 14.93V11.9C22 7.58996 20.54 5.47996 17 4.95996" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0" viewBox="0 0 384 512" fill="#B01F1F" aria-hidden="true">
+                      <path fill="#B01F1F" d="M64 0C28.7 0 0 28.7 0 64L0 480c0 11.5 6.2 22.2 16.2 27.8s22.3 5.5 32.2-.4L192 421.3 335.5 507.4c9.9 5.9 22.2 6.1 32.2 .4S384 491.5 384 480l0-416c0-35.3-28.7-64-64-64L64 0z" />
                     </svg>
                   ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <path d="M9 22H15C20 22 22 20 22 15V9C22 4 20 2 22 9C22 4 20 2 15 2H9C4 2 2 4 2 9V15C2 20 4 22 9 22Z" fill="white" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M17 2.44V12.42C17 14.39 15.59 15.16 13.86 14.12L12.54 13.33C12.24 13.15 11.76 13.15 11.46 13.33L10.14 14.12C8.41 15.15 7 14.39 7 12.42V2.44" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0" viewBox="0 0 384 512" fill="#B01F1F" aria-hidden="true">
+                      <path fill="#B01F1F" d="M0 64C0 28.7 28.7 0 64 0L320 0c35.3 0 64 28.7 64 64l0 417.1c0 25.6-28.5 40.8-49.8 26.6L192 412.8 49.8 507.7C28.5 521.9 0 506.6 0 481.1L0 64zM64 48c-8.8 0-16 7.2-16 16l0 387.2 117.4-78.2c16.1-10.7 37.1-10.7 53.2 0L336 451.2 336 64c0-8.8-7.2-16-16-16L64 48z" />
                     </svg>
                   )}
-                  <span className="hidden sm:inline text-red-800">
+                  <span className="hidden sm:inline !text-[#B01F1F]">
                     {isAdded ? "นำออกจากชั้น" : "เพิ่มเข้าชั้น"}
                   </span>
                 </button>
@@ -672,14 +671,8 @@ const BookDetailHeaderContent = ({ book, episodesData }: BookDetailHeaderProps) 
                   onClick={() => setShareModalOpen(true)}
                   className="bg-white border border-red-800 text-gray-700 px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm hover:bg-gray-50 transition flex items-center gap-1.5 sm:gap-2"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M16.96 6.16998C18.96 7.55998 20.34 9.76998 20.62 12.32L16.96 6.16998Z" fill="#B01F1F" />
-                    <path d="M16.96 6.16998C18.96 7.55998 20.34 9.76998 20.62 12.32" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M3.49023 12.37C3.75023 9.82997 5.11023 7.61997 7.09023 6.21997" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M8.18994 20.94C9.34994 21.53 10.6699 21.86 12.0599 21.86C13.3999 21.86 14.6599 21.56 15.7899 21.01" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M12.0598 7.70001C13.5951 7.70001 14.8398 6.45537 14.8398 4.92001C14.8398 3.38466 13.5951 2.14001 12.0598 2.14001C10.5244 2.14001 9.27979 3.38466 9.27979 4.92001C9.27979 6.45537 10.5244 7.70001 12.0598 7.70001Z" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M4.8298 19.92C6.36516 19.92 7.60981 18.6753 7.60981 17.14C7.60981 15.6046 6.36516 14.36 4.8298 14.36C3.29445 14.36 2.0498 15.6046 2.0498 17.14C2.0498 18.6753 3.29445 19.92 4.8298 19.92Z" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M19.1701 19.92C20.7055 19.92 21.9501 18.6753 21.9501 17.14C21.9501 15.6046 20.7055 14.36 19.1701 14.36C17.6348 14.36 16.3901 15.6046 16.3901 17.14C16.3901 18.6753 17.6348 19.92 19.1701 19.92Z" stroke="#B01F1F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 shrink-0" viewBox="0 0 512 512" fill="#B01F1F" aria-hidden="true">
+                    <path fill="#B01F1F" d="M307.8 18.4c-12 5-19.8 16.6-19.8 29.6l0 80-112 0c-97.2 0-176 78.8-176 176 0 113.3 81.5 163.9 100.2 174.1 2.5 1.4 5.3 1.9 8.1 1.9 10.9 0 19.7-8.9 19.7-19.7 0-7.5-4.3-14.4-9.8-19.5-9.4-8.8-22.2-26.4-22.2-56.7 0-53 43-96 96-96l96 0 0 80c0 12.9 7.8 24.6 19.8 29.6s25.7 2.2 34.9-6.9l160-160c12.5-12.5 12.5-32.8 0-45.3l-160-160c-9.2-9.2-22.9-11.9-34.9-6.9z" />
                   </svg>
                   <span className="text-red-800">แชร์</span>
                 </button>
@@ -720,7 +713,7 @@ const BookDetailHeaderContent = ({ book, episodesData }: BookDetailHeaderProps) 
                     }}
                   >
                     <button
-                      className="bg-white border border-red-800 text-gray-700 w-[38px] sm:w-[42px] h-[38px] sm:h-[42px] rounded-lg text-sm hover:bg-gray-50 transition flex items-center justify-center "
+                      className="flex h-[42px] w-[42px] items-center justify-center rounded-lg border border-red-800 bg-white text-sm text-gray-700 transition hover:bg-gray-50 sm:h-[44px] sm:w-[44px]"
                       title="เพิ่มเติม"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#B01F1F">

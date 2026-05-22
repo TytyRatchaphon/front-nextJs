@@ -296,7 +296,7 @@ export default function RewardSwiper({
   const [isMounted, setIsMounted] = React.useState(false);
   const [isFollowed, setIsFollowed] = React.useState(isInitiallyFollowed);
   const [countdown, setCountdown] = React.useState(() =>
-    getCountdownSnapshot(startDate, endDate, initialNow ?? Date.now())
+    getCountdownSnapshot(startDate, endDate, initialNow ?? 0)
   );
 
   React.useEffect(() => {

@@ -47,8 +47,9 @@ describe('navbarRankUtils', () => {
     expect(getHasRankRewardNotification(rankData)).toBe(true);
   });
 
-  it('resolves rp value from rank data before user fallback', () => {
-    expect(getRankRpValue({ total_rp: 12 }, { current_rp: 5 })).toBe(12);
+  it('resolves rp value from user current RP before rank data fallback', () => {
+    expect(getRankRpValue({ total_rp: 12 }, { current_rp: 5 })).toBe(5);
     expect(getRankRpValue({}, { current_rp: 5 })).toBe(5);
+    expect(getRankRpValue({ total_rp: 12 }, null)).toBe(12);
   });
 });

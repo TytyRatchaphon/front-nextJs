@@ -22,6 +22,7 @@ import {
 import AmountPill from "@/components/utility/AmountPill";
 import FastTicketPill from "@/components/utility/FastTicketPill";
 import FreeCoinPill from "@/components/utility/FreeCoinPill";
+import RPPill from "@/components/utility/RPPill";
 import StampPill from "@/components/utility/StampPill";
 import FrameOverlayImage from "@/components/ui/FrameOverlayImage";
 import type { RankItem } from "@/services/api/userApi";
@@ -64,8 +65,6 @@ const menuItems = [
   { href: "/coupon", label: "คูปอง", icon: Ticket },
 ] as const;
 
-const RP_ICON_FALLBACK = "https://image.enjoybook.co/enjoybook.image/web/20260225154739zflt.png";
-
 function UserAvatar({
   avatarSrc,
   userFrameImage,
@@ -96,9 +95,8 @@ function RankSummary({
   currentRank,
   hasRankRewardNotification,
   onClose,
-  rpIconSrc,
   rpValue,
-}: Pick<UserMenuPopoverProps, "currentRank" | "hasRankRewardNotification" | "onClose" | "rpIconSrc" | "rpValue">) {
+}: Pick<UserMenuPopoverProps, "currentRank" | "hasRankRewardNotification" | "onClose" | "rpValue">) {
   if (!currentRank) return null;
 
   return (
@@ -134,19 +132,10 @@ function RankSummary({
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <div className="reader-user-popover-rp-pill flex items-center gap-1 rounded-lg border border-gray-100 bg-white px-2 py-1">
-          <Image
-            src={rpIconSrc || RP_ICON_FALLBACK}
-            alt="RP"
-            width={14}
-            height={14}
-            className="object-contain"
-            unoptimized
-          />
-          <span className="reader-user-popover-rp-value text-xs font-bold text-gray-700">
-            {rpValue.toLocaleString()}
-          </span>
-        </div>
+        <RPPill
+          amount={rpValue}
+          className="reader-user-popover-pill reader-user-popover-rp-pill !h-[30px] !min-w-[82px] !px-2.5"
+        />
         <span className="reader-user-popover-rank-cta flex items-center gap-1 whitespace-nowrap text-[10px] font-semibold text-red-500 group-hover:text-red-600">
           เพิ่มเติม
           <ChevronRight className="h-3 w-3" />
@@ -166,7 +155,6 @@ export default function UserMenuPopover({
   onGifModeChange,
   onLogout,
   onClearCache,
-  rpIconSrc,
   rpValue,
   user,
   userFrameImage,
@@ -195,7 +183,7 @@ export default function UserMenuPopover({
           <div className="flex h-full items-center justify-between px-4">
             <div className="flex min-w-0 items-center gap-3">
               <UserAvatar avatarSrc={avatarSrc} userFrameImage={userFrameImage} />
-              <span className="reader-user-popover-name min-w-0 truncate font-primary text-base text-gray-900">
+              <span className="reader-user-popover-name min-w-0 truncate py-0.5 font-primary text-base leading-[1.45] text-gray-900">
                 {userFullname || "User00001"}
               </span>
             </div>
@@ -224,7 +212,6 @@ export default function UserMenuPopover({
           currentRank={currentRank}
           hasRankRewardNotification={hasRankRewardNotification}
           onClose={onClose}
-          rpIconSrc={rpIconSrc}
           rpValue={rpValue}
         />
       </div>

@@ -21,6 +21,7 @@ import { BookEpisodesTab } from "@/components/bookdetail/BookEpisodesTab";
 import { useLogger } from "@/hooks/useLogger";
 import RecommendedBooks from "@/components/bookdetail/RecommendedBooks";
 import EpPurchaseRewardCollapse from "@/components/bookdetail/EpPurchaseRewardCollapse";
+import BookQuestSection from "@/components/bookdetail/BookQuestSection";
 
 const collapseTabs = ["รายละเอียดเรื่อง", "สารบัญ"] as const;
 const segmentedTabs = ["ความคิดเห็นทั้งหมด", "รีวิวทั้งหมด"] as const;
@@ -31,7 +32,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
   const [activeSegmentedTab, setActiveSegmentedTab] = useState<(typeof segmentedTabs)[number]>(segmentedTabs[0]);
   const { log } = useLogger();
 
-  const { token, hasMounted, user } = useAuthStore() as any;
+  const { token, hasMounted, user, isLoggedIn } = useAuthStore() as any;
   const { openLoginModal } = useUIStore();
     const { settings } = useWebsiteSettings();
 
@@ -270,6 +271,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
           <div className="flex-1 w-full lg:max-w-[calc(100%-320px-1.5rem)]">
             <div className="space-y-4">
               {hasReadingModeSelector && renderReadingModeSelector()}
+              <BookQuestSection bookId={bookId} isLoggedIn={Boolean(isLoggedIn)} />
               <EpPurchaseRewardCollapse data={book.ep_purchase_reward} />
               <Collapse
                 defaultActiveKey={['สารบัญ']}

@@ -1,7 +1,7 @@
 "use client"
 import { useState } from 'react';
 import { Ticket } from 'lucide-react';
-import { Tabs, ConfigProvider, Button, Input, notification } from 'antd';
+import { App, Tabs, ConfigProvider, Button, Input } from 'antd';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { claimCouponByCode, fetchAvailableCoupons, fetchUserCoupons } from '@/services/apiServices';
 import AvailableCoupons from './AvailableCoupons';
@@ -16,6 +16,7 @@ dayjs.locale('th');
 
 const CouponDetail = () => {
     const queryClient = useQueryClient();
+    const { notification } = App.useApp();
     const [couponCode, setCouponCode] = useState('');
 
     // Pre-fetch count available coupons for badge?
