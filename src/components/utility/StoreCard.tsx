@@ -57,21 +57,8 @@ const StoreCard: React.FC<StoreCardProps> = ({ pack, onBuy }) => {
   }, [pack.is_selection, pack.selectable_options]);
 
   const getInitialSelectedStorePackListIds = React.useCallback((): Array<number | string> => {
-    if (!pack.is_selection || !Array.isArray(pack.selectable_options)) {
-      return [];
-    }
-
-    const limit = getSelectionLimit();
-    const preSelectedIds = selectableOptions
-      .filter((option) => option.selected)
-      .map((option) => option.store_pack_list_id);
-
-    if (preSelectedIds.length > 0) {
-      return preSelectedIds.slice(0, limit);
-    }
-
-    return selectableOptions.slice(0, limit).map((option) => option.store_pack_list_id);
-  }, [getSelectionLimit, pack.is_selection, pack.selectable_options, selectableOptions]);
+    return [];
+  }, []);
 
   React.useMemo(() => {
     // 1. Check Remaining Count (from BE) which handles day/month limits

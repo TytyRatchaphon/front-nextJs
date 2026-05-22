@@ -9,6 +9,14 @@ import {
 } from "@/services/api/bookApi";
 import { queryKeys } from "@/constants/query";
 
+const getPurchasedEpisodeIds = (payload: BuyEpisodesPayload) => (
+  Array.isArray(payload.eps)
+    ? payload.eps
+        .map((episodeId) => Number(episodeId))
+        .filter((episodeId) => Number.isFinite(episodeId))
+    : []
+);
+
 export const useBuyGroupPromotionMutation = (bookId?: string | number | null) => {
   const queryClient = useQueryClient();
 
@@ -25,9 +33,17 @@ export const useBuyEpisodesMutation = (bookId?: string | number | null) => {
 
   return useMutation({
     mutationFn: (payload: BuyEpisodesPayload) => buyEpisodes(payload),
-    onSuccess: () => {
+    onSuccess: (data, payload) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.book.episodes(bookId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.book.detail(bookId) });
+
+      if (data?.code !== 200) return;
+
+      for (const episodeId of getPurchasedEpisodeIds(payload)) {
+        const queryKey = queryKeys.read.episodeContent(episodeId);
+        queryClient.removeQueries({ queryKey, exact: true });
+        void queryClient.invalidateQueries({ queryKey, exact: true });
+      }
     },
   });
 };

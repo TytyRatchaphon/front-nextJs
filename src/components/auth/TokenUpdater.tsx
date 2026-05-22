@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { notification } from 'antd'
 import DuplicateLoginModal from './DuplicateLoginModal'
 import { refreshToken } from '@/services/apiServices'
+import { getAuthSession } from '@/services/authPersistence'
 
 import Cookies from 'js-cookie'
 import { CheckCircleOutlined } from '@ant-design/icons'
@@ -71,16 +72,23 @@ export default function TokenUpdater() {
     }, [searchParams, router, pathname, updateToken]);
 
     useEffect(() => {
+        let isCancelled = false;
+
         const fetchRefreshToken = async () => {
-            const savedToken = Cookies.get('token');
+            const savedToken =
+                parseJwtToken(Cookies.get('token')) ||
+                (await getAuthSession())?.token;
+
             if (!savedToken) return;
 
             try {
-                const res = await refreshToken();
+                const res = await refreshToken(savedToken);
+                if (isCancelled) return;
+
                 if (res?.code === 200 && typeof res.data === 'string') {
-                    updateToken(res.data);
+                    await updateToken(res.data);
                 } else if (res?.data?.token) {
-                    updateToken(res.data.token);
+                    await updateToken(res.data.token);
                 }
             } catch {
                 // Silent fail for background refresh
@@ -88,6 +96,10 @@ export default function TokenUpdater() {
         };
 
         fetchRefreshToken();
+
+        return () => {
+            isCancelled = true;
+        };
     }, [updateToken]);
 
     return (

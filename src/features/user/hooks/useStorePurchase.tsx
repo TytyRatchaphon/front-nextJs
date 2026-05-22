@@ -44,22 +44,8 @@ export function useStorePurchase({ notification, settings }: UseStorePurchasePar
   }, []);
 
   const getInitialSelectedStorePackListIds = useCallback((pack: StorePack): Array<number | string> => {
-    if (!pack.is_selection || !Array.isArray(pack.selectable_options)) {
-      return [];
-    }
-
-    const limit = getSelectionLimit(pack);
-    const selectableOptions = pack.selectable_options.filter((option) => option.can_select !== false);
-    const preSelectedIds = selectableOptions
-      .filter((option) => option.selected)
-      .map((option) => option.store_pack_list_id);
-
-    if (preSelectedIds.length > 0) {
-      return preSelectedIds.slice(0, limit);
-    }
-
-    return selectableOptions.slice(0, limit).map((option) => option.store_pack_list_id);
-  }, [getSelectionLimit]);
+    return [];
+  }, []);
 
   const handleCloseBuyModal = useCallback(() => {
     setSelectedPack(null);
