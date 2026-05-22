@@ -12,7 +12,6 @@ export interface ImageLoaderParams {
 }
 
 export interface BookCoverSource {
-  img?: string | null;
   img_full?: string | null;
   imgtn?: string | null;
   thumb?: string | null;
@@ -101,21 +100,30 @@ const pickValidBookCoverSource = (...candidates: Array<string | null | undefined
   return undefined;
 };
 
+const readBookCoverField = (book: object | null | undefined, key: keyof BookCoverSource): string | null | undefined => {
+  if (!book || !(key in book)) return undefined;
+  const value = (book as Record<keyof BookCoverSource, unknown>)[key];
+  if (typeof value === 'string' || value === null || value === undefined) return value;
+  return undefined;
+};
+
 export const resolveBookCoverImageSrc = (
-  book: BookCoverSource | null | undefined,
+  book: object | null | undefined,
   fallback = '/images/ejb.png',
   variant: 'tn' | 'thumbnail' | 'book' = 'tn',
   forceShowGif?: boolean,
 ): string => {
   const showGif = forceShowGif ?? readGifModePreference(true);
-  const gifSource = pickValidBookCoverSource(book?.img_gif_full, book?.img_gif);
+  const gifSource = pickValidBookCoverSource(
+    readBookCoverField(book, 'img_gif_full'),
+    readBookCoverField(book, 'img_gif'),
+  );
   const staticSource = pickValidBookCoverSource(
-    book?.img,
-    book?.img_full,
-    book?.imgtn,
-    book?.cover,
-    book?.thumb,
-    book?.image,
+    readBookCoverField(book, 'img_full'),
+    readBookCoverField(book, 'imgtn'),
+    readBookCoverField(book, 'cover'),
+    readBookCoverField(book, 'thumb'),
+    readBookCoverField(book, 'image'),
   );
 
   const selectedSource = showGif ? (gifSource || staticSource) : (staticSource || gifSource);

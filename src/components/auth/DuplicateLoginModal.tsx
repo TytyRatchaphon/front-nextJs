@@ -14,7 +14,8 @@ export default function DuplicateLoginModal() {
 
     const handleOk = () => {
         closeDuplicateLoginModal();
-        logout(); // Logout and reload page
+        logout();
+        window.location.href = '/';
     };
 
     return (

@@ -89,6 +89,8 @@ function Navbar() {
 
   const handleLogout = React.useCallback(() => {
     logout();
+    queryClient.clear();
+    router.push('/');
     setIsUserMenuOpen(false);
     setIsMobileDrawerOpen(false);
     api.success({
@@ -96,7 +98,7 @@ function Navbar() {
       description: 'คุณได้ออกจากระบบเรียบร้อยแล้ว',
       placement: 'topRight',
     });
-  }, [api, logout]);
+  }, [api, logout, queryClient, router]);
 
   const handleClearCache = React.useCallback(() => {
     queryClient.clear();

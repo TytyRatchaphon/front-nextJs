@@ -11,7 +11,8 @@ export default function BlockedUserModal() {
 
     const handleOk = () => {
         closeBlockedUserModal();
-        logout(); // Force logout and reload
+        logout();
+        window.location.href = '/';
     };
 
     return (

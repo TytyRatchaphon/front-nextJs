@@ -84,7 +84,7 @@ apiClient.interceptors.response.use(
             const config = response.config as any;
             if (config.metadata?.startTime) {
                 const duration = new Date().getTime() - config.metadata.startTime.getTime();
-                console.log(`[SSR Fetch API] ${config.method?.toUpperCase()} ${config.url} - ${duration}ms`);
+                // console.log(`[SSR Fetch API] ${config.method?.toUpperCase()} ${config.url} - ${duration}ms`);
             }
         }
         // อนุญาตให้ response ทุกแบบผ่าน ไม่ว่าจะเป็น success, successwarning, หรือ warning

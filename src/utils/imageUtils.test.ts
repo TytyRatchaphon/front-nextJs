@@ -72,20 +72,28 @@ describe('resolve helpers', () => {
     mockReadGifModePreference.mockReturnValue(true)
     expect(
       resolveBookCoverImageSrc({
-        img: 'https://image.enjoybook.co/enjoybook.image/book/sample.webp',
+        img_full: 'https://image.enjoybook.co/enjoybook.image/book/sample.webp',
         img_gif: 'https://image.enjoybook.co/enjoybook.image/book/sample.gif',
       }),
     ).toBe('https://image.enjoybook.co/enjoybook.image/book/sample.gif')
   })
 
-  it('falls back to img when gif mode is disabled', () => {
+  it('falls back to img_full when gif mode is disabled', () => {
     mockReadGifModePreference.mockReturnValue(false)
     expect(
       resolveBookCoverImageSrc({
-        img: 'https://image.enjoybook.co/enjoybook.image/book/sample.webp',
+        img_full: 'https://image.enjoybook.co/enjoybook.image/book/sample.webp',
         img_gif: 'https://image.enjoybook.co/enjoybook.image/book/sample.gif',
       }),
     ).toBe('https://image.enjoybook.co/enjoybook.image/book/sample.webp')
+  })
+
+  it('does not use legacy img when no preferred cover source is available', () => {
+    expect(
+      resolveBookCoverImageSrc({
+        img: 'https://image.enjoybook.co/enjoybook.image/book/sample.webp',
+      }),
+    ).toBe('/images/ejb.png')
   })
 
   it('uses first frame when only gif is available and gif mode is disabled', () => {

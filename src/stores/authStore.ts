@@ -93,7 +93,6 @@ export const useAuthStore = create<AuthState>()(
         clearLegacyLocalAuthStorage();
         clearAuthTokenCookies();
         set({ user: null, token: null, isLoggedIn: false });
-        window.location.reload();
       },
 
       updateUserBalance: (updates: Partial<UserData>) => {

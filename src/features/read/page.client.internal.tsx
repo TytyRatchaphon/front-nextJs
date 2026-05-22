@@ -68,7 +68,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     queryKey: queryKeys.read.episodeContent(episodeId),
     queryFn: () => fetchEpisodeContent(episodeId),
     enabled: !!episodeId,
-    staleTime: 10 * 60 * 1000,
+    // staleTime: 10 * 60 * 1000,
     placeholderData: (previousData) => previousData,
   });
 
@@ -76,8 +76,8 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     queryKey: queryKeys.book.detail(bookId),
     queryFn: () => fetchBookDetail(bookId),
     enabled: !!bookId,
-    staleTime: 10 * 60 * 1000,
-    retry: 2,
+    // staleTime: 10 * 60 * 1000,
+    // retry: 2,
   });
 
   const {
