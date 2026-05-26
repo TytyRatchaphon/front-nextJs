@@ -42,11 +42,10 @@ const localStorageMock = (() => {
 })()
 Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock })
 
-// Mock window.location.reload
+// Mock window — needed because authPersistence checks typeof window !== 'undefined'
 Object.defineProperty(globalThis, 'window', {
   value: {
     location: {
-      reload: vi.fn(),
       protocol: 'http:',
       hostname: 'localhost',
     },
@@ -54,6 +53,7 @@ Object.defineProperty(globalThis, 'window', {
   },
   writable: true,
 })
+
 Object.defineProperty(globalThis, 'fetch', {
   value: mockFetch,
   writable: true,

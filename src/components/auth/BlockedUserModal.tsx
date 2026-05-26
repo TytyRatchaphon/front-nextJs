@@ -4,15 +4,20 @@ import { Modal, Button } from 'antd';
 import { useUIStore } from '@/stores/uiStore';
 import { useAuthStore } from '@/stores/authStore';
 import { StopOutlined } from '@ant-design/icons';
+import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function BlockedUserModal() {
     const { isBlockedUserModalOpen, closeBlockedUserModal } = useUIStore();
     const logout = useAuthStore((state) => state.logout);
+    const router = useRouter();
+    const queryClient = useQueryClient();
 
     const handleOk = () => {
         closeBlockedUserModal();
         logout();
-        window.location.href = '/';
+        queryClient.clear();
+        router.push('/');
     };
 
     return (

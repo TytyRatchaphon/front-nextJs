@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSocket } from '@/providers/SocketProvider';
 import { useAuthStore } from '@/stores/authStore';
 import {
@@ -8,7 +10,6 @@ import {
   ReadingSessionActiveData,
   updateReadingProgress,
 } from '@/services/apiServices';
-import Cookies from 'js-cookie';
 
 const getCurrentDeviceId = () => {
   if (typeof window === 'undefined') return '';
@@ -48,6 +49,8 @@ const normalizeReadingConflictPayload = (payload: any) => {
 
 export function useReadingSession(bookId: string, episodeId: string, user: any) {
   const { socket } = useSocket();
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [isConflict, setIsConflict] = useState(false);
   const [conflictData, setConflictData] = useState<ReadingSessionActiveData | null>(null);
   const [isSessionEnding, setIsSessionEnding] = useState(false);
@@ -181,8 +184,8 @@ export function useReadingSession(bookId: string, episodeId: string, user: any) 
       if (currentDeviceId && data?.target_device_id === currentDeviceId) {
         setIsConflict(true);
         useAuthStore.getState().logout();
-        Cookies.remove('token');
-        window.location.href = '/login?message=logged_out';
+        queryClient.clear();
+        router.push('/');
       }
     };
 
