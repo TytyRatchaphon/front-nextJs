@@ -1,14 +1,11 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { App } from 'antd';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
-import Image from 'next/image';
 import apiClient from '@/services/apiClient';
 import { useLogger } from '@/hooks/useLogger';
-
-import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
 declare global {
   interface Window {
@@ -19,6 +16,8 @@ declare global {
 const LoginGoogle = () => {
   const { notification } = App.useApp();
   const [loading, setLoading] = useState(false);
+  const [isSdkReady, setIsSdkReady] = useState(false);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
   useRouter();
   const { login, updateToken } = useAuthStore();
   const { closeLoginModal } = useUIStore();
@@ -47,74 +46,35 @@ const LoginGoogle = () => {
   };
 
   useEffect(() => {
-    // Load Google Sign-In SDK
-    if (!document.querySelector('script[src="https://accounts.google.com/gsi/client"]')) {
-      const script = document.createElement('script');
+    if (window.google?.accounts?.id) {
+      setIsSdkReady(true);
+      return;
+    }
+
+    const existingScript = document.querySelector<HTMLScriptElement>(
+      'script[src="https://accounts.google.com/gsi/client"]',
+    );
+    const script = existingScript ?? document.createElement('script');
+    const handleLoad = () => setIsSdkReady(true);
+
+    script.addEventListener('load', handleLoad);
+
+    if (!existingScript) {
       script.src = 'https://accounts.google.com/gsi/client';
       script.async = true;
       script.defer = true;
       document.body.appendChild(script);
     }
+
+    return () => {
+      script.removeEventListener('load', handleLoad);
+    };
   }, []);
-
-  const handleGoogleLogin = () => {
-    setLoading(true);
-
-    if (typeof window === 'undefined' || !window.google) {
-      notification.error({
-        message: 'เกิดข้อผิดพลาด',
-        description: 'Google Sign-In SDK ยังไม่โหลด กรุณาลองใหม่อีกครั้ง',
-        placement: 'topRight',
-      });
-      setLoading(false);
-      return;
-    }
-
-    // Reset One Tap cooldown (Clear g_state cookie)
-    document.cookie = `g_state=;path=/;expires=Thu, 01 Jan 1970 00:00:01 GMT`;
-
-    // Initialize Google Sign-In with callback
-    window.google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: handleGoogleResponse,
-      auto_select: false,
-      cancel_on_tap_outside: true,
-    });
-
-    // Render Google Sign-In button and trigger click
-    const googleButtonDiv = document.createElement('div');
-    googleButtonDiv.style.display = 'none';
-    document.body.appendChild(googleButtonDiv);
-
-    window.google.accounts.id.renderButton(googleButtonDiv, {
-      theme: 'outline',
-      size: 'large',
-    });
-
-    // Trigger the Google Sign-In prompt
-    window.google.accounts.id.prompt((notificationObj: any) => {
-      if (notificationObj.isNotDisplayed() || notificationObj.isSkippedMoment()) {
-        // Fallback: Show error if One Tap doesn't work
-        setLoading(false);
-        notification.info({
-            message: 'แจ้งเตือน',
-            description: `กรุณาอนุญาตการเข้าสู่ระบบผ่าน Google (${notificationObj.getNotDisplayedReason()})`,
-            placement: 'topRight'
-        });
-      }
-    });
-
-    // Cleanup
-    setTimeout(() => {
-      if (document.body.contains(googleButtonDiv)) {
-        document.body.removeChild(googleButtonDiv);
-      }
-    }, 1000);
-  };
 
   const handleGoogleResponse = async (response: any) => {
     try {
       if (response.credential) {
+        setLoading(true);
         const idToken = response.credential;
 
         // Send to Backend
@@ -221,24 +181,40 @@ const LoginGoogle = () => {
     }
   };
 
+  useEffect(() => {
+    if (!isSdkReady || !GOOGLE_CLIENT_ID || !googleButtonRef.current || !window.google?.accounts?.id) {
+      return;
+    }
+
+    const buttonContainer = googleButtonRef.current;
+    buttonContainer.replaceChildren();
+
+    window.google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleResponse,
+      auto_select: false,
+      ux_mode: 'popup',
+    });
+
+    window.google.accounts.id.renderButton(buttonContainer, {
+      type: 'icon',
+      theme: 'outline',
+      size: 'medium',
+      shape: 'circle',
+    });
+
+    return () => {
+      buttonContainer.replaceChildren();
+    };
+  }, [GOOGLE_CLIENT_ID, isSdkReady]);
+
   return (
     <div
-      onClick={!loading ? handleGoogleLogin : undefined}
-      className={`border border-gray-200 rounded-md py-2 flex justify-center items-center cursor-pointer hover:bg-blue-50 transition-colors ${loading ? 'opacity-50 cursor-wait' : ''
-        }`}
+      className={`border border-gray-200 rounded-md py-2 flex min-h-[41px] w-full items-center justify-center transition-colors hover:bg-blue-50 ${
+        loading ? 'pointer-events-none opacity-50 cursor-wait' : 'cursor-pointer'
+      }`}
     >
-      <style>{`
-        #credential_picker_container {
-          z-index: 10001 !important;
-        }
-      `}</style>
-      <Image
-        className="inline-block h-[23px] w-[23px] rounded-full"
-        src="/images/Google.png"
-        alt="Google Login"
-        width={23}
-        height={23}
-      />
+      <div ref={googleButtonRef} aria-label="Google Login" />
     </div>
   );
 };

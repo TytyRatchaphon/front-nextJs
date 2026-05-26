@@ -28,7 +28,10 @@ import BookInfoCardPurchasePanel from "./BookInfoCardPurchasePanel";
 import BookInfoCardPurchaseStyles from "./BookInfoCardPurchaseStyles";
 import BookInfoCardWalletSection from "./BookInfoCardWalletSection";
 import type { BookInfoCardProps } from "./BookInfoCard.types";
-import { decodeTokenPayload as decodeToken } from "./bookInfoCardPurchaseUtils";
+import {
+  decodeTokenPayload as decodeToken,
+  hasUnexpectedFullBookDiscountQuote,
+} from "./bookInfoCardPurchaseUtils";
 import { useBookInfoCardPurchaseState } from "./useBookInfoCardPurchaseState";
 
 const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
@@ -363,6 +366,10 @@ const BookInfoCard = ({ book, bookId }: BookInfoCardProps) => {
         }
         if (!fullBookPreview?.can_purchase) {
           messageApi.error(fullBookPreviewError || "ยอดเงินไม่พอ หรือไม่สามารถซื้อทั้งเล่มได้");
+          return;
+        }
+        if (hasUnexpectedFullBookDiscountQuote(buyAllTotal, fullBookPreview.final_paid_price, selectedFullBookCouponId)) {
+          messageApi.error("ราคาซื้อทั้งเรื่องไม่ถูกต้อง กรุณาลองใหม่ภายหลัง");
           return;
         }
 

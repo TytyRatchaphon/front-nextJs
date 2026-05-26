@@ -114,6 +114,22 @@ export const getEpisodePriceByMethod = (
   return finalPrice;
 };
 
+export const getEpisodeRegularCoinPrice = (episode: BookInfoCardEpisode) => {
+  const regularPrice = Number(episode?.coin ?? 0);
+  return Number.isFinite(regularPrice) && regularPrice > 0 ? regularPrice : 0;
+};
+
+export const hasUnexpectedFullBookDiscountQuote = (
+  expectedRegularTotal: number,
+  quotedFinalPrice?: number | null,
+  selectedCouponId?: number | null,
+) => (
+  selectedCouponId == null
+  && quotedFinalPrice != null
+  && Number.isFinite(Number(expectedRegularTotal))
+  && Number(quotedFinalPrice) !== Number(expectedRegularTotal)
+);
+
 export const isEpisodeBaseSelectable = (
   episode: BookInfoCardEpisode,
   bookUseFreecoin?: number,

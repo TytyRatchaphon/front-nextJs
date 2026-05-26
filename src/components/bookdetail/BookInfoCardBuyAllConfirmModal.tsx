@@ -9,6 +9,7 @@ import type {
 import type { EpisodePurchaseRewardPreviewResult } from "@/services/api/episodePurchaseRewardApi";
 import type { PaymentMethod } from "./BookInfoCard.types";
 import { CurrencyIcon, type PurchaseModalSettings } from "./BookInfoCardPurchaseModalShared";
+import { hasUnexpectedFullBookDiscountQuote } from "./bookInfoCardPurchaseUtils";
 
 type BookInfoCardBuyAllConfirmModalProps = {
   book: {
@@ -76,11 +77,20 @@ export default function BookInfoCardBuyAllConfirmModal({
     ? paymentMethods.includes("freecoin")
     : book.use_freecoin === 1 && buyAllFastTicketCount === 0;
   const displayedEpisodeCount = fullBookPreview?.episode_count || fullBookOptions?.episode_count || buyAllIds.length;
-  const displayedTotal = fullBookPreview?.final_paid_price ?? fullBookOptions?.final_paid_price ?? buyAllTotal;
-  const displayedOriginPrice = fullBookPreview?.origin_price ?? fullBookOptions?.origin_price ?? buyAllTotal;
   const selectedCoupon = fullBookPreview?.coupon
     || fullBookCoupons.find((coupon) => coupon.user_coupon_id === selectedFullBookCouponId)
     || null;
+  const hasPricingMismatch = isFullBookMode && hasUnexpectedFullBookDiscountQuote(
+    buyAllTotal,
+    fullBookPreview?.final_paid_price,
+    selectedFullBookCouponId,
+  );
+  const displayedTotal = isFullBookMode && selectedFullBookCouponId == null
+    ? buyAllTotal
+    : fullBookPreview?.final_paid_price ?? fullBookOptions?.final_paid_price ?? buyAllTotal;
+  const displayedOriginPrice = isFullBookMode
+    ? buyAllTotal
+    : fullBookPreview?.origin_price ?? fullBookOptions?.origin_price ?? buyAllTotal;
   const selectedCouponDiscountAmount = selectedCoupon
     ? fullBookPreview?.final_discount_amount ?? selectedCoupon.estimated_discount_amount ?? null
     : null;
@@ -88,7 +98,7 @@ export default function BookInfoCardBuyAllConfirmModal({
     ? fullBookPreview?.final_paid_price ?? selectedCoupon.estimated_final_price ?? null
     : null;
   const confirmDisabled = isFullBookMode
-    ? Boolean(fullBookOptionsLoading || fullBookPreviewLoading || fullBookOptionsError || fullBookPreviewError || !fullBookPreview?.can_purchase)
+    ? Boolean(fullBookOptionsLoading || fullBookPreviewLoading || fullBookOptionsError || fullBookPreviewError || hasPricingMismatch || !fullBookPreview?.can_purchase)
     : rewardPreviewLoading;
 
   return (
@@ -140,6 +150,14 @@ export default function BookInfoCardBuyAllConfirmModal({
             )}
             {fullBookPreview && !fullBookPreview.can_purchase && !fullBookPreviewError && (
               <Alert type="warning" showIcon message="ยอดเงินไม่พอ หรือยังไม่สามารถซื้อทั้งเล่มได้" />
+            )}
+            {hasPricingMismatch && !fullBookPreviewError && (
+              <Alert
+                type="error"
+                showIcon
+                message="ระบบคำนวณราคาซื้อทั้งเรื่องไม่ตรงกับราคาปกติ"
+                description="การซื้อทั้งเรื่องไม่ใช้ส่วนลดรายตอน กรุณาลองใหม่หลังระบบอัปเดตราคาแล้ว"
+              />
             )}
           </>
         ) : (
@@ -244,22 +262,22 @@ export default function BookInfoCardBuyAllConfirmModal({
         <div className="mt-3 rounded-xl border border-red-100 bg-red-50 p-3 text-xs text-gray-700">
           {bulkPurchaseMode === "early" ? (
             <p>
-              <span className="font-bold text-red-700">ซื้อตอนล่วงหน้า:</span> ระบบจะคำนวณเฉพาะตอนล่วงหน้าที่สามารถซื้อได้ในขณะนี้เท่านั้น
+              <span className="font-bold text-red-700">ซื้อตอนล่วงหน้า:</span> ระบบจะคำนวณเฉพาะตอนล่วงหน้าที่สามารถซื้อได้ในขณะนี้เท่านั้น และไม่รวมตอนปกติอื่น ๆ
             </p>
           ) : (
             <>
               {book.end === "end" ? (
                 <p className="mb-1">
-                  <span className="font-bold text-red-700">ซื้อทั้งเล่ม:</span> คุณจะได้รับสิทธิ์เข้าถึงทุกตอนที่ยังไม่เคยซื้อ โดย backend เป็นผู้คำนวณราคาสุดท้าย
+                  <span className="font-bold text-red-700">กรณีซื้อทั้งเรื่องที่สถานะจบ:</span> คุณจะได้รับสิทธิ์เข้าถึงทุกตอนที่ยังไม่เคยซื้อ โดยราคาจะคำนวณเฉพาะตอนที่ยังไม่เคยซื้อ
                 </p>
               ) : (
                 <p className="mb-1">
-                  <span className="font-bold text-red-700">ผลงานยังไม่จบ:</span> ราคานี้รวมเฉพาะตอนที่ซื้อได้ ณ ตอนนี้ ไม่รวมตอนที่จะอัปเดตเพิ่มในอนาคต
+                  <span className="font-bold text-red-700">สำหรับผลงานที่ยังไม่จบ:</span> ราคาที่แสดงเป็นยอดรวมเฉพาะตอนล่าสุด ณ วันที่ทำรายการซื้อ ไม่รวมตอนที่จะอัปเดตเพิ่มในอนาคต
                 </p>
               )}
               {hasEarlyAccessEpisodes && (
                 <p className="mt-1 font-bold text-amber-700">
-                  * ซื้อทั้งเล่มไม่รวมตอนล่วงหน้า
+                  * เหมาทั้งเรื่อง ไม่ได้รวมตอนล่วงหน้า
                 </p>
               )}
             </>

@@ -138,7 +138,7 @@ export function ReadPurchaseFallback({
                   <span>{fastTicketPrice}</span>
                 </div>
               )}
-              {canFastTicket && canFastCoin && <span className="opacity-80">/</span>}
+              {canFastTicket && canFastCoin && <span className="opacity-80"> | </span>}
               {canFastCoin && (
                 <div className="inline-flex items-center gap-1">
                   <Image src={settings?.coin || "/images/e-coin.png"} alt="Coin Icon" width={18} height={18} unoptimized />

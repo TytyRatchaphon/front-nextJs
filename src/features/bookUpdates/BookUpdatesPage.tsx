@@ -102,6 +102,13 @@ export default function BookUpdatesPage() {
   const pagination = dailyQuery.data?.pagination;
   const totalPages = pagination?.totalPages || 1;
   const activeSelectedDate = resolvedSelectedDate || selectedDate;
+  const selectedCalendarDay = days.find((day) => day.date === activeSelectedDate);
+  const selectedDaySummaryLabel = selectedCalendarDay?.is_today
+    ? "วันนี้"
+    : selectedCalendarDay
+      ? `${selectedCalendarDay.day_short} ${selectedCalendarDay.day}`
+      : "วันที่เลือก";
+  const selectedDaySummaryDescription = selectedCalendarDay?.is_today ? "เรื่องในวันนี้" : "เรื่องที่อัปเดต";
 
   React.useEffect(() => {
     if (!calendarQuery.data?.days.length) return;
@@ -124,6 +131,39 @@ export default function BookUpdatesPage() {
       setPage(1);
     }
   }, [calendarQuery.error, dailyQuery.error, requireLogin, scope]);
+
+  const calendarNavigator = (
+    <>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-xl font-black text-[#23181b] sm:text-2xl">ตารางอัปเดต</h2>
+          <p className="mt-1 text-sm font-medium text-stone-500">เลือกวัน แล้วดูช่วงเวลาที่มีตอนใหม่</p>
+        </div>
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="hidden items-center gap-2 rounded-md bg-stone-100 px-4 py-2 text-sm font-black text-stone-700 sm:flex">
+            <CalendarDays className="h-5 w-5" />
+            อัปเดตล่าสุด
+          </div>
+          {calendarQuery.isFetching ? (
+            <span className="shrink-0 rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700">กำลังโหลด</span>
+          ) : null}
+        </div>
+      </div>
+
+      {calendarQuery.isLoading ? (
+        <CalendarSkeleton />
+      ) : calendarQuery.isError ? (
+        <div className="mt-4 rounded-[20px] border border-red-100 bg-red-50 px-5 py-6 text-sm font-semibold text-red-700">
+          โหลดปฏิทินไม่สำเร็จ กรุณาลองใหม่
+        </div>
+      ) : (
+        <CalendarStrip days={days} selectedDate={activeSelectedDate} onSelectDate={handleDateSelect} />
+      )}
+    </>
+  );
+
+  const hasScheduleContent =
+    Boolean(activeSelectedDate) && !dailyQuery.isLoading && !dailyQuery.isFetching && !dailyQuery.isError && books.length > 0;
 
   return (
     <main className="min-h-screen bg-[#fff8f3] text-[#23181b]">
@@ -156,33 +196,11 @@ export default function BookUpdatesPage() {
           onSortChange={handleSortChange}
         />
 
-        <div className="mb-0 rounded-t-[24px] border border-stone-100 bg-white p-4 sm:p-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h2 className="text-2xl font-black text-[#23181b]">ตารางเวลา</h2>
-              <p className="text-sm font-medium text-stone-500">เลื่อนดูวัน แล้วเลือกวันที่อยากตามอ่าน</p>
-            </div>
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="hidden items-center gap-2 rounded-md bg-stone-100 px-4 py-2 text-sm font-black text-stone-700 sm:flex">
-                <CalendarDays className="h-6 w-6" />
-                อัปเดตล่าสุด
-              </div>
-              {calendarQuery.isFetching ? (
-                <span className="shrink-0 rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700">กำลังโหลด</span>
-              ) : null}
-            </div>
+        {!hasScheduleContent ? (
+          <div className="mb-5 rounded-[24px] border border-rose-100 bg-white p-5 shadow-[0_18px_60px_rgba(127,29,29,0.06)]">
+            {calendarNavigator}
           </div>
-
-          {calendarQuery.isLoading ? (
-            <CalendarSkeleton />
-          ) : calendarQuery.isError ? (
-            <div className="rounded-[26px] border border-red-100 bg-red-50 px-5 py-6 text-sm font-semibold text-red-700">
-              โหลดปฏิทินไม่สำเร็จ กรุณาลองใหม่
-            </div>
-          ) : (
-            <CalendarStrip days={days} selectedDate={activeSelectedDate} onSelectDate={handleDateSelect} />
-          )}
-        </div>
+        ) : null}
 
         {!activeSelectedDate || dailyQuery.isLoading || dailyQuery.isFetching ? (
           <BookListSkeleton />
@@ -219,7 +237,13 @@ export default function BookUpdatesPage() {
             ) : null}
           </div>
         ) : (
-          <BookUpdatesSwiper books={books} sort={sort} />
+          <BookUpdatesSwiper
+            books={books}
+            sort={sort}
+            calendarHeader={calendarNavigator}
+            summaryLabel={selectedDaySummaryLabel}
+            summaryDescription={selectedDaySummaryDescription}
+          />
         )}
 
         {totalPages > 1 ? (

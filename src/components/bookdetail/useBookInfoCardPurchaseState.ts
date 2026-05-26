@@ -13,6 +13,7 @@ import {
   canEpisodePayWithFreecoin as canEpisodePayWithFreecoinByBookSetting,
   getEarlyAccess,
   getEpisodePriceByMethod,
+  getEpisodeRegularCoinPrice,
   getEpisodesForSelectionMode as getEpisodesForSelectionModeByMode,
   getProgressiveSelectableIds as getProgressiveSelectableIdsForContext,
   getSelectedEpisodeSummary,
@@ -218,6 +219,10 @@ export const useBookInfoCardPurchaseState = ({
     }, 0);
   };
 
+  const getRegularCoinTotalForEpisodeIds = (epIds: number[]) => {
+    return epIds.reduce((sum, id) => sum + getEpisodeRegularCoinPrice(getEpisodeById(id)), 0);
+  };
+
   const canEpisodePayWithFreecoin = (episode: any) => {
     return canEpisodePayWithFreecoinByBookSetting(episode, book?.use_freecoin);
   };
@@ -327,7 +332,7 @@ export const useBookInfoCardPurchaseState = ({
           if (isEpisodeSequentiallyUnlocked(episode) && !early.isEarlyAccess) {
             selectableIds.push(Number(episode.ep_id));
             epMap[Number(episode.ep_id)] = episode;
-            total += Number(getEpisodePriceByMethod(episode, "coin") ?? 0);
+            total += getEpisodeRegularCoinPrice(episode);
           }
         }
       }
@@ -341,7 +346,9 @@ export const useBookInfoCardPurchaseState = ({
 
       setBuyAllIds(selectableIds);
       setBuyAllEpisodeMap(epMap);
-      setBuyAllTotal(total);
+      const hasPurchaseDetailsTotal = book.remaining_paid_total != null;
+      const purchaseDetailsTotal = Number(book.remaining_paid_total);
+      setBuyAllTotal(hasPurchaseDetailsTotal && Number.isFinite(purchaseDetailsTotal) ? purchaseDetailsTotal : total);
       setBuyAllFastTicketCount(0);
       setBulkPurchaseMode("all");
       setPayWith("coin");
@@ -422,8 +429,18 @@ export const useBookInfoCardPurchaseState = ({
 
   useEffect(() => {
     if (buyAllIds.length === 0) return;
+    if (bulkPurchaseMode === "all") {
+      const hasPurchaseDetailsTotal = book.remaining_paid_total != null;
+      const purchaseDetailsTotal = Number(book.remaining_paid_total);
+      setBuyAllTotal(
+        hasPurchaseDetailsTotal && Number.isFinite(purchaseDetailsTotal)
+          ? purchaseDetailsTotal
+          : getRegularCoinTotalForEpisodeIds(buyAllIds),
+      );
+      return;
+    }
     setBuyAllTotal(getTotalForEpisodeIds(buyAllIds, payWith));
-  }, [buyAllIds, payWith, episodesData]);
+  }, [bulkPurchaseMode, buyAllIds, payWith, episodesData, book.remaining_paid_total]);
 
   const promotionRewards = useMemo(() => {
     return Array.isArray(book.promotion?.rewards) ? book.promotion.rewards.filter(Boolean) : [];

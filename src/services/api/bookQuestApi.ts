@@ -29,19 +29,42 @@ export interface BookQuestRewardPreview {
   item_type: string;
   item_id: number | string | null;
   amount: number;
+  reward_amount?: number;
+  current_reward_amount?: number;
+  reward_amount_source?: string;
+  is_dynamic_amount?: boolean;
+  coupon_id?: number | null;
+  coupon_name?: string;
+  payout_wallet_type?: string;
+  reward_unit?: string;
+  reward_image_url?: string;
+  condition?: {
+    type?: string;
+    display_text?: string;
+    percent?: number;
+    max_amount?: number;
+    multiplier?: number;
+    [key: string]: unknown;
+  };
   config?: Record<string, unknown>;
 }
 
 export interface BookQuestBook {
   book_id: number;
+  bookID?: string;
   name: string;
+  title?: string;
   img?: string | null;
+  img_gif?: string | null;
+  status?: string;
 }
 
 export interface BookQuestEpisode {
   ep_id: number;
   book_id?: number;
-  name: string;
+  name?: string;
+  ep_name?: string;
+  is_bought?: boolean;
 }
 
 export interface BookQuest {
