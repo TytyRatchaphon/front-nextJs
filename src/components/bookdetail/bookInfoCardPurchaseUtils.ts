@@ -114,6 +114,11 @@ export const getEpisodePriceByMethod = (
   return finalPrice;
 };
 
+export const getEpisodeRegularCoinPrice = (episode: BookInfoCardEpisode) => {
+  const regularPrice = Number(episode?.coin ?? 0);
+  return Number.isFinite(regularPrice) && regularPrice > 0 ? regularPrice : 0;
+};
+
 export const isEpisodeBaseSelectable = (
   episode: BookInfoCardEpisode,
   bookUseFreecoin?: number,
