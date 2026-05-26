@@ -26,6 +26,7 @@ interface SelectedFilters {
 interface SearchBarProps {
   initialQuery?: string;
   initialFilters?: SelectedFilters;
+  isSearching?: boolean;
   onSearch?: (params: {
     query: string;
     categories: number[];
@@ -38,7 +39,7 @@ interface SearchBarProps {
   }) => void;
 }
 
-function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarProps) {
+function SearchBar({ onSearch, initialFilters, initialQuery = "", isSearching = false }: SearchBarProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [sortBy] = useState("date_at");
@@ -671,13 +672,22 @@ function SearchBar({ onSearch, initialFilters, initialQuery = "" }: SearchBarPro
                   e.currentTarget.blur();
                 }
               }}
-              className="block w-full rounded-md border border-gray-300 h-[40px] pl-10 pr-3 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-primary focus:border-primary text-sm"
+              className="block h-[40px] w-full rounded-md border border-gray-300 pl-10 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary"
               onFocus={() => {
                 setShowHistory(true);
                 fetchApiHistory();
               }}
               onBlur={() => setTimeout(() => setShowHistory(false), 200)}
             />
+            {isSearching ? (
+              <span
+                role="status"
+                aria-label="กำลังค้นหา"
+                className="absolute inset-y-0 right-3 flex items-center text-red-500"
+              >
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-100 border-t-red-500" />
+              </span>
+            ) : null}
           </div>
           <button
             type="button"

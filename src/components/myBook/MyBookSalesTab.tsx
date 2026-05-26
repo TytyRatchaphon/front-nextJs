@@ -15,7 +15,7 @@ interface MyBookSalesTabProps {
 }
 
 type SalesMetricDefinition = {
-  key: 'coin_sales_total' | 'freecoin_sales_total' | 'fast_ticket_total' | 'fast_coin_total';
+  key: 'coin_sales_total' | 'freecoin_sales_total' | 'store_sales_total' | 'fast_ticket_total' | 'fast_coin_total';
   title: string;
   rowAliases: string[];
   totalAliases: string[];
@@ -43,6 +43,16 @@ const salesMetricDefinitions: SalesMetricDefinition[] = [
     icon: '/images/money-bag.png',
     iconAlt: 'Freecoin',
     badgeClassName: 'bg-red-50 border-red-200',
+  },
+  {
+    key: 'store_sales_total',
+    title: 'ยอดจากร้านค้า',
+    rowAliases: ['store_sales_total', 'store_sales', 'store_sales_total_amount'],
+    totalAliases: ['store_sales_total', 'store_sales', 'total_store_sales', 'total_store_sales_total'],
+    icon: '/images/e-coin.png',
+    iconAlt: 'Store sales',
+    badgeClassName: 'bg-emerald-50 border-emerald-200',
+    summaryLabel: 'ยอดจากร้านค้า',
   },
   {
     key: 'fast_ticket_total',
