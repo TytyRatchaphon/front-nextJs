@@ -112,7 +112,11 @@ describe("rankingApi", () => {
             total: 12,
             hasMore: true,
             range: "month",
-            users: [{ rank: 1, totalPrice: 100, user: { user_id: 1, fullname: "A", img: null, Frame_img: null } }],
+            users: [{
+              rank: 1,
+              user: { user_id: 1, fullname: "A", img: null, Frame_img: null },
+              current_rank: { rank_id: 20, name: "เทพนักอ่าน", rank_img: "rank.png" },
+            }],
           },
         },
       });
@@ -185,19 +189,31 @@ describe("rankingApi", () => {
   });
 
   describe("fetchLeaderboardUserRank", () => {
-    it("supports with and without range query", async () => {
+    it("uses week by default and supports the selected range query", async () => {
       mockedApiClient.get.mockResolvedValueOnce({
-        data: { data: { rank: 3, totalPrice: 20, user: { user_id: 100, fullname: "Me", img: null, Frame_img: null } } },
+        data: {
+          data: {
+            rank: 3,
+            user: { user_id: 100, fullname: "Me", img: null, Frame_img: null },
+            current_rank: { rank_id: 18, name: "จักรพรรดินักอ่าน 2", rank_img: "rank-18.png" },
+          },
+        },
       });
       await expect(fetchLeaderboardUserRank(100)).resolves.toEqual({
         rank: 3,
-        totalPrice: 20,
         user: { user_id: 100, fullname: "Me", img: null, Frame_img: null },
+        current_rank: { rank_id: 18, name: "จักรพรรดินักอ่าน 2", rank_img: "rank-18.png" },
       });
-      expect(mockedApiClient.get).toHaveBeenCalledWith("/rank/leaderboard/user/100");
+      expect(mockedApiClient.get).toHaveBeenCalledWith("/rank/leaderboard/user/100?range=week");
 
       mockedApiClient.get.mockResolvedValueOnce({
-        data: { data: { rank: 1, totalPrice: 50, user: { user_id: 101, fullname: "Me2", img: null, Frame_img: null } } },
+        data: {
+          data: {
+            rank: 1,
+            user: { user_id: 101, fullname: "Me2", img: null, Frame_img: null },
+            current_rank: { rank_id: 30, name: "นักอ่านเบบี๋", rank_img: "rank-30.png" },
+          },
+        },
       });
       await fetchLeaderboardUserRank("101", "month");
       expect(mockedApiClient.get).toHaveBeenCalledWith(

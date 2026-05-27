@@ -51,10 +51,16 @@ export interface LeaderboardUserProfile {
   Frame_img: string | null;
 }
 
+export interface LeaderboardCurrentRank {
+  rank_id: number;
+  name: string;
+  rank_img: string | null;
+}
+
 export interface LeaderboardUserItem {
   rank: number | null;
   user: LeaderboardUserProfile;
-  totalPrice: number;
+  current_rank: LeaderboardCurrentRank | null;
 }
 
 export interface LeaderboardTopResponse {
@@ -147,11 +153,10 @@ export interface LeaderboardUserRankResponse {
 
 export const fetchLeaderboardUserRank = async (
   userId: number | string,
-  range?: RankingTimeRange
+  range: RankingTimeRange = 'week'
 ): Promise<LeaderboardUserItem | null> => {
   try {
-    const query = range ? `?range=${range}` : '';
-    const response = await apiClient.get<LeaderboardUserRankResponse>(`/rank/leaderboard/user/${userId}${query}`);
+    const response = await apiClient.get<LeaderboardUserRankResponse>(`/rank/leaderboard/user/${userId}?range=${mapLeaderboardRange(range)}`);
     return response.data?.data || null;
   } catch {
     return null;
