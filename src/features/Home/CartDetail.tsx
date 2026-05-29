@@ -2,7 +2,7 @@
 import * as React from "react";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchCartItems, updateCartItem, removeCartItem, clearCart } from '@/services/cartService';
-import { CartItem, SelectableOption } from '@/interfaces/cart.interface';
+import { CartItem, SelectableOption } from '@/types/cart';
 import { Table, Checkbox, Button, InputNumber, Image as AntImage, Typography, Popconfirm, App, Empty, Collapse, Modal } from 'antd';
 import { DeleteOutlined, ShopOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import Link from 'next/link';

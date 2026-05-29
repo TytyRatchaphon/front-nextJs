@@ -30,9 +30,6 @@ export const queryKeys = {
     listRoot: () => ["book-quest-list"] as const,
     list: (bookId?: number | string | null) =>
       ["book-quest-list", String(bookId ?? "")] as const,
-    detailRoot: () => ["book-quest-detail"] as const,
-    detail: (questId?: number | string | null) =>
-      ["book-quest-detail", String(questId ?? "")] as const,
   },
   user: {
     eventSummaryRoot: () => ["user-event-summary"] as const,
@@ -69,6 +66,7 @@ export const queryKeys = {
       ["allNotifications", tab ?? null, page ?? null] as const,
   },
   read: {
+    episodeContentRoot: () => ["episodeContent"] as const,
     episodeContent: (episodeId: number | string | null | undefined) =>
       ["episodeContent", String(episodeId ?? "")] as const,
     episodeBookmarks: (episodeId: number | string | null | undefined) =>

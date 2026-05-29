@@ -6,7 +6,7 @@ import { ShoppingCartOutlined, DeleteOutlined, MinusOutlined, PlusOutlined, Shop
 import Image from 'next/image';
 import Link from 'next/link';
 import GifLoader from '@/components/utility/GifLoader';
-import { CartItem } from '@/interfaces/cart.interface';
+import { CartItem } from '@/types/cart';
 import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import { resolveStoreImageSrc } from '@/utils/imageUtils';

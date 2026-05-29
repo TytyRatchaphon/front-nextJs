@@ -14,9 +14,9 @@ import UpdateBookCard from "@/components/novelCard/UpdateBookCard";
 import ContinueReadingSwiper from "@/components/swiper/ContinueReadingSwiper";
 import PinnedReviewsSwiper from "@/components/swiper/PinnedReviewsSwiper";
 import GifLoader from "@/components/utility/GifLoader";
-import DailyPopup from "@/components/utility/DailyPopup";
 import FloatingGiftButton from "@/components/utility/FloatingGiftButton";
 import { BackToTopButton } from "@/components/utility/BackToTopButton";
+import DailyPopup from "@/components/utility/DailyPopup";
 import { useAuthStore } from "@/stores/authStore";
 import { parseJwtToken } from "@/utils/jwtParser";
 import { resolveBookCoverImageSrc } from "@/utils/imageUtils";
@@ -135,23 +135,28 @@ export default function HomeContent({
 
   const pinnedReviews = pinnedReviewsData?.reviews || [];
 
+  const notifiedErrorsRef = React.useRef<Set<string>>(new Set());
+
   React.useEffect(() => {
     const errorConfigs = [
-      { isError: homeDataError, title: "หน้าหลัก" },
-      { isError: bookUpdatesError, title: "นิยายอัปเดตล่าสุด" },
-      { isError: activeCategoriesError, title: "หมวดหมู่" },
-      { isError: rankingCategoriesError, title: "หมวดหมู่นิยายฮิต" },
-      { isError: continueBooksError, title: "อ่านต่อ" },
-      { isError: pinnedReviewsError, title: "ปักหมุดรีวิว" },
+      { error: homeDataError, key: "homeData", title: "หน้าหลัก" },
+      { error: bookUpdatesError, key: "bookUpdates", title: "นิยายอัปเดตล่าสุด" },
+      { error: activeCategoriesError, key: "activeCategories", title: "หมวดหมู่" },
+      { error: rankingCategoriesError, key: "rankingCategories", title: "หมวดหมู่นิยายฮิต" },
+      { error: continueBooksError, key: "continueBooks", title: "อ่านต่อ" },
+      { error: pinnedReviewsError, key: "pinnedReviews", title: "ปักหมุดรีวิว" },
     ];
 
-    errorConfigs.forEach(({ isError, title }) => {
-      if (isError) {
+    errorConfigs.forEach(({ error, key, title }) => {
+      if (error && !notifiedErrorsRef.current.has(key)) {
+        notifiedErrorsRef.current.add(key);
         notification.error({
           message: "เกิดข้อผิดพลาด",
           description: `ไม่สามารถโหลดข้อมูล${title}ได้`,
           placement: "topRight",
         });
+      } else if (!error) {
+        notifiedErrorsRef.current.delete(key);
       }
     });
   }, [

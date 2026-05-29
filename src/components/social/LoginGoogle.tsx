@@ -35,16 +35,6 @@ const LoginGoogle = () => {
     document.cookie = name + "=" + (value || "") + ";" + expires + ";path=/";
   };
 
-  // Helper to check token status before login
-  const checkBeforeLogin = (token: string): boolean => {
-    try {
-      if (!token) return false;
-      return false;
-    } catch {
-      return false;
-    }
-  };
-
   useEffect(() => {
     if (window.google?.accounts?.id) {
       setIsSdkReady(true);
@@ -103,7 +93,6 @@ const LoginGoogle = () => {
         idToken: idToken,
       });
 
-
       if (response.data && response.data.data) {
         const userData = response.data.data;
 
@@ -134,7 +123,6 @@ const LoginGoogle = () => {
             response.headers?.['x-auth-token'];
         }
 
-
         if (token) {
           // Set non-auth cookies only (auth token is managed centrally in authStore)
           setCookie('closePopupPolicy', '', 365);
@@ -155,13 +143,7 @@ const LoginGoogle = () => {
           // ปิด Modal
           closeLoginModal();
 
-          // Redirect Logic
-          const navi = checkBeforeLogin(token);
-          if (navi) {
-            window.location.href = '/';
-          } else {
-            window.location.reload();
-          }
+          window.location.reload();
         } else {
           notification.error({
             message: 'เข้าสู่ระบบไม่สำเร็จ',

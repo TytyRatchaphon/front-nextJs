@@ -1,13 +1,6 @@
 import axios from "axios";
 import Cookies from "js-cookie";
-
-const normalizeToken = (value: string | undefined): string | undefined => {
-  if (!value) return undefined;
-  const trimmed = value.trim();
-  const withoutBearer = trimmed.replace(/^Bearer\s+/i, "");
-  const withoutQuotes = withoutBearer.replace(/^['"]+|['"]+$/g, "");
-  return withoutQuotes || undefined;
-};
+import { parseJwtToken } from "@/utils/jwtParser";
 
 const secureProxyClient = axios.create({
   baseURL: "/api/secure",
@@ -19,7 +12,7 @@ secureProxyClient.interceptors.request.use((config) => {
     return config;
   }
 
-  const token = normalizeToken(Cookies.get("token"));
+  const token = parseJwtToken(Cookies.get("token"));
   if (!token) {
     return config;
   }

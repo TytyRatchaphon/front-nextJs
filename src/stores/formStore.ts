@@ -25,7 +25,7 @@ interface FormState {
   formErrors: Record<string, string>;
   
   // Actions
-  updateUserProfile: (field: keyof UserProfileForm, value: string) => void;
+  updateUserProfile: <K extends keyof UserProfileForm>(field: K, value: UserProfileForm[K]) => void;
   setFormErrors: (errors: Record<string, string>) => void;
   clearFormErrors: () => void;
   resetUserProfile: () => void;
@@ -65,7 +65,7 @@ export const useFormStore = create<FormState>()(
       formErrors: {},
       
       // Actions
-      updateUserProfile: (field: keyof UserProfileForm, value: string) => 
+      updateUserProfile: <K extends keyof UserProfileForm>(field: K, value: UserProfileForm[K]) => 
         set((state) => ({
           userProfileForm: {
             ...state.userProfileForm,

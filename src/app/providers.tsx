@@ -43,7 +43,7 @@ export default function TanstackProvider({
       localStorage.removeItem('search_history');
     } catch {
     }
-  }, [queryClient]);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

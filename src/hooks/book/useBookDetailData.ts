@@ -1,6 +1,6 @@
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { queryKeys } from "@/constants/query";
+import { queryKeys, QUERY_CONFIG } from "@/constants/query";
 import {
     fetchBookDetail,
     fetchBookEpisodes,
@@ -24,7 +24,7 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
             return data;
         },
         enabled: !!bookId && isReady,
-        staleTime: 5 * 60 * 1000,
+        staleTime: QUERY_CONFIG.STALE_TIME_VERY_LONG,
         placeholderData: keepPreviousData,
     });
 
@@ -33,7 +33,7 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
         queryKey: queryKeys.user.shelf(token),
         queryFn: () => fetchUserShelve(),
         enabled: !!token && isReady,
-        staleTime: 5 * 60 * 1000,
+        staleTime: QUERY_CONFIG.STALE_TIME_VERY_LONG,
     });
 
     // Episodes
@@ -41,7 +41,7 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
         queryKey: queryKeys.book.episodes(bookId),
         queryFn: () => fetchBookEpisodes(bookId),
         enabled: !!bookId && isReady,
-        staleTime: 5 * 60 * 1000,
+        staleTime: QUERY_CONFIG.STALE_TIME_VERY_LONG,
         placeholderData: keepPreviousData,
     });
 
@@ -50,7 +50,7 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
         queryKey: queryKeys.book.purchaseDetails(bookId, token),
         queryFn: () => fetchBookPurchaseDetails(bookId),
         enabled: !!bookId && isReady,
-        staleTime: 5 * 60 * 1000,
+        staleTime: QUERY_CONFIG.STALE_TIME_VERY_LONG,
     });
 
     // Reading Mode (Episode vs Pack)
@@ -58,7 +58,7 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
         queryKey: queryKeys.book.novelPackCheck(bookId),
         queryFn: () => fetchNovelPackCheck(bookId),
         enabled: !!bookId && isReady,
-        staleTime: 5 * 60 * 1000,
+        staleTime: QUERY_CONFIG.STALE_TIME_VERY_LONG,
     });
 
     const firstEpisodeId = episodesData?.groups?.[0]?.list?.[0]?.ep_id;

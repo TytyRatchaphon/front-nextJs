@@ -4,7 +4,7 @@ import Image from "next/image";
 import * as React from "react";
 import { App, Button, Modal, Progress, Skeleton } from "antd";
 import { BookOpen, Check, ChevronDown, Gift, LockKeyhole, Target } from "lucide-react";
-import { useBookQuestDetail, useBookQuests, useClaimBookQuestMutation } from "@/hooks/book/useBookQuest";
+import { useBookQuests, useClaimBookQuestMutation } from "@/hooks/book/useBookQuest";
 import type { BookQuest, BookQuestEpisode, BookQuestRewardPreview } from "@/services/api/bookQuestApi";
 
 type BookQuestSectionProps = {
@@ -24,28 +24,103 @@ const getRewardAmount = (reward: BookQuestRewardPreview) => Number(
   reward.current_reward_amount ?? reward.reward_amount ?? reward.amount ?? 0,
 );
 
+const getRewardTypeDisplayText = (reward: BookQuestRewardPreview) => {
+  const itemType = String(reward.item_type || "").toLowerCase();
+  if (itemType === "coin") return "เหรียญ";
+  if (itemType === "freecoin" || itemType === "free_coin") return "ถุงเงิน";
+
+  const displayText = reward.item_type_display_text?.trim();
+  if (displayText) return displayText;
+  if (reward.item_type === "user_coupon") return "คูปอง";
+  if (reward.item_type === "cashback_wallet") return "Cashback";
+  if (reward.item_type === "rp_up") return "RP";
+  if (reward.item_type === "freecoin") return "Free Coin";
+  return String(reward.item_type || "").replace(/_/g, " ") || "รางวัล";
+};
+
 const getRewardLabel = (reward: BookQuestRewardPreview) => {
   const amount = getRewardAmount(reward);
+  const displayText = getRewardTypeDisplayText(reward);
 
-  if (reward.item_type === "user_coupon") return reward.coupon_name || "คูปองพิเศษ";
+  if (reward.item_type === "user_coupon") {
+    return reward.coupon_name ? `${displayText}: ${reward.coupon_name}` : displayText;
+  }
   if (reward.item_type === "cashback_wallet") {
-    return amount > 0 ? `Cashback ${amount.toLocaleString()} Free Coin` : "Cashback (คำนวณ)";
+    return amount > 0 ? `${displayText} ${amount.toLocaleString()}` : `${displayText} (คำนวณ)`;
   }
   if (reward.item_type === "rp_up") {
-    return amount > 0 ? `RP ${amount.toLocaleString()}` : "RP (คำนวณ)";
+    return amount > 0 ? `${displayText} ${amount.toLocaleString()}` : `${displayText} (คำนวณ)`;
   }
-  if (reward.item_type === "freecoin") return `Free Coin ${amount.toLocaleString()}`;
-
-  const itemType = String(reward.item_type || "").replace(/_/g, " ");
-  return amount > 0 ? `${itemType} ${amount.toLocaleString()}` : itemType || "รางวัล";
+  return amount > 0 ? `${displayText} ${amount.toLocaleString()}` : displayText;
 };
 
 const getRewardDescription = (reward: BookQuestRewardPreview) => {
   if (reward.condition?.display_text) return reward.condition.display_text;
-  if (reward.item_type === "user_coupon") return "คูปอนสำหรับหนังสือเล่มนี้";
+  if (reward.item_type === "user_coupon") return "คูปองสำหรับหนังสือเล่มนี้";
   if (reward.is_dynamic_amount) return "คำนวณจากยอดซื้อที่เข้าเงื่อนไข";
   return "จำนวนรางวัลตามเงื่อนไขภารกิจ";
 };
+
+const getRewardImageOverride = (reward: BookQuestRewardPreview) => {
+  const itemType = String(reward.item_type || "").toLowerCase();
+  if (itemType === "coin") return "/images/e-coin.png";
+  if (itemType === "freecoin" || itemType === "free_coin") return "/images/money-bag.png";
+  return null;
+};
+
+function RewardImage({ reward, className }: { reward: BookQuestRewardPreview; className: string }) {
+  const overrideImage = getRewardImageOverride(reward);
+  if (overrideImage) {
+    return (
+      <Image
+        src={overrideImage}
+        alt={getRewardTypeDisplayText(reward)}
+        width={44}
+        height={44}
+        className={className}
+      />
+    );
+  }
+
+  if (reward.item_type !== "user_coupon" && reward.reward_image_url) {
+    return (
+      <Image
+        src={reward.reward_image_url}
+        alt={getRewardTypeDisplayText(reward)}
+        width={44}
+        height={44}
+        unoptimized
+        className={className}
+      />
+    );
+  }
+
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      className={className}
+      aria-hidden="true"
+    >
+      <path
+        d="M19.5 12.5C19.5 11.12 20.62 10 22 10V9C22 5 21 4 17 4H7C3 4 2 5 2 9V9.5C3.38 9.5 4.5 10.62 4.5 12C4.5 13.38 3.38 14.5 2 14.5V15C2 19 3 20 7 20H17C21 20 22 19 22 15C20.62 15 19.5 13.88 19.5 12.5Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M10 4V20"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeDasharray="5 5"
+      />
+    </svg>
+  );
+}
 
 const getQuestDescription = (quest: BookQuest) => {
   if (quest.description) return quest.description;
@@ -92,7 +167,7 @@ function QuestRewardChips({ rewards }: { rewards: BookQuestRewardPreview[] }) {
           key={`${reward.reward_id ?? reward.item_type}-${index}`}
           className="inline-flex min-h-7 items-center gap-1.5 rounded-lg border border-red-100 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-600"
         >
-          <Gift className="h-3.5 w-3.5" />
+          <RewardImage reward={reward} className="h-3.5 w-3.5 object-contain" />
           {getRewardLabel(reward)}
         </span>
       ))}
@@ -186,7 +261,7 @@ function RewardCard({ reward }: { reward: BookQuestRewardPreview }) {
     >
       <div className="flex min-w-0 items-center gap-3">
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-500">
-          <Gift className="h-5 w-5" />
+          <RewardImage reward={reward} className="h-7 w-7 object-contain" />
         </span>
         <div className="min-w-0">
           <p className="line-clamp-1 text-sm font-semibold text-gray-900">{getRewardLabel(reward)}</p>
@@ -260,8 +335,7 @@ function BookQuestDetailModal({
   onClaim: (quest: BookQuest) => void;
   isClaiming: boolean;
 }) {
-  const { data, isLoading } = useBookQuestDetail(quest?.book_quest_id, open && Boolean(quest));
-  const displayQuest = data && quest ? { ...quest, ...data } : data || quest;
+  const displayQuest = quest;
   const status = displayQuest ? getStatus(displayQuest) : null;
   const canClaim = Boolean(displayQuest?.is_claimable) && !displayQuest?.claim?.is_claimed;
 
@@ -284,7 +358,7 @@ function BookQuestDetailModal({
         ) : "รายละเอียดภารกิจ"
       }
     >
-      {isLoading || !displayQuest ? (
+      {!displayQuest ? (
         <Skeleton active paragraph={{ rows: 8 }} />
       ) : (
         <div className="space-y-5 pt-3 font-primary">
@@ -413,36 +487,62 @@ export default function BookQuestSection({ bookId, isLoggedIn }: BookQuestSectio
     );
   }
   if (!quests.length) return null;
+  const claimedCount = quests.filter((quest) => quest.claim?.is_claimed).length;
+  const rewardCount = quests.reduce((total, quest) => total + (quest.reward_preview?.length || 0), 0);
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-red-100 bg-white shadow-sm">
+    <section className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
       <button
         type="button"
         aria-expanded={expanded}
         onClick={() => setExpanded((value) => !value)}
-        className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left sm:px-5"
+        className="group relative flex w-full items-center justify-between gap-4 overflow-hidden bg-white px-4 py-4 text-left transition-colors hover:bg-gray-50 sm:px-5"
       >
         <div className="flex min-w-0 items-center gap-3">
-          <span className="h-3 w-3 shrink-0 rounded-full bg-red-500" />
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold leading-6 text-red-600">รายการภารกิจทั้งหมด</h2>
-            <p className="truncate text-xs font-normal text-gray-500">
-              คลิกเพื่อดูเงื่อนไขและรับรางวัลจากการอ่าน
+          <div className="min-w-0 space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-base font-semibold leading-6 text-red-600">รายการภารกิจทั้งหมด</h2>
+              {claimableCount > 0 ? (
+                <span className="inline-flex rounded-full border border-red-100 bg-red-50 px-2.5 py-0.5 text-[11px] font-semibold text-red-600">
+                  รับได้ {claimableCount}
+                </span>
+              ) : null}
+            </div>
+            <p className="line-clamp-1 text-xs font-normal leading-5 text-gray-500">
+              ทำภารกิจการอ่าน สะสมความคืบหน้า แล้วรับรางวัลประจำเล่ม
             </p>
+            <div className="flex flex-wrap gap-1.5 sm:hidden">
+              <span className="rounded-full border border-gray-100 bg-gray-50 px-2 py-0.5 text-[11px] font-medium text-gray-500">
+                {quests.length} ภารกิจ
+              </span>
+              <span className="rounded-full border border-gray-100 bg-gray-50 px-2 py-0.5 text-[11px] font-medium text-gray-500">
+                {rewardCount} รางวัล
+              </span>
+            </div>
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-3">
-          {claimableCount > 0 ? (
-            <span className="hidden rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-600 sm:inline-flex">
-              รับได้ {claimableCount} ภารกิจ
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <div className="hidden items-center gap-2 sm:flex">
+            <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600">
+              {quests.length} ภารกิจ
             </span>
-          ) : null}
-          <ChevronDown className={`h-4 w-4 text-red-500 transition-transform ${expanded ? "rotate-180" : ""}`} />
+            <span className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600">
+              {rewardCount} รางวัล
+            </span>
+            {claimedCount > 0 ? (
+              <span className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-600">
+                สำเร็จ {claimedCount}
+              </span>
+            ) : null}
+          </div>
+          <span className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 transition-colors group-hover:border-red-100 group-hover:text-red-500">
+            <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`} />
+          </span>
         </div>
       </button>
 
       {expanded ? (
-        <div className="space-y-3 border-t border-red-50 bg-[#fffdfd] p-4">
+        <div className="space-y-3 border-t border-gray-100 bg-white p-4">
           {quests.map((quest) => (
             <BookQuestCard
               key={quest.book_quest_id}

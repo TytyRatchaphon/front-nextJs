@@ -68,7 +68,7 @@ export interface AuthState {
   // Actions
   login: (userData: UserData, token: string) => void;
   logout: () => void;
-  setMounted: () => void;
+  setMounted: () => Promise<void>;
   updateToken: (newToken: string) => Promise<void>;
   updateUserBalance: (updates: Partial<UserData>) => void;
 }
@@ -131,32 +131,42 @@ export const useAuthStore = create<AuthState>()(
         await cookieWrite;
       },
 
-      setMounted: () => {
+      setMounted: async () => {
         clearLegacyLocalAuthStorage();
         const state = get();
-        if (!state.user && !state.token && !state.isLoggedIn) {
-          const cookieToken = getAuthTokenCookie();
-          if (cookieToken) {
-            get().updateToken(cookieToken);
-            set({ hasMounted: true });
-            return;
-          }
 
-          void getAuthSession()
-            .then((session) => {
-              if (!session?.authenticated || !session.token) return;
-
-              const latestState = get();
-              if (!latestState.user && !latestState.token && !latestState.isLoggedIn) {                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
-                get().updateToken(session.token);
-              }
-            })
-            .finally(() => {
-              set({ hasMounted: true });
-            });
+        if (state.user || state.token || state.isLoggedIn) {
+          set({ hasMounted: true });
           return;
         }
-        set({ hasMounted: true });
+
+        // 1) Try client-readable cookie first (fast, synchronous read)
+        const cookieToken = getAuthTokenCookie();
+        if (cookieToken) {
+          try {
+            await get().updateToken(cookieToken);
+          } catch (error) {
+            console.error('[authStore] setMounted: cookie token update failed', error);
+          } finally {
+            set({ hasMounted: true });
+          }
+          return;
+        }
+
+        // 2) Fall back to httpOnly session cookie via API
+        try {
+          const session = await getAuthSession();
+          if (session?.authenticated && session.token) {
+            const latestState = get();
+            if (!latestState.user && !latestState.token && !latestState.isLoggedIn) {
+              await get().updateToken(session.token);
+            }
+          }
+        } catch (error) {
+          console.error('[authStore] setMounted: session check failed', error);
+        } finally {
+          set({ hasMounted: true });
+        }
       }
     })
 )

@@ -3,7 +3,7 @@
 import * as React from "react";
 
 type UseNavbarLifecycleParams = {
-  setMounted: () => void;
+  setMounted: () => Promise<void>;
   initLIFF: (options: { allowBackendLogin: boolean }) => Promise<unknown>;
 };
 

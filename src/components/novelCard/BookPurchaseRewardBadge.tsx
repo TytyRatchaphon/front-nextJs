@@ -1,5 +1,7 @@
 import { getBookPurchaseRewardImage } from "@/utils/bookPurchaseReward";
 
+const STATIC_REWARD_BADGE_FALLBACK = "/images/gift_box.png";
+
 type BookPurchaseRewardBadgeProps = {
   book?: Record<string, any> | null;
   avoidBottomOverlay?: boolean;
@@ -14,6 +16,9 @@ export function BookPurchaseRewardBadge({
   const rewardImage = getBookPurchaseRewardImage(book);
   if (!rewardImage) return null;
 
+  const isAnimatedRewardImage = /\.gif(?:[?#].*)?$/i.test(rewardImage);
+  const imageSrc = isAnimatedRewardImage ? STATIC_REWARD_BADGE_FALLBACK : rewardImage;
+
   return (
     <span
       className={[
@@ -24,10 +29,11 @@ export function BookPurchaseRewardBadge({
       aria-label="EP purchase reward"
     >
       <img
-        src={rewardImage}
+        src={imageSrc}
         alt="EP purchase reward"
         className="h-full w-full object-contain drop-shadow-md"
         loading="lazy"
+        decoding="async"
       />
     </span>
   );

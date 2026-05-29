@@ -36,15 +36,6 @@ const setCookie = (name: string, value: string, days: number = 365) => {
   document.cookie = name + "=" + (value || "") + ";" + expires + ";path=/";
 };
 
-// Helper to check token status before login
-const checkBeforeLogin = (token: string): boolean => {
-  try {
-    if (!token) return false;
-    return false;
-  } catch {
-    return false;
-  }
-};
 
 const clearLineLoginProcessingFlag = () => {
   if (typeof window === 'undefined') return;
@@ -241,8 +232,7 @@ export const useLineLogin = () => {
               hasLock = false;
             }
 
-            const navi = checkBeforeLogin(token);
-            if (navi || hasLineCallbackParams()) {
+            if (hasLineCallbackParams()) {
               window.location.replace('/');
             } else {
               window.location.reload();

@@ -43,16 +43,6 @@ const LoginFacebook = () => {
     document.cookie = name + "=" + (value || "") + ";" + expires + ";path=/";
   };
 
-  // Helper to check token status before login
-  const checkBeforeLogin = (token: string): boolean => {
-    try {
-      if (!token) return false;
-      return false;
-    } catch {
-      return false;
-    }
-  };
-
   // 1. ย้ายการ Initialize SDK มาไว้ใน useEffect ทำงานทันทีที่ Mount
   const initFacebookSDK = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -105,7 +95,6 @@ const LoginFacebook = () => {
           fetchFacebookProfile(accessToken);
         } else {
           setLoading(false);
-          // message.warning('ยกเลิกการเชื่อมต่อ Facebook');
         }
       },
       { scope: 'public_profile,email' }
@@ -169,13 +158,7 @@ const LoginFacebook = () => {
           });
           closeLoginModal();
 
-          // Check logical flow (replaces legacy checkBeforeLogin)
-          const navi = checkBeforeLogin(token);
-          if (navi) {
-            window.location.href = '/';
-          } else {
-            window.location.reload();
-          }
+          window.location.reload();
         } else {
           notification.error({
             message: 'เข้าสู่ระบบไม่สำเร็จ',

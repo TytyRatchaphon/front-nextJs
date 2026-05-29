@@ -4,6 +4,7 @@ import type { BookTrans } from "@/types/api";
 import { parseJwtToken } from "@/utils/jwtParser";
 import { homeSchemas } from "./apiResponseSchemas";
 import { validateApiPayload } from "./apiResponseValidation";
+import { logApiError } from "@/utils/apiErrorLogger";
 
 export interface Slide {
   banner_id: number;
@@ -110,7 +111,8 @@ export const fetchHomeData = async (
     };
     const response = await apiClient.get<HomeDataResponse>("/getAllBookHome", config);
     return validateApiPayload(homeSchemas.homeData, response.data, "/getAllBookHome") as unknown as HomeDataResponse;
-  } catch {
+  } catch (error) {
+    logApiError('fetchHomeData', error);
     return null;
   }
 }
@@ -151,7 +153,8 @@ export const fetchBookUpdates = async (tab?: string | null): Promise<BookUpdate[
     });
     const payload = validateApiPayload(homeSchemas.bookUpdates, response.data, "/getBookUpdate");
     return payload.data as unknown as BookUpdate[];
-  } catch {
+  } catch (error) {
+    logApiError('fetchBookUpdates', error);
     return [];
   }
 };

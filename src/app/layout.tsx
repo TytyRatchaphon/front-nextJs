@@ -1,11 +1,11 @@
 import * as React from "react";
 import type { Metadata } from "next";
-import { GoogleAnalytics } from '@next/third-parties/google';
 import { dehydrate, QueryClient } from "@tanstack/react-query";
 import 'antd/dist/reset.css';
 import "./globals.css";
 import { Bai_Jamjuree } from "next/font/google";
 import ClientProviders from "./client-providers";
+import DeferredThirdPartyScripts from "@/components/analytics/DeferredThirdPartyScripts";
 
 const baiJamjuree = Bai_Jamjuree({
   weight: ["500"],
@@ -43,8 +43,6 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-import Script from 'next/script';
-
 // ... (existing imports)
 
 export default async function RootLayout({
@@ -63,37 +61,6 @@ export default async function RootLayout({
 
   return (
     <html lang="th" className={`${baiJamjuree.variable} font-bai-jamjuree font-medium`}>
-      <Script src="https://t.contentsquare.net/uxa/c765809e7d7ef.js" strategy="lazyOnload" />
-      
-      {/* Google Ads Tag */}
-      <Script
-        src="https://www.googletagmanager.com/gtag/js?id=AW-16724162319"
-        strategy="lazyOnload"
-      />
-      <Script id="google-ads-tag" strategy="lazyOnload">
-        {`
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-          gtag('config', 'AW-16724162319');
-        `}
-      </Script>
-      {/* Facebook Pixel */}
-      <Script id="facebook-pixel" strategy="lazyOnload">
-        {`
-          !function(f,b,e,v,n,t,s)
-          {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-          n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-          if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-          n.queue=[];t=b.createElement(e);t.async=!0;
-          t.src=v;s=b.getElementsByTagName(e)[0];
-          s.parentNode.insertBefore(t,s)}(window, document,'script',
-          'https://connect.facebook.net/en_US/fbevents.js');
-          fbq('init', '1597109174593241');
-          fbq('track', 'PageView');
-        `}
-      </Script>
-
       <body
         className={`flex flex-col w-full min-h-[100vh] font-bai-jamjuree font-medium`}>
         {/* Facebook Pixel NoScript */}
@@ -108,7 +75,7 @@ export default async function RootLayout({
         </noscript>
         
         <ClientProviders dehydratedState={dehydrate(queryClient)}>{children}</ClientProviders>
-        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID || "G-RTWVKZ2MVF"} />
+        <DeferredThirdPartyScripts />
       </body>
     </html>
   );

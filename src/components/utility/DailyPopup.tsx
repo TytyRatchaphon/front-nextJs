@@ -60,6 +60,8 @@ const DailyPromoPopup: React.FC = () => {
   const [centerPromoItems, setCenterPromoItems] = useState<PromoItem[]>([]);
   const [floatingPromoItem, setFloatingPromoItem] = useState<PromoItem | null>(null);
   const [isFloatingVisible, setIsFloatingVisible] = useState(false);
+  const [activeCenterIndex, setActiveCenterIndex] = useState(0);
+  const [shouldMountCenterPopup, setShouldMountCenterPopup] = useState(false);
 
   const resolveInternalPath = (rawUrl: string): string | null => {
     const raw = typeof rawUrl === "string" ? rawUrl.trim() : "";
@@ -139,6 +141,7 @@ const DailyPromoPopup: React.FC = () => {
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
     let idleId: number | undefined;
+    let removeInteractionListeners: (() => void) | undefined;
 
     const initPopup = async () => {
       try {
@@ -171,7 +174,18 @@ const DailyPromoPopup: React.FC = () => {
 
         const lastCloseDate = localStorage.getItem(STORAGE_KEY);
         if (!lastCloseDate || !isSameDay(Number.parseInt(lastCloseDate, 10), Date.now())) {
-          openDailyPopup();
+          const openAfterInteraction = () => {
+            removeInteractionListeners?.();
+            setShouldMountCenterPopup(true);
+            openDailyPopup();
+          };
+          const events = ["pointerdown", "keydown", "scroll", "touchstart"];
+          removeInteractionListeners = () => {
+            events.forEach((eventName) => window.removeEventListener(eventName, openAfterInteraction));
+          };
+          events.forEach((eventName) => {
+            window.addEventListener(eventName, openAfterInteraction, { once: true, passive: true });
+          });
           return;
         }
 
@@ -195,6 +209,7 @@ const DailyPromoPopup: React.FC = () => {
 
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
+      removeInteractionListeners?.();
       if (typeof window !== "undefined" && idleId && "cancelIdleCallback" in window) {
         (window as Window & { cancelIdleCallback: (handle: number) => void }).cancelIdleCallback(idleId);
       }
@@ -203,15 +218,18 @@ const DailyPromoPopup: React.FC = () => {
 
   const handleCenterClose = () => {
     closeDailyPopup();
+    setShouldMountCenterPopup(false);
   };
 
   const handleCenterDisableToday = () => {
     localStorage.setItem(STORAGE_KEY, Date.now().toString());
     closeDailyPopup();
+    setShouldMountCenterPopup(false);
   };
 
   const handleCenterPromoClick = (linkUrl: string) => {
     closeDailyPopup();
+    setShouldMountCenterPopup(false);
     navigateByLink(linkUrl);
   };
 
@@ -228,26 +246,28 @@ const DailyPromoPopup: React.FC = () => {
 
   return (
     <>
-      <Modal
-        open={isDailyPopupOpen && centerPromoItems.length > 0}
-        onCancel={handleCenterClose}
-        centered
-        footer={null}
-        width={400}
-        zIndex={5000}
-        closeIcon={null}
-        styles={{
-          content: {
-            padding: 0,
-            borderRadius: "16px",
-            overflow: "hidden",
-            background: "transparent",
-            boxShadow: "none",
-          },
-          mask: { backdropFilter: "blur(4px)", backgroundColor: "rgba(0,0,0,0.6)" },
-        }}
-        className="custom-daily-popup"
-      >
+      {shouldMountCenterPopup && centerPromoItems.length > 0 ? (
+        <Modal
+          open={isDailyPopupOpen}
+          onCancel={handleCenterClose}
+          centered
+          footer={null}
+          width={400}
+          zIndex={5000}
+          closeIcon={null}
+          destroyOnHidden
+          styles={{
+            content: {
+              padding: 0,
+              borderRadius: "16px",
+              overflow: "hidden",
+              background: "transparent",
+              boxShadow: "none",
+            },
+            mask: { backdropFilter: "blur(4px)", backgroundColor: "rgba(0,0,0,0.6)" },
+          }}
+          className="custom-daily-popup"
+        >
         <div className="relative w-full max-w-[400px]">
           <div className="relative w-full overflow-hidden rounded-2xl bg-white shadow-2xl">
             <button
@@ -264,9 +284,17 @@ const DailyPromoPopup: React.FC = () => {
               loop={centerPromoItems.length > 1}
               autoplay={{ delay: 4000, disableOnInteraction: false }}
               className="aspect-[3/4] w-full"
+              onSlideChange={(swiper) => setActiveCenterIndex(swiper.realIndex)}
             >
-              {centerPromoItems.map((item) => (
-                <SwiperSlide key={item.id} className="group relative h-full w-full">
+              {centerPromoItems.map((item, index) => {
+                const isFirstSlide = index === 0;
+                const shouldRenderImage =
+                  centerPromoItems.length <= 2 ||
+                  Math.abs(index - activeCenterIndex) <= 1 ||
+                  Math.abs(index - activeCenterIndex) >= centerPromoItems.length - 1;
+
+                return (
+                  <SwiperSlide key={item.id} className="group relative h-full w-full">
                   <a
                     href={item.linkUrl || "#"}
                     onClick={(event) => {
@@ -275,16 +303,21 @@ const DailyPromoPopup: React.FC = () => {
                     }}
                     className="relative block h-full w-full overflow-hidden"
                   >
-                    <Image
-                      src={item.imageUrl}
-                      alt="Promotion"
-                      fill
-                      className="object-cover transition-transform duration-700 group-hover:scale-105"
-                      sizes="(max-width: 400px) 100vw, 400px"
-                    />
+                    {shouldRenderImage ? (
+                      <Image
+                        src={item.imageUrl}
+                        alt="Promotion"
+                        fill
+                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+                        sizes="(max-width: 400px) 100vw, 400px"
+                        loading={isFirstSlide ? "eager" : "lazy"}
+                        quality={65}
+                      />
+                    ) : null}
                   </a>
                 </SwiperSlide>
-              ))}
+                );
+              })}
             </Swiper>
 
             <div className="flex items-center justify-between border-t border-gray-100 bg-white px-4 py-3">
@@ -298,7 +331,8 @@ const DailyPromoPopup: React.FC = () => {
             </div>
           </div>
         </div>
-      </Modal>
+        </Modal>
+      ) : null}
 
       {floatingPromoItem && isFloatingVisible ? (
         <div className="fixed bottom-40 right-4 z-[910]">

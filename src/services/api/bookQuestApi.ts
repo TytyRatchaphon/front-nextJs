@@ -27,6 +27,7 @@ export interface BookQuestClaim {
 export interface BookQuestRewardPreview {
   reward_id?: number;
   item_type: string;
+  item_type_display_text?: string | null;
   item_id: number | string | null;
   amount: number;
   reward_amount?: number;
@@ -34,10 +35,10 @@ export interface BookQuestRewardPreview {
   reward_amount_source?: string;
   is_dynamic_amount?: boolean;
   coupon_id?: number | null;
-  coupon_name?: string;
+  coupon_name?: string | null;
   payout_wallet_type?: string;
   reward_unit?: string;
-  reward_image_url?: string;
+  reward_image_url?: string | null;
   condition?: {
     type?: string;
     display_text?: string;
@@ -116,13 +117,6 @@ export const fetchBookQuests = async (
     params: bookId ? { book_id: bookId } : undefined,
   });
   return unwrapList(response.data);
-};
-
-export const fetchBookQuestDetail = async (
-  questId: number | string,
-): Promise<BookQuest | null> => {
-  const response = await apiClient.get<ApiEnvelope<BookQuest>>(`/book-quest/${questId}`);
-  return response.data?.data ?? null;
 };
 
 export const claimBookQuest = async (
