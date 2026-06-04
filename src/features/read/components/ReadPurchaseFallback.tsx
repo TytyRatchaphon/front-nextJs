@@ -124,9 +124,11 @@ export function ReadPurchaseFallback({
       )}
       <div className="flex items-center justify-center gap-3">
         {canUseFreecoin && !isEarlyAccess && (
-          <button onClick={() => onOpenConfirm("freecoin", freecoinPrice)} className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg">
+          <button onClick={() => onOpenConfirm("freecoin", freecoinPrice)} className="flex items-center gap-2 px-4 py-2 bg-red-600 !text-white rounded-lg">
             <Image src={settings?.freecoin || "/images/money-bag.png"} alt="Coin Icon" width={20} height={20} unoptimized />
-            ซื้อด้วยถุงเงิน {freecoinPrice ? `(${freecoinPrice})` : ""}
+            <span className="!text-white">
+              ซื้อด้วยถุงเงิน {freecoinPrice ? `(${freecoinPrice})` : ""}
+            </span>
           </button>
         )}
         <button onClick={() => onOpenConfirm("coin", coinPrice)} disabled={isFastLocked || (isEarlyAccess && !canFastCoin)} className={`flex items-center gap-2 px-4 py-2 ${(canUseFreecoin && !isEarlyAccess) ? "bg-yellow-400" : "bg-red-600"} text-white rounded-lg disabled:opacity-60 disabled:cursor-not-allowed`}>
@@ -134,11 +136,11 @@ export function ReadPurchaseFallback({
             <div className="flex items-center gap-2 text-white font-medium">
               {canFastTicket && (
                 <div className="inline-flex items-center gap-1">
-                  <Image src={settings?.fast_ticket || "/images/fast_ticket.png"} alt="Fast Ticket" width={18} height={18} unoptimized />
+                  <Image src={settings?.white_fast_ticket || "/images/fast_ticket.png"} alt="Fast Ticket" width={32} height={32} unoptimized />
                   <span>{fastTicketPrice}</span>
                 </div>
               )}
-              {canFastTicket && canFastCoin && <span className="opacity-80">/</span>}
+              {canFastTicket && canFastCoin && <span className="opacity-80">|</span>}
               {canFastCoin && (
                 <div className="inline-flex items-center gap-1">
                   <Image src={settings?.coin || "/images/e-coin.png"} alt="Coin Icon" width={18} height={18} unoptimized />
@@ -149,7 +151,7 @@ export function ReadPurchaseFallback({
                 <>
                   <span className="opacity-80">+</span>
                   <div className="inline-flex items-center gap-1">
-                    <Image src={settings?.coin || "/images/e-coin.png"} alt="regular coin" width={18} height={18} unoptimized />
+                    <Image src={settings?.coin || "/images/e-coin.png"} alt="regular coin" width={    18} height={18} unoptimized />
                     {canUseFreecoin && (
                       <Image src={settings?.freecoin || "/images/money-bag.png"} alt="regular freecoin" width={18} height={18} unoptimized />
                     )}

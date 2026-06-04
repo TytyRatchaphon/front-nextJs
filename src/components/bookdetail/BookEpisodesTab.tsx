@@ -410,7 +410,7 @@ export const BookEpisodesTab = ({
                                             </>
                                           )}
                                           {canPayByFastTicket && canPayByFastCoin && (
-                                            <span className="text-gray-400">/</span>
+                                            <span className="text-gray-400">|</span>
                                           )}
                                           {canPayByFastCoin && (
                                             <>

@@ -83,7 +83,7 @@ export default function CategoryRank({ categoryId }: CategoryRankProps) {
                     <div className="flex text-lg font-bold">
                         <button
                             onClick={() => setActiveTab('weekly')}
-                            className={`flex-1 py-4 text-center transition-colors relative ${activeTab === 'weekly' ? 'text-red-600 bg-red-50' : 'text-gray-600 hover:text-red-500 hover:bg-gray-50'
+                            className={`flex-1 py-4 text-center transition-colors relative ${activeTab === 'weekly' ? 'text-red-700 bg-red-50' : 'text-gray-600 hover:text-red-700 hover:bg-red-50'
                                 }`}
                         >
                             สัปดาห์
@@ -93,7 +93,7 @@ export default function CategoryRank({ categoryId }: CategoryRankProps) {
                         </button>
                         <button
                             onClick={() => setActiveTab('monthly')}
-                            className={`flex-1 py-4 text-center transition-colors relative ${activeTab === 'monthly' ? 'text-red-600 bg-red-50' : 'text-gray-600 hover:text-red-500 hover:bg-gray-50'
+                            className={`flex-1 py-4 text-center transition-colors relative ${activeTab === 'monthly' ? 'text-red-700 bg-red-50' : 'text-gray-600 hover:text-red-700 hover:bg-red-50'
                                 }`}
                         >
                             เดือน
@@ -103,7 +103,7 @@ export default function CategoryRank({ categoryId }: CategoryRankProps) {
                         </button>
                         <button
                             onClick={() => setActiveTab('yearly')}
-                            className={`flex-1 py-4 text-center transition-colors relative ${activeTab === 'yearly' ? 'text-red-600 bg-red-50' : 'text-gray-600 hover:text-red-500 hover:bg-gray-50'
+                            className={`flex-1 py-4 text-center transition-colors relative ${activeTab === 'yearly' ? 'text-red-700 bg-red-50' : 'text-gray-600 hover:text-red-700 hover:bg-red-50'
                                 }`}
                         >
                             ปี

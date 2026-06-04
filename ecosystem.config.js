@@ -1,9 +1,11 @@
+const appRoot = process.env.APP_CURRENT_PATH || __dirname;
+
 module.exports = {
   apps: [
     {
-      name: process.env.PM2_APP_NAME || "web_5056",
-      // Keep cwd in standalone directory so Next resolves .next/static and public correctly.
-      cwd: __dirname,
+      name: process.env.PM2_APP_NAME || "web_test",
+      // Use the stable current symlink in release deployments so reloads pick up the active release.
+      cwd: appRoot,
       script: "server.js",
       interpreter: "node",
       exec_mode: "cluster",
@@ -14,12 +16,12 @@ module.exports = {
       kill_timeout: 5000,
       env: {
         NODE_ENV: "production",
-        PORT: Number(process.env.PORT || 5056),
+        PORT: Number(process.env.PORT || 3009),
         HOSTNAME: process.env.HOSTNAME || "0.0.0.0",
       },
       env_development: {
         NODE_ENV: "development",
-        PORT: Number(process.env.PORT || 5056),
+        PORT: Number(process.env.PORT || 3009),
         HOSTNAME: process.env.HOSTNAME || "0.0.0.0",
       },
       error_file: "./logs/err.log",

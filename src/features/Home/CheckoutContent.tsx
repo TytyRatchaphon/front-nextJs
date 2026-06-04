@@ -47,10 +47,18 @@ const CustomStepIndicator = ({ current, total, steps }: { current: number, total
                         <div className={`absolute left-[50%] right-[-50%] top-5 h-[2px] z-0 transition-colors duration-500 ${idx < current ? 'bg-red-500' : 'bg-gray-200'}`} />
                     )}
                     
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 transition-all duration-300 transform ${idx === current ? 'bg-red-500 text-white scale-110 shadow-lg shadow-red-200' : idx < current ? 'bg-red-500 text-white' : 'bg-white border-2 border-gray-200 text-gray-400'}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 transition-all duration-300 transform ${
+                        idx === current
+                            ? 'bg-red-500 text-white scale-110 shadow-lg shadow-red-200'
+                            : idx < current
+                            ? 'bg-red-500 text-white'
+                            : 'bg-white border-2 border-gray-200 text-gray-500'
+                    }`}>
                         {idx < current ? <CheckCircleOutlined /> : step.icon}
                     </div>
-                    <span className={`mt-2 text-xs font-semibold uppercase tracking-wider transition-colors duration-300 ${idx === current ? 'text-red-600' : 'text-gray-400'}`}>
+                    <span className={`mt-2 text-xs font-semibold uppercase tracking-wider transition-colors duration-300 ${
+                        idx === current ? 'text-red-600' : 'text-gray-500'
+                    }`}>
                         {step.title}
                     </span>
                 </div>

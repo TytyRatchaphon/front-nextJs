@@ -138,7 +138,7 @@ function NewNovel() {
                   className={`group rounded-2xl border px-4 py-2 text-left transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300 ${
                     isActive
                       ? "border-red-200 bg-red-500 !text-white shadow-sm"
-                      : "border-stone-200 bg-white text-slate-700 hover:border-red-200 hover:bg-red-50"
+                      : "border-stone-200 bg-white text-slate-700 hover:border-red-200 hover:text-red-700 hover:bg-red-50"
                   }`}
                 >
                   <span className="block text-sm font-bold">{filter.label}</span>

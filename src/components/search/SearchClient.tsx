@@ -4,6 +4,7 @@ import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Pagination, Alert } from "antd";
 import { useQuery } from "@tanstack/react-query";
+import { LoaderCircle } from "lucide-react";
 import SearchBar from "@/components/search/SearchBar";
 import CardBook from "@/components/novelCard/CardBook";
 import GifLoader from '@/components/utility/GifLoader';
@@ -116,6 +117,30 @@ const searchBooks = async (
   return EMPTY_SEARCH_RESPONSE;
 };
 
+const SearchSkeletonGrid = () => (
+  <div className="grid grid-cols-2 justify-items-center gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 animate-in fade-in duration-300">
+    {Array.from({ length: 10 }).map((_, index) => (
+      <div key={index} className="w-full max-w-[180px] h-[380px] flex flex-col p-1 bg-transparent border border-gray-100/50 rounded-lg shadow-sm bg-white animate-pulse">
+        {/* Image Skeleton */}
+        <div className="w-full h-[237px] bg-gray-200 rounded-t-lg" />
+        {/* Title Skeleton */}
+        <div className="px-3 pt-3 pb-2 flex flex-col gap-2 flex-1">
+          <div className="h-4 bg-gray-200 rounded w-11/12" />
+          <div className="h-4 bg-gray-200 rounded w-2/3" />
+          {/* Writer Skeleton */}
+          <div className="h-3 bg-gray-200 rounded w-1/2 mt-1" />
+          {/* Stats Skeleton */}
+          <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-50">
+            <div className="h-3 bg-gray-100 rounded w-1/4" />
+            <div className="h-3 bg-gray-100 rounded w-1/4" />
+            <div className="h-3 bg-gray-100 rounded w-1/4" />
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 export default function SearchClient() {
   const searchParamsUrl = useSearchParams();
   const [currentPage, setCurrentPage] = useState(parsePageParam(searchParamsUrl?.get('page') || null));
@@ -179,6 +204,7 @@ export default function SearchClient() {
   const {
     data: apiResponse,
     isLoading,
+    isFetching,
     isError,
     error,
   } = useQuery({
@@ -260,6 +286,7 @@ export default function SearchClient() {
   }, [apiResponse]);
 
   const total = apiResponse?.total || 0;
+  const isUpdatingResults = isFetching && !isLoading;
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -272,6 +299,7 @@ export default function SearchClient() {
       <div className="lg:col-span-3 xl:col-span-3">
         <SearchBar
           onSearch={handleSearch}
+          isSearching={isFetching}
           initialQuery={searchParams.query}
           initialFilters={{
             categories: searchParams.categories,
@@ -287,7 +315,7 @@ export default function SearchClient() {
       <div className="lg:col-span-9 xl:col-span-9" ref={topRef}>
         {/* Loading State */}
         {isLoading && (
-          <GifLoader className="h-[60vh]" width={150} height={150} />
+          <SearchSkeletonGrid />
         )}
 
         {/* Error State */}
@@ -308,28 +336,48 @@ export default function SearchClient() {
         {/* Content State */}
         {!isLoading && !isError && (
           <>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0 mb-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0 mb-4 min-h-9">
               <p className="text-xs sm:text-sm text-gray-700">
                 ผลการค้นหาทั้งหมด <span className="font-semibold">({total} รายการ)</span>
               </p>
-              {/* Removed sort dropdown as per request */}
+              {isUpdatingResults ? (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 animate-pulse"
+                >
+                  <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+                  กำลังค้นหา...
+                </div>
+              ) : null}
             </div>
 
             {/* Empty State */}
             {novels.length === 0 ? (
-              <div className="text-center py-20">
-                <p className="text-gray-500">ไม่พบข้อมูลหนังสือ</p>
-              </div>
+              isUpdatingResults ? (
+                <SearchSkeletonGrid />
+              ) : (
+                <div className="text-center py-20">
+                  <p className="text-gray-500">ไม่พบข้อมูลหนังสือ</p>
+                </div>
+              )
             ) : (
               <>
-                {/* Grid แสดง Novel - Responsive */}
-                <div
-                  className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-y-8 gap-x-4 justify-items-center"
-                >
-                  {novels.map((novel: any, index: number) => {
-                    // novels are already normalized above; pass through to CardBook
-                    return <CardBook key={`${novel.book_id || novel.bookID || 'book'}-${index}`} book={novel} />;
-                  })}
+                <div aria-busy={isUpdatingResults} className="relative">
+                  {isUpdatingResults ? (
+                    <div className="absolute -top-2 left-0 right-0 z-10 h-1 overflow-hidden rounded-full bg-red-50">
+                      <span className="search-loading-bar block h-full w-1/3 rounded-full bg-red-500" />
+                    </div>
+                  ) : null}
+                  {/* Grid แสดง Novel - Responsive */}
+                  <div
+                    className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-5 gap-y-8 gap-x-4 justify-items-center"
+                  >
+                    {novels.map((novel: any, index: number) => {
+                      // novels are already normalized above; pass through to CardBook
+                      return <CardBook key={`${novel.book_id || novel.bookID || 'book'}-${index}`} book={novel} />;
+                    })}
+                  </div>
                 </div>
 
                 {/* Pagination */}
@@ -347,6 +395,28 @@ export default function SearchClient() {
                 </div>
               </>
             )}
+            <style jsx>{`
+              @keyframes search-loading-slide {
+                0% {
+                  transform: translateX(-110%);
+                }
+                100% {
+                  transform: translateX(330%);
+                }
+              }
+
+              .search-loading-bar {
+                animation: search-loading-slide 900ms ease-in-out infinite;
+              }
+
+              @media (prefers-reduced-motion: reduce) {
+                .search-loading-bar {
+                  animation: none;
+                  width: 100%;
+                  opacity: 0.55;
+                }
+              }
+            `}</style>
           </>
         )}
       </div>
