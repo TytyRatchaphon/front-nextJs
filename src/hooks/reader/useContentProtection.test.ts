@@ -41,6 +41,8 @@ describe("useContentProtection", () => {
       nodeType: number;
       tagName: string;
       parentNode: { removeChild: ReturnType<typeof vi.fn> } | null;
+      private attrs = new Map<string, string>();
+      private closestMatch: unknown = null;
 
       constructor(tagName = "DIV") {
         this.nodeType = 1;
@@ -54,6 +56,22 @@ describe("useContentProtection", () => {
 
       insertBefore<T>(newNode: T): T {
         return newNode;
+      }
+
+      getAttribute(name: string) {
+        return this.attrs.get(name) ?? null;
+      }
+
+      setAttribute(name: string, value: string) {
+        this.attrs.set(name, value);
+      }
+
+      closest() {
+        return this.closestMatch;
+      }
+
+      setClosestMatch(match: unknown) {
+        this.closestMatch = match;
       }
     }
 
@@ -96,6 +114,7 @@ describe("useContentProtection", () => {
         error: vi.fn(),
         debug: vi.fn(),
       },
+      location: { href: "https://test-ejbwebfont.enjoybook.co/read/4599/1569278" },
       setTimeout,
       clearTimeout,
       addEventListener: vi.fn((event: string, handler: any) => {
@@ -138,7 +157,7 @@ describe("useContentProtection", () => {
     expect(contentElement.textContent).toBe("Content is protected");
 
     const doc = (globalThis as any).document;
-    expect(() => doc.createElement("iframe")).toThrow("iframe creation is not allowed on this page");
+    expect(() => doc.createElement("iframe")).not.toThrow();
 
     const windowEvents = (globalThis as any).__TEST_WINDOW_EVENTS__ as Map<string, any>;
     const preventDefault = vi.fn();
@@ -161,6 +180,7 @@ describe("useContentProtection", () => {
     const iframeNode = new (globalThis as any).Node("iframe");
     iframeNode.parentNode = { removeChild: vi.fn() };
     observers[0].cb([{ addedNodes: [iframeNode] }]);
+    vi.advanceTimersByTime(0);
     expect(iframeNode.parentNode.removeChild).toHaveBeenCalledWith(iframeNode);
 
     effectCleanups.forEach((cleanup) => cleanup());
@@ -187,26 +207,51 @@ describe("useContentProtection", () => {
     expect(docPrevent).toHaveBeenCalled();
   });
 
-  it("blocks iframe append/insert but allows non-iframe nodes", () => {
+  it("removes untrusted iframe append/insert without throwing and allows non-iframe nodes", () => {
     useContentProtection({ ep: 3 });
     vi.advanceTimersByTime(1000);
 
     const doc = (globalThis as any).document;
     const body = doc.body;
     const iframeNode = new (globalThis as any).Node("iframe");
+    const insertedIframeNode = new (globalThis as any).Node("iframe");
     const divNode = new (globalThis as any).Node("div");
 
-    expect(() => body.appendChild(iframeNode)).toThrow("iframe insertion is not allowed");
-    expect(() => body.insertBefore(iframeNode, null)).toThrow("iframe insertion is not allowed");
+    expect(body.appendChild(iframeNode)).toBe(iframeNode);
+    expect(body.insertBefore(insertedIframeNode, null)).toBe(insertedIframeNode);
+    vi.advanceTimersByTime(0);
+    expect(iframeNode.parentNode.removeChild).toHaveBeenCalledWith(iframeNode);
+    expect(insertedIframeNode.parentNode.removeChild).toHaveBeenCalledWith(insertedIframeNode);
     expect(body.appendChild(divNode)).toBe(divNode);
     expect(body.insertBefore(divNode, null)).toBe(divNode);
+  });
+
+  it("keeps auth iframe nodes used by login providers", () => {
+    useContentProtection({ ep: 4 });
+    vi.advanceTimersByTime(1000);
+
+    const doc = (globalThis as any).document;
+    const body = doc.body;
+
+    const googleIframe = new (globalThis as any).Node("iframe");
+    googleIframe.setAttribute("src", "https://accounts.google.com/gsi/button");
+    body.appendChild(googleIframe);
+    vi.advanceTimersByTime(0);
+    expect(googleIframe.parentNode.removeChild).not.toHaveBeenCalled();
+
+    const modalContainer = new (globalThis as any).Node("div");
+    modalContainer.setClosestMatch({});
+    const modalIframe = new (globalThis as any).Node("iframe");
+    modalContainer.appendChild(modalIframe);
+    vi.advanceTimersByTime(0);
+    expect(modalIframe.parentNode.removeChild).not.toHaveBeenCalled();
   });
 
   it("keeps console methods unchanged in development mode", () => {
     process.env.NODE_ENV = "development";
     const originalLog = (globalThis as any).window.console.log;
 
-    useContentProtection({ ep: 4 });
+    useContentProtection({ ep: 5 });
     vi.advanceTimersByTime(1000);
 
     expect((globalThis as any).window.console.log).toBe(originalLog);
@@ -223,7 +268,7 @@ describe("useContentProtection", () => {
       get: () => "fixed-text",
     });
 
-    useContentProtection({ ep: 5 });
+    useContentProtection({ ep: 6 });
     vi.advanceTimersByTime(1000);
 
     expect(contentElement.innerText).toBe("fixed-inner");

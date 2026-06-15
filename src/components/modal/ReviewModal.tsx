@@ -328,7 +328,7 @@ export default function ReviewModal({
         </div>
 
         <div className="mb-4 flex items-center gap-2">
-          <Rate disabled defaultValue={review.rating} allowHalf className="text-base text-yellow-500" />
+          <Rate disabled value={review.rating} allowHalf className="text-base text-yellow-500" />
           <span className="rounded-full bg-gray-100 px-2 py-0.5 text-sm text-gray-500">
             อ่านแล้ว {review.ep_read || 0} ตอน
           </span>

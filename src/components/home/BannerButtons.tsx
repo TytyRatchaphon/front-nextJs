@@ -55,8 +55,8 @@ const BannerButtons = () => {
           <span className="font-bold text-gray-700 group-hover:text-amber-600 transition-colors text-sm lg:text-lg">ส่วนลด</span>
         </Link>
 
-        {/* Bookshelf */}
-        <Link href="/book-updates" className="group flex items-center justify-center gap-3 bg-white border border-gray-100 shadow-sm hover:shadow-sm rounded-xl py-2 px-4 transition-all duration-300 hover:-translate-y-1">
+        {/* Event */}
+        <Link href="/events" className="group flex items-center justify-center gap-3 bg-white border border-gray-100 shadow-sm hover:shadow-sm rounded-xl py-2 px-4 transition-all duration-300 hover:-translate-y-1">
           <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center text-green-500 group-hover:bg-green-500 group-hover:text-white transition-colors duration-300">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path d="M8 2V5" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round"/>
@@ -71,7 +71,7 @@ const BannerButtons = () => {
               <path d="M8.29431 16.7H8.30329" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          <span className="font-bold text-gray-700 group-hover:text-green-600 transition-colors text-sm lg:text-lg">ตารางอัปเดตนิยาย</span>
+          <span className="font-bold text-gray-700 group-hover:text-green-600 transition-colors text-sm lg:text-lg">กิจกรรม</span>
         </Link>
 
       </div>

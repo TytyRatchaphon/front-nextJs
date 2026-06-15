@@ -29,6 +29,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
 import { navigateSafely } from "@/utils/navigationUtils";
+import { resolveImageSrc } from "@/utils/imageUtils";
 
 dayjs.extend(relativeTime);
 dayjs.locale("th");
@@ -68,7 +69,7 @@ interface NotificationItem {
 }
 
 const NotificationPage: React.FC = () => {
-  const { notification } = App.useApp();
+  const { notification, modal } = App.useApp();
   const { token } = useAuthStore();
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -188,7 +189,16 @@ const NotificationPage: React.FC = () => {
 
   const handleDeleteAll = () => {
     if (notifications.length === 0) return;
-    deleteAllNotificationsMutation.mutate();
+    modal.confirm({
+      title: "ต้องการลบการแจ้งเตือนทั้งหมดใช่หรือไม่?",
+      content: "เมื่อลบการแจ้งเตือนทั้งหมดแล้ว จะไม่สามารถกู้คืนข้อมูลได้",
+      okText: "ยืนยัน",
+      okType: "danger",
+      cancelText: "ยกเลิก",
+      onOk: () => {
+        deleteAllNotificationsMutation.mutate();
+      },
+    });
   };
 
   const toggleExpand = (e: React.MouseEvent, id: number) => {
@@ -335,10 +345,11 @@ const NotificationPage: React.FC = () => {
                       <div className="relative">
                         <div className="relative h-16 w-16 flex-shrink-0">
                           <Image
-                            src={item.NotiType.image}
+                            src={resolveImageSrc(item.NotiType.image)}
                             alt="Notification"
                             fill
                             className="rounded-xl border border-gray-200 bg-white object-cover shadow-sm"
+                            unoptimized
                           />
                         </div>
                         <div

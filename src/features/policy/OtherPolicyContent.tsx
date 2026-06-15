@@ -2,10 +2,14 @@
 import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { Skeleton } from 'antd';
 import { sanitizeUserGeneratedHtml } from '@/utils/sanitizeHtml';
+import PolicySidebar from './PolicySidebar';
+import { useHtmlToc } from '@/hooks/useHtmlToc';
 
 export default function OtherPolicyContent() {
     const { settings, isLoading } = useWebsiteSettings();
-    const safeConditionsHtml = sanitizeUserGeneratedHtml(settings?.others || settings?.others || '');
+    const rawHtml = settings?.others || '';
+    const safeConditionsHtml = sanitizeUserGeneratedHtml(rawHtml);
+    const { htmlWithIds, toc } = useHtmlToc(safeConditionsHtml);
 
     return (
         <div className="min-h-screen bg-[#FDFDFD]">
@@ -27,21 +31,24 @@ export default function OtherPolicyContent() {
 
             {/* Content Section */}
             <div className="container mx-auto px-4 -mt-12 md:-mt-20 pb-20 relative z-20">
-                <div className="max-w-4xl mx-auto bg-white p-8 md:p-12 lg:p-14 rounded-3xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.08)] border border-gray-100">
-                    {isLoading ? (
+                <div className="mx-auto flex max-w-6xl flex-col items-start gap-8 lg:flex-row">
+                    <PolicySidebar toc={toc} />
+                    <div className="w-full flex-1 bg-white p-8 md:p-10 lg:p-12 rounded-3xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.08)] border border-gray-100 min-w-0">
+                        {isLoading ? (
                         <div className="space-y-4">
                             <Skeleton active paragraph={{ rows: 6 }} />
                         </div>
-                    ) : settings?.condition || settings?.conditions ? (
+                    ) : htmlWithIds ? (
                         <div
                             className="prose prose-lg prose-red max-w-none prose-headings:font-primary prose-headings:font-bold prose-headings:text-gray-900 prose-p:text-gray-600 prose-p:leading-loose prose-a:text-red-600 hover:prose-a:text-red-700 prose-li:text-gray-600 fonts-sarabun"
-                            dangerouslySetInnerHTML={{ __html: safeConditionsHtml }}
+                            dangerouslySetInnerHTML={{ __html: htmlWithIds }}
                         />
                     ) : (
                         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
                             <p>ไม่พบข้อมูล</p>
                         </div>
                     )}
+                </div>
                 </div>
             </div>
         </div>

@@ -3,8 +3,9 @@ import AuthGuard from '@/components/auth/AuthGuard'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'คูปอง | EnjoyBook',
-  description: 'คูปองส่วนลด - รับและใช้คูปองส่วนลดพิเศษ',
+  title: 'คูปองส่วนลด',
+  description: 'รับและใช้งานคูปองส่วนลดพิเศษบน Enjoybook',
+  alternates: { canonical: '/coupon' },
 }
 
 function page() {

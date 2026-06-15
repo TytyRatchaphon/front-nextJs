@@ -75,6 +75,11 @@ export default function TokenUpdater() {
 
     useEffect(() => {
         const fetchRefreshToken = async () => {
+            // Skip token refresh if logout was just performed.
+            try {
+                if (sessionStorage.getItem('auth_logout_pending') === '1') return;
+            } catch {}
+
             const savedToken = useAuthStore.getState().token || (await getAuthSession())?.token;
             if (!savedToken) return;
 

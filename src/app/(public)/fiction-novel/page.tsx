@@ -9,7 +9,9 @@ const CONTENT_TYPE = "fiction";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "นิยายแต่ง - EnjoyBook",
+  title: "นิยายแต่ง",
+  description: "อ่านนิยายแต่งสุดมันส์ หลากหลายแนว อัปเดตตอนใหม่ทุกวันบน Enjoybook",
+  alternates: { canonical: '/fiction-novel' },
 };
 
 const getCachedFictionNovelHomeData = unstable_cache(

@@ -121,11 +121,10 @@ const AvailableCoupons = () => {
                 width={560}
             >
                 {selectedCoupon && (
-                    <div className="space-y-4 pt-2">
-                        {/* Summary Removed */}
-
-                        {/* Details */}
-                         <div className="space-y-3">
+                    <div className="flex flex-col">
+                        <div className="space-y-4 pt-2 max-h-[60vh] overflow-y-auto pr-3 custom-scrollbar">
+                            {/* Details */}
+                            <div className="space-y-3">
                              <div className="flex gap-3">
                                  <div className="min-w-[24px] pt-1"><AlertCircle size={20} className="text-gray-400" /></div>
                                  <div>
@@ -193,6 +192,15 @@ const AvailableCoupons = () => {
                                                      rewardValue = `เรื่อง ID: ${config?.book_id || ''}`;
                                                  }
                                                  iconColor = 'text-green-500';
+                                             } else if (reward.rewardType === 'NOVEL_CHAPTER') {
+                                                 if (reward.book) {
+                                                     rewardLabel = reward.book.title;
+                                                     rewardValue = `อ่านฟรีตอนที่ ${config?.ep_start || '?'} - ${config?.ep_end || '?'}`;
+                                                 } else {
+                                                     rewardLabel = reward.label || `สิทธิ์อ่านตอนที่ ${config?.ep_start || '?'} - ${config?.ep_end || '?'}`;
+                                                     rewardValue = `เรื่อง ID: ${config?.book_id || ''}`;
+                                                 }
+                                                 iconColor = 'text-blue-500';
                                              } else if (reward.rewardType === 'BOXSET') {
                                                  rewardLabel = 'Boxset';
                                                  rewardValue = `ชุด ID: ${config?.series_id || config?.id || ''}`;
@@ -204,7 +212,7 @@ const AvailableCoupons = () => {
                                                     key={index} 
                                                     className="flex items-center gap-3 p-3 rounded-lg border bg-gray-50 border-gray-100"
                                                  >
-                                                     <div className={`flex-shrink-0 flex items-center justify-center border border-gray-100 shadow-sm ${iconColor} overflow-hidden ${reward.rewardType === 'NOVEL_WHOLE' && reward.book ? 'w-12 h-16 rounded-md' : 'w-8 h-8 rounded-full bg-white'}`}>
+                                                     <div className={`flex-shrink-0 flex items-center justify-center border border-gray-100 shadow-sm ${iconColor} overflow-hidden ${(reward.rewardType === 'NOVEL_WHOLE' || reward.rewardType === 'NOVEL_CHAPTER') && reward.book ? 'w-12 h-16 rounded-md' : 'w-8 h-8 rounded-full bg-white'}`}>
                                                         {reward.book ? (
                                                          <AntImage 
                                                                 src={resolveBookCoverImageSrc(reward.book, '/images/ejb.png')} 
@@ -223,7 +231,7 @@ const AvailableCoupons = () => {
                                                                 {reward.rewardType === 'FREECOIN' && (
                                                                     settings?.freecoin ? <AntImage src={settings.freecoin} alt="freecoin" width={24} height={24} preview={false} /> : <Coins size={16} />
                                                                 )}
-                                                                {reward.rewardType === 'NOVEL_WHOLE' && <BookOpenCheck size={16} />}
+                                                                {(reward.rewardType === 'NOVEL_WHOLE' || reward.rewardType === 'NOVEL_CHAPTER') && <BookOpenCheck size={16} />}
                                                                 {reward.rewardType === 'BOXSET' && <Ticket size={16} />}
                                                             </>
                                                         )}
@@ -246,6 +254,8 @@ const AvailableCoupons = () => {
                             Or add a button if user wants to claim from modal.
                             I'll add it if it's claimable! 
                         */}
+                        </div>
+                        {/* Claim Button outside scroll container */}
                         {(() => {
                              const targetId = selectedCoupon.couponId || selectedCoupon.id;
                              const ownedCount = userCoupons.filter(c => (c.couponId || c.id) === targetId).length;
@@ -254,7 +264,7 @@ const AvailableCoupons = () => {
 
                              if (isClaimable) {
                                  return (
-                                    <div className="pt-4 mt-4 border-t border-gray-100">
+                                    <div className="pt-4 mt-4 border-t border-gray-100 shrink-0">
                                         <Button 
                                             type="primary" 
                                             danger 

@@ -7,6 +7,17 @@ type DescriptorBackup = {
   textContentDesc?: PropertyDescriptor;
 };
 
+const TRUSTED_AUTH_IFRAME_HOSTS = new Set([
+  "accounts.google.com",
+  "www.google.com",
+  "www.facebook.com",
+  "staticxx.facebook.com",
+  "appleid.apple.com",
+  "access.line.me",
+  "liff.line.me",
+  "line.me",
+]);
+
 export function useContentProtection(episodeData: any, onBlur?: () => void, enabled = true) {
   const [isFocused, setIsFocused] = useState(true);
 
@@ -81,6 +92,35 @@ export function useContentProtection(episodeData: any, onBlur?: () => void, enab
       return Boolean(node && node.nodeType === Node.ELEMENT_NODE && (node as Element).tagName === "IFRAME");
     };
 
+    const isTrustedAuthIframe = (node: Element, container?: Node | null) => {
+      const src = node.getAttribute("src") || "";
+      if (src) {
+        try {
+          const url = new URL(src, window.location.href);
+          if (TRUSTED_AUTH_IFRAME_HOSTS.has(url.hostname)) return true;
+        } catch {
+        }
+      }
+
+      if (container && container.nodeType === Node.ELEMENT_NODE) {
+        const element = container as Element;
+        if (element.closest(".ant-modal, .ant-modal-root")) return true;
+      }
+
+      return Boolean(node.closest(".ant-modal, .ant-modal-root"));
+    };
+
+    const removeUntrustedIframe = (node: Element, container?: Node | null) => {
+      if (isTrustedAuthIframe(node, container)) return;
+      node.parentNode?.removeChild(node);
+    };
+
+    const scheduleIframeValidation = (node: Element, container?: Node | null) => {
+      window.setTimeout(() => {
+        removeUntrustedIframe(node, container);
+      }, 0);
+    };
+
     const protectContent = () => {
       if (process.env.NODE_ENV !== "development") {
         window.console.log = noop;
@@ -91,15 +131,14 @@ export function useContentProtection(episodeData: any, onBlur?: () => void, enab
       }
 
       document.createElement = ((tagName: string, options?: ElementCreationOptions) => {
-        if (typeof tagName === "string" && tagName.toLowerCase() === "iframe") {
-          throw new Error("iframe creation is not allowed on this page");
-        }
         return originalCreateElement(tagName, options);
       }) as typeof document.createElement;
 
       Node.prototype.appendChild = function <T extends Node>(this: Node, child: T): T {
         if (isIframeElement(child)) {
-          throw new Error("iframe insertion is not allowed");
+          const appended = originalAppendChild.call(this, child) as T;
+          scheduleIframeValidation(child, this);
+          return appended;
         }
         return originalAppendChild.call(this, child) as T;
       };
@@ -110,7 +149,9 @@ export function useContentProtection(episodeData: any, onBlur?: () => void, enab
         refNode: Node | null
       ): T {
         if (isIframeElement(newNode)) {
-          throw new Error("iframe insertion is not allowed");
+          const inserted = originalInsertBefore.call(this, newNode, refNode) as T;
+          scheduleIframeValidation(newNode, this);
+          return inserted;
         }
         return originalInsertBefore.call(this, newNode, refNode) as T;
       };
@@ -119,7 +160,7 @@ export function useContentProtection(episodeData: any, onBlur?: () => void, enab
         mutations.forEach((mutation) => {
           mutation.addedNodes.forEach((node) => {
             if (node.nodeType === 1 && (node as Element).tagName === "IFRAME") {
-              node.parentNode?.removeChild(node);
+              scheduleIframeValidation(node as Element, mutation.target);
             }
           });
         });

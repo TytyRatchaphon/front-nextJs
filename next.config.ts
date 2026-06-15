@@ -44,7 +44,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
               "font-src 'self' https://fonts.gstatic.com data:",
               "img-src 'self' https://img.enjoybook.co https://image.enjoybook.co https://www.facebook.com https://www.google-analytics.com https://*.googleusercontent.com data: blob:",
-              "connect-src 'self' https://*.enjoybook.co https://www.google-analytics.com https://www.googletagmanager.com https://connect.facebook.net https://t.contentsquare.net https://accounts.google.com https://apis.google.com https://appleid.apple.com https://liff.line.me https://api.line.me wss://*.enjoybook.co",
+              "connect-src 'self' https://*.enjoybook.co http://192.168.220.214:4005 ws://192.168.220.214:4005 https://www.google-analytics.com https://www.googletagmanager.com https://connect.facebook.net https://t.contentsquare.net https://accounts.google.com https://apis.google.com https://appleid.apple.com https://liff.line.me https://api.line.me wss://*.enjoybook.co",
               "frame-src 'self' https://www.facebook.com https://www.google.com https://accounts.google.com https://appleid.apple.com",
               "object-src 'none'",
               "base-uri 'self'",

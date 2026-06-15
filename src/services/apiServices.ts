@@ -48,3 +48,4 @@ export * from './api/historyApi';
 export * from './api/episodePurchaseRewardApi';
 export * from './api/readingSessionApi';
 export * from './api/bookQuestApi';
+export * from './api/royalePassApi';

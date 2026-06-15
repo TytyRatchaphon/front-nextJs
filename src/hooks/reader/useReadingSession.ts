@@ -1,6 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { useQueryClient } from '@tanstack/react-query';
 import { useSocket } from '@/providers/SocketProvider';
 import { useAuthStore } from '@/stores/authStore';
 import {
@@ -49,8 +47,6 @@ const normalizeReadingConflictPayload = (payload: any) => {
 
 export function useReadingSession(bookId: string, episodeId: string, user: any) {
   const { socket } = useSocket();
-  const router = useRouter();
-  const queryClient = useQueryClient();
   const [isConflict, setIsConflict] = useState(false);
   const [conflictData, setConflictData] = useState<ReadingSessionActiveData | null>(null);
   const [isSessionEnding, setIsSessionEnding] = useState(false);
@@ -179,13 +175,11 @@ export function useReadingSession(bookId: string, episodeId: string, user: any) 
       }
     };
 
-    const handleDeviceLoggedOut = (data: any) => {
+    const handleDeviceLoggedOut = async (data: any) => {
       const currentDeviceId = getCurrentDeviceId();
       if (currentDeviceId && data?.target_device_id === currentDeviceId) {
         setIsConflict(true);
-        useAuthStore.getState().logout();
-        queryClient.clear();
-        router.push('/');
+        await useAuthStore.getState().logout();
       }
     };
 

@@ -71,8 +71,8 @@ export default function Rank() {
   });
 
   const myRankQuery = useQuery({
-    queryKey: ["rankingUserSelf", myUserId],
-    queryFn: () => fetchLeaderboardUserRank(myUserId as number),
+    queryKey: ["rankingUserSelf", myUserId, range],
+    queryFn: () => fetchLeaderboardUserRank(myUserId as number, range),
     enabled: mode === "users" && !!myUserId,
   });
 
@@ -224,6 +224,11 @@ export default function Rank() {
                   <p className="line-clamp-1 text-sm font-semibold text-gray-800">
                     {myRankQuery.data.user?.fullname || "ผู้ใช้"}
                   </p>
+                  {myRankQuery.data.current_rank ? (
+                    <p className="mt-1 line-clamp-1 text-xs font-medium text-red-600">
+                      {myRankQuery.data.current_rank.name}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-gray-500">อันดับ</p>
@@ -269,13 +274,29 @@ export default function Rank() {
                   >
                     {fullname}
                   </Link>
-                  <p className="text-xs text-gray-500">ผู้ใช้ #{userId || "-"}</p>
                 </div>
 
-                <div className="text-right">
-                  <p className="text-xs text-gray-500">ยอดใช้จ่ายรวม</p>
-                  <p className="text-base font-bold text-red-600 md:text-lg">{formatNumber(row.totalPrice)}</p>
-                </div>
+                {row.current_rank ? (
+                  <div className="flex shrink-0 items-center gap-2 rounded-xl border border-red-100 bg-red-50/70 px-2.5 py-2 sm:px-3">
+                    {row.current_rank.rank_img ? (
+                      <div className="relative h-8 w-8 shrink-0">
+                        <Image
+                          src={row.current_rank.rank_img}
+                          alt={row.current_rank.name}
+                          fill
+                          className="object-contain"
+                          unoptimized
+                        />
+                      </div>
+                    ) : null}
+                    <div className="min-w-0">
+                      <p className="hidden text-[11px] font-normal text-gray-500 sm:block">ระดับนักอ่าน</p>
+                      <p className="max-w-[76px] truncate text-[11px] font-semibold text-red-600 sm:max-w-[170px] sm:text-xs">
+                        {row.current_rank.name}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
           );

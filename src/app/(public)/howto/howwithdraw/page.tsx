@@ -1,3 +1,11 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'ขั้นตอนการจ่ายเงินให้นักเขียน',
+  description: 'รายละเอียดขั้นตอนการจ่ายเงินและถอนเงินสำหรับนักเขียนบน Enjoybook',
+  alternates: { canonical: '/howto/howwithdraw' },
+};
+
 function HowWithdrawPage() {
   return (
     <div className='min-h-screen py-8'>

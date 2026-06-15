@@ -12,6 +12,9 @@ export default async function HomePage() {
   const homeData = await getCachedHomeData();
 
   return (
-    <HomeContent initialData={homeData} />
+    <>
+      <h1 className="sr-only">Enjoybook - แหล่งรวมนิยายออนไลน์ นิยายแปล นิยายจีน แฟนตาซี</h1>
+      <HomeContent initialData={homeData} />
+    </>
   );
 }

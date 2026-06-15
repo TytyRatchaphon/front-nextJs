@@ -46,6 +46,7 @@ Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock })
 Object.defineProperty(globalThis, 'window', {
   value: {
     location: {
+      href: '',
       protocol: 'http:',
       hostname: 'localhost',
     },
@@ -133,10 +134,10 @@ describe('authStore', () => {
   // -------------------------------------------------------------------
   // logout
   // -------------------------------------------------------------------
-  it('logout clears user, token, and isLoggedIn', () => {
+  it('logout clears user, token, and isLoggedIn', async () => {
     const user = makeUser()
     useAuthStore.getState().login(user, 'token')
-    useAuthStore.getState().logout()
+    await useAuthStore.getState().logout()
 
     const state = useAuthStore.getState()
     expect(state.user).toBeNull()
@@ -144,9 +145,9 @@ describe('authStore', () => {
     expect(state.isLoggedIn).toBe(false)
   })
 
-  it('logout removes from localStorage and cookies', () => {
+  it('logout removes from localStorage and cookies', async () => {
     useAuthStore.getState().login(makeUser(), 'token')
-    useAuthStore.getState().logout()
+    await useAuthStore.getState().logout()
 
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('authToken')
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('userData')
@@ -209,11 +210,11 @@ describe('authStore', () => {
     expect(useAuthStore.getState().hasMounted).toBe(true)
   })
 
-  it('setMounted recovers from token cookie when state is empty', () => {
+  it('setMounted recovers from token cookie when state is empty', async () => {
     mockCookieGet.mockImplementation((key: string) => (key === 'token' ? 'backup-token' : undefined))
 
     useAuthStore.setState({ user: null, token: null, isLoggedIn: false })
-    useAuthStore.getState().setMounted()
+    await useAuthStore.getState().setMounted()
 
     const state = useAuthStore.getState()
     expect(state.hasMounted).toBe(true)

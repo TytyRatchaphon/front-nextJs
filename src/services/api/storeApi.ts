@@ -88,6 +88,7 @@ export interface Coupon {
       couponId: number;
       rewardType: string;
       rewardConfig: string;
+      label?: string;
       book?: {
           title: string;
           img: string;

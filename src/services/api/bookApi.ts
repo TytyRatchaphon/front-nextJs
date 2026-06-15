@@ -597,11 +597,10 @@ export const removeBookFromShelf = async (bookId: string | number) => {
 };
 
 export const saveBookShare = async (payload: {
-  userID: string | number;
   bookID: string | number;
-  type: "facebook" | "twitter" | "line";
+  type: "facebook" | "twitter" | "line" | "google" | "instagram" | "other";
 }) => {
-  const response = await apiClient.post("gift/saveshare", payload);
+  const response = await apiClient.post(`/book/${payload.bookID}/share`, { type: payload.type });
   return response.data;
 };
 

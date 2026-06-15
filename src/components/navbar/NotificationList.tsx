@@ -16,6 +16,7 @@ import { useRouter } from 'next/navigation';
 import { navigateSafely } from '@/utils/navigationUtils';
 import { formatNavbarNotificationBadgeCount } from './hooks/useNavbarNotifications';
 import { queryKeys } from '@/constants/query';
+import { resolveImageSrc } from '@/utils/imageUtils';
 
 const NOTIFICATION_PREVIEW_LIMIT = 10;
 
@@ -271,7 +272,7 @@ const NotificationList: React.FC<{ onClose?: () => void; mode?: 'popover' | 'dra
                                                 <div className="relative">
                                                     <div className="relative w-14 h-14 flex-shrink-0">
                                                         <Image
-                                                            src={item.NotiType.image!}
+                                                            src={resolveImageSrc(item.NotiType.image)}
                                                             alt="Notification"
                                                             fill
                                                             className="rounded-lg shadow-sm border border-gray-200 object-cover bg-white"

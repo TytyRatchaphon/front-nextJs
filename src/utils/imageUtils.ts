@@ -19,6 +19,7 @@ export interface BookCoverSource {
   cover?: string | null;
   img_gif?: string | null;
   img_gif_full?: string | null;
+  img?: string | null;
 }
 
 const INVALID_IMAGE_VALUES = new Set(['', 'null', 'undefined']);
@@ -118,13 +119,25 @@ export const resolveBookCoverImageSrc = (
     readBookCoverField(book, 'img_gif_full'),
     readBookCoverField(book, 'img_gif'),
   );
-  const staticSource = pickValidBookCoverSource(
-    readBookCoverField(book, 'img_full'),
-    readBookCoverField(book, 'imgtn'),
-    readBookCoverField(book, 'cover'),
-    readBookCoverField(book, 'thumb'),
-    readBookCoverField(book, 'image'),
-  );
+  const isBookDetail = variant === 'book';
+  
+  const staticSource = isBookDetail
+    ? pickValidBookCoverSource(
+        readBookCoverField(book, 'img_full'),
+        readBookCoverField(book, 'img'),
+        readBookCoverField(book, 'imgtn'),
+        readBookCoverField(book, 'cover'),
+        readBookCoverField(book, 'thumb'),
+        readBookCoverField(book, 'image'),
+      )
+    : pickValidBookCoverSource(
+        readBookCoverField(book, 'imgtn'),
+        readBookCoverField(book, 'img'),
+        readBookCoverField(book, 'img_full'),
+        readBookCoverField(book, 'cover'),
+        readBookCoverField(book, 'thumb'),
+        readBookCoverField(book, 'image'),
+      );
 
   const selectedSource = showGif ? (gifSource || staticSource) : (staticSource || gifSource);
   return resolveBookImageSrc(selectedSource, fallback, variant, forceShowGif);
@@ -135,11 +148,14 @@ export const resolveImageSrc = (
   fallback = '/images/ejb.png',
   basePath?: string,
 ): string => {
-  const raw = typeof src === 'string' ? src.trim() : '';
+  let raw = typeof src === 'string' ? src.trim() : '';
 
   if (INVALID_IMAGE_VALUES.has(raw)) return fallback;
   if (raw.startsWith('data:') || raw.startsWith('blob:')) return raw;
-  if (raw.startsWith('/')) return raw;
+  if (raw.startsWith('/images/') || raw.startsWith('/_next/') || raw.startsWith('/icons/')) return raw;
+  if (raw.startsWith('/')) {
+    raw = raw.substring(1);
+  }
   if (raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('//')) {
     return ensureHttps(raw);
   }

@@ -383,11 +383,10 @@ const BookDetailHeaderContent = ({ book, episodesData }: BookDetailHeaderProps) 
   const coverImageUrl = resolveBookCoverImageSrc(book, "/images/book.png", "book");
   const readingProgressLines = getReadingProgressLines(episodesData);
 
-  const handleTrackShare = (platform: 'facebook' | 'twitter' | 'line') => {
+  const handleTrackShare = (platform: 'facebook' | 'twitter' | 'line' | 'google' | 'instagram' | 'other') => {
     // Track share
-    if (currentUserId && book.id) {
+    if (book.id) {
       saveBookShareMutation.mutate({
-        userID: currentUserId,
         bookID: book.id,
         type: platform,
       });
@@ -875,6 +874,7 @@ const BookDetailHeaderContent = ({ book, episodesData }: BookDetailHeaderProps) 
                 if (typeof window !== 'undefined') {
                   navigator.clipboard.writeText(window.location.href);
                   notification.success({ message: "คัดลอกลิงก์แล้ว" });
+                  handleTrackShare('other');
                 }
               }}
               className="bg-[#f7f8fa] hover:bg-[#9a9a9e] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"

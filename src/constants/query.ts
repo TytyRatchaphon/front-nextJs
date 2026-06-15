@@ -84,6 +84,11 @@ export const queryKeys = {
     questDetail: (questId: number | string | null | undefined) =>
       ["rank-quest-detail", String(questId ?? '')] as const,
   },
+  royalePass: {
+    list: () => ["royale-pass"] as const,
+    detail: (passId: number | string | null | undefined) =>
+      ["royale-pass", String(passId ?? "")] as const,
+  },
   home: {
     dataRoot: () => ["homeData"] as const,
     data: (contentType?: string | null, audienceKey?: string | null) =>

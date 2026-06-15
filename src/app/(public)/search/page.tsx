@@ -2,6 +2,19 @@ import { Suspense } from "react";
 // import Image from "next/image";
 import SearchClient from "@/components/search/SearchClient";
 import GifLoader from "@/components/utility/GifLoader";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'ค้นหานิยาย',
+  description: 'ค้นหานิยายที่คุณชอบบน Enjoybook นิยายแปล นิยายจีน แฟนตาซี กำลังภายใน โรแมนติก',
+  robots: {
+    index: false,
+    follow: true,
+  },
+  alternates: {
+    canonical: '/search',
+  },
+};
 
 export default function SearchPage() {
   return (

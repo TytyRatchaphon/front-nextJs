@@ -1,4 +1,11 @@
+import type { Metadata } from 'next';
 import Redeem from '@/features/user/Redeem'
+
+export const metadata: Metadata = {
+  title: 'แลกไอเทมโค้ด',
+  description: 'แลกไอเทมโค้ดรับของรางวัลบน Enjoybook',
+  alternates: { canonical: '/redeem' },
+};
 import AuthGuard from '@/components/auth/AuthGuard'
 
 export default function Page() {

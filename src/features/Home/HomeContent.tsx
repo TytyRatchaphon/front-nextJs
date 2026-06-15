@@ -236,6 +236,7 @@ export default function HomeContent({
 
   return (
     <div className="flex w-full flex-col items-center overflow-x-hidden bg-white font-primary font-medium transition-colors duration-300">
+      <h1 className="sr-only">Enjoybook อ่านนิยาย นิยายแปล อ่านนิยายฟรี นิยายจีน</h1>
       {showPopups ? <DailyCheckinModal /> : null}
       <Banner slides={slides} />
 

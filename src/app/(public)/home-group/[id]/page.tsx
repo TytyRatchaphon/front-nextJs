@@ -1,4 +1,14 @@
+import type { Metadata } from 'next';
 import { Suspense } from "react";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const resolvedParams = await params;
+  return {
+    title: `หมวดหมู่นิยาย`,
+    description: `รวมนิยายในหมวดหมู่นี้`,
+    alternates: { canonical: `/home-group/${resolvedParams.id}` },
+  };
+}
 
 import HomeGroupPage from "@/features/Home/HomeGroupPage";
 import GifLoader from "@/components/utility/GifLoader";

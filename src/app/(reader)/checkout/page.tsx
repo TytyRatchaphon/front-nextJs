@@ -3,8 +3,9 @@ import CheckoutContent from '@/features/Home/CheckoutContent';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Checkout | Niyay',
-    description: 'ชำระเงิน',
+    title: 'ชำระเงิน',
+    description: 'ชำระเงินและตรวจสอบคำสั่งซื้อบน Enjoybook',
+    alternates: { canonical: '/checkout' },
 };
 
 export default function CheckoutPage() {

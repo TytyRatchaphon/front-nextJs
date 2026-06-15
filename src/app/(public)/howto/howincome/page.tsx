@@ -1,3 +1,10 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'ส่วนแบ่งรายได้นักเขียน',
+  description: 'รายละเอียดวิธีคำนวณส่วนแบ่งรายได้สำหรับนักเขียนบน Enjoybook',
+  alternates: { canonical: '/howto/howincome' },
+};
 
 function HowIncomePage() {
   return (

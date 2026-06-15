@@ -3,8 +3,9 @@ import CartClientLoader from '@/features/Home/CartClientLoader'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Cart | EnjoyBook',
-  description: 'ตะกร้าสินค้าของคุณ',
+  title: 'ตะกร้าสินค้า',
+  description: 'ตะกร้าสินค้าของคุณบน Enjoybook',
+  alternates: { canonical: '/cart' },
 }
 
 function CartPage() {

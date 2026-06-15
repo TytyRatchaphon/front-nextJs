@@ -9,7 +9,9 @@ const CONTENT_TYPE = "trancn";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "นิยายแปล - EnjoyBook",
+  title: "นิยายแปล",
+  description: "อ่านนิยายแปลลิขสิทธิ์แท้ สนุกสุดมันส์ หลากหลายแนว อัปเดตตอนใหม่ทุกวันบน Enjoybook",
+  alternates: { canonical: '/translated-novel' },
 };
 
 const getCachedTranslatedNovelHomeData = unstable_cache(

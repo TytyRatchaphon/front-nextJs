@@ -161,14 +161,14 @@ export default function SpotlightFeatureSection({
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-red-600/80">
                   Spotlight
                 </p>
-                <h3 className="mt-2 text-[clamp(1.7rem,2.6vw,2.35rem)] font-bold leading-tight text-stone-950">
+                <h2 className="mt-2 text-[clamp(1.7rem,2.6vw,2.35rem)] font-bold leading-tight text-stone-950">
                   นิยายแนะนำประจำวัน
-                </h3>
+                </h2>
               </div>
               <div>
-                <h3 className="text-[0.95rem] font-bold leading-[1.2] text-stone-950 sm:text-[clamp(1rem,1.15vw,1.18rem)]">
+                <h2 className="text-[0.95rem] font-bold leading-[1.2] text-stone-950 sm:text-[clamp(1rem,1.15vw,1.18rem)]">
                   เรื่องเด่น
-                </h3>
+                </h2>
               </div>
             </div>
 
@@ -304,9 +304,9 @@ export default function SpotlightFeatureSection({
             <div className="border-t border-stone-200 bg-white p-2.5 sm:p-3 md:p-3.5 lg:border-l lg:border-t-0 lg:px-4 xl:px-5">
             <div className="flex flex-col items-center gap-2 lg:translate-x-3 xl:translate-x-4">
               <div className="w-full max-w-[320px] sm:max-w-[360px] lg:max-w-[420px] xl:max-w-[444px]">
-                <h3 className="text-[clamp(1.05rem,1.2vw,1.25rem)] font-bold leading-[1.25] text-stone-950">
+                <h2 className="text-[clamp(1.05rem,1.2vw,1.25rem)] font-bold leading-[1.25] text-stone-950">
                   {editorNoteTitle}
-                </h3>
+                </h2>
               </div>
 
               <div className="mx-auto w-full max-w-[320px] sm:max-w-[360px] lg:w-[420px] lg:max-w-[420px] xl:w-[444px] xl:max-w-[444px]">

@@ -4,8 +4,9 @@ import AuthGuard from '@/components/auth/AuthGuard'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'ตั้งค่าโปรไฟล์ | EnjoyBook',
-  description: 'ตั้งค่าโปรไฟล์ - จัดการข้อมูลส่วนตัวของคุณ',
+  title: 'ตั้งค่าโปรไฟล์',
+  description: 'จัดการข้อมูลส่วนตัวและการตั้งค่าโปรไฟล์ของคุณบน Enjoybook',
+  alternates: { canonical: '/sprofile' },
 }
 
 function page() {

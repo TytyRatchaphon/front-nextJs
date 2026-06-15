@@ -1,4 +1,15 @@
+import type { Metadata } from 'next';
 import ReviewPageClient from '@/features/review/ReviewPageClient';
+
+export async function generateMetadata({ params }: { params: Promise<{ slug?: string[] }> }): Promise<Metadata> {
+  const resolvedParams = await params;
+  const reviewId = resolvedParams.slug?.[0] || '';
+  return {
+    title: `รีวิวนิยาย`,
+    description: `อ่านรีวิวนิยายบน Enjoybook`,
+    alternates: { canonical: reviewId ? `/review/${reviewId}` : '/review' },
+  };
+}
 
 interface Props {
     params: Promise<{

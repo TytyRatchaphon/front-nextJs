@@ -87,18 +87,11 @@ function Navbar() {
 
   const mobileSectionLabel = React.useMemo(() => getMobileSectionLabel(pathname), [pathname]);
 
-  const handleLogout = React.useCallback(() => {
-    logout();
-    queryClient.clear();
-    router.push('/');
+  const handleLogout = React.useCallback(async () => {
     setIsUserMenuOpen(false);
     setIsMobileDrawerOpen(false);
-    api.success({
-      message: 'ออกจากระบบสำเร็จ',
-      description: 'คุณได้ออกจากระบบเรียบร้อยแล้ว',
-      placement: 'topRight',
-    });
-  }, [api, logout, queryClient, router]);
+    await logout();
+  }, [logout]);
 
   const handleClearCache = React.useCallback(() => {
     queryClient.clear();

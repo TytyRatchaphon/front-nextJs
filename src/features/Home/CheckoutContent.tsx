@@ -351,7 +351,7 @@ export default function CheckoutContent() {
                             {!can_purchase && (
                                 <div className="p-4 bg-red-500 text-white rounded-2xl flex items-center gap-3 shadow-lg shadow-red-100">
                                     <CloseCircleOutlined className="text-xl" />
-                                    <Text className="text-white font-medium">{limit_error || "ยอดเงินคงเหลือไม่เพียงพอ"}</Text>
+                                    <Text className="!text-white font-medium">{limit_error || "ยอดเงินคงเหลือไม่เพียงพอ"}</Text>
                                 </div>
                             )}
                         </div>

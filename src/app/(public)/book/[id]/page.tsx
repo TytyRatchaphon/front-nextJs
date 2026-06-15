@@ -3,6 +3,11 @@ import type { Metadata, ResolvingMetadata } from 'next'
 import { fetchBookDetail, resolveBookId } from "@/services/apiServices";
 import { redirect } from 'next/navigation';
 import { unstable_cache } from 'next/cache';
+import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query';
+import { queryKeys } from '@/constants/query';
+import JsonLd from '@/components/seo/JsonLd';
+import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
+import { generateBookSchema } from '@/utils/schema';
 
 export const revalidate = 60;
 
@@ -47,8 +52,11 @@ export async function generateMetadata(
     const previousImages = (await parent).openGraph?.images || []
 
     return {
-      title: `${book.name} | Enjoybook`,
+      title: book.name,
       description: cleanDescription,
+      alternates: {
+        canonical: `/book/${id}`,
+      },
       openGraph: {
         title: book.name,
         description: cleanDescription,
@@ -66,12 +74,13 @@ export async function generateMetadata(
   } catch {
     return {
       title: 'Enjoybook อ่านนิยาย นิยายแปล อ่านนิยายฟรี นิยายจีน',
-      description: 'นิยายหลากหลาย สนุกครบรส ที่ Enjoybook แหล่งรวมนิยายแปลชื่อดัง นิยายไทย แฟนตาซี กำลังภายใน'
+      description: 'นิยายหลากหลาย สนุกครบรส ที่ Enjoybook แหล่งรวมนิยายแปลชื่อดัง นิยายจีน แฟนตาซี กำลังภายใน'
     }
   }
 }
 
 export default async function BookDetailPage({ params }: Props) {
+  const queryClient = new QueryClient();
 
   const { id: bookId } = await params;
 
@@ -92,5 +101,53 @@ export default async function BookDetailPage({ params }: Props) {
     }
   }
 
-  return <BookDetailClient bookId={bookId} />;
+  // Fetch book detail for JSON-LD (reuses cache from generateMetadata)
+  let bookSchema = null;
+  try {
+    const book = await getCachedBookDetail(bookId);
+
+    // Prefetch for SSR Hydration
+    await queryClient.prefetchQuery({
+      queryKey: queryKeys.book.detail(bookId),
+      queryFn: () => getCachedBookDetail(bookId)
+    });
+    // Also prefetch episodes to avoid loading spinner
+    const { fetchBookEpisodes } = await import('@/services/apiServices');
+    await queryClient.prefetchQuery({
+      queryKey: queryKeys.book.episodes(bookId),
+      queryFn: () => fetchBookEpisodes(bookId)
+    });
+    bookSchema = generateBookSchema({
+      name: book.name,
+      authorName: book['user.fullname'] || '',
+      description: stripHtml(book.des),
+      image: book.img,
+      url: `https://enjoybook.co/book/${bookId}`,
+      genre: book['category1.name'],
+      genre2: book['category2.name'],
+      ratingValue: book.star,
+      reviewCount: book.comment,
+      numberOfChapters: book.chapter,
+      datePublished: book.date_at,
+      dateModified: book.update_at,
+    });
+  } catch {
+    // Schema is non-critical; page still renders without it
+  }
+
+  const baseUrl = 'https://enjoybook.co';
+
+  return (
+    <>
+      {bookSchema && <JsonLd data={bookSchema} />}
+      <BreadcrumbJsonLd items={[
+        { name: 'หน้าหลัก', url: baseUrl },
+        { name: 'นิยาย', url: `${baseUrl}/allnovel` },
+        { name: bookSchema ? (bookSchema.name as string) : 'รายละเอียดนิยาย', url: `${baseUrl}/book/${bookId}` },
+      ]} />
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <BookDetailClient bookId={bookId} />
+      </HydrationBoundary>
+    </>
+  );
 }

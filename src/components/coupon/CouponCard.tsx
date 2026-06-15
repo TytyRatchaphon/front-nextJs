@@ -50,8 +50,8 @@ const CouponCard: React.FC<CouponCardProps> = ({
             label = 'รางวัล';
             badgeClass = 'bg-yellow-100 text-yellow-700';
     } 
-    // 3. Check for Novel Whole / Free Read
-    else if (coupon.rewards?.[0]?.rewardType === 'NOVEL_WHOLE' || coupon.name.includes('อ่านฟรี') || coupon.description.includes('อ่านฟรี') || coupon.name.includes('ฟรี')) {
+    // 3. Check for Novel Whole / Chapter / Free Read
+    else if (coupon.rewards?.[0]?.rewardType === 'NOVEL_WHOLE' || coupon.rewards?.[0]?.rewardType === 'NOVEL_CHAPTER' || coupon.name.includes('อ่านฟรี') || coupon.description.includes('อ่านฟรี') || coupon.name.includes('ฟรี')) {
             svgType = 'novel_whole';
             label = 'อ่านฟรี';
             badgeClass = 'bg-green-100 text-green-600';

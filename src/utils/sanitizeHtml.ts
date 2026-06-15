@@ -34,11 +34,26 @@ const ALLOWED_TAGS = new Set([
   "blockquote",
   "a",
   "img",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
 ]);
 
 const ALLOWED_ATTRS_BY_TAG: Record<string, Set<string>> = {
-  a: new Set(["href", "target", "rel", "title"]),
-  img: new Set(["src", "alt", "title", "width", "height"]),
+  a: new Set(["href", "target", "rel", "title", "id"]),
+  img: new Set(["src", "alt", "title", "width", "height", "id"]),
+  h1: new Set(["id"]),
+  h2: new Set(["id"]),
+  h3: new Set(["id"]),
+  h4: new Set(["id"]),
+  h5: new Set(["id"]),
+  h6: new Set(["id"]),
+  div: new Set(["id"]),
+  span: new Set(["id"]),
+  p: new Set(["id"]),
 };
 
 const SAFE_URL_PROTOCOL = /^(https?:\/\/|\/|#)/i;
