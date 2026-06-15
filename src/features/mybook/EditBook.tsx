@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 import { useEffect, useState } from "react";
-import { Checkbox, Form, Input, Select, Modal, Slider, Spin, Upload, notification } from "antd";
+import { Checkbox, Form, Input, Select, Modal, Slider, Spin, Upload, notification, Switch } from "antd";
 import type { CheckboxChangeEvent } from "antd/es/checkbox";
 import type { RcFile } from 'antd/es/upload/interface';
 // import Cookies from "js-cookie";
@@ -64,10 +64,20 @@ interface BookFormValues {
     
 }
 
+interface MyBookPermissionSuggestConfig {
+    content_type: 'novel' | 'novel_pack' | string;
+    fast_ticket?: number;
+    fast_coin?: number;
+    fast_ticket_daily_increase?: number;
+    fast_coin_daily_increase?: number;
+    fast_ep_days?: number;
+}
+
 interface MyBookPermissionData {
     set_content_type: boolean;
     set_fast_ticket: boolean;
     set_fast_coin: boolean;
+    suggest_configs: MyBookPermissionSuggestConfig[];
 }
 
 const isGifArrayBuffer = (arrayBuffer: ArrayBuffer): boolean => {
@@ -120,6 +130,7 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
     const [gifFramePreview, setGifFramePreview] = useState<string | null>(null);
     const [appliedGifFrameIndex, setAppliedGifFrameIndex] = useState(0);
     const ENABLE_GIF_UPLOAD = false;
+    const [isFastUnlockEnabled, setIsFastUnlockEnabled] = useState<boolean>(false);
 
     const [category, setCategory] = useState<Category[]>([]);
     const [category1, setCategory1] = useState<Category[]>([]);
@@ -130,6 +141,7 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
         set_content_type: false,
         set_fast_ticket: false,
         set_fast_coin: false,
+        suggest_configs: [],
     });
     const { settings: website, fetchSettings } = useWebsiteSettings();
 
@@ -153,6 +165,7 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                     set_content_type: Boolean(permissionRes.data?.data?.set_content_type),
                     set_fast_ticket: Boolean(permissionRes.data?.data?.set_fast_ticket),
                     set_fast_coin: Boolean(permissionRes.data?.data?.set_fast_coin),
+                    suggest_configs: permissionRes.data?.data?.suggest_configs || [],
                 };
                 setPermissions(permissionData);
 
@@ -211,6 +224,9 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
 
                     setInitialStatus(bookData.status);
 
+                    const hasFastUnlock = (bookData.fast_ticket && bookData.fast_ticket > 0) || (bookData.fast_coin && bookData.fast_coin > 0) || (bookData.fast_ticket_daily_increase && bookData.fast_ticket_daily_increase > 0) || (bookData.fast_coin_daily_increase && bookData.fast_coin_daily_increase > 0);
+                    setIsFastUnlockEnabled(Boolean(hasFastUnlock));
+
                     // Set Form Values
                     formNewBook.setFieldsValue({
                         name: bookData.name,
@@ -260,6 +276,49 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
 
         fetchData();
     }, [finalBookId, formNewBook, api]);
+
+    const resetFastUnlockDefaults = () => {
+        formNewBook.setFieldsValue({
+            fast_ticket: 0,
+            fast_coin: 0,
+            fast_ticket_daily_increase: 0,
+            fast_coin_daily_increase: 0,
+            fast_ep_days: 0,
+        });
+    };
+
+    const applyFastUnlockConfig = (contentType: string, suggestConfigs: MyBookPermissionSuggestConfig[]) => {
+        const config = suggestConfigs?.find(c => c.content_type === contentType);
+        if (config) {
+            formNewBook.setFieldsValue({
+                fast_ticket: config.fast_ticket || 0,
+                fast_coin: config.fast_coin || 0,
+                fast_ticket_daily_increase: config.fast_ticket_daily_increase || 0,
+                fast_coin_daily_increase: config.fast_coin_daily_increase || 0,
+                fast_ep_days: config.fast_ep_days || 0,
+            });
+        } else {
+            resetFastUnlockDefaults();
+        }
+    };
+
+    const handleFastUnlockToggle = (checked: boolean) => {
+        setIsFastUnlockEnabled(checked);
+        if (!checked) {
+            resetFastUnlockDefaults();
+        } else {
+            const currentContentType = formNewBook.getFieldValue('content_type') || 'novel';
+            applyFastUnlockConfig(currentContentType, permissions.suggest_configs);
+        }
+    };
+
+    const handleContentTypeChange = (val: string) => {
+        if (isFastUnlockEnabled) {
+            applyFastUnlockConfig(val, permissions.suggest_configs);
+        } else {
+            resetFastUnlockDefaults();
+        }
+    };
 
     // --- Event Handlers ---
     const handleSelectType = (type: string) => {
@@ -468,10 +527,21 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
             return;
         }
 
-        const hasFastUnlockPrice = Number(values.fast_ticket || 0) > 0 || Number(values.fast_coin || 0) > 0;
+        let finalFastTicket = isFastUnlockEnabled ? (values.fast_ticket || 0) : 0;
+        let finalFastCoin = isFastUnlockEnabled ? (values.fast_coin || 0) : 0;
+        let finalFastTicketDaily = isFastUnlockEnabled ? (values.fast_ticket_daily_increase || 0) : 0;
+        let finalFastCoinDaily = isFastUnlockEnabled ? (values.fast_coin_daily_increase || 0) : 0;
+        
+        const hasFastUnlockPrice = Number(finalFastTicket) > 0 || Number(finalFastCoin) > 0;
+        let finalFastEpDays = hasFastUnlockPrice ? (values.fast_ep_days || 0) : 0;
+
         const submitValues: BookFormValues = {
             ...values,
-            fast_ep_days: hasFastUnlockPrice ? values.fast_ep_days : 0,
+            fast_ticket: finalFastTicket,
+            fast_coin: finalFastCoin,
+            fast_ticket_daily_increase: finalFastTicketDaily,
+            fast_coin_daily_increase: finalFastCoinDaily,
+            fast_ep_days: finalFastEpDays,
         };
 
         console.group("🚀 Debug Edit Data");
@@ -746,6 +816,7 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                                             <Form.Item name='content_type'>
                                                 <Select
                                                     placeholder="Select content type"
+                                                    onChange={(val) => handleContentTypeChange(val)}
                                                 >
                                                     <Select.Option value='novel'>รายตอน</Select.Option>
                                                     <Select.Option value='novel_pack'>มัดแพ็ค</Select.Option>
@@ -757,8 +828,14 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
 
                                 {showFastUnlockConfig && (
                                     <div className='mt-6 rounded-lg border border-rose-100 bg-rose-50/40 p-4'>
-                                        <div className='mb-4'>
+                                        <div className='mb-4 flex items-center justify-between'>
                                             <h3 className='text-base font-semibold text-gray-800'>ฟีเจอร์ปลดล็อคล่วงหน้า</h3>
+                                            <Switch 
+                                                checked={isFastUnlockEnabled} 
+                                                onChange={handleFastUnlockToggle} 
+                                                checkedChildren="เปิด" 
+                                                unCheckedChildren="ปิด"
+                                            />
                                         </div>
                                         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
                                             {permissions.set_fast_ticket && (
