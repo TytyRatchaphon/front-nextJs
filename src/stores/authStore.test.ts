@@ -42,11 +42,12 @@ const localStorageMock = (() => {
 })()
 Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock })
 
-// Mock window.location.reload
+// Mock window.location
 Object.defineProperty(globalThis, 'window', {
   value: {
     location: {
       reload: vi.fn(),
+      href: '',
       protocol: 'http:',
       hostname: 'localhost',
     },
@@ -133,10 +134,10 @@ describe('authStore', () => {
   // -------------------------------------------------------------------
   // logout
   // -------------------------------------------------------------------
-  it('logout clears user, token, and isLoggedIn', () => {
+  it('logout clears user, token, and isLoggedIn', async () => {
     const user = makeUser()
     useAuthStore.getState().login(user, 'token')
-    useAuthStore.getState().logout()
+    await useAuthStore.getState().logout()
 
     const state = useAuthStore.getState()
     expect(state.user).toBeNull()
@@ -144,9 +145,9 @@ describe('authStore', () => {
     expect(state.isLoggedIn).toBe(false)
   })
 
-  it('logout removes from localStorage and cookies', () => {
+  it('logout removes from localStorage and cookies', async () => {
     useAuthStore.getState().login(makeUser(), 'token')
-    useAuthStore.getState().logout()
+    await useAuthStore.getState().logout()
 
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('authToken')
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('userData')

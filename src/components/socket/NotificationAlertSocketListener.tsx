@@ -4,6 +4,7 @@ import * as React from "react";
 import { App } from "antd";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/constants/query";
+import Image from "next/image";
 
 import { useSocket } from "@/providers/SocketProvider";
 import { useAuthStore } from "@/stores/authStore";
@@ -144,10 +145,13 @@ export default function NotificationAlertSocketListener() {
         key: `notification-alert-${payload.type || "general"}-${Date.now()}`,
         message,
         icon: img ? (
-          <img
+          <Image
             src={img}
             alt=""
-            className="h-8 w-8 rounded-full object-contain"
+            width={32}
+            height={32}
+            className="rounded-full object-contain"
+            unoptimized
           />
         ) : undefined,
         placement: "topRight",

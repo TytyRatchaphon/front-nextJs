@@ -8,7 +8,6 @@ import {
   ReadingSessionActiveData,
   updateReadingProgress,
 } from '@/services/apiServices';
-import Cookies from 'js-cookie';
 
 const getCurrentDeviceId = () => {
   if (typeof window === 'undefined') return '';
@@ -176,13 +175,11 @@ export function useReadingSession(bookId: string, episodeId: string, user: any) 
       }
     };
 
-    const handleDeviceLoggedOut = (data: any) => {
+    const handleDeviceLoggedOut = async (data: any) => {
       const currentDeviceId = getCurrentDeviceId();
       if (currentDeviceId && data?.target_device_id === currentDeviceId) {
         setIsConflict(true);
-        useAuthStore.getState().logout();
-        Cookies.remove('token');
-        window.location.href = '/login?message=logged_out';
+        await useAuthStore.getState().logout();
       }
     };
 

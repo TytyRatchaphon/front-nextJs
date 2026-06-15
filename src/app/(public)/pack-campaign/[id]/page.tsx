@@ -24,15 +24,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
         title: `${data.name} | EnjoyBook`,
         description: data.detail || `โปรโมชั่น ${data.name} ที่ EnjoyBook`,
+        alternates: {
+            canonical: `/pack-campaign/${id}`,
+        },
     };
 }
+
+import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
 
 export default async function Page({ params }: Props) {
     const { id } = await params;
     const data = await getCachedPackCampaignDetail(id);
 
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://enjoybook.co';
+    const campaignName = data?.name || 'โปรโมชั่น';
+
     return (
         <>
+            <BreadcrumbJsonLd items={[
+                { name: 'หน้าหลัก', url: baseUrl },
+                { name: 'แพ็คโปรโมชั่น', url: `${baseUrl}/novel-pack` },
+                { name: campaignName, url: `${baseUrl}/pack-campaign/${id}` },
+            ]} />
             <PackCampaign data={data} />
         </>
     );

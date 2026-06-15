@@ -92,6 +92,9 @@ const proxyRequest = async (request: NextRequest, paramsPath: string[] | undefin
       status: upstreamResponse.status,
       headers: {
         "content-type": responseType,
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
       },
     });
   } catch {

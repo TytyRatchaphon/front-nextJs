@@ -11,6 +11,7 @@ import { useUIStore } from "@/stores/uiStore";
 import GifLoader from '@/components/utility/GifLoader';
 import { imageLoader } from '@/utils/imageUtils';
 import Cookies from 'js-cookie';
+import { useAuthStore } from "@/stores/authStore";
 
 
 const TABS = [
@@ -50,6 +51,7 @@ function WriterProfileContent() {
     // Profile State
     const [profile, setProfile] = useState<WriterProfileResponse['data'] | null>(null);
     const [bannerError, setBannerError] = useState(false);
+    const { token } = useAuthStore() as any;
 
     // Reset banner error when data changes
     useEffect(() => {
@@ -107,7 +109,6 @@ function WriterProfileContent() {
     };
 
     const handleFollow = async () => {
-        const token = Cookies.get('token');
         if (!token) {
             openLoginModal();
             return;
@@ -116,7 +117,7 @@ function WriterProfileContent() {
         setFollowLoading(true);
         try {
             const action = isFollowing ? 'unfollow' : 'follow';
-            await followWriter(writerId, action);
+            await followWriter(writerId, action, token);
 
             setIsFollowing(!isFollowing);
 
@@ -137,8 +138,23 @@ function WriterProfileContent() {
                 });
             }
 
-        } catch {
-            messageApi.error("เกิดข้อผิดพลาด กรุณาลองใหม่");
+        } catch (error: any) {
+            const resData = error.response?.data;
+            if (resData?.message?.includes('ติดตามผู้ใช้นี้แล้ว')) {
+                setIsFollowing(true);
+                messageApi.info("คุณได้ติดตามนักเขียนคนนี้แล้ว");
+                if (profile && profile.follower_count < (profile.follower_count + 1)) {
+                     setProfile({ ...profile, follower_count: profile.follower_count + 1 });
+                }
+            } else if (resData?.message?.includes('ไม่ได้ติดตาม')) {
+                setIsFollowing(false);
+                messageApi.info("คุณไม่ได้ติดตามนักเขียนคนนี้");
+                if (profile && profile.follower_count > 0) {
+                     setProfile({ ...profile, follower_count: Math.max(0, profile.follower_count - 1) });
+                }
+            } else {
+                messageApi.error(resData?.message || "เกิดข้อผิดพลาด กรุณาลองใหม่");
+            }
         } finally {
             setFollowLoading(false);
         }

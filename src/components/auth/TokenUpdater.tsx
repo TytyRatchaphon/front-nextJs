@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useEffect } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
@@ -75,6 +75,11 @@ export default function TokenUpdater() {
         let isCancelled = false;
 
         const fetchRefreshToken = async () => {
+            // Skip token refresh if logout was just performed
+            try {
+                if (sessionStorage.getItem('auth_logout_pending') === '1') return;
+            } catch {}
+
             const savedToken =
                 parseJwtToken(Cookies.get('token')) ||
                 (await getAuthSession())?.token;

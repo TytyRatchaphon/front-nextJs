@@ -358,10 +358,6 @@ const RpQuestPanel = ({
     >
       <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-red-100 bg-white/80 px-3 py-1 text-xs font-bold text-red-600 shadow-sm">
-            <Sparkles size={14} />
-            RP Quest
-          </div>
           <h2 className="text-2xl font-black tracking-tight text-slate-950 md:text-3xl">
             ภารกิจเพิ่มแต้ม
           </h2>

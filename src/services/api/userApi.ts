@@ -3,6 +3,7 @@ import apiClient from "../apiClient";
 import type { WebsiteSettingsResponse } from "@/types/api";
 import Cookies from 'js-cookie';
 import axios from "axios";
+import { parseJwtToken } from "@/utils/jwtParser";
 
 // --- Writer Registration & Check ---
 
@@ -221,11 +222,15 @@ export const fetchWriterBooks = async (
   }
 };
 
-export const followWriter = async (writerId: number | string, action: 'follow' | 'unfollow') => {
+export const followWriter = async (writerId: number | string, action: 'follow' | 'unfollow', token?: string) => {
   try {
-    const response = await apiClient.post('/profile/follow', {
+    const rawToken = token || Cookies.get('token');
+    const cleanToken = parseJwtToken(rawToken);
+    const response = await axios.post('/api/follow', {
       writer_id: Number(writerId),
       action: action
+    }, {
+      headers: cleanToken ? { Authorization: cleanToken } : {}
     });
     return response.data;
   } catch (error: any) {

@@ -1,4 +1,5 @@
 import { getBookPurchaseRewardImage } from "@/utils/bookPurchaseReward";
+import Image from "next/image";
 
 type BookPurchaseRewardBadgeProps = {
   book?: Record<string, any> | null;
@@ -23,12 +24,16 @@ export function BookPurchaseRewardBadge({
       ].filter(Boolean).join(" ")}
       aria-label="EP purchase reward"
     >
-      <img
-        src={rewardImage}
-        alt="EP purchase reward"
-        className="h-full w-full object-contain drop-shadow-md"
-        loading="lazy"
-      />
+      <div className="relative w-full h-full">
+        <Image
+          src={rewardImage}
+          alt="EP purchase reward"
+          fill
+          className="object-contain drop-shadow-md"
+          sizes="72px"
+          unoptimized
+        />
+      </div>
     </span>
   );
 }

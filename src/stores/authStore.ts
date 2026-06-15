@@ -8,6 +8,20 @@ import {
   setAuthTokenCookie,
 } from '@/services/authPersistence';
 
+const LOGOUT_FLAG = 'auth_logout_pending';
+
+const setLogoutFlag = () => {
+  try { sessionStorage.setItem(LOGOUT_FLAG, '1'); } catch {}
+};
+
+const clearLogoutFlag = () => {
+  try { sessionStorage.removeItem(LOGOUT_FLAG); } catch {}
+};
+
+const hasLogoutFlag = () => {
+  try { return sessionStorage.getItem(LOGOUT_FLAG) === '1'; } catch { return false; }
+};
+
 // ✅ อัปเดต Interface ให้ครบถ้วนตามที่ใช้จริงใน Sprofile และ Token
 export interface UserData {
   user_id?: number;
@@ -67,7 +81,7 @@ export interface AuthState {
 
   // Actions
   login: (userData: UserData, token: string) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   setMounted: () => void;
   updateToken: (newToken: string) => Promise<void>;
   updateUserBalance: (updates: Partial<UserData>) => void;
@@ -89,11 +103,12 @@ export const useAuthStore = create<AuthState>()(
         get().updateToken(token);
       },
 
-      logout: () => {
+      logout: async () => {
+        setLogoutFlag();
         clearLegacyLocalAuthStorage();
-        clearAuthTokenCookies();
+        await clearAuthTokenCookies();
         set({ user: null, token: null, isLoggedIn: false });
-        window.location.reload();
+        window.location.href = '/';
       },
 
       updateUserBalance: (updates: Partial<UserData>) => {
@@ -134,6 +149,14 @@ export const useAuthStore = create<AuthState>()(
 
       setMounted: () => {
         clearLegacyLocalAuthStorage();
+
+        // If logout was just performed, skip auto-recovery from cookies/session
+        if (hasLogoutFlag()) {
+          clearLogoutFlag();
+          set({ hasMounted: true });
+          return;
+        }
+
         const state = get();
         if (!state.user && !state.token && !state.isLoggedIn) {
           const cookieToken = getAuthTokenCookie();

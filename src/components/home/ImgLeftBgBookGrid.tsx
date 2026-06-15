@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-// import Image from "next/image";
+import Image from "next/image";
 import Link from "next/link";
 import parse from "html-react-parser";
 import CardBookImageOnly from "../novelCard/CardBookImageOnly";
@@ -66,11 +66,14 @@ export default function ImgLeftBgBookGrid({ group, link, onBookClick }: ImgLeftB
           <div className="w-[180px] sm:w-[200px] md:w-[230px] lg:w-[260px] xl:w-[280px] flex-shrink-0 relative">
             {/* Absolute height to exactly match the 2 rows of the grid (excluding pb-4) */}
             <div className="absolute top-0 left-0 w-full bottom-4 flex items-center justify-center p-1">
-              <div className="relative max-w-full max-h-full rounded-[16px] sm:rounded-[24px] overflow-hidden flex">
-                <img 
+              <div className="relative w-full h-full rounded-[16px] sm:rounded-[24px] overflow-hidden flex">
+                <Image 
                   src={group.img_left} 
                   alt={group.name || 'promotion banner'} 
-                  className="max-w-full max-h-full w-auto h-auto"
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 640px) 180px, (max-width: 768px) 200px, (max-width: 1024px) 230px, (max-width: 1280px) 260px, 280px"
+                  unoptimized
                 />
               </div>
             </div>

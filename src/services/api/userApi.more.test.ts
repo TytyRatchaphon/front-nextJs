@@ -201,14 +201,16 @@ describe("userApi more coverage", () => {
     });
 
     it("followWriter posts normalized writer id and rethrows on failure", async () => {
-      mockedApiClient.post.mockResolvedValueOnce({ data: { ok: true } });
+      mockedAxios.post.mockResolvedValueOnce({ data: { ok: true } });
       await expect(followWriter("42", "follow")).resolves.toEqual({ ok: true });
-      expect(mockedApiClient.post).toHaveBeenCalledWith("/profile/follow", {
+      expect(mockedAxios.post).toHaveBeenCalledWith("/api/follow", {
         writer_id: 42,
         action: "follow",
+      }, {
+        headers: {}
       });
 
-      mockedApiClient.post.mockRejectedValueOnce(new Error("follow-failed"));
+      mockedAxios.post.mockRejectedValueOnce(new Error("follow-failed"));
       await expect(followWriter(42, "unfollow")).rejects.toThrow("follow-failed");
     });
   });

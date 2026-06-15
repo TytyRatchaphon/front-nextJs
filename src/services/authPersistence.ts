@@ -101,11 +101,11 @@ const clearClientReadableAuthTokenCookies = () => {
   });
 };
 
-export const clearAuthTokenCookies = () => {
+export const clearAuthTokenCookies = async (): Promise<void> => {
   clearClientReadableAuthTokenCookies();
 
   if (typeof window === 'undefined') return;
-  void fetch(AUTH_SESSION_ENDPOINT, {
+  await fetch(AUTH_SESSION_ENDPOINT, {
     method: 'DELETE',
     credentials: 'same-origin',
     cache: 'no-store',
