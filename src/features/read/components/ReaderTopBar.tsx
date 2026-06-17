@@ -27,6 +27,9 @@ type ReaderTopBarProps = {
   setFontFamily: any;
   bgColor: string;
   setBgColor: any;
+  textColorKey: string;
+  setTextColorKey: (key: string) => void;
+  themeTextColors: Record<string, { key: string; label: string; hex: string }[]>;
   isBold: boolean;
   setIsBold: any;
   textAlign: "left" | "center" | "justify";
@@ -72,6 +75,9 @@ export function ReaderTopBar({
   setFontFamily,
   bgColor,
   setBgColor,
+  textColorKey,
+  setTextColorKey,
+  themeTextColors,
   isBold,
   setIsBold,
   textAlign,
@@ -169,6 +175,9 @@ export function ReaderTopBar({
           setFontFamily={setFontFamily}
           bgColor={bgColor}
           setBgColor={setBgColor}
+          textColorKey={textColorKey}
+          setTextColorKey={setTextColorKey}
+          themeTextColors={themeTextColors}
           isBold={isBold}
           setIsBold={setIsBold}
           textAlign={textAlign}

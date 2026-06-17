@@ -101,7 +101,7 @@ const NewBook: React.FC = () => {
     const [gifFramePreview, setGifFramePreview] = useState<string | null>(null);
     const [appliedGifFrameIndex, setAppliedGifFrameIndex] = useState(0);
     const ENABLE_GIF_UPLOAD = true;
-    const [isFastUnlockEnabled, setIsFastUnlockEnabled] = useState<boolean>(false);
+    const [isFastUnlockEnabled, setIsFastUnlockEnabled] = useState<boolean>(true);
 
     // State สำหรับเก็บข้อมูลที่เคยอยู่ใน Context
     const [category, setCategory] = useState<Category[]>([]);
@@ -215,6 +215,10 @@ const NewBook: React.FC = () => {
                     ? permissionData.suggest_configs?.[0]?.content_type || 'novel'
                     : undefined;
 
+                const initialConfig = permissionData.suggest_configs?.find(
+                    c => c.content_type === (defaultContentType || 'novel')
+                );
+
                 formNewBook.setFieldsValue({
                     status: 'publish',
                     rate: 3,
@@ -224,11 +228,11 @@ const NewBook: React.FC = () => {
                     imgBook: '',
                     bgimg: '',
                     img_gif: '',
-                    fast_ticket: 0,
-                    fast_coin: 0,
-                    fast_ticket_daily_increase: 0,
-                    fast_coin_daily_increase: 0,
-                    fast_ep_days: 0,
+                    fast_ticket: initialConfig?.fast_ticket || 0,
+                    fast_coin: initialConfig?.fast_coin || 0,
+                    fast_ticket_daily_increase: initialConfig?.fast_ticket_daily_increase || 0,
+                    fast_coin_daily_increase: initialConfig?.fast_coin_daily_increase || 0,
+                    fast_ep_days: initialConfig?.fast_ep_days || 0,
                     ...(defaultContentType ? { content_type: defaultContentType } : {}),
                 });
 

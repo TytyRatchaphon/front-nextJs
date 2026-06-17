@@ -156,6 +156,8 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     fontSize, setFontSize,
     fontFamily, setFontFamily,
     bgColor, setBgColor,
+    textColorKey, setTextColorKey,
+    themeTextColors,
     isBold, setIsBold,
     textAlign, setTextAlign,
     isAutoScroll, setIsAutoScroll,
@@ -542,6 +544,9 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
               setFontFamily={setFontFamily}
               bgColor={bgColor}
               setBgColor={setBgColor}
+              textColorKey={textColorKey}
+              setTextColorKey={setTextColorKey}
+              themeTextColors={themeTextColors}
               isBold={isBold}
               setIsBold={setIsBold}
               textAlign={textAlign}

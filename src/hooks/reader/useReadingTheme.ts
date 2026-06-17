@@ -29,6 +29,25 @@ const bgColors = [
     { key: "dark", label: "มืด", bg: "bg-[#1a1a1a]", paper: "bg-[#1a1a1a]", text: "text-[#d1d5db]", border: "#333333", sliderColor: "#333333" },
 ];
 
+export const themeTextColors: Record<string, { key: string; label: string; hex: string }[]> = {
+    white: [
+        { key: "black", label: "ดำ", hex: "#000000" },
+        { key: "dark-gray", label: "เทาเข้ม", hex: "#374151" },
+        { key: "gray", label: "เทา", hex: "#6b7280" },
+    ],
+    sepia: [
+        { key: "dark-brown", label: "น้ำตาลเข้ม", hex: "#453327" },
+        { key: "brown", label: "น้ำตาล", hex: "#5b4636" },
+        { key: "light-brown", label: "น้ำตาลอ่อน", hex: "#8b735c" },
+    ],
+    dark: [
+        { key: "white", label: "ขาว", hex: "#ffffff" },
+        { key: "light-gray", label: "เทาอ่อน", hex: "#d1d5db" },
+        { key: "gray", label: "เทา", hex: "#9ca3af" },
+    ],
+};
+
+
 type UseReadingThemeOptions = {
     fontFamilies?: ReadingThemeFontOption[];
     defaultFontKey?: string;
@@ -47,6 +66,7 @@ export function useReadingTheme(
     const [fontSize, setFontSize] = useState<number>(20);
     const [fontFamily, setFontFamily] = useState(initialFontKey);
     const [bgColor, setBgColor] = useState("sepia");
+    const [textColorKey, setTextColorKey] = useState<string>("");
     const [isBold, setIsBold] = useState(false);
     const [textAlign, setTextAlign] = useState<"left" | "center" | "justify">("left");
     const [isLoaded, setIsLoaded] = useState(false);
@@ -65,6 +85,7 @@ export function useReadingTheme(
                 const parsed = JSON.parse(raw);
                 if (parsed) {
                     if (parsed.bgColor && bgColors.find((b) => b.key === parsed.bgColor)) setBgColor(parsed.bgColor);
+                    if (parsed.textColorKey) setTextColorKey(parsed.textColorKey);
                     if (parsed.fontSize && typeof parsed.fontSize === 'number') setFontSize(parsed.fontSize);
                     if (parsed.fontFamily && resolvedFontFamilies.find((ff) => ff.key === parsed.fontFamily)) {
                         setFontFamily(parsed.fontFamily);
@@ -96,18 +117,27 @@ export function useReadingTheme(
         if (!isLoaded) return;
         try {
             const key = "reading_theme_v2";
-            const payload = { bgColor, fontSize, fontFamily, isBold, textAlign };
+            const payload = { bgColor, fontSize, fontFamily, isBold, textAlign, textColorKey };
             localStorage.setItem(key, JSON.stringify(payload));
         } catch { }
-    }, [bgColor, fontSize, fontFamily, isBold, textAlign, isLoaded]);
+    }, [bgColor, fontSize, fontFamily, isBold, textAlign, textColorKey, isLoaded]);
 
     // Navbar Style Override
     useEffect(() => {
+        
+        const validTextColors = themeTextColors[bgColor] || themeTextColors.white;
+        let selectedTextColorObj = validTextColors.find(t => t.key === textColorKey);
+        if (!selectedTextColorObj) {
+            selectedTextColorObj = validTextColors[0];
+        }
+        const activeTextHex = selectedTextColorObj.hex;
+
         const colorMap: Record<string, { bg: string; text: string; border: string }> = {
-            white: { bg: "#ffffff", text: "#000000", border: "#e5e7eb" },
-            sepia: { bg: "#fdfaee", text: "#000000", border: "#e6dbc4" },
-            dark: { bg: "#1c1c1e", text: "#ffffff", border: "#333333" },
+            white: { bg: "#ffffff", text: activeTextHex, border: "#e5e7eb" },
+            sepia: { bg: "#fdfaee", text: activeTextHex, border: "#e6dbc4" },
+            dark: { bg: "#1c1c1e", text: activeTextHex, border: "#333333" },
         };
+
 
         const colors = colorMap[bgColor] ?? colorMap.white;
         const currentBg = bgColors.find(b => b.key === bgColor) || bgColors[0];
@@ -533,7 +563,7 @@ export function useReadingTheme(
             const s = document.getElementById(styleId);
             if (s) s.remove();
         };
-    }, [bgColor, fontFamily, resolvedFontFamilies]);
+    }, [bgColor, fontFamily, resolvedFontFamilies, textColorKey]);
 
     // Auto Scroll Logic
     useEffect(() => {
@@ -581,11 +611,13 @@ export function useReadingTheme(
         fontSize, setFontSize,
         fontFamily, setFontFamily,
         bgColor, setBgColor,
+        textColorKey, setTextColorKey,
         isBold, setIsBold,
         textAlign, setTextAlign,
         isAutoScroll, setIsAutoScroll,
         scrollSpeed, setScrollSpeed,
         currentBg, currentFontFamily,
-        fontFamilies: resolvedFontFamilies, bgColors
+        fontFamilies: resolvedFontFamilies, bgColors,
+        themeTextColors
     };
 }

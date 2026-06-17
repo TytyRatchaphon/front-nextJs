@@ -2,14 +2,11 @@ import BookDetailClient from "@/components/bookdetail/BookDetailClient";
 import type { Metadata, ResolvingMetadata } from 'next'
 import { fetchBookDetail, resolveBookId } from "@/services/apiServices";
 import { redirect } from 'next/navigation';
-import { unstable_cache } from 'next/cache';
 import { QueryClient, dehydrate, HydrationBoundary } from '@tanstack/react-query';
 import { queryKeys } from '@/constants/query';
 import JsonLd from '@/components/seo/JsonLd';
 import BreadcrumbJsonLd from '@/components/seo/BreadcrumbJsonLd';
 import { generateBookSchema } from '@/utils/schema';
-
-export const revalidate = 60;
 
 type Props = {
   params: { id: string } | Promise<{ id: string }>
@@ -26,17 +23,9 @@ function stripHtml(html: string) {
     .trim();
 }
 
-const getCachedBookDetail = (id: string) => unstable_cache(
-  async () => fetchBookDetail(id),
-  [`book-detail-${id}`],
-  { revalidate: 60 }
-)();
+const getCachedBookDetail = (id: string) => fetchBookDetail(id);
 
-export const getCachedResolvedId = (id: string) => unstable_cache(
-  async () => resolveBookId(id),
-  [`resolve-book-${id}`],
-  { revalidate: 3600 }
-)();
+export const getCachedResolvedId = (id: string) => resolveBookId(id);
 
 export async function generateMetadata(
   { params }: Props,
@@ -111,12 +100,7 @@ export default async function BookDetailPage({ params }: Props) {
       queryKey: queryKeys.book.detail(bookId),
       queryFn: () => getCachedBookDetail(bookId)
     });
-    // Also prefetch episodes to avoid loading spinner
-    const { fetchBookEpisodes } = await import('@/services/apiServices');
-    await queryClient.prefetchQuery({
-      queryKey: queryKeys.book.episodes(bookId),
-      queryFn: () => fetchBookEpisodes(bookId)
-    });
+
     bookSchema = generateBookSchema({
       name: book.name,
       authorName: book['user.fullname'] || '',

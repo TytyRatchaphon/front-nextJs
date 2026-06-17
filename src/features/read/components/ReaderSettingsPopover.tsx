@@ -12,6 +12,9 @@ type ReaderSettingsPopoverProps = {
   setFontFamily: (fontFamily: string) => void;
   bgColor: string;
   setBgColor: (bgColor: string) => void;
+    textColorKey: string;
+  setTextColorKey: (key: string) => void;
+  themeTextColors: Record<string, { key: string; label: string; hex: string }[]>;
   isBold: boolean;
   setIsBold: (enabled: boolean) => void;
   textAlign: "left" | "center" | "justify";
@@ -35,8 +38,8 @@ export function getReaderMenuTheme(currentBgKey?: string) {
     return {
       panelBg: "#1a1a1a",
       panelBorder: "#333333",
-      text: "#f3f4f6",
-      muted: "#9ca3af",
+      text: "#9ca3af",
+      muted: "#6b7280",
       hoverBg: "hover:bg-white/5",
       activeBg: "#2b2224",
       activeText: "#fca5a5",
@@ -84,6 +87,9 @@ export function ReaderSettingsPopover({
   setFontFamily,
   bgColor,
   setBgColor,
+  textColorKey,
+  setTextColorKey,
+  themeTextColors,
   isBold,
   setIsBold,
   textAlign,
@@ -103,6 +109,10 @@ export function ReaderSettingsPopover({
 }: ReaderSettingsPopoverProps) {
   const readerMenuTheme = useMemo(() => getReaderMenuTheme(currentBg?.key), [currentBg?.key]);
 
+  
+  const validTextColors = themeTextColors?.[currentBg?.key || "white"] || themeTextColors?.white || [];
+  const activeTextHex = validTextColors.find((t: any) => t.key === textColorKey)?.hex || validTextColors[0]?.hex || "#000000";
+
   const fontFamilyOptions = useMemo(
     () => fontFamilies.map((font) => ({
       value: font.key,
@@ -119,6 +129,7 @@ export function ReaderSettingsPopover({
     setFontSize(() => 20);
     setFontFamily(readerDefaultFontKey);
     setBgColor("sepia");
+    setTextColorKey("");
     setIsBold(false);
     setTextAlign("left");
     setIsAutoScroll(false);
@@ -127,6 +138,7 @@ export function ReaderSettingsPopover({
     setShowTrackedParagraphArrow(true);
   }, [
     readerDefaultFontKey,
+    setTextColorKey,
     setBgColor,
     setFontFamily,
     setFontSize,
@@ -235,6 +247,24 @@ export function ReaderSettingsPopover({
             ))}
           </div>
 
+                    <div className="flex items-center justify-between px-4 mt-2 mb-1">
+            <span className="reader-settings-label text-sm" style={{ color: readerMenuTheme.muted }}>สีตัวอักษร</span>
+            <div className="flex items-center gap-2">
+              {(themeTextColors[bgColor] || themeTextColors.white).map((t) => {
+                const isSelected = t.key === textColorKey || (!textColorKey && t.key === (themeTextColors[bgColor] || themeTextColors.white)[0].key);
+                return (
+                  <button
+                    key={t.key}
+                    onClick={() => setTextColorKey(t.key)}
+                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? "border-[#E31C3D] scale-110" : "border-transparent hover:scale-105"}`}
+                    title={t.label}
+                  >
+                    <div className="w-4 h-4 rounded-full border border-gray-300 shadow-sm" style={{ backgroundColor: t.hex }} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <div className="flex items-center justify-between px-4">
             <span className="reader-settings-label text-sm" style={{ color: readerMenuTheme.muted }}>ตัวหนา</span>
             <Switch checked={isBold} onChange={setIsBold} size="small" style={{ backgroundColor: isBold ? "#E31C3D" : undefined }} />
@@ -252,8 +282,8 @@ export function ReaderSettingsPopover({
       trigger="click"
     >
       <div className="flex items-center gap-2 cursor-pointer">
-        <span className={`text-sm font-semibold ${currentBg?.key === "dark" ? "text-gray-300" : "text-gray-600"}`}>ตั้งค่าการอ่าน</span>
-        <button className={`p-2 rounded-full transition-colors font-serif font-bold text-lg flex items-center justify-center w-10 h-10 ${currentBg?.text} ${currentBg?.key === "dark" ? "hover:bg-white/10" : "hover:bg-black/5"}`} title="ตั้งค่าการอ่าน" style={{ color: currentBg?.key === "dark" ? "white" : undefined }}>
+        <span className={`text-sm font-semibold ${currentBg?.key === "dark" ? "text-[#9ca3af]" : "text-gray-600"}`}>ตั้งค่าการอ่าน</span>
+        <button className={`p-2 rounded-full transition-colors font-serif font-bold text-lg flex items-center justify-center w-10 h-10 ${currentBg?.text} ${currentBg?.key === "dark" ? "hover:bg-white/10" : "hover:bg-black/5"}`} title="ตั้งค่าการอ่าน" style={{ color: activeTextHex }}>
           Aa
         </button>
       </div>
