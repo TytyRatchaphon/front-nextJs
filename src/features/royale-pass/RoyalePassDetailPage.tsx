@@ -88,7 +88,6 @@ function RewardIcon({ reward }: { reward: RoyalePassReward }) {
         width={44}
         height={44}
         className="h-11 w-11 object-contain"
-        unoptimized
       />
     );
   }
@@ -294,7 +293,7 @@ export default function RoyalePassDetailPage({ passId }: RoyalePassDetailPagePro
   const detail = detailQuery.data;
 
   React.useEffect(() => {
-    document.title = detail?.name ? `${detail.name} - Royale Pass` : "Royale Pass - EnjoyBook";
+    // document.title override removed in favor of SSR metadata
   }, [detail?.name]);
 
   const rewardLevels = React.useMemo(() => buildRewardLevels(detail), [detail]);
@@ -417,7 +416,7 @@ export default function RoyalePassDetailPage({ passId }: RoyalePassDetailPagePro
     <main className="min-h-screen bg-[#fafbfc] pb-16 font-primary">
       <section className="relative overflow-hidden bg-slate-900 text-white">
         <div className="absolute inset-0">
-          <Image src={getPassBannerSrc(detail)} alt={detail.name} fill className="object-cover object-center" unoptimized />
+          <Image src={getPassBannerSrc(detail)} alt={detail.name} fill className="object-cover object-center" />
         </div>
         <div className="relative mx-auto max-w-[1440px] px-4 py-8 md:px-6 md:py-12">
             <Link href="/royale-pass" className="inline-flex items-center gap-2 mb-6 px-5 py-2.5 rounded-xl border border-white/20 hover:-translate-y-0.5 w-fit shadow-xl" style={{ backgroundColor: '#1a1b1e', color: 'white' }}>

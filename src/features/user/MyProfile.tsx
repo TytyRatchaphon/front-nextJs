@@ -24,13 +24,7 @@ function MyProfileContent() {
     setBannerError(false);
   }, [user?.banner]);
 
-  useEffect(() => {
-    if (user?.fullname) {
-      document.title = `${user.fullname} - ของฉัน`;
-    } else {
-      document.title = "โปรไฟล์ของฉัน - EnjoyBook";
-    }
-  }, [user]);
+    // document.title override removed in favor of SSR metadata
 
   if (!hasMounted) {
     return <GifLoader className="h-64" width={150} height={150} />;
@@ -117,7 +111,7 @@ function MyProfileContent() {
           </div>
 
           <div className="w-full flex-1 text-center md:w-auto md:text-left">
-            <h1 className="mb-2 truncate px-2 py-1 text-2xl font-bold leading-[1.45] text-gray-900 md:px-0 md:text-3xl">
+            <h1 className="mb-2 truncate px-2 text-2xl font-bold text-gray-900 md:px-0 md:text-3xl">
               {fullname || "ผู้ใช้งาน"}
             </h1>
             <p className="mb-3 text-sm font-medium text-gray-500">

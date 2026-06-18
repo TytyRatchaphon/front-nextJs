@@ -12,9 +12,7 @@ import RpQuestPanel from "@/features/user/components/RpQuestPanel";
 const AllQuestPage = () => {
   const { isLoggedIn, hasMounted } = useAuthStore();
 
-  React.useEffect(() => {
-    document.title = "เควสทั้งหมด - EnjoyBook";
-  }, []);
+    // document.title override removed in favor of SSR metadata
 
   if (!hasMounted) {
     return (

@@ -11,6 +11,7 @@ import { useUIStore } from "@/stores/uiStore";
 import GifLoader from '@/components/utility/GifLoader';
 import { imageLoader } from '@/utils/imageUtils';
 import Cookies from 'js-cookie';
+import { useAuthStore } from "@/stores/authStore";
 
 
 const TABS = [
@@ -20,10 +21,7 @@ const TABS = [
 ];
 
 
-function WriterProfileContent() {
-    const searchParams = useSearchParams();
-    // Default writerId from prompt JSON if not in URL
-    const writerId = searchParams.get("id") || "17966";
+function WriterProfileContent({ writerId }: { writerId: string }) {
 
     const [books, setBooks] = useState<WriterBook[]>([]);
     const [loading, setLoading] = useState(true);
@@ -50,6 +48,7 @@ function WriterProfileContent() {
     // Profile State
     const [profile, setProfile] = useState<WriterProfileResponse['data'] | null>(null);
     const [bannerError, setBannerError] = useState(false);
+    const { token } = useAuthStore() as any;
 
     // Reset banner error when data changes
     useEffect(() => {
@@ -68,14 +67,7 @@ function WriterProfileContent() {
         if (writerId) loadProfile();
     }, [writerId]);
 
-    // Set Document Title
-    useEffect(() => {
-        if (profile?.writer?.writer_name) {
-            document.title = `${profile.writer.writer_name}`;
-        } else {
-            document.title = "EnjoyBook - อ่านนิยายออนไลน์";
-        }
-    }, [profile]);
+    // document.title override removed in favor of SSR metadata
 
     // Share logic replaced by react-share components directly in JSX
 
@@ -107,7 +99,6 @@ function WriterProfileContent() {
     };
 
     const handleFollow = async () => {
-        const token = Cookies.get('token');
         if (!token) {
             openLoginModal();
             return;
@@ -116,7 +107,7 @@ function WriterProfileContent() {
         setFollowLoading(true);
         try {
             const action = isFollowing ? 'unfollow' : 'follow';
-            await followWriter(writerId, action);
+            await followWriter(writerId, action, token);
 
             setIsFollowing(!isFollowing);
 
@@ -137,8 +128,23 @@ function WriterProfileContent() {
                 });
             }
 
-        } catch {
-            messageApi.error("เกิดข้อผิดพลาด กรุณาลองใหม่");
+        } catch (error: any) {
+            const resData = error.response?.data;
+            if (resData?.message?.includes('ติดตามผู้ใช้นี้แล้ว')) {
+                setIsFollowing(true);
+                messageApi.info("คุณได้ติดตามนักเขียนคนนี้แล้ว");
+                if (profile && profile.follower_count < (profile.follower_count + 1)) {
+                     setProfile({ ...profile, follower_count: profile.follower_count + 1 });
+                }
+            } else if (resData?.message?.includes('ไม่ได้ติดตาม')) {
+                setIsFollowing(false);
+                messageApi.info("คุณไม่ได้ติดตามนักเขียนคนนี้");
+                if (profile && profile.follower_count > 0) {
+                     setProfile({ ...profile, follower_count: Math.max(0, profile.follower_count - 1) });
+                }
+            } else {
+                messageApi.error(resData?.message || "เกิดข้อผิดพลาด กรุณาลองใหม่");
+            }
         } finally {
             setFollowLoading(false);
         }
@@ -339,7 +345,7 @@ function WriterProfileContent() {
                             url={typeof window !== 'undefined' ? window.location.href : ''}
                             className="hover:opacity-80 transition-opacity"
                         >
-                            <Image src="/images/social-1.png" alt="Facebook" width={48} height={48} unoptimized />
+                            <Image src="/images/social-1.png" alt="Facebook" width={48} height={48} />
                         </FacebookShareButton>
 
                         {/* Twitter */}
@@ -348,7 +354,7 @@ function WriterProfileContent() {
                             title={`ติดตามนักเขียน ${profile?.writer?.writer_name || ''} ที่ EnjoyBook`}
                             className="hover:opacity-80 transition-opacity"
                         >
-                            <Image src="/images/social-3.png" alt="Twitter" width={48} height={48} unoptimized />
+                            <Image src="/images/social-3.png" alt="Twitter" width={48} height={48} />
                         </TwitterShareButton>
 
                         {/* Line */}
@@ -357,7 +363,7 @@ function WriterProfileContent() {
                             title={`ติดตามนักเขียน ${profile?.writer?.writer_name || ''} ที่ EnjoyBook`}
                             className="hover:opacity-80 transition-opacity"
                         >
-                            <Image src="/images/social-2.png" alt="Line" width={48} height={48} unoptimized />
+                            <Image src="/images/social-2.png" alt="Line" width={48} height={48} />
                         </LineShareButton>
                     </div>
 
@@ -387,10 +393,10 @@ function WriterProfileContent() {
     );
 }
 
-export default function WriterProfile() {
+export default function WriterProfile({ writerId }: { writerId?: string }) {
     return (
         <Suspense fallback={<GifLoader />}>
-            <WriterProfileContent />
+            <WriterProfileContent writerId={writerId || "17966"} />
         </Suspense>
     );
 }

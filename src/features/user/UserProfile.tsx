@@ -56,11 +56,7 @@ function UserProfileContent({ userId }: { userId: string }) {
         copyCollectionMutation.mutate(collectionId);
     };
 
-    useEffect(() => {
-        if (profile?.fullname) {
-            document.title = `${profile.fullname} - EnjoyBook Profile`;
-        }
-    }, [profile?.fullname]);
+    // document.title override removed in favor of SSR metadata
 
     if (isLoading) {
         return (
@@ -194,7 +190,6 @@ function UserProfileContent({ userId }: { userId: string }) {
                                         alt="" 
                                         fill 
                                         className="object-contain"
-                                        unoptimized
                                     />
                                 </div>
                                 
@@ -207,7 +202,6 @@ function UserProfileContent({ userId }: { userId: string }) {
                                                     alt={rank.current_rank.name} 
                                                     fill
                                                     className="object-contain"
-                                                    unoptimized
                                                 />
                                             </div>
                                         </div>
@@ -225,7 +219,6 @@ function UserProfileContent({ userId }: { userId: string }) {
                                                 width={18}
                                                 height={18}
                                                 className="object-contain"
-                                                unoptimized
                                             />
                                         )}
                                         <span className="text-red-600 font-bold text-lg">{rank.total_rp.toLocaleString()}</span>

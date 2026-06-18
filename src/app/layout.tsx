@@ -11,7 +11,7 @@ import { Bai_Jamjuree } from "next/font/google";
 import ClientProviders from "./client-providers";
 
 const baiJamjuree = Bai_Jamjuree({
-  weight: ["500"],
+  weight: ["500", "700"],
   subsets: ["thai", "latin"],
   variable: "--font-bai-jamjuree",
   display: "swap",
