@@ -1,14 +1,12 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { App } from 'antd';
-import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import apiClient from '@/services/apiClient';
 import Image from 'next/image';
 import { useLogger } from '@/hooks/useLogger';
-
-import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { getAuthSession } from '@/services/authPersistence';
 
 interface UserData {
   fullname?: string;
@@ -21,12 +19,21 @@ interface UserData {
   pws?: string;
 }
 
+/**
+ * ตรวจสอบว่าเป็น mobile browser หรือ in-app browser หรือไม่
+ */
+const isMobileBrowser = (): boolean => {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || navigator.vendor || '';
+  return /android|iphone|ipad|ipod|mobile|phone|webos|opera mini|opera mobi|iemobile|windows phone|blackberry|bb10|fban|fbav|instagram|line\//i.test(ua);
+};
+
 const LoginFacebook = () => {
   const { notification } = App.useApp();
   const [loading, setLoading] = useState(false);
   // เพิ่ม state เพื่อเช็คว่า SDK พร้อมใช้งานหรือยัง
   const [isSdkLoaded, setIsSdkLoaded] = useState(false);
-  useRouter();
+  const [isMobile, setIsMobile] = useState(false);
   const { login, updateToken } = useAuthStore();
   const { closeLoginModal } = useUIStore();
   const { log: logActivity } = useLogger();
@@ -42,6 +49,21 @@ const LoginFacebook = () => {
     const expires = "expires=" + date.toUTCString();
     document.cookie = name + "=" + (value || "") + ";" + expires + ";path=/";
   };
+
+  // Helper to check token status before login
+  const checkBeforeLogin = (token: string): boolean => {
+    try {
+      if (!token) return false;
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
+  // Detect mobile on mount
+  useEffect(() => {
+    setIsMobile(isMobileBrowser());
+  }, []);
 
   // 1. ย้ายการ Initialize SDK มาไว้ใน useEffect ทำงานทันทีที่ Mount
   const initFacebookSDK = useCallback(() => {
@@ -70,8 +92,12 @@ const LoginFacebook = () => {
       script.src = 'https://connect.facebook.net/th_TH/sdk.js';
       script.async = true;
       script.defer = true;
-      script.crossOrigin = 'anonymous';
       document.body.appendChild(script);
+    }
+
+    // Mobile: ไม่ต้องรอ SDK เพราะใช้ window.open redirect แทน
+    if (isMobileBrowser()) {
+      setIsSdkLoaded(true);
     }
   }, [FACEBOOK_APP_ID]);
 
@@ -79,8 +105,63 @@ const LoginFacebook = () => {
     initFacebookSDK();
   }, [initFacebookSDK]);
 
+  useEffect(() => {
+    // 1. ฟัง Storage Event
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'fb_login_success' && e.newValue) {
+        try { localStorage.removeItem('fb_login_success'); } catch {}
+        closeLoginModal();
+        window.location.reload();
+      }
+    };
+    
+    // 2. ฟัง Message Event
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'FACEBOOK_LOGIN_SUCCESS') {
+        try { localStorage.removeItem('fb_login_success'); } catch {}
+        closeLoginModal();
+        window.location.reload();
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('message', handleMessage);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [closeLoginModal]);
+
+  /**
+   * Mobile: เปิด Facebook OAuth ใน new tab
+   * ใช้ window.open จาก user gesture โดยตรง → mobile browser อนุญาต
+   */
+  const handleMobileLogin = () => {
+    if (!FACEBOOK_APP_ID) return;
+    setLoading(true);
+
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
+    // ปรับ URI เป็น /facebook/callback ตามที่คุณตั้งไว้ใน console
+    const redirectUri = `${baseUrl}/facebook/callback`;
+    const scope = 'public_profile,email';
+
+    const fbOAuthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=token`;
+
+    // รีไดเรกต์ไป Facebook ทันที (ไม่ใช้ Popup)
+    window.location.href = fbOAuthUrl;
+  };
+
   const handleFacebookLogin = () => {
-    // ถ้า SDK ยังไม่มา ให้ return หรือแจ้งเตือน (แต่ปกติปุ่มจะ disable หรือรอโหลดอยู่แล้ว)
+    if (loading) return;
+
+    // Mobile → เปิด new tab
+    if (isMobile) {
+      handleMobileLogin();
+      return;
+    }
+
+    // Desktop → FB.login popup เหมือนเดิม
     if (!isSdkLoaded || !(window as any).FB) {
       return;
     }
@@ -94,7 +175,19 @@ const LoginFacebook = () => {
           const { accessToken } = response.authResponse;
           fetchFacebookProfile(accessToken);
         } else {
-          setLoading(false);
+          // Popup ถูกปิด/redirect โดย FB SDK ไม่ได้ authResponse
+          // เช็คว่า callback page ทำ login สำเร็จแล้วหรือยัง (ผ่าน localStorage)
+          setTimeout(() => {
+            try {
+              if (localStorage.getItem('fb_login_success')) {
+                localStorage.removeItem('fb_login_success');
+                closeLoginModal();
+                window.location.reload();
+                return;
+              }
+            } catch {}
+            setLoading(false);
+          }, 1500);
         }
       },
       { scope: 'public_profile,email' }
@@ -148,7 +241,8 @@ const LoginFacebook = () => {
           setCookie('closePopupPolicy', '', 365);
 
           login(userInfo, token);
-          updateToken(token);
+          // ⚠️ ต้อง await ให้ cookie ถูกเขียนเสร็จก่อน reload
+          await updateToken(token);
 
           logActivity('login', 'user', userInfo.userId || '', { method: 'facebook' });
           notification.success({
@@ -158,7 +252,13 @@ const LoginFacebook = () => {
           });
           closeLoginModal();
 
-          window.location.reload();
+          // Check logical flow (replaces legacy checkBeforeLogin)
+          const navi = checkBeforeLogin(token);
+          if (navi) {
+            window.location.href = '/';
+          } else {
+            window.location.reload();
+          }
         } else {
           notification.error({
             message: 'เข้าสู่ระบบไม่สำเร็จ',
@@ -178,12 +278,15 @@ const LoginFacebook = () => {
     }
   };
 
+  // บน mobile ปุ่มพร้อมกดเสมอ (ไม่ต้องรอ SDK)
+  const isReady = isMobile || isSdkLoaded;
+
   return (
     <button
       type="button"
-      onClick={(!loading && isSdkLoaded) ? handleFacebookLogin : undefined}
-      className={`border border-gray-200 rounded-md py-2 flex justify-center items-center w-full hover:bg-blue-50 transition-colors ${(loading || !isSdkLoaded) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-      disabled={loading || !isSdkLoaded}
+      onClick={isReady && !loading ? handleFacebookLogin : undefined}
+      className={`border border-gray-200 rounded-md py-2 flex justify-center items-center w-full hover:bg-blue-50 transition-colors ${(loading || !isReady) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+      disabled={loading || !isReady}
     >
       <Image
         className="inline-block h-[23px] w-[23px] rounded-full"
@@ -191,7 +294,6 @@ const LoginFacebook = () => {
         alt="Facebook Login"
         width={23}
         height={23}
-        unoptimized
       />
     </button>
   );
