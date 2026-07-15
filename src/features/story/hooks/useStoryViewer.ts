@@ -1,6 +1,23 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useStoryStore } from '../stores/storyStore';
 import { storyApi } from '../services/storyApi';
+import { StoryGroup } from '../types/storyTypes';
+
+const STORY_GROUP_STALE_TIME = 1000 * 60 * 5;
+
+export const storyGroupItemsQueryKey = (group: StoryGroup) => [
+  'story-group-items',
+  group.groupType,
+  group.groupId,
+  group.preview.ref_id,
+] as const;
+
+const fetchStoryGroupItems = (group: StoryGroup) => storyApi.fetchGroupItems(
+  group.groupType,
+  group.groupId,
+  group.preview.ref_id
+);
 
 export const useStoryViewer = () => {
   const isViewerOpen = useStoryStore((state) => state.isViewerOpen);
@@ -9,43 +26,36 @@ export const useStoryViewer = () => {
   const groups = useStoryStore((state) => state.groups);
   const viewerItems = useStoryStore((state) => state.viewerItems);
   const setViewerItems = useStoryStore((state) => state.setViewerItems);
-
-  const [isLoadingItems, setIsLoadingItems] = useState(false);
+  const queryClient = useQueryClient();
 
   const currentGroup = groups[currentGroupIndex];
   const currentItem = viewerItems[currentItemIndex] || null;
 
+  const groupItemsQuery = useQuery({
+    queryKey: currentGroup ? storyGroupItemsQueryKey(currentGroup) : ['story-group-items', 'inactive'],
+    queryFn: () => fetchStoryGroupItems(currentGroup!),
+    enabled: isViewerOpen && Boolean(currentGroup),
+    staleTime: STORY_GROUP_STALE_TIME,
+  });
+
   useEffect(() => {
-    if (!isViewerOpen || !currentGroup) return;
+    if (!isViewerOpen || !groupItemsQuery.data) return;
+    setViewerItems(groupItemsQuery.data.items, groupItemsQuery.data.startIndex);
+  }, [currentGroupIndex, groupItemsQuery.data, isViewerOpen, setViewerItems]);
 
-    let isMounted = true;
+  useEffect(() => {
+    if (!isViewerOpen) return;
 
-    const fetchItems = async () => {
-      setIsLoadingItems(true);
-      try {
-        const response = await storyApi.fetchGroupItems(
-          currentGroup.groupType,
-          currentGroup.groupId,
-          currentGroup.preview.ref_id
-        );
-        if (isMounted) {
-          setViewerItems(response.items, response.startIndex);
-        }
-      } catch (error) {
-        console.error("Failed to fetch story items", error);
-      } finally {
-        if (isMounted) {
-          setIsLoadingItems(false);
-        }
-      }
-    };
-
-    fetchItems();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [isViewerOpen, currentGroup?.groupId, currentGroup?.groupType, currentGroup?.preview.ref_id, setViewerItems]);
+    const adjacentGroups = [groups[currentGroupIndex - 1], groups[currentGroupIndex + 1]];
+    adjacentGroups.forEach((group) => {
+      if (!group) return;
+      void queryClient.prefetchQuery({
+        queryKey: storyGroupItemsQueryKey(group),
+        queryFn: () => fetchStoryGroupItems(group),
+        staleTime: STORY_GROUP_STALE_TIME,
+      });
+    });
+  }, [currentGroupIndex, groups, isViewerOpen, queryClient]);
 
   return {
     isViewerOpen,
@@ -53,6 +63,6 @@ export const useStoryViewer = () => {
     currentItem,
     viewerItems,
     currentItemIndex,
-    isLoadingItems
+    isLoadingItems: isViewerOpen && Boolean(currentGroup) && groupItemsQuery.isPending
   };
 };

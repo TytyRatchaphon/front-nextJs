@@ -1,18 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { useStoryViewer } from '../hooks/useStoryViewer';
+import React, { useState, useEffect, useCallback } from 'react';
+import { storyGroupItemsQueryKey, useStoryViewer } from '../hooks/useStoryViewer';
 import { useStoryBar } from '../hooks/useStoryBar';
 import { useStoryStore } from '../stores/storyStore';
 import StorySidebar from './StorySidebar';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import StoryManageLinksModal from './StoryManageLinksModal';
-import StoryGroupSlide from './StoryGroupSlide';
-import { StoryLink } from '../types/storyTypes';
+import StoryGroupSlide, { StoryGroupPlaceholder } from './StoryGroupSlide';
+import { StoryGroupItemsResponse, StoryLink } from '../types/storyTypes';
 import { storyApi } from '../services/storyApi';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { EffectCube } from 'swiper/modules';
 import 'swiper/css';
-import 'swiper/css/effect-cube';
 import type { Swiper as SwiperType } from 'swiper';
 
 const StoryViewer = () => {
@@ -23,22 +22,22 @@ const StoryViewer = () => {
     currentItemIndex,
     isLoadingItems,
   } = useStoryViewer();
-  const {
-    closeViewer,
-    nextItem,
-    prevItem,
-    nextGroup,
-    prevGroup,
-    groups,
-    currentGroupIndex,
-    setCurrentGroupIndex,
-    setViewerItems,
-    updateItemLinks,
-  } = useStoryStore();
+  const closeViewer = useStoryStore((state) => state.closeViewer);
+  const nextItem = useStoryStore((state) => state.nextItem);
+  const prevItem = useStoryStore((state) => state.prevItem);
+  const nextGroup = useStoryStore((state) => state.nextGroup);
+  const prevGroup = useStoryStore((state) => state.prevGroup);
+  const groups = useStoryStore((state) => state.groups);
+  const currentGroupIndex = useStoryStore((state) => state.currentGroupIndex);
+  const setCurrentGroupIndex = useStoryStore((state) => state.setCurrentGroupIndex);
+  const setViewerItems = useStoryStore((state) => state.setViewerItems);
+  const updateItemLinks = useStoryStore((state) => state.updateItemLinks);
   const { fetchNextPage, hasNextPage, isFetchingNextPage } = useStoryBar();
+  const queryClient = useQueryClient();
 
   const [isManageLinksModalOpen, setIsManageLinksModalOpen] = useState(false);
   const [swiperInstance, setSwiperInstance] = useState<SwiperType | null>(null);
+  const openManageLinks = useCallback(() => setIsManageLinksModalOpen(true), []);
 
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : true);
 
@@ -100,6 +99,17 @@ const StoryViewer = () => {
         currentGroup.groupId,
         currentItem.ref_id
       );
+      queryClient.setQueryData<StoryGroupItemsResponse>(
+        storyGroupItemsQueryKey(currentGroup),
+        (cached) => ({
+          ...response,
+          items: response.items,
+          startRefId: cached?.startRefId ?? currentGroup.preview.ref_id,
+          startIndex: cached?.startIndex ?? Math.max(0, response.items.findIndex((item) => (
+            item.ref_id === currentGroup.preview.ref_id && item.type === currentGroup.preview.type
+          ))),
+        })
+      );
       setViewerItems(response.items, response.startIndex);
     } catch {
       // Keep the saved links visible from the local update if refreshing fails.
@@ -135,21 +145,15 @@ const StoryViewer = () => {
           {isMobile ? (
             <div className="absolute inset-0">
               <Swiper
-                modules={[EffectCube]}
-                effect="cube"
-                cubeEffect={{
-                  shadow: false,
-                  slideShadows: false,
-                }}
                 initialSlide={currentGroupIndex}
                 onSwiper={setSwiperInstance}
-                onSlideChange={(swiper) => {
+                onSlideChangeTransitionEnd={(swiper) => {
                   setCurrentGroupIndex(swiper.activeIndex);
                 }}
                 className="w-full h-full"
-                speed={400}
+                speed={300}
                 threshold={10}
-                touchRatio={1.5}
+                touchRatio={1}
                 resistance={true}
                 resistanceRatio={0.5}
                 touchStartPreventDefault={false}
@@ -162,15 +166,18 @@ const StoryViewer = () => {
               >
                 {groups.map((group, index) => (
                   <SwiperSlide key={`${group.groupType}-${group.groupId}`}>
-                    <StoryGroupSlide
-                      group={group}
-                      isActive={index === currentGroupIndex}
-                      onManageLinks={() => setIsManageLinksModalOpen(true)}
-                      isMobileSwiper={true}
-                      currentItem={currentItem}
-                      currentItemIndex={currentItemIndex}
-                      isLoadingItems={isLoadingItems}
-                    />
+                    {index === currentGroupIndex ? (
+                      <StoryGroupSlide
+                        group={group}
+                        onManageLinks={openManageLinks}
+                        isMobileSwiper={true}
+                        currentItem={currentItem}
+                        currentItemIndex={currentItemIndex}
+                        isLoadingItems={isLoadingItems}
+                      />
+                    ) : (
+                      <StoryGroupPlaceholder group={group} />
+                    )}
                   </SwiperSlide>
                 ))}
               </Swiper>
@@ -179,8 +186,7 @@ const StoryViewer = () => {
             <div className="w-full h-full" key={`${currentGroup.groupType}-${currentGroup.groupId}`}>
               <StoryGroupSlide
                 group={currentGroup}
-                isActive={true}
-                onManageLinks={() => setIsManageLinksModalOpen(true)}
+                onManageLinks={openManageLinks}
                 currentItem={currentItem}
                 currentItemIndex={currentItemIndex}
                 isLoadingItems={isLoadingItems}

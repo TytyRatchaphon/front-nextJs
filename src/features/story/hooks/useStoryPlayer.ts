@@ -29,6 +29,11 @@ export function useStoryPlayer({ item, videoRef, onEnded, onTimeUpdate, onPlay }
   const currentExpiresAtRef = useRef<number | null>(null);
   const retryCountRef = useRef(0);
   const activeItemRef = useRef<{ type: StoryItem['type']; refId: number } | null>(null);
+  const callbacksRef = useRef({ onEnded, onTimeUpdate, onPlay });
+
+  useEffect(() => {
+    callbacksRef.current = { onEnded, onTimeUpdate, onPlay };
+  }, [onEnded, onTimeUpdate, onPlay]);
 
   useEffect(() => {
     activeItemRef.current = itemType && itemRefId
@@ -202,7 +207,7 @@ export function useStoryPlayer({ item, videoRef, onEnded, onTimeUpdate, onPlay }
     if (video) {
       const handlePlaying = () => {
         setPlayerState("playing");
-        onPlay?.();
+        callbacksRef.current.onPlay?.();
       };
       const handlePause = () => setPlayerState("paused");
       const handleWaiting = () => setPlayerState("buffering");
@@ -211,10 +216,10 @@ export function useStoryPlayer({ item, videoRef, onEnded, onTimeUpdate, onPlay }
           refreshAndResume();
         }
       };
-      const handleEnded = () => onEnded?.();
+      const handleEnded = () => callbacksRef.current.onEnded?.();
       const handleTimeUpdate = () => {
         if (video.duration) {
-          onTimeUpdate?.(video.currentTime, video.duration);
+          callbacksRef.current.onTimeUpdate?.(video.currentTime, video.duration);
         }
       };
 
@@ -234,7 +239,7 @@ export function useStoryPlayer({ item, videoRef, onEnded, onTimeUpdate, onPlay }
         video.removeEventListener("timeupdate", handleTimeUpdate);
       };
     }
-  }, [itemType, itemRefId, videoRef, refreshAndResume, onEnded, onTimeUpdate, onPlay]);
+  }, [itemType, itemRefId, videoRef, refreshAndResume]);
 
   useEffect(() => {
     if (!itemType || !itemRefId) return;

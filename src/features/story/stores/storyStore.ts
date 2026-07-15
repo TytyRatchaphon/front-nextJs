@@ -136,7 +136,9 @@ export const useStoryStore = create<StoryState>()((set, get) => ({
   },
 
   setCurrentGroupIndex: (index: number) => {
-    set({ currentGroupIndex: index, currentItemIndex: 0, viewerItems: [] });
+    set((state) => state.currentGroupIndex === index
+      ? state
+      : { currentGroupIndex: index, currentItemIndex: 0, viewerItems: [] });
   },
 
   markItemViewed: (refId, type) => {

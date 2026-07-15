@@ -17,7 +17,6 @@ import { useUIStore } from '@/stores/uiStore';
 
 interface StoryGroupSlideProps {
   group: StoryGroup;
-  isActive: boolean;
   onManageLinks: () => void;
   isMobileSwiper?: boolean;
   currentItem: StoryItem | null;
@@ -27,14 +26,16 @@ interface StoryGroupSlideProps {
 
 const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
   group,
-  isActive,
   onManageLinks,
   isMobileSwiper = false,
   currentItem,
   currentItemIndex,
   isLoadingItems,
 }) => {
-  const { nextItem, prevItem, markItemViewed, closeViewer } = useStoryStore();
+  const nextItem = useStoryStore((state) => state.nextItem);
+  const prevItem = useStoryStore((state) => state.prevItem);
+  const markItemViewed = useStoryStore((state) => state.markItemViewed);
+  const closeViewer = useStoryStore((state) => state.closeViewer);
   const { message } = App.useApp();
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -43,14 +44,16 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
   const [commentText, setCommentText] = useState('');
 
-  const { isLoggedIn, user } = useAuthStore();
-  const { openLoginModal } = useUIStore();
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const user = useAuthStore((state) => state.user);
+  const openLoginModal = useUIStore((state) => state.openLoginModal);
 
   const isOwnStory = group.section === 'own' || (isLoggedIn && user && user.user_id === group.user_id);
 
   const { createCommentMutation } = useVideoComments(
-    isActive && currentItem ? currentItem.type : 'video_story_items',
-    isActive && currentItem ? currentItem.ref_id : 0
+    currentItem ? currentItem.type : 'video_story_items',
+    currentItem ? currentItem.ref_id : 0,
+    false
   );
 
   const handleSendComment = () => {
@@ -68,16 +71,16 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
   };
 
   const { playerState, errorMessage } = useStoryPlayer({
-    item: isActive ? currentItem : null,
+    item: currentItem,
     videoRef,
     onEnded: () => {
-      if (isActive) nextItem();
+      nextItem();
     },
     onTimeUpdate: (currentTime, duration) => {
-      if (isActive) setProgress((currentTime / duration) * 100);
+      setProgress((currentTime / duration) * 100);
     },
     onPlay: () => {
-      if (isActive && currentItem && !currentItem.is_viewed) {
+      if (currentItem && !currentItem.is_viewed) {
         storyApi.sendView(currentItem.type, currentItem.ref_id).then((res) => {
           if (!res.skipped) {
             markItemViewed(currentItem.ref_id, currentItem.type);
@@ -92,36 +95,7 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
     if (videoRef.current) {
       videoRef.current.muted = isMuted;
     }
-  }, [currentItemIndex, isMuted, isActive]);
-
-  // If not active, just render a static placeholder
-  if (!isActive) {
-    return (
-      <div className="w-full h-full relative bg-zinc-900 flex flex-col overflow-hidden">
-        {/* Mock Progress */}
-        <StoryProgressBar totalItems={group.totalItems} currentIndex={0} progress={0} />
-
-        {/* Mock Header */}
-        <div className="absolute top-4 left-0 right-0 z-50 px-4 pt-2 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 shrink-0">
-              {group.user?.profile_image && (
-                <Image src={group.user.profile_image} alt="User" width={32} height={32} className="object-cover w-full h-full" />
-              )}
-            </div>
-            <span className="text-white font-medium text-sm drop-shadow-md">
-              {group.user?.display_name || 'Enjoybook'}
-            </span>
-          </div>
-        </div>
-
-        {/* Thumbnail */}
-        {group.preview?.thumbnail_url && (
-          <Image src={group.preview.thumbnail_url} alt="Thumbnail" fill className="object-cover absolute inset-0" />
-        )}
-      </div>
-    );
-  }
+  }, [currentItemIndex, isMuted]);
 
   // Active state: render full video and interactions
   return (
@@ -320,7 +294,7 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
         <>
           <div className="absolute bottom-4 left-4 right-4 z-50 pointer-events-auto flex items-center gap-3">
             <div className="flex-1 flex items-center bg-transparent border border-white/40 h-11 rounded-full px-1 pl-4 backdrop-blur-sm focus-within:border-white/80 focus-within:bg-black/20 transition-all">
-              <inpu
+              <input
                 type="text"
                 placeholder="ส่งข้อความ..."
                 value={commentText}
@@ -367,16 +341,39 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
             </div>
           </div>
 
-          <StoryCommentModal
-            isOpen={isCommentModalOpen}
-            onClose={() => setIsCommentModalOpen(false)}
-            type={currentItem.type}
-            refId={currentItem.ref_id}
-          />
+          {isCommentModalOpen && (
+            <StoryCommentModal
+              isOpen={isCommentModalOpen}
+              onClose={() => setIsCommentModalOpen(false)}
+              type={currentItem.type}
+              refId={currentItem.ref_id}
+            />
+          )}
         </>
       )}
     </div>
   );
 };
+
+export const StoryGroupPlaceholder: React.FC<{ group: StoryGroup }> = ({ group }) => (
+  <div className="w-full h-full relative bg-zinc-900 flex flex-col overflow-hidden">
+    <StoryProgressBar totalItems={group.totalItems} currentIndex={0} progress={0} />
+    <div className="absolute top-4 left-0 right-0 z-50 px-4 pt-2 flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 shrink-0">
+          {group.user?.profile_image && (
+            <Image src={group.user.profile_image} alt="User" width={32} height={32} className="object-cover w-full h-full" />
+          )}
+        </div>
+        <span className="text-white font-medium text-sm drop-shadow-md">
+          {group.user?.display_name || 'Enjoybook'}
+        </span>
+      </div>
+    </div>
+    {group.preview?.thumbnail_url && (
+      <Image src={group.preview.thumbnail_url} alt="Thumbnail" fill className="object-cover absolute inset-0" />
+    )}
+  </div>
+);
 
 export default StoryGroupSlide;
