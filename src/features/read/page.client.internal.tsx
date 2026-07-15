@@ -120,35 +120,12 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     conflictData,
     handleConflict,
     takeover,
-    updateProgressRef,
     fetchSessions
   } = useReadingSession(bookId, episodeId, user);
 
   const { contentRef, showNav, setShowNav } = useReadingProgress(bookId, episodeId, user, (data) => {
     handleConflict(data);
-  });
-
-  // Keep track of the current progress for heartbeat
-  useEffect(() => {
-    const trackProgress = () => {
-       if (!contentRef.current) return;
-       const element = contentRef.current;
-       const elementTop = element.getBoundingClientRect().top + window.scrollY;
-       const elementHeight = element.scrollHeight;
-       const windowHeight = window.innerHeight;
-       const scrollY = window.scrollY;
-       const totalScrollable = elementHeight - windowHeight;
-       if (totalScrollable <= 0) {
-           updateProgressRef(1);
-           return;
-       }
-       const relativeScroll = scrollY - elementTop;
-       const progress = Math.min(Math.max(relativeScroll / totalScrollable, 0), 1);
-       updateProgressRef(Number(progress.toFixed(4)));
-    };
-    window.addEventListener('scroll', trackProgress);
-    return () => window.removeEventListener('scroll', trackProgress);
-  }, [contentRef, updateProgressRef]);
+  }, !isConflict);
 
   const shouldShowContent = isFocused && !isConflict;
 

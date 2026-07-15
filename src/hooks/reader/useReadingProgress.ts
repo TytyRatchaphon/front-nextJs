@@ -1,96 +1,101 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { syncReadingProgress, updateReadingProgress } from "@/services/apiServices";
+import { createReadingProgress } from '@/features/read/readingProgress';
 
-export function useReadingProgress(bookId: string, episodeId: string, user: any, onConflict?: (data: any) => void) {
+export function useReadingProgress(
+    bookId: string,
+    episodeId: string,
+    user: any,
+    onConflict?: (data: any) => void,
+    isEnabled = true,
+) {
     const [showNav, setShowNav] = useState(true);
     const contentRef = useRef<HTMLElement>(null);
-    const isInitialSyncDone = useRef(false);
+    const onConflictRef = useRef(onConflict);
+
+    useEffect(() => {
+        onConflictRef.current = onConflict;
+    }, [onConflict]);
+
+    const progress = useMemo(() => createReadingProgress({
+        bookId,
+        episodeId,
+        viewport: {
+            waitUntilStable: () => new Promise((resolve) => setTimeout(resolve, 500)),
+            read: () => {
+                const element = contentRef.current;
+                if (!element) return null;
+
+                const rect = element.getBoundingClientRect();
+                return {
+                    elementTop: rect.top + window.scrollY,
+                    elementHeight: element.scrollHeight,
+                    viewportHeight: window.innerHeight,
+                    scrollY: window.scrollY,
+                };
+            },
+            scrollTo: (top) => {
+                window.scrollTo({ top, behavior: 'smooth' });
+            },
+        },
+        persistence: {
+            restore: async (currentEpisodeId) => {
+                const response = await syncReadingProgress(currentEpisodeId);
+                return response?.status === 'success' && typeof response.progress === 'number'
+                    ? response.progress
+                    : undefined;
+            },
+            save: updateReadingProgress,
+        },
+        onConflict: (data) => onConflictRef.current?.(data),
+    }), [bookId, episodeId]);
 
     // Sync Progress on Load
     useEffect(() => {
-        const syncProgress = async () => {
-            if (!episodeId || !user || isInitialSyncDone.current) return;
+        if (!episodeId || !user || !isEnabled) return;
 
-            try {
-                const res = await syncReadingProgress(episodeId);
-                if (res && res.status === 'success' && res.progress > 0) {
-                    setTimeout(() => {
-                        if (contentRef.current) {
-                            const element = contentRef.current;
-                            const elementTop = element.getBoundingClientRect().top + window.scrollY;
-                            const elementHeight = element.scrollHeight;
-                            const windowHeight = window.innerHeight;
+        progress.resume();
+        void progress.restore().then(() => progress.saveCurrent());
 
-                            const totalScrollable = elementHeight - windowHeight;
-                            const targetScroll = elementTop + (res.progress * totalScrollable);
-
-                            window.scrollTo({ top: targetScroll, behavior: 'smooth' });
-                        }
-                    }, 500);
-                }
-                isInitialSyncDone.current = true;
-            } catch { }
+        return () => {
+            progress.cancel();
         };
+    }, [episodeId, isEnabled, progress, user]);
 
-        if (episodeId) {
-            isInitialSyncDone.current = false;
-            syncProgress();
-        }
-    }, [episodeId, user]);
-
-    // Track Scroll Progress
+    // Track and persist progress from one owner.
     useEffect(() => {
-        if (!episodeId || !user) return;
+        if (!episodeId || !user || !isEnabled) return;
 
+        progress.resume();
         let timeoutId: NodeJS.Timeout | null = null;
 
         const handleScroll = () => {
             if (timeoutId) return;
 
-            timeoutId = setTimeout(async () => {
-                if (contentRef.current) {
-                    const element = contentRef.current;
-                    const rect = element.getBoundingClientRect();
-                    const elementTop = rect.top + window.scrollY;
-                    const elementHeight = element.scrollHeight;
-                    const windowHeight = window.innerHeight;
-                    const scrollY = window.scrollY;
-
-                    const totalScrollable = elementHeight - windowHeight;
-
-                    try {
-                        if (totalScrollable <= 0) {
-                            await updateReadingProgress(bookId, episodeId, 1);
-                            setShowNav(true);
-                            timeoutId = null;
-                            return;
-                        }
-
-                        const relativeScroll = scrollY - elementTop;
-                        const progress = Math.min(Math.max(relativeScroll / totalScrollable, 0), 1);
-                        const formattedProgress = Number(progress.toFixed(4));
-
-                        if (progress >= 0.99) {
-                            setShowNav(true);
-                        }
-
-                        await updateReadingProgress(bookId, episodeId, formattedProgress);
-                    } catch (error: any) {
-                        if (error?.code === 409001 || error?.error_code === "READING_CONFLICT") {
-                            onConflict?.(error.data);
-                        }
+            timeoutId = setTimeout(() => {
+                void progress.captureAndSave().then((currentProgress) => {
+                    if (currentProgress >= 0.99) {
+                        setShowNav(true);
                     }
-                }
-                timeoutId = null;
+                }).finally(() => {
+                    timeoutId = null;
+                });
             }, 500);
         };
+
+        const heartbeatInterval = setInterval(() => {
+            if (document.visibilityState === 'visible' && document.hasFocus()) {
+                void progress.saveCurrent();
+            }
+        }, 30000);
 
         window.addEventListener('scroll', handleScroll);
         return () => {
             window.removeEventListener('scroll', handleScroll);
+            clearInterval(heartbeatInterval);
             if (timeoutId) clearTimeout(timeoutId);
         };
-    }, [episodeId, user, bookId, onConflict]);
+    }, [episodeId, isEnabled, progress, user]);
 
     return { contentRef, showNav, setShowNav };
 }

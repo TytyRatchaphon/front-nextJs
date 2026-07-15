@@ -6,7 +6,6 @@ import {
   takeoverReadingSession,
   fetchActiveReadingSessions,
   ReadingSessionActiveData,
-  updateReadingProgress,
 } from '@/services/apiServices';
 
 const getCurrentDeviceId = () => {
@@ -50,12 +49,6 @@ export function useReadingSession(bookId: string, episodeId: string, user: any) 
   const [isConflict, setIsConflict] = useState(false);
   const [conflictData, setConflictData] = useState<ReadingSessionActiveData | null>(null);
   const [isSessionEnding, setIsSessionEnding] = useState(false);
-  const currentProgressRef = useRef<number>(0);
-
-  // Expose a method to update progress from scroll
-  const updateProgressRef = useCallback((progress: number) => {
-    currentProgressRef.current = progress;
-  }, []);
 
   const fetchSessions = useCallback(async () => {
     const data = await fetchActiveReadingSessions();
@@ -72,34 +65,6 @@ export function useReadingSession(bookId: string, episodeId: string, user: any) 
     setIsConflict(true);
     setConflictData(data);
   }, []);
-
-  // Heartbeat - 30 seconds + Initial call
-  useEffect(() => {
-    if (!bookId || !episodeId || !user || isConflict) return;
-
-    const performUpdate = async () => {
-      // For interval calls, we might want to check visibility/focus,
-      // but for the initial call, it's fine to just execute.
-      try {
-        await updateReadingProgress(bookId, episodeId, currentProgressRef.current);
-      } catch (error: any) {
-        if (error?.code === 409001 || error?.error_code === "READING_CONFLICT") {
-          handleConflict(error.data);
-        }
-      }
-    };
-
-    // Initial call right when entering the page
-    performUpdate();
-
-    const heartbeatInterval = setInterval(() => {
-      if (document.visibilityState === 'visible' && document.hasFocus()) {
-        performUpdate();
-      }
-    }, 30000);
-
-    return () => clearInterval(heartbeatInterval);
-  }, [bookId, episodeId, user, isConflict, handleConflict]);
 
   // Session end on unmount / pagehide
   useEffect(() => {
@@ -199,7 +164,6 @@ export function useReadingSession(bookId: string, episodeId: string, user: any) 
       await takeoverReadingSession(bookId, episodeId);
       setIsConflict(false);
       setConflictData(null);
-      // Heartbeat will automatically resume because isConflict is false
     } catch (error) {
       console.error('Takeover failed', error);
     }
@@ -210,7 +174,6 @@ export function useReadingSession(bookId: string, episodeId: string, user: any) 
     conflictData,
     handleConflict,
     takeover,
-    updateProgressRef,
     fetchSessions
   };
 }
