@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
+import LiveChatContactPage from "@/features/liveChat/LiveChatContactPage";
 
-export default function ContactRedirectPage() {
-    redirect('/about-us');
+export default function ContactPage() {
+  return <LiveChatContactPage />;
 }
