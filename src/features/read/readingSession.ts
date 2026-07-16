@@ -180,6 +180,10 @@ export const createReadingSession = ({
     return endPromise;
   };
 
+  const reopen = () => {
+    endPromise = null;
+  };
+
   return {
     end,
     getState: () => state,
@@ -187,6 +191,7 @@ export const createReadingSession = ({
     receiveDeviceLogout,
     receiveRemoteConflict,
     reportConflict,
+    reopen,
     subscribe: (listener: () => void) => {
       listeners.add(listener);
       return () => listeners.delete(listener);

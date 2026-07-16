@@ -17,7 +17,7 @@ import '@/utils/imageUtils';
 
 // Hooks
 import { useContentProtection } from "@/hooks/reader/useContentProtection";
-import { useReadingProgress } from "@/hooks/reader/useReadingProgress";
+import { useReaderLifecycle } from "./hooks/useReaderLifecycle";
 import { useReadFreeQuota } from "@/hooks/reader/useReadFreeQuota";
 import { useLogger } from "@/hooks/useLogger";
 import { getReadEpisodePurchaseState } from "./purchaseUtils";
@@ -41,7 +41,6 @@ import { ReaderTopBar } from "./components/ReaderTopBar";
 import { ReadEpisodeSidebarDrawer } from "./components/ReadEpisodeSidebarDrawer";
 import { ReaderGlobalStyles } from "./components/ReaderGlobalStyles";
 import { ReadEpisodeErrorState, ReadEpisodeLoadingState } from "./components/ReadEpisodeStatusStates";
-import { useReadingSession } from "@/hooks/reader/useReadingSession";
 import { ReadConflictModal } from "./components/ReadConflictModal";
 
 type Props = {
@@ -116,16 +115,14 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
   const { isFocused, setIsFocused } = useContentProtection(episode, handleProtectionBlur, true);
 
   const {
+    contentRef,
+    showNav,
+    setShowNav,
     isConflict,
     conflictData,
-    handleConflict,
     takeover,
     fetchSessions
-  } = useReadingSession(bookId, episodeId, user);
-
-  const { contentRef, showNav, setShowNav } = useReadingProgress(bookId, episodeId, user, (data) => {
-    handleConflict(data);
-  }, !isConflict);
+  } = useReaderLifecycle(bookId, episodeId, user);
 
   const shouldShowContent = isFocused && !isConflict;
 

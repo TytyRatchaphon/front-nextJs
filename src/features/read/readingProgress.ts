@@ -103,5 +103,9 @@ export const createReadingProgress = ({
     isSuspended = false;
   };
 
-  return { cancel, captureAndSave, restore, resume, saveCurrent };
+  const suspend = () => {
+    isSuspended = true;
+  };
+
+  return { cancel, captureAndSave, restore, resume, saveCurrent, suspend };
 };
