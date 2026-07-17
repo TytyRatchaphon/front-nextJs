@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Heart } from 'lucide-react';
 import { storyApi } from '../services/storyApi';
-import { useStoryStore } from '../stores/storyStore';
 import { StoryItemType } from '../types/storyTypes';
 
 interface StoryLikeButtonProps {
@@ -10,11 +9,22 @@ interface StoryLikeButtonProps {
   isLiked: boolean;
   likeCount?: number | null;
   isOwn?: boolean;
+  onLikeChange: (
+    refId: number,
+    type: StoryItemType,
+    isLiked: boolean,
+    likeCount?: number | null,
+  ) => void;
 }
 
-const StoryLikeButton: React.FC<StoryLikeButtonProps> = ({ itemType, refId, isLiked, likeCount, isOwn }) => {
+const StoryLikeButton: React.FC<StoryLikeButtonProps> = ({
+  itemType,
+  refId,
+  isLiked,
+  isOwn,
+  onLikeChange,
+}) => {
   const [isLiking, setIsLiking] = useState(false);
-  const toggleItemLike = useStoryStore((state) => state.toggleItemLike);
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -22,15 +32,15 @@ const StoryLikeButton: React.FC<StoryLikeButtonProps> = ({ itemType, refId, isLi
 
     setIsLiking(true);
     // Optimistic update
-    toggleItemLike(refId, itemType, !isLiked);
+    onLikeChange(refId, itemType, !isLiked);
 
     try {
       const response = await storyApi.toggleLike(itemType, refId);
       // Update with actual response
-      toggleItemLike(refId, itemType, response.is_liked, response.like_count);
+      onLikeChange(refId, itemType, response.is_liked, response.like_count);
     } catch (error) {
       // Revert optimistic update
-      toggleItemLike(refId, itemType, isLiked);
+      onLikeChange(refId, itemType, isLiked);
       console.error("Failed to toggle like", error);
     } finally {
       setIsLiking(false);

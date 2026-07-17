@@ -8,6 +8,19 @@
  * Use these when a query key is shared between hooks, prefetching, and invalidation.
  */
 export const queryKeys = {
+  story: {
+    bar: () => ["storyBar"] as const,
+    groupItems: (
+      groupType: string,
+      groupId: string,
+      startRefId?: number | null,
+    ) => [
+      "story-group-items",
+      String(groupType),
+      String(groupId),
+      String(startRefId ?? ""),
+    ] as const,
+  },
   book: {
     detailRoot: () => ["bookDetail"] as const,
     detail: (bookId: number | string | null | undefined) =>

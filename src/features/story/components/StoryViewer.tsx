@@ -1,39 +1,44 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { storyGroupItemsQueryKey, useStoryViewer } from '../hooks/useStoryViewer';
+import { useStoryViewer } from '../hooks/useStoryViewer';
 import { useStoryBar } from '../hooks/useStoryBar';
-import { useStoryStore } from '../stores/storyStore';
 import StorySidebar from './StorySidebar';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import StoryManageLinksModal from './StoryManageLinksModal';
 import StoryGroupSlide, { StoryGroupPlaceholder } from './StoryGroupSlide';
-import { StoryGroupItemsResponse, StoryLink } from '../types/storyTypes';
+import { StoryLink } from '../types/storyTypes';
 import { storyApi } from '../services/storyApi';
-import { useQueryClient } from '@tanstack/react-query';
 
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import type { Swiper as SwiperType } from 'swiper';
 
 const StoryViewer = () => {
+  const { groups: storyBarGroups, fetchNextGroups, hasNextPage } = useStoryBar();
   const {
+    closeViewer,
     isViewerOpen,
     currentGroup,
+    currentGroupIndex,
     currentItem,
     currentItemIndex,
+    groups,
     isLoadingItems,
-  } = useStoryViewer();
-  const closeViewer = useStoryStore((state) => state.closeViewer);
-  const nextItem = useStoryStore((state) => state.nextItem);
-  const prevItem = useStoryStore((state) => state.prevItem);
-  const nextGroup = useStoryStore((state) => state.nextGroup);
-  const prevGroup = useStoryStore((state) => state.prevGroup);
-  const groups = useStoryStore((state) => state.groups);
-  const currentGroupIndex = useStoryStore((state) => state.currentGroupIndex);
-  const setCurrentGroupIndex = useStoryStore((state) => state.setCurrentGroupIndex);
-  const setViewerItems = useStoryStore((state) => state.setViewerItems);
-  const updateItemLinks = useStoryStore((state) => state.updateItemLinks);
-  const { fetchNextPage, hasNextPage, isFetchingNextPage } = useStoryBar();
-  const queryClient = useQueryClient();
+    loadError,
+    nextGroup,
+    nextItem,
+    prevGroup,
+    prevItem,
+    replaceItems,
+    retry,
+    selectGroup,
+    markItemViewed,
+    toggleItemLike,
+    updateItemLinks,
+  } = useStoryViewer({
+    groups: storyBarGroups,
+    fetchNextGroups,
+    hasNextPage: Boolean(hasNextPage),
+  });
 
   const [isManageLinksModalOpen, setIsManageLinksModalOpen] = useState(false);
   const [swiperInstance, setSwiperInstance] = useState<SwiperType | null>(null);
@@ -54,25 +59,15 @@ const StoryViewer = () => {
     }
   }, [currentGroupIndex, swiperInstance]);
 
-  // Infinite scroll while viewing
-  useEffect(() => {
-    if (isViewerOpen && hasNextPage && !isFetchingNextPage) {
-      // Fetch next page when we are 2 stories away from the end
-      if (currentGroupIndex >= groups.length - 2) {
-        fetchNextPage();
-      }
-    }
-  }, [currentGroupIndex, groups.length, hasNextPage, isFetchingNextPage, fetchNextPage, isViewerOpen]);
-
   // Keyboard navigation
   useEffect(() => {
     if (!isViewerOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeViewer();
-      if (e.key === 'ArrowRight') nextItem();
-      if (e.key === 'ArrowLeft') prevItem();
-      if (e.key === 'ArrowDown') nextGroup();
-      if (e.key === 'ArrowUp') prevGroup();
+      if (e.key === 'ArrowRight') void nextItem();
+      if (e.key === 'ArrowLeft') void prevItem();
+      if (e.key === 'ArrowDown') void nextGroup();
+      if (e.key === 'ArrowUp') void prevGroup();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -99,18 +94,7 @@ const StoryViewer = () => {
         currentGroup.groupId,
         currentItem.ref_id
       );
-      queryClient.setQueryData<StoryGroupItemsResponse>(
-        storyGroupItemsQueryKey(currentGroup),
-        (cached) => ({
-          ...response,
-          items: response.items,
-          startRefId: cached?.startRefId ?? currentGroup.preview.ref_id,
-          startIndex: cached?.startIndex ?? Math.max(0, response.items.findIndex((item) => (
-            item.ref_id === currentGroup.preview.ref_id && item.type === currentGroup.preview.type
-          ))),
-        })
-      );
-      setViewerItems(response.items, response.startIndex);
+      replaceItems(response.items, response.startIndex, currentItem.ref_id);
     } catch {
       // Keep the saved links visible from the local update if refreshing fails.
     }
@@ -122,7 +106,12 @@ const StoryViewer = () => {
     <div className="fixed inset-0 z-[9999] bg-black flex">
       {/* Sidebar (Hidden on mobile) */}
       <div className="hidden md:block w-[360px] h-full shrink-0">
-        <StorySidebar />
+        <StorySidebar
+          groups={groups}
+          currentGroupIndex={currentGroupIndex}
+          onClose={closeViewer}
+          onSelectGroup={(groupIndex) => { void selectGroup(groupIndex); }}
+        />
       </div>
 
       {/* Main Content Area */}
@@ -130,12 +119,12 @@ const StoryViewer = () => {
 
         {/* Exterior Desktop Navigation */}
         <div className="absolute left-4 lg:left-12 top-1/2 -translate-y-1/2 z-20 hidden md:flex pointer-events-auto">
-          <button onClick={(e) => { e.stopPropagation(); prevItem(); }} className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-md flex items-center justify-center text-white transition-colors">
+          <button onClick={(e) => { e.stopPropagation(); void prevItem(); }} className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-md flex items-center justify-center text-white transition-colors">
             <LeftOutlined className="text-xl" />
           </button>
         </div>
         <div className="absolute right-4 lg:right-12 top-1/2 -translate-y-1/2 z-20 hidden md:flex pointer-events-auto">
-          <button onClick={(e) => { e.stopPropagation(); nextItem(); }} className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-md flex items-center justify-center text-white transition-colors">
+          <button onClick={(e) => { e.stopPropagation(); void nextItem(); }} className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-md flex items-center justify-center text-white transition-colors">
             <RightOutlined className="text-xl" />
           </button>
         </div>
@@ -148,7 +137,7 @@ const StoryViewer = () => {
                 initialSlide={currentGroupIndex}
                 onSwiper={setSwiperInstance}
                 onSlideChangeTransitionEnd={(swiper) => {
-                  setCurrentGroupIndex(swiper.activeIndex);
+                  void selectGroup(swiper.activeIndex);
                 }}
                 className="w-full h-full"
                 speed={300}
@@ -174,6 +163,11 @@ const StoryViewer = () => {
                         currentItem={currentItem}
                         currentItemIndex={currentItemIndex}
                         isLoadingItems={isLoadingItems}
+                        onClose={closeViewer}
+                        onNextItem={() => { void nextItem(); }}
+                        onPrevItem={() => { void prevItem(); }}
+                        onItemViewed={markItemViewed}
+                        onItemLikeChange={toggleItemLike}
                       />
                     ) : (
                       <StoryGroupPlaceholder group={group} />
@@ -190,7 +184,24 @@ const StoryViewer = () => {
                 currentItem={currentItem}
                 currentItemIndex={currentItemIndex}
                 isLoadingItems={isLoadingItems}
+                onClose={closeViewer}
+                onNextItem={() => { void nextItem(); }}
+                onPrevItem={() => { void prevItem(); }}
+                onItemViewed={markItemViewed}
+                onItemLikeChange={toggleItemLike}
               />
+            </div>
+          )}
+          {Boolean(loadError) && (
+            <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-black/80 px-6 text-center text-white">
+              <span className="text-sm font-medium">ไม่สามารถโหลดสตอรี่ได้</span>
+              <button
+                type="button"
+                onClick={() => { void retry(); }}
+                className="rounded-md bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-gray-200"
+              >
+                ลองอีกครั้ง
+              </button>
             </div>
           )}
         </div>

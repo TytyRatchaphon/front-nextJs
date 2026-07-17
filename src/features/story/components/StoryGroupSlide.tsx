@@ -1,7 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { StoryGroup, StoryItem } from '../types/storyTypes';
+import { StoryGroup, StoryItem, StoryItemType } from '../types/storyTypes';
 import { useStoryPlayer } from '../hooks/useStoryPlayer';
-import { useStoryStore } from '../stores/storyStore';
 import { storyApi } from '../services/storyApi';
 import StoryProgressBar from './StoryProgressBar';
 import StoryCtaLinks from './StoryCtaLinks';
@@ -22,6 +21,16 @@ interface StoryGroupSlideProps {
   currentItem: StoryItem | null;
   currentItemIndex: number;
   isLoadingItems: boolean;
+  onClose: () => void;
+  onNextItem: () => void;
+  onPrevItem: () => void;
+  onItemViewed: (refId: number, type: StoryItemType) => void;
+  onItemLikeChange: (
+    refId: number,
+    type: StoryItemType,
+    isLiked: boolean,
+    likeCount?: number | null,
+  ) => void;
 }
 
 const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
@@ -31,11 +40,12 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
   currentItem,
   currentItemIndex,
   isLoadingItems,
+  onClose,
+  onNextItem,
+  onPrevItem,
+  onItemViewed,
+  onItemLikeChange,
 }) => {
-  const nextItem = useStoryStore((state) => state.nextItem);
-  const prevItem = useStoryStore((state) => state.prevItem);
-  const markItemViewed = useStoryStore((state) => state.markItemViewed);
-  const closeViewer = useStoryStore((state) => state.closeViewer);
   const { message } = App.useApp();
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -74,7 +84,7 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
     item: currentItem,
     videoRef,
     onEnded: () => {
-      nextItem();
+      onNextItem();
     },
     onTimeUpdate: (currentTime, duration) => {
       setProgress((currentTime / duration) * 100);
@@ -83,7 +93,7 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
       if (currentItem && !currentItem.is_viewed) {
         storyApi.sendView(currentItem.type, currentItem.ref_id).then((res) => {
           if (!res.skipped) {
-            markItemViewed(currentItem.ref_id, currentItem.type);
+            onItemViewed(currentItem.ref_id, currentItem.type);
           }
         }).catch(err => console.error("Failed to send view", err));
       }
@@ -207,7 +217,7 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
           )}
 
           <button
-            onClick={(e) => { e.stopPropagation(); closeViewer(); }}
+            onClick={(e) => { e.stopPropagation(); onClose(); }}
             className="w-8 h-8 flex items-center justify-center transition-colors cursor-pointer bg-black/20 hover:bg-black/40 rounded-full md:hidden"
           >
             <X className="w-5 h-5 text-white" color="white" />
@@ -237,9 +247,9 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
                 const rect = e.currentTarget.getBoundingClientRect();
                 const tapX = touch.clientX - rect.left;
                 if (tapX < rect.width * 0.35) {
-                  prevItem();
+                  onPrevItem();
                 } else if (tapX > rect.width * 0.65) {
-                  nextItem();
+                  onNextItem();
                 }
               }
             }}
@@ -247,8 +257,8 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
         ) : (
           /* Desktop: simple click zones */
           <>
-            <div className="absolute inset-y-0 left-0 w-[20%] z-20 cursor-pointer" onClick={(e) => { e.stopPropagation(); prevItem(); }} />
-            <div className="absolute inset-y-0 right-0 w-[20%] z-20 cursor-pointer" onClick={(e) => { e.stopPropagation(); nextItem(); }} />
+            <div className="absolute inset-y-0 left-0 w-[20%] z-20 cursor-pointer" onClick={(e) => { e.stopPropagation(); onPrevItem(); }} />
+            <div className="absolute inset-y-0 right-0 w-[20%] z-20 cursor-pointer" onClick={(e) => { e.stopPropagation(); onNextItem(); }} />
           </>
         )}
 
@@ -337,6 +347,7 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
                 refId={currentItem.ref_id}
                 itemType={currentItem.type}
                 isOwn={isOwnStory ?? false}
+                onLikeChange={onItemLikeChange}
               />
             </div>
           </div>

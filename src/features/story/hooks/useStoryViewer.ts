@@ -1,68 +1,183 @@
-import { useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+
+import { createStoryGroupItemsCache } from '../storyGroupItemsCache';
+import {
+  createStoryViewerSession,
+  type StoryItemIdentity,
+  type StoryViewerSessionState,
+} from '../storyViewerSession';
 import { useStoryStore } from '../stores/storyStore';
-import { storyApi } from '../services/storyApi';
-import { StoryGroup } from '../types/storyTypes';
+import type { StoryGroup, StoryItem } from '../types/storyTypes';
 
-const STORY_GROUP_STALE_TIME = 1000 * 60 * 5;
+interface StoryViewerIntentSession {
+  close: () => void;
+  getState: () => StoryViewerSessionState;
+  open: (
+    groups: StoryGroup[],
+    groupIndex: number,
+    items?: StoryItem[],
+    requestedItem?: StoryItemIdentity,
+  ) => Promise<void>;
+  selectGroup: (
+    groupIndex: number,
+    items?: StoryItem[],
+    requestedItem?: StoryItemIdentity,
+  ) => Promise<void>;
+}
 
-export const storyGroupItemsQueryKey = (group: StoryGroup) => [
-  'story-group-items',
-  group.groupType,
-  group.groupId,
-  group.preview.ref_id,
-] as const;
+interface SyncStoryViewerIntentOptions {
+  session: StoryViewerIntentSession;
+  isOpen: boolean;
+  requestId: number;
+  handledRequestId: number;
+  groups: StoryGroup[];
+  groupIndex: number;
+  fallbackItems: StoryItem[];
+  requestedItem?: StoryItemIdentity;
+}
 
-const fetchStoryGroupItems = (group: StoryGroup) => storyApi.fetchGroupItems(
-  group.groupType,
-  group.groupId,
-  group.preview.ref_id
-);
+export const syncStoryViewerIntent = ({
+  session,
+  isOpen,
+  requestId,
+  handledRequestId,
+  groups,
+  groupIndex,
+  fallbackItems,
+  requestedItem,
+}: SyncStoryViewerIntentOptions) => {
+  if (!isOpen) {
+    session.close();
+    return handledRequestId;
+  }
 
-export const useStoryViewer = () => {
-  const isViewerOpen = useStoryStore((state) => state.isViewerOpen);
-  const currentGroupIndex = useStoryStore((state) => state.currentGroupIndex);
-  const currentItemIndex = useStoryStore((state) => state.currentItemIndex);
-  const groups = useStoryStore((state) => state.groups);
-  const viewerItems = useStoryStore((state) => state.viewerItems);
-  const setViewerItems = useStoryStore((state) => state.setViewerItems);
-  const queryClient = useQueryClient();
+  const isPendingOpen = session.getState().status === 'closed' && groups.length > 0;
+  if (handledRequestId === requestId && !isPendingOpen) return handledRequestId;
 
-  const currentGroup = groups[currentGroupIndex];
-  const currentItem = viewerItems[currentItemIndex] || null;
+  if (session.getState().status === 'closed') {
+    void session.open(groups, groupIndex, fallbackItems, requestedItem);
+  } else {
+    void session.selectGroup(groupIndex, fallbackItems, requestedItem);
+  }
+  return requestId;
+};
 
-  const groupItemsQuery = useQuery({
-    queryKey: currentGroup ? storyGroupItemsQueryKey(currentGroup) : ['story-group-items', 'inactive'],
-    queryFn: () => fetchStoryGroupItems(currentGroup!),
-    enabled: isViewerOpen && Boolean(currentGroup),
-    staleTime: STORY_GROUP_STALE_TIME,
+export const syncStoryViewerGroups = (
+  session: Pick<ReturnType<typeof createStoryViewerSession>, 'getState' | 'setGroups'>,
+  groups: StoryGroup[],
+) => {
+  if (session.getState().status !== 'closed') session.setGroups(groups);
+};
+
+interface StoryViewerStoreIntent {
+  isViewerOpen: boolean;
+  viewerRequestId: number;
+  currentGroupIndex: number;
+  viewerStartItem: { refId: number; type: StoryItem['type'] } | null;
+}
+
+export const syncStoryViewerBinding = ({
+  session,
+  groups,
+  handledRequestId,
+  getIntent,
+}: {
+  session: StoryViewerIntentSession;
+  groups: StoryGroup[];
+  handledRequestId: number;
+  getIntent: () => StoryViewerStoreIntent;
+}) => {
+  syncStoryViewerGroups(session, groups);
+  const intent = getIntent();
+  const requestedGroup = groups[intent.currentGroupIndex];
+  const requestedItem = intent.viewerStartItem
+    ? { ref_id: intent.viewerStartItem.refId, type: intent.viewerStartItem.type }
+    : requestedGroup?.preview;
+  const fallbackItems = requestedGroup
+    && requestedItem?.ref_id === requestedGroup.preview.ref_id
+    && requestedItem.type === requestedGroup.preview.type
+    ? [requestedGroup.preview]
+    : [];
+
+  return syncStoryViewerIntent({
+    session,
+    isOpen: intent.isViewerOpen,
+    requestId: intent.viewerRequestId,
+    handledRequestId,
+    groups,
+    groupIndex: intent.currentGroupIndex,
+    fallbackItems,
+    requestedItem,
   });
+};
+
+interface UseStoryViewerOptions {
+  groups: StoryGroup[];
+  fetchNextGroups: () => Promise<StoryGroup[]>;
+  hasNextPage: boolean;
+}
+
+export const useStoryViewer = ({
+  groups,
+  fetchNextGroups,
+  hasNextPage,
+}: UseStoryViewerOptions) => {
+  const queryClient = useQueryClient();
+  const isViewerOpenIntent = useStoryStore((state) => state.isViewerOpen);
+  const viewerRequestId = useStoryStore((state) => state.viewerRequestId);
+  const feedStateRef = useRef({ fetchNextGroups, hasNextPage });
+  const handledRequestIdRef = useRef(-1);
+  feedStateRef.current = { fetchNextGroups, hasNextPage };
+
+  const cache = useMemo(() => createStoryGroupItemsCache(queryClient), [queryClient]);
+  const session = useMemo(() => createStoryViewerSession({
+    cache,
+    feed: {
+      hasNextPage: () => feedStateRef.current.hasNextPage,
+      requestNextPage: () => feedStateRef.current.fetchNextGroups(),
+    },
+    onClosed: () => {
+      if (useStoryStore.getState().isViewerOpen) {
+        useStoryStore.getState().closeViewer();
+      }
+    },
+  }), [cache]);
+  const snapshot = useSyncExternalStore(
+    session.subscribe,
+    session.getState,
+    session.getState,
+  );
 
   useEffect(() => {
-    if (!isViewerOpen || !groupItemsQuery.data) return;
-    setViewerItems(groupItemsQuery.data.items, groupItemsQuery.data.startIndex);
-  }, [currentGroupIndex, groupItemsQuery.data, isViewerOpen, setViewerItems]);
-
-  useEffect(() => {
-    if (!isViewerOpen) return;
-
-    const adjacentGroups = [groups[currentGroupIndex - 1], groups[currentGroupIndex + 1]];
-    adjacentGroups.forEach((group) => {
-      if (!group) return;
-      void queryClient.prefetchQuery({
-        queryKey: storyGroupItemsQueryKey(group),
-        queryFn: () => fetchStoryGroupItems(group),
-        staleTime: STORY_GROUP_STALE_TIME,
-      });
+    handledRequestIdRef.current = syncStoryViewerBinding({
+      session,
+      handledRequestId: handledRequestIdRef.current,
+      groups,
+      getIntent: useStoryStore.getState,
     });
-  }, [currentGroupIndex, groups, isViewerOpen, queryClient]);
+  }, [groups, isViewerOpenIntent, session, viewerRequestId]);
 
   return {
-    isViewerOpen,
-    currentGroup,
-    currentItem,
-    viewerItems,
-    currentItemIndex,
-    isLoadingItems: isViewerOpen && Boolean(currentGroup) && groupItemsQuery.isPending
+    closeViewer: session.close,
+    currentGroup: snapshot.groups[snapshot.currentGroupIndex],
+    currentGroupIndex: snapshot.currentGroupIndex,
+    currentItem: snapshot.items[snapshot.currentItemIndex] ?? null,
+    currentItemIndex: snapshot.currentItemIndex,
+    groups: snapshot.groups,
+    isLoadingItems: snapshot.status === 'loading',
+    isViewerOpen: snapshot.status !== 'closed',
+    loadError: snapshot.status === 'error' ? snapshot.error : null,
+    markItemViewed: session.markItemViewed,
+    nextGroup: session.nextGroup,
+    nextItem: session.nextItem,
+    prevGroup: session.prevGroup,
+    prevItem: session.prevItem,
+    replaceItems: session.replaceItems,
+    retry: session.retry,
+    selectGroup: session.selectGroup,
+    toggleItemLike: session.toggleItemLike,
+    updateItemLinks: session.updateItemLinks,
+    viewerItems: snapshot.items,
   };
 };
