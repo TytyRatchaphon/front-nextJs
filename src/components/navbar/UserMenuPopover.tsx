@@ -11,6 +11,7 @@ import {
   Clock3,
   Library,
   LogOut,
+  MessageCircle,
   MoreHorizontal,
   RefreshCw,
   Store,
@@ -63,6 +64,7 @@ const menuItems = [
   { href: "/achievement", label: "ความสำเร็จ", icon: Trophy },
   { href: "/redeem", label: "กรอกโค๊ด", icon: Ticket },
   { href: "/coupon", label: "คูปอง", icon: Ticket },
+  { href: "/contact", label: "ติดต่อเรา", icon: MessageCircle },
 ] as const;
 
 function UserAvatar({
