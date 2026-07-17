@@ -54,6 +54,9 @@ import {
   validateImage,
   validateMessageBody,
 } from "./liveChatModel";
+import LiveChatGifPicker from "./LiveChatGifPicker";
+import { downloadGif } from "./gifPickerApi";
+import type { GifPickerItem } from "./gifPickerModel";
 import type {
   LiveChatError,
   LiveChatHelpTopic,
@@ -168,13 +171,13 @@ export default function LiveChatContactPage() {
   const [feedbackTags, setFeedbackTags] = useState<string[]>([]);
   const [failedImage, setFailedImage] = useState<File | null>(null);
   const [mediaUploadKind, setMediaUploadKind] = useState<MediaUploadKind>("image");
+  const [isPreparingGif, setIsPreparingGif] = useState(false);
   const [historyThreads, setHistoryThreads] = useState<LiveChatThread[]>([]);
   const [historyCursor, setHistoryCursor] = useState<number | null>(null);
   const [hasMoreHistory, setHasMoreHistory] = useState(false);
   const messageListRef = useRef<HTMLDivElement>(null);
   const shouldJumpToLatestRef = useRef(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const gifInputRef = useRef<HTMLInputElement>(null);
 
   const jumpToLatestMessage = useCallback(() => {
     const container = messageListRef.current;
@@ -462,6 +465,21 @@ export default function LiveChatContactPage() {
     setMediaUploadKind(kind);
     setFailedImage(file);
     sendImageMutation.mutate(file);
+  };
+
+  const handleGifSelection = async (item: GifPickerItem) => {
+    setMediaUploadKind("gif");
+    setIsPreparingGif(true);
+    setError(null);
+    try {
+      handleMediaSelection(await downloadGif(item), "gif");
+    } catch (caught) {
+      setError({
+        message: caught instanceof Error ? caught.message : "ดาวน์โหลด GIF ไม่สำเร็จ",
+      });
+    } finally {
+      setIsPreparingGif(false);
+    }
   };
 
   const handleLoadOlder = async () => {
@@ -975,20 +993,10 @@ export default function LiveChatContactPage() {
                       event.currentTarget.value = "";
                     }}
                   />
-                  <input
-                    ref={gifInputRef}
-                    type="file"
-                    accept=".gif,image/gif"
-                    className="sr-only"
-                    onChange={(event) => {
-                      handleMediaSelection(event.target.files?.[0], "gif");
-                      event.currentTarget.value = "";
-                    }}
-                  />
                   <button
                     type="button"
                     onClick={() => imageInputRef.current?.click()}
-                    disabled={selectedThread?.can_send === false || sendImageMutation.isPending}
+                    disabled={selectedThread?.can_send === false || sendImageMutation.isPending || isPreparingGif}
                     className="grid size-11 shrink-0 place-items-center rounded-full text-stone-500 hover:bg-stone-100 hover:text-[#dc2626] disabled:opacity-40"
                     aria-label="แนบรูปภาพ"
                   >
@@ -996,18 +1004,11 @@ export default function LiveChatContactPage() {
                       ? <LoaderCircle className="size-5 animate-spin" />
                       : <ImagePlus className="size-5" />}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => gifInputRef.current?.click()}
-                    disabled={selectedThread?.can_send === false || sendImageMutation.isPending}
-                    className="grid size-11 shrink-0 place-items-center rounded-full text-stone-500 hover:bg-stone-100 hover:text-[#dc2626] disabled:opacity-40"
-                    aria-label="ส่ง GIF"
-                    title="ส่ง GIF"
-                  >
-                    {sendImageMutation.isPending && mediaUploadKind === "gif"
-                      ? <LoaderCircle className="size-5 animate-spin" />
-                      : <span className="text-xs font-bold">GIF</span>}
-                  </button>
+                  <LiveChatGifPicker
+                    disabled={selectedThread?.can_send === false || sendImageMutation.isPending || isPreparingGif}
+                    isSending={isPreparingGif || (sendImageMutation.isPending && mediaUploadKind === "gif")}
+                    onSelect={handleGifSelection}
+                  />
                   <textarea
                     value={messageBody}
                     onChange={(event) => setMessageBody(event.target.value)}
