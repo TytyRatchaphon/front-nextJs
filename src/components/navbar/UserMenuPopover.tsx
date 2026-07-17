@@ -221,7 +221,7 @@ export default function UserMenuPopover({
         <div className={`grid grid-cols-2 gap-x-2 ${isDrawer ? "w-full" : "w-[274px] mx-auto"}`}>
           <Link href={profileMenuItem.href} onClick={onClose} className={linkClass}>
             <ProfileIcon className={iconClass} />
-            <span className="font-primary text-black transition-colors group-hover:text-red-600">
+            <span className="font-primary whitespace-nowrap text-sm text-black transition-colors group-hover:text-red-600">
               {profileMenuItem.label}
             </span>
           </Link>
