@@ -84,27 +84,6 @@ export function useStoryPlayer({ item, videoRef, onEnded, onTimeUpdate, onPlay }
     const video = videoRef.current;
     if (!video) return;
 
-    const proxyMediaSource = (source?: string) => {
-      if (!source) return undefined;
-
-      try {
-        const urlObj = new URL(source);
-        if (urlObj.pathname.startsWith("/video/")) {
-          return `/api/proxy-video${urlObj.pathname.replace('/video', '')}${urlObj.search}`;
-        }
-        if (urlObj.pathname.startsWith("/media/")) {
-          return `/api/proxy-media${urlObj.pathname.replace('/media', '')}${urlObj.search}`;
-        }
-      } catch {
-        return source;
-      }
-
-      return source;
-    };
-
-    const proxiedHlsSource = proxyMediaSource(hlsSource);
-    const proxiedDashSource = proxyMediaSource(dashSource);
-
     setPlayerState("loading");
     setErrorMessage(null);
 
@@ -112,42 +91,26 @@ export function useStoryPlayer({ item, videoRef, onEnded, onTimeUpdate, onPlay }
     video.playsInline = true;
 
     const playNativeDash = () => {
-      if (!proxiedDashSource || !video.canPlayType('application/dash+xml')) return false;
+      if (!dashSource || !video.canPlayType('application/dash+xml')) return false;
 
       hlsInstanceRef.current?.destroy();
       hlsInstanceRef.current = null;
-      video.src = proxiedDashSource;
+      video.src = dashSource;
       video.load();
       video.play().catch(() => setPlayerState("idle"));
       return true;
     };
 
-    if (proxiedHlsSource && Hls.isSupported()) {
+    if (hlsSource && Hls.isSupported()) {
       const hls = new Hls({
         maxMaxBufferLength: 30,
         maxBufferLength: 15,
         maxBufferSize: 30 * 1000000,
         startLevel: -1,
         capLevelToPlayerSize: false,
-        xhrSetup: (xhr, url) => {
-          let pUrl = url;
-          try {
-            const u = new URL(url);
-            if (u.pathname.startsWith('/video/')) {
-              pUrl = `/api/proxy-video${u.pathname.replace('/video', '')}${u.search}`;
-            } else if (u.pathname.startsWith('/media/')) {
-              pUrl = `/api/proxy-media${u.pathname.replace('/media', '')}${u.search}`;
-            }
-          } catch (e) {
-            // relative URLs or invalid will throw, which is fine
-          }
-          if (pUrl !== url) {
-            xhr.open('GET', pUrl, true);
-          }
-        }
       });
 
-      hls.loadSource(proxiedHlsSource);
+      hls.loadSource(hlsSource);
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -182,9 +145,9 @@ export function useStoryPlayer({ item, videoRef, onEnded, onTimeUpdate, onPlay }
       });
 
       hlsInstanceRef.current = hls;
-    } else if (proxiedHlsSource && isHlsNativelySupported()) {
+    } else if (hlsSource && isHlsNativelySupported()) {
       video.playsInline = true;
-      video.src = proxiedHlsSource;
+      video.src = hlsSource;
       video.load();
 
       const playPromise = video.play();

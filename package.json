@@ -53,6 +53,7 @@
     "crypto-js": "^4.2.0",
     "dayjs": "^1.11.18",
     "gifuct-js": "^2.1.2",
+    "hls.js": "^1.6.16",
     "html-react-parser": "^5.2.7",
     "install": "^0.13.0",
     "js-cookie": "^3.0.5",

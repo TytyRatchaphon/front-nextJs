@@ -13,6 +13,7 @@ import type { StoryGroup, StoryItem } from '../types/storyTypes';
 interface StoryViewerIntentSession {
   close: () => void;
   getState: () => StoryViewerSessionState;
+  setGroups: (groups: StoryGroup[]) => void;
   open: (
     groups: StoryGroup[],
     groupIndex: number,

@@ -344,7 +344,7 @@ export const createStoryViewerSession = ({
         || !activeGroup
         || groupIdentity(activeGroup) !== groupIdentity(originGroup)
       ) return;
-      if (state.status !== 'closed' && state.currentGroupIndex < state.groups.length - 1) {
+      if (state.currentGroupIndex < state.groups.length - 1) {
         await selectGroup(state.currentGroupIndex + 1);
       }
       return;

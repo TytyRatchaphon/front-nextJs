@@ -54,7 +54,7 @@ const StoryUploader: React.FC<StoryUploaderProps> = ({ sourceType = 'user', chil
 
   return (
     <>
-      <inpu
+      <input
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
