@@ -93,7 +93,13 @@ function StatusPill({ connected }: { connected: boolean }) {
   );
 }
 
-function MessageBubble({ message }: { message: LiveChatMessage }) {
+function MessageBubble({
+  message,
+  onMediaLoad,
+}: {
+  message: LiveChatMessage;
+  onMediaLoad?: () => void;
+}) {
   if (message.sender_type === "system") {
     return (
       <div className="my-3 flex justify-center">
@@ -119,6 +125,7 @@ function MessageBubble({ message }: { message: LiveChatMessage }) {
             <AntImage
               src={message.image_url || message.body}
               alt="รูปภาพในบทสนทนา"
+              onLoad={onMediaLoad}
               className="max-h-80 w-auto max-w-full object-contain"
               rootClassName="block"
               preview={{
@@ -162,7 +169,20 @@ export default function LiveChatContactPage() {
   const [historyCursor, setHistoryCursor] = useState<number | null>(null);
   const [hasMoreHistory, setHasMoreHistory] = useState(false);
   const messageListRef = useRef<HTMLDivElement>(null);
+  const messageEndRef = useRef<HTMLDivElement>(null);
+  const shouldJumpToLatestRef = useRef(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
+
+  const jumpToLatestMessage = useCallback(() => {
+    const container = messageListRef.current;
+    if (!container) return;
+    const end = messageEndRef.current;
+    if (end) {
+      end.scrollIntoView({ block: "end" });
+      return;
+    }
+    container.scrollTop = container.scrollHeight;
+  }, []);
 
   const activeThreadQuery = useQuery({
     queryKey: liveChatQueryKeys.thread,
@@ -232,14 +252,24 @@ export default function LiveChatContactPage() {
       setHasOlderMessages(result.has_more);
       if (result.thread) setSelectedThread(result.thread);
       setError(null);
-      window.requestAnimationFrame(() => {
-        const container = messageListRef.current;
-        if (container) container.scrollTop = container.scrollHeight;
-      });
+      shouldJumpToLatestRef.current = true;
     } catch (caught) {
       handleError(caught);
     }
   }, [handleError]);
+
+  useEffect(() => {
+    if (view !== "chat" || !shouldJumpToLatestRef.current) return;
+    const frame = window.requestAnimationFrame(jumpToLatestMessage);
+    const timeout = window.setTimeout(() => {
+      jumpToLatestMessage();
+      shouldJumpToLatestRef.current = false;
+    }, 2_000);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timeout);
+    };
+  }, [jumpToLatestMessage, messages, view]);
 
   useEffect(() => {
     const thread = activeThreadQuery.data?.thread;
@@ -436,6 +466,7 @@ export default function LiveChatContactPage() {
 
   const handleLoadOlder = async () => {
     if (!beforeMessageId || !selectedThread) return;
+    shouldJumpToLatestRef.current = false;
     const container = messageListRef.current;
     const previousHeight = container?.scrollHeight ?? 0;
     try {
@@ -850,7 +881,16 @@ export default function LiveChatContactPage() {
                       <RefreshCw className="size-3.5" /> โหลดข้อความก่อนหน้า
                     </button>
                   )}
-                  {messages.map((message) => <MessageBubble key={message.message_id} message={message} />)}
+                  {messages.map((message) => (
+                    <MessageBubble
+                      key={message.message_id}
+                      message={message}
+                      onMediaLoad={() => {
+                        if (shouldJumpToLatestRef.current) jumpToLatestMessage();
+                      }}
+                    />
+                  ))}
+                  <div ref={messageEndRef} aria-hidden="true" />
                   {messages.length === 0 && (
                     <div className="mx-auto max-w-md py-16 text-center">
                       <div className="mx-auto grid size-16 place-items-center rounded-full bg-white text-[#dc2626] shadow-sm">
