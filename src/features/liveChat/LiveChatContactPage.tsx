@@ -169,18 +169,12 @@ export default function LiveChatContactPage() {
   const [historyCursor, setHistoryCursor] = useState<number | null>(null);
   const [hasMoreHistory, setHasMoreHistory] = useState(false);
   const messageListRef = useRef<HTMLDivElement>(null);
-  const messageEndRef = useRef<HTMLDivElement>(null);
   const shouldJumpToLatestRef = useRef(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const jumpToLatestMessage = useCallback(() => {
     const container = messageListRef.current;
     if (!container) return;
-    const end = messageEndRef.current;
-    if (end) {
-      end.scrollIntoView({ block: "end" });
-      return;
-    }
     container.scrollTop = container.scrollHeight;
   }, []);
 
@@ -513,7 +507,7 @@ export default function LiveChatContactPage() {
 
   if (!hasMounted || activeThreadQuery.isLoading) {
     return (
-      <main className="grid min-h-[calc(100svh-64px)] place-items-center bg-white">
+      <main className="grid min-h-[calc(100svh-60px)] place-items-center bg-white lg:min-h-[calc(100svh-80px)]">
         <LoaderCircle className="size-8 animate-spin text-[#dc2626]" aria-label="กำลังโหลด Live Chat" />
       </main>
     );
@@ -521,7 +515,7 @@ export default function LiveChatContactPage() {
 
   if (!isLoggedIn) {
     return (
-      <main className="grid min-h-[calc(100svh-64px)] place-items-center bg-white px-6">
+      <main className="grid min-h-[calc(100svh-60px)] place-items-center bg-white px-6 lg:min-h-[calc(100svh-80px)]">
         <section className="max-w-xl text-center">
           <div className="mx-auto mb-7 grid size-20 place-items-center rounded-full bg-[#dc2626] text-white">
             <MessageCircle className="size-9" />
@@ -544,8 +538,8 @@ export default function LiveChatContactPage() {
   }
 
   return (
-    <main className="min-h-[calc(100svh-64px)] bg-white text-stone-950">
-      <div className="mx-auto flex min-h-[calc(100svh-64px)] max-w-[1440px] flex-col lg:flex-row">
+    <main className="h-[calc(100svh-60px)] overflow-hidden bg-white text-stone-950 lg:h-[calc(100svh-80px)]">
+      <div className="mx-auto flex h-full min-h-0 max-w-[1440px] flex-col lg:flex-row">
         <aside className="flex w-full shrink-0 flex-col border-b border-stone-200 bg-stone-50 text-stone-950 lg:w-[340px] lg:border-b-0 lg:border-r lg:border-stone-200">
           <header className="px-6 pb-5 pt-7 sm:px-8">
             <div className="flex items-start justify-between gap-5">
@@ -597,7 +591,7 @@ export default function LiveChatContactPage() {
           </div>
         </aside>
 
-        <section className="flex min-h-0 flex-1 flex-col">
+        <section className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {error && (
             <div className="flex items-start justify-between gap-4 border-b border-red-200 bg-red-50 px-5 py-3 text-sm text-red-800" role="alert">
               <span className="flex gap-2">
@@ -726,7 +720,7 @@ export default function LiveChatContactPage() {
                             type="button"
                             disabled={isBusy}
                             onClick={() => completeMutation.mutate("escalated")}
-                            className="min-h-12 rounded-full border border-[#dc2626] bg-[#dc2626] px-6 text-sm font-bold text-white hover:bg-[#b91c1c] disabled:opacity-50"
+                            className="min-h-12 rounded-full border border-[#dc2626] bg-[#dc2626] px-6 text-sm font-bold !text-white hover:bg-[#b91c1c] disabled:opacity-50"
                           >
                             ยังต้องการคุยกับทีมงาน
                           </button>
@@ -847,7 +841,7 @@ export default function LiveChatContactPage() {
 
           {view === "chat" && (
             <div className="flex min-h-0 flex-1 flex-col">
-              <header className="flex min-h-20 items-center justify-between gap-4 border-b border-stone-200 bg-white px-5 sm:px-8">
+              <header className="flex min-h-20 shrink-0 items-center justify-between gap-4 border-b border-stone-200 bg-white px-5 sm:px-8">
                 <div className="min-w-0">
                   <p className="truncate text-base font-bold">
                     {selectedThread?.intake_summary?.topic_title || "พูดคุยกับทีมงาน"}
@@ -870,7 +864,7 @@ export default function LiveChatContactPage() {
                 )}
               </header>
 
-              <div ref={messageListRef} className="flex-1 overflow-y-auto px-4 py-6 sm:px-8">
+              <div ref={messageListRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-6 sm:px-8">
                 <div className="mx-auto flex max-w-4xl flex-col gap-4">
                   {hasOlderMessages && (
                     <button
@@ -890,7 +884,6 @@ export default function LiveChatContactPage() {
                       }}
                     />
                   ))}
-                  <div ref={messageEndRef} aria-hidden="true" />
                   {messages.length === 0 && (
                     <div className="mx-auto max-w-md py-16 text-center">
                       <div className="mx-auto grid size-16 place-items-center rounded-full bg-white text-[#dc2626] shadow-sm">
@@ -964,7 +957,7 @@ export default function LiveChatContactPage() {
                 </div>
               </div>
 
-              <footer className="border-t border-stone-200 bg-white p-3 sm:p-5">
+              <footer className="shrink-0 border-t border-stone-200 bg-white p-3 sm:p-5">
                 <div className="mx-auto flex max-w-4xl items-end gap-2">
                   <input
                     ref={imageInputRef}
