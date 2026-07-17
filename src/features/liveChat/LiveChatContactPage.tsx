@@ -20,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
+import { Image as AntImage } from "antd";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -110,27 +111,20 @@ function MessageBubble({ message }: { message: LiveChatMessage }) {
         <div
           className={`overflow-hidden rounded-2xl ${
             isUser
-              ? "rounded-br-md bg-[#a51f2d] text-white"
+              ? "rounded-br-md bg-[#dc2626] text-white"
               : "rounded-bl-md bg-white text-stone-900 shadow-[0_8px_30px_rgba(28,25,23,0.06)]"
           }`}
         >
           {message.message_type === "image" ? (
-            <a
-              href={message.image_url || message.body}
-              target="_blank"
-              rel="noreferrer"
-              className="block"
-              aria-label="เปิดรูปภาพขนาดเต็ม"
-            >
-              <Image
-                src={message.image_url || message.body}
-                alt="รูปภาพในบทสนทนา"
-                width={640}
-                height={480}
-                unoptimized
-                className="max-h-80 w-auto max-w-full object-contain"
-              />
-            </a>
+            <AntImage
+              src={message.image_url || message.body}
+              alt="รูปภาพในบทสนทนา"
+              className="max-h-80 w-auto max-w-full object-contain"
+              rootClassName="block"
+              preview={{
+                maskClassName: "rounded-2xl",
+              }}
+            />
           ) : (
             <p className="whitespace-pre-wrap break-words px-4 py-3 text-sm leading-6 sm:text-base">
               {message.body}
@@ -488,20 +482,20 @@ export default function LiveChatContactPage() {
 
   if (!hasMounted || activeThreadQuery.isLoading) {
     return (
-      <main className="grid min-h-[calc(100svh-64px)] place-items-center bg-[#f6f3ef]">
-        <LoaderCircle className="size-8 animate-spin text-[#a51f2d]" aria-label="กำลังโหลด Live Chat" />
+      <main className="grid min-h-[calc(100svh-64px)] place-items-center bg-white">
+        <LoaderCircle className="size-8 animate-spin text-[#dc2626]" aria-label="กำลังโหลด Live Chat" />
       </main>
     );
   }
 
   if (!isLoggedIn) {
     return (
-      <main className="grid min-h-[calc(100svh-64px)] place-items-center bg-[#f6f3ef] px-6">
+      <main className="grid min-h-[calc(100svh-64px)] place-items-center bg-white px-6">
         <section className="max-w-xl text-center">
-          <div className="mx-auto mb-7 grid size-20 place-items-center rounded-full bg-[#a51f2d] text-white">
+          <div className="mx-auto mb-7 grid size-20 place-items-center rounded-full bg-[#dc2626] text-white">
             <MessageCircle className="size-9" />
           </div>
-          <p className="mb-3 text-sm font-bold uppercase tracking-[0.24em] text-[#a51f2d]">Enjoybook Support</p>
+          <p className="mb-3 text-sm font-bold uppercase tracking-[0.24em] text-[#dc2626]">Enjoybook Support</p>
           <h1 className="text-4xl font-bold tracking-tight text-stone-950 sm:text-5xl">คุยกับทีมงานได้ในที่เดียว</h1>
           <p className="mx-auto mt-5 max-w-md text-base leading-7 text-stone-600">
             เข้าสู่ระบบเพื่อเริ่มแชต ติดตามเคส และย้อนดูบทสนทนาเดิมของคุณ
@@ -509,7 +503,7 @@ export default function LiveChatContactPage() {
           <button
             type="button"
             onClick={openLoginModal}
-            className="mt-8 min-h-12 rounded-full bg-stone-950 px-8 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-[#a51f2d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a51f2d] focus-visible:ring-offset-4"
+            className="mt-8 min-h-12 rounded-full bg-[#dc2626] px-8 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-[#b91c1c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#dc2626] focus-visible:ring-offset-4"
           >
             เข้าสู่ระบบเพื่อใช้งาน
           </button>
@@ -519,13 +513,13 @@ export default function LiveChatContactPage() {
   }
 
   return (
-    <main className="min-h-[calc(100svh-64px)] bg-[#f6f3ef] text-stone-950">
+    <main className="min-h-[calc(100svh-64px)] bg-white text-stone-950">
       <div className="mx-auto flex min-h-[calc(100svh-64px)] max-w-[1440px] flex-col lg:flex-row">
-        <aside className="flex w-full shrink-0 flex-col border-b border-stone-200 bg-[#181716] text-white lg:w-[340px] lg:border-b-0 lg:border-r lg:border-stone-800">
+        <aside className="flex w-full shrink-0 flex-col border-b border-stone-200 bg-stone-50 text-stone-950 lg:w-[340px] lg:border-b-0 lg:border-r lg:border-stone-200">
           <header className="px-6 pb-5 pt-7 sm:px-8">
             <div className="flex items-start justify-between gap-5">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-red-300">Enjoybook</p>
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#dc2626]">Enjoybook</p>
                 <h1 className="mt-2 text-3xl font-bold tracking-tight">ศูนย์ช่วยเหลือ</h1>
               </div>
               <StatusPill connected={isConnected} />
@@ -535,7 +529,7 @@ export default function LiveChatContactPage() {
             </p>
           </header>
 
-          <nav className="grid grid-cols-3 border-y border-stone-800 lg:grid-cols-1 lg:border-b-0" aria-label="Live Chat">
+          <nav className="grid grid-cols-3 border-y border-stone-200 lg:grid-cols-1 lg:border-b-0" aria-label="Live Chat">
             {([
               ["topics", Sparkles, "ขอความช่วยเหลือ"],
               ["chat", MessageCircle, "บทสนทนา"],
@@ -545,10 +539,10 @@ export default function LiveChatContactPage() {
                 key={nextView}
                 type="button"
                 onClick={() => setView(nextView)}
-                className={`flex min-h-14 items-center justify-center gap-2 border-stone-800 px-3 text-sm font-semibold transition lg:justify-start lg:border-b lg:px-8 ${
+                className={`flex min-h-14 items-center justify-center gap-2 border-stone-200 px-3 text-sm font-semibold transition lg:justify-start lg:border-b lg:px-8 ${
                   view === nextView
-                    ? "bg-[#a51f2d] text-white"
-                    : "text-stone-400 hover:bg-stone-900 hover:text-white"
+                    ? "bg-red-50 text-[#dc2626]"
+                    : "text-stone-500 hover:bg-stone-100 hover:text-stone-950"
                 }`}
               >
                 <Icon className="size-4" />
@@ -558,7 +552,7 @@ export default function LiveChatContactPage() {
           </nav>
 
           <div className="hidden flex-1 flex-col justify-end p-8 lg:flex">
-            <div className="border-t border-stone-800 pt-6">
+            <div className="border-t border-stone-200 pt-6">
               <p className="text-xs font-semibold text-stone-500">สถานะเคสปัจจุบัน</p>
               <p className="mt-2 text-sm font-bold">
                 {selectedThread
@@ -602,7 +596,7 @@ export default function LiveChatContactPage() {
           {view === "topics" && (
             <div className="flex-1 overflow-y-auto px-5 py-8 sm:px-10 sm:py-12 xl:px-16">
               <div className="mx-auto max-w-4xl">
-                <p className="text-sm font-bold text-[#a51f2d]">เริ่มจากตรงนี้</p>
+                <p className="text-sm font-bold text-[#dc2626]">เริ่มจากตรงนี้</p>
                 <h2 className="mt-2 max-w-2xl text-3xl font-bold tracking-tight sm:text-5xl">
                   บอกเราว่าคุณกำลังเจอปัญหาอะไร
                 </h2>
@@ -641,7 +635,7 @@ export default function LiveChatContactPage() {
                                   nodeId: intake.current_node!.node_id,
                                   choiceId: choice.choice_id,
                                 })}
-                                className="group flex min-h-16 w-full items-center justify-between gap-4 py-4 text-left font-semibold transition hover:pl-2 hover:text-[#a51f2d] disabled:opacity-50"
+                                className="group flex min-h-16 w-full items-center justify-between gap-4 py-4 text-left font-semibold transition hover:pl-2 hover:text-[#dc2626] disabled:opacity-50"
                               >
                                 {choice.label}
                                 <ChevronRight className="size-5 transition group-hover:translate-x-1" />
@@ -693,7 +687,7 @@ export default function LiveChatContactPage() {
                             type="button"
                             disabled={isBusy}
                             onClick={() => completeMutation.mutate("self_resolved")}
-                            className="min-h-12 rounded-full bg-stone-950 px-6 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+                            className="min-h-12 rounded-full bg-white border border-[#dc2626] px-6 text-sm font-bold text-[#dc2626] hover:bg-red-50 disabled:opacity-50"
                           >
                             แก้ปัญหาได้แล้ว
                           </button>
@@ -701,7 +695,7 @@ export default function LiveChatContactPage() {
                             type="button"
                             disabled={isBusy}
                             onClick={() => completeMutation.mutate("escalated")}
-                            className="min-h-12 rounded-full border border-stone-400 px-6 text-sm font-bold hover:border-[#a51f2d] hover:text-[#a51f2d] disabled:opacity-50"
+                            className="min-h-12 rounded-full border border-[#dc2626] bg-[#dc2626] px-6 text-sm font-bold text-white hover:bg-[#b91c1c] disabled:opacity-50"
                           >
                             ยังต้องการคุยกับทีมงาน
                           </button>
@@ -717,7 +711,7 @@ export default function LiveChatContactPage() {
                           type="button"
                           disabled={isBusy}
                           onClick={() => completeMutation.mutate("escalated")}
-                          className="mt-6 min-h-12 rounded-full bg-[#a51f2d] px-7 text-sm font-bold text-white hover:bg-[#861924]"
+                          className="mt-6 min-h-12 rounded-full bg-[#dc2626] px-7 text-sm font-bold text-white hover:bg-[#b91c1c]"
                         >
                           เริ่มแชตกับทีมงาน
                         </button>
@@ -729,7 +723,7 @@ export default function LiveChatContactPage() {
                     <div className="mt-10 divide-y divide-stone-300 border-y border-stone-300">
                       {topicsQuery.isLoading ? (
                         <div className="flex min-h-40 items-center justify-center">
-                          <LoaderCircle className="size-6 animate-spin text-[#a51f2d]" />
+                          <LoaderCircle className="size-6 animate-spin text-[#dc2626]" />
                         </div>
                       ) : topics.length > 0 ? topics.map((topic, index) => (
                         <button
@@ -740,10 +734,10 @@ export default function LiveChatContactPage() {
                         >
                           <span className="text-sm font-bold tabular-nums text-stone-400">{String(index + 1).padStart(2, "0")}</span>
                           <span className="flex-1">
-                            <span className="block text-lg font-bold group-hover:text-[#a51f2d]">{topic.title}</span>
+                            <span className="block text-lg font-bold group-hover:text-[#dc2626]">{topic.title}</span>
                             {topic.description && <span className="mt-1 block text-sm text-stone-500">{topic.description}</span>}
                           </span>
-                          <ChevronRight className="size-5 transition group-hover:translate-x-1 group-hover:text-[#a51f2d]" />
+                          <ChevronRight className="size-5 transition group-hover:translate-x-1 group-hover:text-[#dc2626]" />
                         </button>
                       )) : (
                         <p className="py-8 text-stone-500">ยังไม่มีหัวข้อช่วยเหลือในขณะนี้</p>
@@ -753,7 +747,7 @@ export default function LiveChatContactPage() {
                       type="button"
                       disabled={intakeMutation.isPending}
                       onClick={() => intakeMutation.mutate(undefined)}
-                      className="mt-8 inline-flex min-h-12 items-center gap-3 rounded-full bg-[#a51f2d] px-7 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-[#861924] disabled:opacity-50"
+                      className="mt-12 inline-flex min-h-12 items-center gap-3 rounded-full bg-[#dc2626] px-7 text-sm font-bold !text-white transition hover:-translate-y-0.5 hover:bg-[#b91c1c] disabled:opacity-50"
                     >
                       <MessageCircle className="size-4" />
                       คุยกับทีมงานโดยตรง
@@ -767,13 +761,13 @@ export default function LiveChatContactPage() {
           {view === "history" && (
             <div className="flex-1 overflow-y-auto px-5 py-8 sm:px-10 sm:py-12 xl:px-16">
               <div className="mx-auto max-w-4xl">
-                <p className="text-sm font-bold text-[#a51f2d]">ประวัติการช่วยเหลือ</p>
-                <div className="mt-2 flex items-end justify-between gap-6">
+                <p className="text-sm font-bold text-[#dc2626]">ประวัติการช่วยเหลือ</p>
+                <div className="mt-6 flex items-end justify-between gap-6">
                   <h2 className="text-3xl font-bold tracking-tight sm:text-5xl">เคสทั้งหมดของคุณ</h2>
                   <button
                     type="button"
                     onClick={() => newThreadMutation.mutate()}
-                    className="hidden min-h-11 rounded-full bg-stone-950 px-5 text-sm font-bold text-white hover:bg-[#a51f2d] sm:block"
+                    className="hidden min-h-11 rounded-full border border-[#dc2626] bg-white px-5 text-sm font-bold text-[#dc2626] hover:bg-red-50 sm:block"
                   >
                     เริ่มเคสใหม่
                   </button>
@@ -788,7 +782,7 @@ export default function LiveChatContactPage() {
                     >
                       <span className={`size-2.5 rounded-full ${thread.status === "active" ? "bg-emerald-500" : "bg-stone-300"}`} />
                       <span className="flex-1">
-                        <span className="block text-base font-bold group-hover:text-[#a51f2d]">
+                        <span className="block text-base font-bold group-hover:text-[#dc2626]">
                           {thread.intake_summary?.topic_title || `เคส #${thread.thread_id}`}
                         </span>
                         <span className="mt-1 block text-sm text-stone-500">
@@ -811,7 +805,7 @@ export default function LiveChatContactPage() {
                   <button
                     type="button"
                     onClick={() => void handleLoadMoreHistory()}
-                    className="mx-auto mt-7 flex min-h-11 items-center gap-2 rounded-full border border-stone-300 px-5 text-sm font-bold hover:border-[#a51f2d] hover:text-[#a51f2d]"
+                    className="mx-auto mt-7 flex min-h-11 items-center gap-2 rounded-full border border-stone-300 px-5 text-sm font-bold hover:border-[#dc2626] hover:text-[#dc2626]"
                   >
                     โหลดเคสก่อนหน้า
                   </button>
@@ -838,7 +832,7 @@ export default function LiveChatContactPage() {
                     type="button"
                     onClick={() => newThreadMutation.mutate()}
                     disabled={newThreadMutation.isPending}
-                    className="shrink-0 rounded-full border border-stone-300 px-4 py-2 text-xs font-bold hover:border-[#a51f2d] hover:text-[#a51f2d]"
+                    className="shrink-0 rounded-full border border-stone-300 px-4 py-2 text-xs font-bold hover:border-[#dc2626] hover:text-[#dc2626]"
                   >
                     เริ่มเคสใหม่
                   </button>
@@ -851,7 +845,7 @@ export default function LiveChatContactPage() {
                     <button
                       type="button"
                       onClick={() => void handleLoadOlder()}
-                      className="mx-auto mb-4 inline-flex items-center gap-2 text-xs font-bold text-stone-500 hover:text-[#a51f2d]"
+                      className="mx-auto mb-4 inline-flex items-center gap-2 text-xs font-bold text-stone-500 hover:text-[#dc2626]"
                     >
                       <RefreshCw className="size-3.5" /> โหลดข้อความก่อนหน้า
                     </button>
@@ -859,7 +853,7 @@ export default function LiveChatContactPage() {
                   {messages.map((message) => <MessageBubble key={message.message_id} message={message} />)}
                   {messages.length === 0 && (
                     <div className="mx-auto max-w-md py-16 text-center">
-                      <div className="mx-auto grid size-16 place-items-center rounded-full bg-white text-[#a51f2d] shadow-sm">
+                      <div className="mx-auto grid size-16 place-items-center rounded-full bg-white text-[#dc2626] shadow-sm">
                         <MessageCircle className="size-7" />
                       </div>
                       <h3 className="mt-5 text-xl font-bold">เริ่มบทสนทนาได้เลย</h3>
@@ -872,7 +866,7 @@ export default function LiveChatContactPage() {
                   {selectedThread?.feedback_eligible && (
                     <section className="mt-8 border-t border-stone-300 py-8">
                       <div className="flex items-center gap-3">
-                        <Star className="size-5 text-[#a51f2d]" />
+                        <Star className="size-5 text-[#dc2626]" />
                         <h3 className="text-xl font-bold">ประเมินการช่วยเหลือ</h3>
                       </div>
                       <div className="mt-5 flex gap-2" aria-label="คะแนน">
@@ -884,7 +878,7 @@ export default function LiveChatContactPage() {
                             aria-label={`${value} ดาว`}
                             className="p-1"
                           >
-                            <Star className={`size-7 ${value <= rating ? "fill-[#a51f2d] text-[#a51f2d]" : "text-stone-300"}`} />
+                            <Star className={`size-7 ${value <= rating ? "fill-[#dc2626] text-[#dc2626]" : "text-stone-300"}`} />
                           </button>
                         ))}
                       </div>
@@ -899,7 +893,7 @@ export default function LiveChatContactPage() {
                                 selected ? current.filter((key) => key !== tag.key) : [...current, tag.key],
                               )}
                               className={`rounded-full px-4 py-2 text-xs font-bold ${
-                                selected ? "bg-stone-950 text-white" : "bg-white text-stone-600"
+                                selected ? "bg-[#dc2626] text-white" : "bg-white text-stone-600"
                               }`}
                             >
                               {tag.label_th}
@@ -911,7 +905,7 @@ export default function LiveChatContactPage() {
                         value={feedbackComment}
                         onChange={(event) => setFeedbackComment(event.target.value)}
                         placeholder="ความคิดเห็นเพิ่มเติม (ไม่บังคับ)"
-                        className="mt-5 min-h-24 w-full resize-y rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#a51f2d] focus:ring-2 focus:ring-red-100"
+                        className="mt-5 min-h-24 w-full resize-y rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#dc2626] focus:ring-2 focus:ring-red-100"
                       />
                       <button
                         type="button"
@@ -921,7 +915,7 @@ export default function LiveChatContactPage() {
                           if (validationMessage) setError({ message: validationMessage });
                           else feedbackMutation.mutate();
                         }}
-                        className="mt-4 min-h-11 rounded-full bg-stone-950 px-6 text-sm font-bold text-white hover:bg-[#a51f2d] disabled:opacity-50"
+                        className="mt-4 min-h-11 rounded-full bg-[#dc2626] px-6 text-sm font-bold text-white hover:bg-[#b91c1c] disabled:opacity-50"
                       >
                         {selectedThread.feedback_summary ? "อัปเดตแบบประเมิน" : "ส่งแบบประเมิน"}
                       </button>
@@ -946,7 +940,7 @@ export default function LiveChatContactPage() {
                     type="button"
                     onClick={() => imageInputRef.current?.click()}
                     disabled={selectedThread?.can_send === false || sendImageMutation.isPending}
-                    className="grid size-11 shrink-0 place-items-center rounded-full text-stone-500 hover:bg-stone-100 hover:text-[#a51f2d] disabled:opacity-40"
+                    className="grid size-11 shrink-0 place-items-center rounded-full text-stone-500 hover:bg-stone-100 hover:text-[#dc2626] disabled:opacity-40"
                     aria-label="แนบรูปภาพ"
                   >
                     {sendImageMutation.isPending ? <LoaderCircle className="size-5 animate-spin" /> : <ImagePlus className="size-5" />}
@@ -963,13 +957,13 @@ export default function LiveChatContactPage() {
                     disabled={selectedThread?.can_send === false}
                     placeholder={selectedThread?.can_send === false ? "เคสนี้ปิดแล้ว" : "พิมพ์ข้อความ..."}
                     rows={1}
-                    className="max-h-32 min-h-11 flex-1 resize-none rounded-2xl bg-stone-100 px-4 py-3 text-sm leading-5 outline-none focus:bg-white focus:ring-2 focus:ring-[#a51f2d]/20 disabled:cursor-not-allowed disabled:text-stone-400"
+                    className="max-h-32 min-h-11 flex-1 resize-none rounded-2xl bg-stone-100 px-4 py-3 text-sm leading-5 outline-none focus:bg-white focus:ring-2 focus:ring-[#dc2626]/20 disabled:cursor-not-allowed disabled:text-stone-400"
                   />
                   <button
                     type="button"
                     onClick={handleSendText}
                     disabled={selectedThread?.can_send === false || sendTextMutation.isPending || !messageBody.trim()}
-                    className="grid size-11 shrink-0 place-items-center rounded-full bg-[#a51f2d] text-white transition hover:bg-[#861924] disabled:bg-stone-300"
+                    className="grid size-11 shrink-0 place-items-center rounded-full bg-[#dc2626] text-white transition hover:bg-[#b91c1c] disabled:bg-stone-300"
                     aria-label="ส่งข้อความ"
                   >
                     {sendTextMutation.isPending ? <LoaderCircle className="size-5 animate-spin" /> : <Send className="size-5" />}
