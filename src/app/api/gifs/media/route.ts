@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { isAllowedTenorMediaUrl } from "@/features/liveChat/gifPickerModel";
+import { isAllowedGiphyMediaUrl } from "@/features/liveChat/gifPickerModel";
 
 const MAX_GIF_BYTES = 5 * 1024 * 1024;
 
 export async function GET(request: NextRequest) {
   const mediaUrl = request.nextUrl.searchParams.get("url") ?? "";
-  if (!isAllowedTenorMediaUrl(mediaUrl)) {
+  if (!isAllowedGiphyMediaUrl(mediaUrl)) {
     return NextResponse.json({ message: "GIF URL ไม่ถูกต้อง" }, { status: 400 });
   }
 

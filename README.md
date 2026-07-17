@@ -16,10 +16,10 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-The Live Chat GIF picker uses the Tenor API. Add a server-side API key to your local environment:
+The Live Chat GIF picker uses the official GIPHY React SDK. Add a Web API key to your local environment:
 
 ```bash
-TENOR_API_KEY=your_google_cloud_tenor_api_key
+NEXT_PUBLIC_GIPHY_API_KEY=your_giphy_web_api_key
 ```
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.

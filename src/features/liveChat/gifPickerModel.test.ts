@@ -1,51 +1,45 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  buildTenorApiUrl,
-  isAllowedTenorMediaUrl,
-  normalizeTenorResults,
+  isAllowedGiphyMediaUrl,
+  toGifPickerItem,
 } from "./gifPickerModel";
 
 describe("gifPickerModel", () => {
-  it("builds featured and search requests with safe defaults", () => {
-    const featured = buildTenorApiUrl({ apiKey: "secret", query: "" });
-    const search = buildTenorApiUrl({ apiKey: "secret", query: "ขอบคุณ" });
-
-    expect(featured.pathname).toBe("/v2/featured");
-    expect(search.pathname).toBe("/v2/search");
-    expect(search.searchParams.get("q")).toBe("ขอบคุณ");
-    expect(search.searchParams.get("contentfilter")).toBe("high");
-    expect(search.searchParams.get("media_filter")).toBe("tinygif");
-  });
-
-  it("normalizes usable tiny GIF results and drops malformed entries", () => {
-    expect(normalizeTenorResults({
-      results: [
-        {
-          id: "gif-1",
-          content_description: "Happy dance",
-          media_formats: {
-            tinygif: { url: "https://media.tenor.com/abc/tiny.gif", dims: [220, 124] },
-          },
+  it("maps a GIPHY rendition to the chat picker contract", () => {
+    expect(toGifPickerItem({
+      id: "gif-1",
+      title: "Happy dance",
+      images: {
+        fixed_width_small: {
+          url: "https://media2.giphy.com/media/abc/100w.gif",
+          width: "100",
+          height: "80",
         },
-        { id: "broken", media_formats: {} },
-      ],
-    })).toEqual([
-      {
-        id: "gif-1",
-        title: "Happy dance",
-        previewUrl: "https://media.tenor.com/abc/tiny.gif",
-        downloadUrl: "/api/gifs/media?url=https%3A%2F%2Fmedia.tenor.com%2Fabc%2Ftiny.gif",
-        width: 220,
-        height: 124,
       },
-    ]);
+    })).toEqual({
+      id: "gif-1",
+      title: "Happy dance",
+      previewUrl: "https://media2.giphy.com/media/abc/100w.gif",
+      downloadUrl: "/api/gifs/media?url=https%3A%2F%2Fmedia2.giphy.com%2Fmedia%2Fabc%2F100w.gif",
+      width: 100,
+      height: 80,
+    });
   });
 
-  it("allows only HTTPS media URLs from Tenor's media host", () => {
-    expect(isAllowedTenorMediaUrl("https://media.tenor.com/abc/tiny.gif")).toBe(true);
-    expect(isAllowedTenorMediaUrl("http://media.tenor.com/abc/tiny.gif")).toBe(false);
-    expect(isAllowedTenorMediaUrl("https://media.tenor.com.evil.test/abc.gif")).toBe(false);
-    expect(isAllowedTenorMediaUrl("https://example.com/abc.gif")).toBe(false);
+  it("rejects missing renditions and non-GIPHY media", () => {
+    expect(toGifPickerItem({ id: "broken", images: {} })).toBeNull();
+    expect(toGifPickerItem({
+      id: "external",
+      images: { fixed_width_small: { url: "https://example.com/a.gif" } },
+    })).toBeNull();
+  });
+
+  it("allows only HTTPS media URLs from GIPHY media hosts", () => {
+    expect(isAllowedGiphyMediaUrl("https://media.giphy.com/media/a/a.gif")).toBe(true);
+    expect(isAllowedGiphyMediaUrl("https://media3.giphy.com/media/a/a.gif")).toBe(true);
+    expect(isAllowedGiphyMediaUrl("https://i.giphy.com/a.gif")).toBe(true);
+    expect(isAllowedGiphyMediaUrl("http://media.giphy.com/a.gif")).toBe(false);
+    expect(isAllowedGiphyMediaUrl("https://media.giphy.com.evil.test/a.gif")).toBe(false);
   });
 });
