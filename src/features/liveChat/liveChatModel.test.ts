@@ -4,6 +4,7 @@ import {
   getLiveChatErrorMessage,
   mergeMessages,
   validateFeedback,
+  validateGif,
   validateImage,
   validateMessageBody,
 } from "./liveChatModel";
@@ -34,6 +35,10 @@ describe("liveChatModel", () => {
     expect(validateImage({ name: "proof.pdf", size: 10 })).toBe("รองรับเฉพาะไฟล์ JPG, PNG, WEBP และ GIF");
     expect(validateImage({ name: "proof.png", size: 5 * 1024 * 1024 + 1 })).toBe("รูปภาพต้องมีขนาดไม่เกิน 5 MB");
     expect(validateImage({ name: "proof.webp", size: 512 })).toBeNull();
+
+    expect(validateGif({ name: "reaction.png", size: 512 })).toBe("กรุณาเลือกไฟล์ GIF เท่านั้น");
+    expect(validateGif({ name: "reaction.gif", size: 5 * 1024 * 1024 + 1 })).toBe("รูปภาพต้องมีขนาดไม่เกิน 5 MB");
+    expect(validateGif({ name: "reaction.GIF", size: 512 })).toBeNull();
 
     expect(validateFeedback({ rating: 0, comment: "", tags: [] })).toBe("กรุณาเลือกคะแนน 1–5");
     expect(validateFeedback({ rating: 5, comment: "x".repeat(2_001), tags: [] })).toBe("ความคิดเห็นต้องไม่เกิน 2,000 ตัวอักษร");

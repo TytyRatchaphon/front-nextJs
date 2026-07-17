@@ -50,6 +50,7 @@ import {
   getLiveChatErrorMessage,
   mergeMessages,
   validateFeedback,
+  validateGif,
   validateImage,
   validateMessageBody,
 } from "./liveChatModel";
@@ -62,6 +63,7 @@ import type {
 } from "./types";
 
 type WorkspaceView = "topics" | "chat" | "history";
+type MediaUploadKind = "image" | "gif";
 
 const liveChatQueryKeys = {
   thread: ["live-chat", "thread"] as const,
@@ -165,12 +167,14 @@ export default function LiveChatContactPage() {
   const [feedbackComment, setFeedbackComment] = useState("");
   const [feedbackTags, setFeedbackTags] = useState<string[]>([]);
   const [failedImage, setFailedImage] = useState<File | null>(null);
+  const [mediaUploadKind, setMediaUploadKind] = useState<MediaUploadKind>("image");
   const [historyThreads, setHistoryThreads] = useState<LiveChatThread[]>([]);
   const [historyCursor, setHistoryCursor] = useState<number | null>(null);
   const [hasMoreHistory, setHasMoreHistory] = useState(false);
   const messageListRef = useRef<HTMLDivElement>(null);
   const shouldJumpToLatestRef = useRef(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const gifInputRef = useRef<HTMLInputElement>(null);
 
   const jumpToLatestMessage = useCallback(() => {
     const container = messageListRef.current;
@@ -372,6 +376,7 @@ export default function LiveChatContactPage() {
       setMessages((current) => mergeMessages(current, [result.message]));
       setError(null);
       setFailedImage(null);
+      setMediaUploadKind("image");
     },
     onError: handleError,
   });
@@ -447,13 +452,14 @@ export default function LiveChatContactPage() {
     sendTextMutation.mutate(messageBody);
   };
 
-  const handleImageSelection = (file?: File) => {
+  const handleMediaSelection = (file: File | undefined, kind: MediaUploadKind) => {
     if (!file) return;
-    const validationMessage = validateImage(file);
+    const validationMessage = kind === "gif" ? validateGif(file) : validateImage(file);
     if (validationMessage) {
       setError({ message: validationMessage });
       return;
     }
+    setMediaUploadKind(kind);
     setFailedImage(file);
     sendImageMutation.mutate(file);
   };
@@ -962,10 +968,20 @@ export default function LiveChatContactPage() {
                   <input
                     ref={imageInputRef}
                     type="file"
-                    accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif"
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
                     className="sr-only"
                     onChange={(event) => {
-                      handleImageSelection(event.target.files?.[0]);
+                      handleMediaSelection(event.target.files?.[0], "image");
+                      event.currentTarget.value = "";
+                    }}
+                  />
+                  <input
+                    ref={gifInputRef}
+                    type="file"
+                    accept=".gif,image/gif"
+                    className="sr-only"
+                    onChange={(event) => {
+                      handleMediaSelection(event.target.files?.[0], "gif");
                       event.currentTarget.value = "";
                     }}
                   />
@@ -976,7 +992,21 @@ export default function LiveChatContactPage() {
                     className="grid size-11 shrink-0 place-items-center rounded-full text-stone-500 hover:bg-stone-100 hover:text-[#dc2626] disabled:opacity-40"
                     aria-label="แนบรูปภาพ"
                   >
-                    {sendImageMutation.isPending ? <LoaderCircle className="size-5 animate-spin" /> : <ImagePlus className="size-5" />}
+                    {sendImageMutation.isPending && mediaUploadKind === "image"
+                      ? <LoaderCircle className="size-5 animate-spin" />
+                      : <ImagePlus className="size-5" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => gifInputRef.current?.click()}
+                    disabled={selectedThread?.can_send === false || sendImageMutation.isPending}
+                    className="grid size-11 shrink-0 place-items-center rounded-full text-stone-500 hover:bg-stone-100 hover:text-[#dc2626] disabled:opacity-40"
+                    aria-label="ส่ง GIF"
+                    title="ส่ง GIF"
+                  >
+                    {sendImageMutation.isPending && mediaUploadKind === "gif"
+                      ? <LoaderCircle className="size-5 animate-spin" />
+                      : <span className="text-xs font-bold">GIF</span>}
                   </button>
                   <textarea
                     value={messageBody}
@@ -1003,7 +1033,7 @@ export default function LiveChatContactPage() {
                   </button>
                 </div>
                 <p className="mx-auto mt-2 max-w-4xl px-14 text-[11px] text-stone-400">
-                  Enter เพื่อส่ง · Shift + Enter เพื่อขึ้นบรรทัดใหม่ · รูปไม่เกิน 5 MB
+                  Enter เพื่อส่ง · Shift + Enter เพื่อขึ้นบรรทัดใหม่ · รูปและ GIF ไม่เกิน 5 MB
                 </p>
               </footer>
             </div>

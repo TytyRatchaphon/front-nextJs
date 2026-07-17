@@ -31,6 +31,12 @@ export function validateImage(file: Pick<File, "name" | "size">): string | null 
   return null;
 }
 
+export function validateGif(file: Pick<File, "name" | "size">): string | null {
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+  if (extension !== "gif") return "กรุณาเลือกไฟล์ GIF เท่านั้น";
+  return validateImage(file);
+}
+
 export function validateFeedback(input: {
   rating: number;
   comment: string;
