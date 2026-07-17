@@ -161,6 +161,7 @@ describe("useReadingTheme", () => {
     expect(styleElement).toBeTruthy();
     expect(styleElement.id).toBe("navbar-theme-override");
     expect(styleElement.innerHTML).toContain("#Navbar");
+    expect(styleElement.innerHTML).toContain("#Navbar .reader-novel-mega-menu-panel");
     expect(mutationObserverInstances[0].observe).toHaveBeenCalled();
 
     effectCleanups.forEach((cleanup) => cleanup());

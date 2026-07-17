@@ -452,13 +452,21 @@ export function useReadingTheme(
         #Navbar a:hover, #Navbar button:hover, #Navbar .group:hover > a { color: #dc2626 !important; }
         #Navbar svg * { stroke: ${colors.text} !important; fill: none !important; }
         #Navbar #UserProfileDropdown { border-color: ${currentBg?.key === 'dark' ? '#ffffff' : '#000000'} !important; }
-        #Navbar #NovelMegaMenu > div { background-color: ${colors.bg} !important; border-color: ${colors.border} !important; }
-        #Navbar #NovelMegaMenu > div > div { background-color: ${colors.bg} !important; border-color: ${colors.border} !important; }
-        #Navbar #NovelMegaMenu .text-gray-600, #Navbar #NovelMegaMenu .text-gray-500, #Navbar #NovelMegaMenu button, #Navbar #NovelMegaMenu a { color: ${colors.text} !important; }
-        #Navbar #NovelMegaMenu .text-red-600 { color: #dc2626 !important; }
-        #Navbar #NovelMegaMenu button:hover, #Navbar #NovelMegaMenu a:hover { background-color: ${colors.border} !important; color: #dc2626 !important; }
-         #Navbar #NovelMegaMenu button.shadow-sm { background-color: ${colors.border} !important; color: #dc2626 !important; }
-         #Navbar #NovelMegaMenu svg { color: inherit !important; }
+        #Navbar .reader-novel-mega-menu-panel,
+        #Navbar .reader-novel-mega-menu-panel > div { background-color: ${colors.bg} !important; border-color: ${colors.border} !important; }
+        #Navbar .reader-novel-mega-menu-panel h3,
+        #Navbar .reader-novel-mega-menu-panel .text-gray-600,
+        #Navbar .reader-novel-mega-menu-panel .text-gray-500,
+        #Navbar .reader-novel-mega-menu-panel .text-gray-400,
+        #Navbar .reader-novel-mega-menu-panel button,
+        #Navbar .reader-novel-mega-menu-panel a { color: ${colors.text} !important; }
+        #Navbar .reader-novel-mega-menu-panel .bg-gray-50,
+        #Navbar .reader-novel-mega-menu-panel .bg-gray-100 { background-color: ${episodeSubtleBg} !important; }
+        #Navbar .reader-novel-mega-menu-panel .text-red-600 { color: #dc2626 !important; }
+        #Navbar .reader-novel-mega-menu-panel button:hover,
+        #Navbar .reader-novel-mega-menu-panel a:hover { background-color: ${episodeHoverBg} !important; color: #dc2626 !important; }
+        #Navbar .reader-novel-mega-menu-panel button.shadow-sm { background-color: ${episodeSubtleBg} !important; color: #dc2626 !important; }
+        #Navbar .reader-novel-mega-menu-panel svg { color: inherit !important; }
          #Navbar .reader-mobile-nav-trigger { background-color: ${episodeSubtleBg} !important; border-color: ${colors.border} !important; color: ${colors.text} !important; }
          #Navbar .reader-mobile-nav-trigger:hover { background-color: ${episodeHoverBg} !important; border-color: ${colors.border} !important; color: ${colors.text} !important; }
          .reader-mobile-nav-drawer-body,
