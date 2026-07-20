@@ -112,6 +112,7 @@ export default function StoryReportModal({ open, item, onClose, onReported }: St
       ]}
       centered
       destroyOnHidden
+      zIndex={10000}
     >
       <div className="space-y-4 pt-2">
         {errorMessage && <Alert type="error" showIcon message={errorMessage} />}

@@ -104,6 +104,7 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
     if (key !== 'report' || !currentItem || isCurrentItemReported) return;
 
     if (!isLoggedIn || !token) {
+      onClose();
       openLoginModal();
       return;
     }
