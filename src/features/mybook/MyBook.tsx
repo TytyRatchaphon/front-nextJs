@@ -260,16 +260,6 @@ function MyBook() {
       />,
     },
     {
-      key: 'story',
-      label: (
-        <div className='flex items-center gap-2'>
-          <Clapperboard size={16} />
-          จัดการ Story
-        </div>
-      ),
-      children: null,
-    },
-    {
       key: '2',
       label: (
         <div className='flex items-center gap-2'>
@@ -321,6 +311,16 @@ function MyBook() {
         </div>
       ),
       children: <MyBookWriterInfoTab user={user} token={token} isWriter={isWriter} updateToken={updateToken} />,
+    },
+    {
+      key: 'story',
+      label: (
+        <div className='flex items-center gap-2'>
+          <Clapperboard size={16} />
+          จัดการ Story
+        </div>
+      ),
+      children: null,
     },
   ], [myBooks, myBooksForStats, isLoadingMyBooks, token, coinIncome, setCoinIncome, updateToken, user, isWriter, booksPage, myBooksTotal, filterStatus, filterSortBy, filterOrder, filterEnd, filterQ]);
 
