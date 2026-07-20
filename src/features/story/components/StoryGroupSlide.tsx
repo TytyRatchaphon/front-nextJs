@@ -14,6 +14,7 @@ import StoryCommentModal from './StoryCommentModal';
 import { useVideoComments } from '../hooks/useVideoComments';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
+import { useStoryStore } from '../stores/storyStore';
 
 interface StoryGroupSlideProps {
   group: StoryGroup;
@@ -51,13 +52,14 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const [progress, setProgress] = useState(0);
-  const [isMuted, setIsMuted] = useState(true);
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
   const [commentText, setCommentText] = useState('');
 
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const user = useAuthStore((state) => state.user);
   const openLoginModal = useUIStore((state) => state.openLoginModal);
+  const isMuted = useStoryStore((state) => state.isMuted);
+  const setMuted = useStoryStore((state) => state.setMuted);
 
   const isOwnStory = group.section === 'own' || (isLoggedIn && user && user.user_id === group.user_id);
 
@@ -142,7 +144,8 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
             {playerState === 'playing' ? <Pause className="w-5 h-5 text-white" color="white" /> : <Play className="w-5 h-5 text-white" color="white" />}
           </button>
           <button
-            onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
+            onClick={(e) => { e.stopPropagation(); setMuted(!isMuted); }}
+            aria-label={isMuted ? 'เปิดเสียง' : 'ปิดเสียง'}
             className="w-8 h-8 flex items-center justify-center transition-colors cursor-pointer bg-black/20 hover:bg-black/40 rounded-full"
           >
             {isMuted ? <VolumeX className="w-5 h-5 text-white" color="white" /> : <Volume2 className="w-5 h-5 text-white" color="white" />}

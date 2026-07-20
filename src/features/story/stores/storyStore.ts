@@ -7,6 +7,7 @@ interface StoryState {
   currentGroupIndex: number;
   viewerStartItem: { refId: number; type: StoryItemType } | null;
   viewerRequestId: number;
+  isMuted: boolean;
 
   // Upload
   uploadStatus: 'idle' | 'validating' | 'uploading' | 'queued' | 'processing' | 'completed' | 'failed';
@@ -17,6 +18,7 @@ interface StoryState {
   // Actions - Viewer
   openViewer: (groupIndex: number, items: StoryItem[], startIndex?: number) => void;
   closeViewer: () => void;
+  setMuted: (isMuted: boolean) => void;
 
   // Actions - Upload
   setUploadState: (status: StoryState['uploadStatus'], progress?: number, stage?: string) => void;
@@ -30,6 +32,7 @@ export const useStoryStore = create<StoryState>()((set) => ({
   currentGroupIndex: 0,
   viewerStartItem: null,
   viewerRequestId: 0,
+  isMuted: true,
   uploadStatus: 'idle',
   uploadProgress: 0,
   uploadStage: '',
@@ -53,7 +56,10 @@ export const useStoryStore = create<StoryState>()((set) => ({
     set({
       isViewerOpen: false,
       viewerStartItem: null,
+      isMuted: true,
     }),
+
+  setMuted: (isMuted) => set({ isMuted }),
 
   // Upload actions
   setUploadState: (status, progress = 0, stage = '') =>
