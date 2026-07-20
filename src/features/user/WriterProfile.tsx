@@ -107,7 +107,7 @@ function WriterProfileContent({ writerId }: { writerId: string }) {
         setFollowLoading(true);
         try {
             const action = isFollowing ? 'unfollow' : 'follow';
-            await followWriter(writerId, action, token);
+            await followWriter(writerId, action);
 
             setIsFollowing(!isFollowing);
 
