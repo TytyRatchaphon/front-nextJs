@@ -202,6 +202,31 @@ export interface VideoCommentReportResponse {
   created?: boolean;
 }
 
+export interface VideoReportPreset {
+  id: number;
+  title: string;
+  order_by: number;
+}
+
+export interface VideoReportRequest {
+  type: StoryItemType;
+  ref_id: number;
+  preset_id: number;
+  detail?: string | null;
+}
+
+export interface VideoReportResult {
+  id: number;
+  type: StoryItemType;
+  ref_id: number;
+  preset: Pick<VideoReportPreset, 'id' | 'title'>;
+  detail: string | null;
+  status: 'pending' | 'resolved' | 'rejected';
+  created: boolean;
+  already_reported: boolean;
+  created_at: string;
+}
+
 // --- Management API Types ---
 
 export interface StoryPlaybackData {

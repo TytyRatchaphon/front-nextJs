@@ -47,6 +47,8 @@ apiClient.interceptors.request.use(
 
         // เช็คว่าอยู่ใน browser environment
         const skipAuth = config.headers['x-skip-auth'] === 'true';
+        const authScheme = config.headers['x-auth-scheme'];
+        delete config.headers['x-auth-scheme'];
         if (skipAuth) {
             delete config.headers['x-skip-auth'];
             delete config.headers.Authorization;
@@ -66,7 +68,9 @@ apiClient.interceptors.request.use(
                     tokenValue = (await getAuthSession())?.token || undefined;
                 }
                 if (tokenValue) {
-                    config.headers.Authorization = `${tokenValue}`;
+                    config.headers.Authorization = authScheme === 'bearer'
+                        ? `Bearer ${tokenValue}`
+                        : `${tokenValue}`;
                 }
             }
         }

@@ -11,6 +11,7 @@ import { VolumeX, Volume2, Play, Pause, X, MessageCircle, Send } from 'lucide-re
 import { Dropdown, App } from 'antd';
 import Image from 'next/image';
 import StoryCommentModal from './StoryCommentModal';
+import StoryReportModal from './StoryReportModal';
 import { useVideoComments } from '../hooks/useVideoComments';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
@@ -53,6 +54,8 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [progress, setProgress] = useState(0);
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportedItems, setReportedItems] = useState<Set<string>>(() => new Set());
   const [commentText, setCommentText] = useState('');
 
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
@@ -62,6 +65,8 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
   const setMuted = useStoryStore((state) => state.setMuted);
 
   const isOwnStory = group.section === 'own' || (isLoggedIn && user && user.user_id === group.user_id);
+  const currentItemKey = currentItem ? `${currentItem.type}:${currentItem.ref_id}` : null;
+  const isCurrentItemReported = currentItemKey ? reportedItems.has(currentItemKey) : false;
 
   const { createCommentMutation } = useVideoComments(
     currentItem ? currentItem.type : 'video_story_items',
@@ -186,11 +191,16 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
                   },
                   {
                     key: 'report',
-                    label: 'รายงานปัญหา',
+                    label: isCurrentItemReported ? 'รายงานแล้ว' : 'รายงานปัญหา',
                     danger: true,
+                    disabled: !currentItem || isCurrentItemReported,
                     onClick: ({ domEvent }) => {
                       domEvent.stopPropagation();
-                      message.success('ขอบคุณที่แจ้งปัญหา เราจะดำเนินการตรวจสอบโดยเร็วที่สุด');
+                      if (!isLoggedIn) {
+                        openLoginModal();
+                        return;
+                      }
+                      setIsReportModalOpen(true);
                     },
                   }
                 ]
@@ -351,6 +361,16 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
               refId={currentItem.ref_id}
             />
           )}
+
+          <StoryReportModal
+            open={isReportModalOpen}
+            item={currentItem}
+            onClose={() => setIsReportModalOpen(false)}
+            onReported={() => {
+              if (!currentItemKey) return;
+              setReportedItems((previous) => new Set(previous).add(currentItemKey));
+            }}
+          />
         </>
       )}
     </div>

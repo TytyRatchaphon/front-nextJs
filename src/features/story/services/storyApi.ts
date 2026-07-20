@@ -22,6 +22,9 @@ import {
   StoryGroupType,
   StoryDisplayStatus,
   StoryUploadResponse,
+  VideoReportPreset,
+  VideoReportRequest,
+  VideoReportResult,
 } from '../types/storyTypes';
 
 type StoryApiPayload<T> = T | ApiResponse<T>;
@@ -36,6 +39,60 @@ const unwrapStoryResponse = <T>(payload: StoryApiPayload<T>): T => {
     return payload.data;
   }
   return payload;
+};
+
+export class VideoReportApiError extends Error {
+  constructor(
+    message: string,
+    public readonly code?: number | string,
+    public readonly httpStatus?: number,
+    public readonly retryAfterSeconds?: number,
+  ) {
+    super(message);
+    this.name = 'VideoReportApiError';
+  }
+}
+
+const parseRetryAfterSeconds = (value: unknown): number | undefined => {
+  const seconds = Number(value);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : undefined;
+};
+
+const toVideoReportApiError = (error: unknown): VideoReportApiError => {
+  if (error instanceof VideoReportApiError) return error;
+
+  const response = (error as {
+    response?: {
+      status?: number;
+      data?: { code?: number | string; message?: string };
+      headers?: Record<string, unknown>;
+    };
+    message?: string;
+  })?.response;
+
+  return new VideoReportApiError(
+    response?.data?.message || (error as Error)?.message || 'VIDEO_INTERNAL_ERROR',
+    response?.data?.code,
+    response?.status,
+    parseRetryAfterSeconds(response?.headers?.['retry-after']),
+  );
+};
+
+const unwrapVideoReportResponse = <T>(
+  payload: ApiResponse<T>,
+  httpStatus?: number,
+  retryAfter?: unknown,
+): T => {
+  if (payload?.code !== 200 || payload.data == null) {
+    throw new VideoReportApiError(
+      payload?.message || 'VIDEO_INTERNAL_ERROR',
+      payload?.code,
+      httpStatus,
+      parseRetryAfterSeconds(retryAfter),
+    );
+  }
+
+  return payload.data;
 };
 
 export const storyApi = {
@@ -202,6 +259,48 @@ export const storyApi = {
   reportComment: async (comment_id: number): Promise<VideoCommentReportResponse> => {
     const response = await apiClient.post<StoryApiPayload<VideoCommentReportResponse>>(resolveVideoApiUrl(`/video/comments/${comment_id}/report`));
     return unwrapStoryResponse(response.data);
+  },
+
+  fetchVideoReportPresets: async (): Promise<VideoReportPreset[]> => {
+    try {
+      const response = await apiClient.get<ApiResponse<{ items: VideoReportPreset[] }>>(
+        resolveVideoApiUrl('/video/reports/presets'),
+        { headers: { 'x-skip-auth': 'true' } },
+      );
+      const data = unwrapVideoReportResponse(
+        response.data,
+        response.status,
+        response.headers?.['retry-after'],
+      );
+      return data.items ?? [];
+    } catch (error) {
+      throw toVideoReportApiError(error);
+    }
+  },
+
+  submitVideoReport: async (request: VideoReportRequest): Promise<VideoReportResult> => {
+    const detail = request.detail?.trim();
+    const payload: VideoReportRequest = {
+      type: request.type,
+      ref_id: request.ref_id,
+      preset_id: request.preset_id,
+      ...(request.detail !== undefined ? { detail: detail || null } : {}),
+    };
+
+    try {
+      const response = await apiClient.post<ApiResponse<VideoReportResult>>(
+        resolveVideoApiUrl('/video/reports'),
+        payload,
+        { headers: { 'x-auth-scheme': 'bearer' } },
+      );
+      return unwrapVideoReportResponse(
+        response.data,
+        response.status,
+        response.headers?.['retry-after'],
+      );
+    } catch (error) {
+      throw toVideoReportApiError(error);
+    }
   },
 
   // --- Management API ---

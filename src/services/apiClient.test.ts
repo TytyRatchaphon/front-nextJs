@@ -148,6 +148,22 @@ describe('apiClient', () => {
     expect(result.headers.Authorization).toBe('parsed-token')
   })
 
+  it('supports an opt-in Bearer auth scheme for APIs that require it', async () => {
+    const { handlers } = await setupApiClientModule({
+      browser: true,
+      stateToken: 'state-token',
+      parsedToken: 'parsed-token',
+    })
+    const config = {
+      headers: { 'x-auth-scheme': 'bearer' } as Record<string, string>,
+    }
+
+    const result = await handlers.requestSuccess(config)
+
+    expect(result.headers['x-auth-scheme']).toBeUndefined()
+    expect(result.headers.Authorization).toBe('Bearer parsed-token')
+  })
+
   it('reuses cached device id across browser requests in same module instance', async () => {
     const { handlers, mocks } = await setupApiClientModule({
       browser: true,
