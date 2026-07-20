@@ -147,10 +147,12 @@ export default function StoryReportModal({ open, item, onClose, onReported }: St
             value={detail}
             onChange={(event) => setDetail(event.target.value)}
             maxLength={2000}
-            showCount
             rows={4}
             placeholder="อธิบายปัญหาที่พบ"
           />
+          <div className="mt-1 text-right text-xs text-gray-400" aria-live="polite">
+            {detail.length} / 2000
+          </div>
         </div>
       </div>
     </Modal>
