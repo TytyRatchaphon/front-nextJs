@@ -1,4 +1,3 @@
-import { UserOutlined } from "@ant-design/icons";
 import clsx from "clsx";
 import Image from "next/image";
 import { useEffect } from "react";
@@ -6,6 +5,7 @@ import { useEffect } from "react";
 import { useInView } from "@/hooks/useInView";
 import { useStoryImpressions } from "../hooks/useStoryImpressions";
 import type { StoryGroup } from "../types/storyTypes";
+import StoryAvatar from "./StoryAvatar";
 
 interface StoryCardProps {
   group: StoryGroup;
@@ -24,11 +24,11 @@ const StoryCard = ({ group, isOwn, onClick }: StoryCardProps) => {
   }, [group.groupType, group.user_id, inView, registerImpression]);
 
   return (
-    <div ref={ref} className="h-44 w-28 flex-shrink-0">
+    <div ref={ref} className="h-44 w-28 flex-shrink-0 overflow-hidden rounded-[24px]">
       <button
         type="button"
         onClick={onClick}
-        className="group relative h-full w-full overflow-hidden rounded-lg bg-zinc-900 text-left shadow-sm"
+        className="group relative isolate block h-full w-full appearance-none overflow-hidden rounded-[24px] border-0 bg-zinc-900 p-0 text-left shadow-sm"
         aria-label={isOwn ? "เปิดสตอรี่ของคุณ" : `เปิดสตอรี่ของ ${group.user?.display_name || "Enjoybook"}`}
       >
       {group.preview?.thumbnail_url ? (
@@ -44,23 +44,11 @@ const StoryCard = ({ group, isOwn, onClick }: StoryCardProps) => {
       <div className="absolute left-3 top-3">
         <div
           className={clsx(
-            "h-10 w-10 overflow-hidden rounded-full bg-white ring-2 ring-offset-1 ring-offset-black/50",
+            "relative h-10 w-10 overflow-hidden rounded-full bg-white ring-2 ring-offset-1 ring-offset-black/50",
             group.hasUnseen ? "ring-red-500" : "ring-gray-300",
           )}
         >
-          {group.user?.profile_image ? (
-            <Image
-              src={group.user.profile_image}
-              alt=""
-              width={40}
-              height={40}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <span className="flex h-full w-full items-center justify-center text-gray-500">
-              <UserOutlined />
-            </span>
-          )}
+          <StoryAvatar src={group.user?.profile_image} alt={group.user?.display_name || ""} />
         </div>
       </div>
       <span className="pointer-events-none absolute bottom-3 left-3 right-3 truncate text-xs font-medium text-white drop-shadow-md">

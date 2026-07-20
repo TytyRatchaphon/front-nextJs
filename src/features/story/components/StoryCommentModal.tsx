@@ -1,7 +1,6 @@
 "use client";
 
 import { MoreHorizontal, Send, X } from "lucide-react";
-import Image from "next/image";
 import { useMemo, useState } from "react";
 import { Drawer, Dropdown, Spin } from "antd";
 
@@ -9,6 +8,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
 import { useVideoComments } from "../hooks/useVideoComments";
 import type { StoryItemType, VideoComment } from "../types/storyTypes";
+import StoryAvatar from "./StoryAvatar";
 
 interface StoryCommentModalProps {
   isOpen: boolean;
@@ -69,7 +69,7 @@ const StoryCommentModal = ({ isOpen, onClose, type, refId }: StoryCommentModalPr
                 return (
                   <article key={comment.id} className="flex gap-3">
                     <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full bg-zinc-800">
-                      <Image src={comment.user?.img || "/images/default-avatar.png"} alt="" fill className="object-cover" />
+                      <StoryAvatar src={comment.user?.img} alt={comment.user?.fullname || ""} sizes="36px" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">

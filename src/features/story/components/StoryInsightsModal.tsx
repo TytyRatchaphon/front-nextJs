@@ -1,11 +1,12 @@
 "use client";
 
-import { EyeOutlined, HeartFilled, UserOutlined } from "@ant-design/icons";
+import { EyeOutlined, HeartFilled } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
-import { Avatar, List, Modal, Tabs } from "antd";
+import { List, Modal, Tabs } from "antd";
 import dayjs from "dayjs";
 
 import { storyApi } from "../services/storyApi";
+import StoryAvatar from "./StoryAvatar";
 
 interface StoryInsightsModalProps {
   storyItemId: number | null;
@@ -35,7 +36,11 @@ export default function StoryInsightsModal({ storyItemId, isOpen, onClose }: Sto
       renderItem={(item) => (
         <List.Item>
           <List.Item.Meta
-            avatar={<Avatar src={item.user?.profile_image} icon={!item.user?.profile_image ? <UserOutlined /> : undefined} />}
+            avatar={(
+              <div className="relative h-10 w-10 overflow-hidden rounded-full bg-gray-100">
+                <StoryAvatar src={item.user?.profile_image} alt={item.user?.display_name || ""} />
+              </div>
+            )}
             title={item.user?.display_name || "ผู้เข้าชมทั่วไป"}
             description={dayjs(item.viewed_at || item.reacted_at).format("D MMM YYYY HH:mm")}
           />

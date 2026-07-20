@@ -1,7 +1,7 @@
-import Image from 'next/image';
 import { X } from 'lucide-react';
 
 import type { StoryGroup } from '../types/storyTypes';
+import StoryAvatar from './StoryAvatar';
 
 interface StorySidebarProps {
   groups: StoryGroup[];
@@ -47,16 +47,13 @@ const StorySidebar = ({
             <span className={`w-14 h-14 rounded-full p-[2px] shrink-0 border-2 ${
               group.hasUnseen ? 'border-[#1877F2]' : 'border-gray-500/50'
             }`}>
-              <span className="block w-full h-full rounded-full overflow-hidden bg-zinc-800">
-                {group.user?.profile_image && (
-                  <Image
-                    src={group.user.profile_image}
-                    alt={group.user.display_name}
-                    width={52}
-                    height={52}
-                    className="w-full h-full object-cover border border-black/10"
-                  />
-                )}
+              <span className="relative block w-full h-full rounded-full overflow-hidden bg-zinc-800">
+                <StoryAvatar
+                  src={group.user?.profile_image}
+                  alt={group.user?.display_name || ''}
+                  sizes="52px"
+                  className="object-cover border border-black/10"
+                />
               </span>
             </span>
             <span className="flex-1 min-w-0">

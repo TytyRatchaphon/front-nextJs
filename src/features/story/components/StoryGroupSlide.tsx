@@ -3,6 +3,7 @@ import { StoryGroup, StoryItem, StoryItemType } from '../types/storyTypes';
 import { useStoryPlayer } from '../hooks/useStoryPlayer';
 import { storyApi } from '../services/storyApi';
 import StoryProgressBar from './StoryProgressBar';
+import StoryAvatar from './StoryAvatar';
 import StoryCtaLinks from './StoryCtaLinks';
 import StoryLikeButton from './StoryLikeButton';
 import { CloseOutlined, LinkOutlined } from '@ant-design/icons';
@@ -119,21 +120,8 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
       {/* Header */}
       <div className="absolute top-4 left-0 right-0 z-50 px-4 pt-2 flex items-center justify-between pointer-events-none">
         <div className="flex items-center gap-2 pointer-events-auto">
-          <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 shrink-0">
-            {group.user?.profile_image && (
-              <Image
-                src={group.user.profile_image}
-                alt="User"
-                width={32}
-                height={32}
-                className="object-cover w-full h-full"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.srcset = '';
-                  target.src = '/images/default-avatar.png';
-                }}
-              />
-            )}
+          <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 shrink-0">
+            <StoryAvatar src={group.user?.profile_image} alt="User" sizes="32px" />
           </div>
           <span className="text-white font-medium text-sm drop-shadow-md">
             {group.user?.display_name || 'Enjoybook'}
@@ -371,10 +359,8 @@ export const StoryGroupPlaceholder: React.FC<{ group: StoryGroup }> = ({ group }
     <StoryProgressBar totalItems={group.totalItems} currentIndex={0} progress={0} />
     <div className="absolute top-4 left-0 right-0 z-50 px-4 pt-2 flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 shrink-0">
-          {group.user?.profile_image && (
-            <Image src={group.user.profile_image} alt="User" width={32} height={32} className="object-cover w-full h-full" />
-          )}
+        <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-200 shrink-0">
+          <StoryAvatar src={group.user?.profile_image} alt="User" sizes="32px" />
         </div>
         <span className="text-white font-medium text-sm drop-shadow-md">
           {group.user?.display_name || 'Enjoybook'}

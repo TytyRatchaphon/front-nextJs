@@ -15,7 +15,7 @@ import StoryCardSkeleton from "./StoryCardSkeleton";
 import StoryUploader from "./StoryUploader";
 
 const CreateStoryCard = ({ disabled = false }: { disabled?: boolean }) => (
-  <div className="group relative flex h-44 w-28 items-center justify-center overflow-hidden rounded-lg border border-zinc-800/50 bg-[#1A1A1A] shadow-sm">
+  <div className="group relative isolate flex h-44 w-28 items-center justify-center overflow-hidden rounded-[24px] border border-zinc-800/50 bg-[#1A1A1A] shadow-sm">
     <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full border-[3px] border-zinc-300 bg-[#1877F2] text-white shadow-md transition-transform group-hover:scale-105">
       <Plus className="h-6 w-6" />
     </div>
