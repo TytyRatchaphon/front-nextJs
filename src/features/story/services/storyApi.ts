@@ -26,6 +26,11 @@ import {
 
 type StoryApiPayload<T> = T | ApiResponse<T>;
 
+export const resolveVideoApiUrl = (path: string): string => {
+  const baseUrl = process.env.NEXT_PUBLIC_VIDEO_API_BASE_URL?.trim().replace(/\/+$/, '');
+  return baseUrl ? `${baseUrl}/${path.replace(/^\/+/, '')}` : path;
+};
+
 const unwrapStoryResponse = <T>(payload: StoryApiPayload<T>): T => {
   if (payload && typeof payload === 'object' && 'data' in payload) {
     return payload.data;
@@ -39,7 +44,9 @@ export const storyApi = {
     params.append('limit', limit.toString());
     if (cursor) params.append('cursor', cursor);
 
-    const response = await apiClient.get<StoryApiPayload<StoryBarResponse>>(`/video/story-bar?${params.toString()}`);
+    const response = await apiClient.get<StoryApiPayload<StoryBarResponse>>(
+      resolveVideoApiUrl(`/video/story-bar?${params.toString()}`)
+    );
     return unwrapStoryResponse(response.data);
   },
 
@@ -52,13 +59,13 @@ export const storyApi = {
     if (startRefId) params.append('start_ref_id', startRefId.toString());
 
     const response = await apiClient.get<StoryApiPayload<StoryGroupItemsResponse>>(
-      `/video/story-bar/groups/${groupType}/${groupId}/items?${params.toString()}`
+      resolveVideoApiUrl(`/video/story-bar/groups/${groupType}/${groupId}/items?${params.toString()}`)
     );
     return unwrapStoryResponse(response.data);
   },
 
   sendView: async (type: StoryItemType, ref_id: number): Promise<StoryInteractionResponse> => {
-    const response = await apiClient.post<StoryApiPayload<StoryInteractionResponse>>('/video/interactions/view', {
+    const response = await apiClient.post<StoryApiPayload<StoryInteractionResponse>>(resolveVideoApiUrl('/video/interactions/view'), {
       type,
       ref_id,
     });
@@ -66,7 +73,7 @@ export const storyApi = {
   },
 
   toggleLike: async (type: StoryItemType, ref_id: number): Promise<StoryInteractionResponse> => {
-    const response = await apiClient.post<StoryApiPayload<StoryInteractionResponse>>('/video/interactions/like', {
+    const response = await apiClient.post<StoryApiPayload<StoryInteractionResponse>>(resolveVideoApiUrl('/video/interactions/like'), {
       type,
       ref_id,
     });
@@ -74,18 +81,18 @@ export const storyApi = {
   },
 
   sendImpressions: async (impressions: { groupType: StoryGroupType; user_id: number }[]): Promise<void> => {
-    await apiClient.post('/video/story-bar/impressions', { impressions });
+    await apiClient.post(resolveVideoApiUrl('/video/story-bar/impressions'), { impressions });
   },
 
   refreshPlayback: async (type: StoryItemType, ref_id: number): Promise<StoryPlaybackRefreshResponse> => {
     const response = await apiClient.get<StoryApiPayload<StoryPlaybackRefreshResponse>>(
-      `/video/playback?type=${type}&ref_id=${ref_id}`
+      resolveVideoApiUrl(`/video/playback?type=${type}&ref_id=${ref_id}`)
     );
     return unwrapStoryResponse(response.data);
   },
 
   fetchStoryConfig: async (): Promise<StoryConfig> => {
-    const response = await apiClient.get<StoryApiPayload<StoryConfig>>('/video/story/config');
+    const response = await apiClient.get<StoryApiPayload<StoryConfig>>(resolveVideoApiUrl('/video/story/config'));
     return unwrapStoryResponse(response.data);
   },
 
@@ -112,24 +119,24 @@ export const storyApi = {
       headers['x-links'] = encodeURIComponent(JSON.stringify(links));
     }
 
-    const response = await apiClient.post<StoryApiPayload<StoryUploadResponse | number>>('/video/story/uploads', file, {
+    const response = await apiClient.post<StoryApiPayload<StoryUploadResponse | number>>(resolveVideoApiUrl('/video/story/uploads'), file, {
       headers,
     });
     return unwrapStoryResponse(response.data);
   },
 
   fetchStoryStatus: async (storyItemId: number): Promise<StoryUploadStatusResponse> => {
-    const response = await apiClient.get<StoryApiPayload<StoryUploadStatusResponse>>(`/video/story/${storyItemId}/status?_t=${Date.now()}`);
+    const response = await apiClient.get<StoryApiPayload<StoryUploadStatusResponse>>(resolveVideoApiUrl(`/video/story/${storyItemId}/status?_t=${Date.now()}`));
     return unwrapStoryResponse(response.data);
   },
 
   fetchStoryInsights: async (storyItemId: number): Promise<StoryInsightsResponse> => {
-    const response = await apiClient.get<StoryApiPayload<StoryInsightsResponse>>(`/video/story/${storyItemId}/insights`);
+    const response = await apiClient.get<StoryApiPayload<StoryInsightsResponse>>(resolveVideoApiUrl(`/video/story/${storyItemId}/insights`));
     return unwrapStoryResponse(response.data);
   },
 
   fetchStoryLinks: async (storyItemId: number): Promise<StoryLinksManageResponse> => {
-    const response = await apiClient.get<StoryApiPayload<StoryLinksManageResponse>>(`/video/story/${storyItemId}/links`);
+    const response = await apiClient.get<StoryApiPayload<StoryLinksManageResponse>>(resolveVideoApiUrl(`/video/story/${storyItemId}/links`));
     return unwrapStoryResponse(response.data);
   },
 
@@ -147,7 +154,7 @@ export const storyApi = {
     params.append('limit', limit.toString());
     if (cursor) params.append('cursor', cursor);
 
-    const response = await apiClient.get<StoryApiPayload<VideoCommentResponse>>(`/video/comments?${params.toString()}`);
+    const response = await apiClient.get<StoryApiPayload<VideoCommentResponse>>(resolveVideoApiUrl(`/video/comments?${params.toString()}`));
     return unwrapStoryResponse(response.data);
   },
 
@@ -160,7 +167,7 @@ export const storyApi = {
     params.append('limit', limit.toString());
     if (cursor) params.append('cursor', cursor);
 
-    const response = await apiClient.get<StoryApiPayload<VideoCommentReplyResponse>>(`/video/comments/${comment_id}/replies?${params.toString()}`);
+    const response = await apiClient.get<StoryApiPayload<VideoCommentReplyResponse>>(resolveVideoApiUrl(`/video/comments/${comment_id}/replies?${params.toString()}`));
     return unwrapStoryResponse(response.data);
   },
 
@@ -169,7 +176,7 @@ export const storyApi = {
     ref_id: number,
     comment_text: string
   ): Promise<VideoCommentCreateResponse> => {
-    const response = await apiClient.post<StoryApiPayload<VideoCommentCreateResponse>>('/video/comments', {
+    const response = await apiClient.post<StoryApiPayload<VideoCommentCreateResponse>>(resolveVideoApiUrl('/video/comments'), {
       type,
       ref_id,
       comment_text,
@@ -181,19 +188,19 @@ export const storyApi = {
     comment_id: number,
     comment_text: string
   ): Promise<VideoCommentCreateResponse> => {
-    const response = await apiClient.post<StoryApiPayload<VideoCommentCreateResponse>>(`/video/comments/${comment_id}/replies`, {
+    const response = await apiClient.post<StoryApiPayload<VideoCommentCreateResponse>>(resolveVideoApiUrl(`/video/comments/${comment_id}/replies`), {
       comment_text,
     });
     return unwrapStoryResponse(response.data);
   },
 
   deleteComment: async (comment_id: number): Promise<VideoCommentDeleteResponse> => {
-    const response = await apiClient.delete<StoryApiPayload<VideoCommentDeleteResponse>>(`/video/comments/${comment_id}`);
+    const response = await apiClient.delete<StoryApiPayload<VideoCommentDeleteResponse>>(resolveVideoApiUrl(`/video/comments/${comment_id}`));
     return unwrapStoryResponse(response.data);
   },
 
   reportComment: async (comment_id: number): Promise<VideoCommentReportResponse> => {
-    const response = await apiClient.post<StoryApiPayload<VideoCommentReportResponse>>(`/video/comments/${comment_id}/report`);
+    const response = await apiClient.post<StoryApiPayload<VideoCommentReportResponse>>(resolveVideoApiUrl(`/video/comments/${comment_id}/report`));
     return unwrapStoryResponse(response.data);
   },
 
@@ -211,12 +218,12 @@ export const storyApi = {
     params.append('displayStatus', displayStatus);
     params.append('sort', sort);
 
-    const response = await apiClient.get<StoryApiPayload<StoryManageResponse>>(`/video/story/manage?${params.toString()}`);
+    const response = await apiClient.get<StoryApiPayload<StoryManageResponse>>(resolveVideoApiUrl(`/video/story/manage?${params.toString()}`));
     return unwrapStoryResponse(response.data);
   },
 
   fetchManageStoryDetail: async (storyItemId: number): Promise<StoryManageItem> => {
-    const response = await apiClient.get<StoryApiPayload<StoryManageItem>>(`/video/story/${storyItemId}/manage`);
+    const response = await apiClient.get<StoryApiPayload<StoryManageItem>>(resolveVideoApiUrl(`/video/story/${storyItemId}/manage`));
     return unwrapStoryResponse(response.data);
   },
 
@@ -224,12 +231,12 @@ export const storyApi = {
     storyItemId: number,
     data: { publishStatus?: 'active' | 'hidden'; startDate?: string; endDate?: string }
   ): Promise<StoryManageItem> => {
-    const response = await apiClient.patch<StoryApiPayload<StoryManageItem>>(`/video/story/${storyItemId}`, data);
+    const response = await apiClient.patch<StoryApiPayload<StoryManageItem>>(resolveVideoApiUrl(`/video/story/${storyItemId}`), data);
     return unwrapStoryResponse(response.data);
   },
 
   deleteStory: async (storyItemId: number): Promise<{ success?: boolean }> => {
-    const response = await apiClient.delete<StoryApiPayload<{ success?: boolean }>>(`/video/story/${storyItemId}`);
+    const response = await apiClient.delete<StoryApiPayload<{ success?: boolean }>>(resolveVideoApiUrl(`/video/story/${storyItemId}`));
     return unwrapStoryResponse(response.data);
   },
 
@@ -244,32 +251,32 @@ export const storyApi = {
     params.append('limit', limit.toString());
     params.append('reaction', reaction);
 
-    const response = await apiClient.get<StoryApiPayload<StoryViewersResponse>>(`/video/story/${storyItemId}/viewers?${params.toString()}`);
+    const response = await apiClient.get<StoryApiPayload<StoryViewersResponse>>(resolveVideoApiUrl(`/video/story/${storyItemId}/viewers?${params.toString()}`));
     return unwrapStoryResponse(response.data);
   },
 
   createManageLink: async (storyItemId: number, data: { links: { label: string; url: string; orderBy?: number }[] }): Promise<StoryLinksManageResponse> => {
-    const response = await apiClient.post<StoryApiPayload<StoryLinksManageResponse>>(`/video/story/${storyItemId}/links`, data);
+    const response = await apiClient.post<StoryApiPayload<StoryLinksManageResponse>>(resolveVideoApiUrl(`/video/story/${storyItemId}/links`), data);
     return unwrapStoryResponse(response.data);
   },
 
   updateManageLinks: async (storyItemId: number, data: { links: { label: string; url: string; orderBy?: number }[] }): Promise<StoryLinksManageResponse> => {
-    const response = await apiClient.put<StoryApiPayload<StoryLinksManageResponse>>(`/video/story/${storyItemId}/links`, data);
+    const response = await apiClient.put<StoryApiPayload<StoryLinksManageResponse>>(resolveVideoApiUrl(`/video/story/${storyItemId}/links`), data);
     return unwrapStoryResponse(response.data);
   },
 
   reorderManageLinks: async (storyItemId: number, linkIds: number[]): Promise<StoryLinksManageResponse> => {
-    const response = await apiClient.put<StoryApiPayload<StoryLinksManageResponse>>(`/video/story/${storyItemId}/links/order`, { linkIds });
+    const response = await apiClient.put<StoryApiPayload<StoryLinksManageResponse>>(resolveVideoApiUrl(`/video/story/${storyItemId}/links/order`), { linkIds });
     return unwrapStoryResponse(response.data);
   },
 
   updateManageLinkSingle: async (storyItemId: number, linkId: number, data: { label: string; url: string }): Promise<StoryLinkResponse> => {
-    const response = await apiClient.patch<StoryApiPayload<StoryLinkResponse>>(`/video/story/${storyItemId}/links/${linkId}`, data);
+    const response = await apiClient.patch<StoryApiPayload<StoryLinkResponse>>(resolveVideoApiUrl(`/video/story/${storyItemId}/links/${linkId}`), data);
     return unwrapStoryResponse(response.data);
   },
 
   deleteManageLink: async (storyItemId: number, linkId: number): Promise<{ success?: boolean }> => {
-    const response = await apiClient.delete<StoryApiPayload<{ success?: boolean }>>(`/video/story/${storyItemId}/links/${linkId}`);
+    const response = await apiClient.delete<StoryApiPayload<{ success?: boolean }>>(resolveVideoApiUrl(`/video/story/${storyItemId}/links/${linkId}`));
     return unwrapStoryResponse(response.data);
   },
 };
