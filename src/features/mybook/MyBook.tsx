@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Tabs } from 'antd';
 import type { TabsProps } from 'antd';
 import { useQuery } from '@tanstack/react-query';
+import { Clapperboard } from 'lucide-react';
 import '@/services/apiClient';
 import { useAuthStore } from '@/stores/authStore';
 import { fetchUserMyBookInfo, fetchUserMyBookListNames, fetchUserMyBooks, fetchWriterCheck } from '@/services/apiServices';
@@ -259,6 +260,16 @@ function MyBook() {
       />,
     },
     {
+      key: 'story',
+      label: (
+        <div className='flex items-center gap-2'>
+          <Clapperboard size={16} />
+          จัดการ Story
+        </div>
+      ),
+      children: null,
+    },
+    {
       key: '2',
       label: (
         <div className='flex items-center gap-2'>
@@ -365,6 +376,9 @@ function MyBook() {
         <Tabs
           defaultActiveKey="1"
           items={tabItems}
+          onChange={(key) => {
+            if (key === 'story') router.push('/w/story/manage');
+          }}
           className='font-primary custom-tabs-red'
         />
 
