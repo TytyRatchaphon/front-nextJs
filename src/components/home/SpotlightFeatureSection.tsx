@@ -18,6 +18,8 @@ interface SpotlightFeatureSectionProps {
 }
 
 const coverSrc = (book?: any) => resolveBookCoverImageSrc(book, '/images/ejb.png', 'book');
+const editorNoteImageSrc = (book?: any) =>
+  resolveBookCoverImageSrc(book, '/images/ejb.png', 'thumbnail', false);
 
 const formatCount = (num: number) => {
   if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -100,7 +102,7 @@ export default function SpotlightFeatureSection({
         >
           <div className="relative h-[126px] w-full sm:h-[168px]">
             <Image
-              src={coverSrc(item)}
+              src={editorNoteImageSrc(item)}
               alt={item?.name || "Editor note"}
               fill
               className="object-cover object-center transition duration-300 group-hover:scale-[1.03]"
