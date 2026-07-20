@@ -11,7 +11,6 @@ import {
   Clock3,
   Library,
   LogOut,
-  MessageCircle,
   MoreHorizontal,
   RefreshCw,
   Store,
@@ -218,17 +217,11 @@ export default function UserMenuPopover({
       </div>
 
       <div className={`reader-user-popover-body flex-1 overflow-y-auto bg-white ${isDrawer ? "px-4 mt-2" : ""}`}>
-        <div className={`grid grid-cols-2 gap-x-2 ${isDrawer ? "w-full" : "w-[274px] mx-auto"}`}>
+        <div className={`${isDrawer ? "w-full" : "w-[274px] mx-auto"}`}>
           <Link href={profileMenuItem.href} onClick={onClose} className={linkClass}>
             <ProfileIcon className={iconClass} />
             <span className="font-primary whitespace-nowrap text-sm text-black transition-colors group-hover:text-red-600">
               {profileMenuItem.label}
-            </span>
-          </Link>
-          <Link href="/contact" onClick={onClose} className={linkClass}>
-            <MessageCircle className={iconClass} />
-            <span className="font-primary whitespace-nowrap text-sm text-black transition-colors group-hover:text-red-600">
-              ติดต่อเรา
             </span>
           </Link>
         </div>
