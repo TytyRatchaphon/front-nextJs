@@ -14,6 +14,7 @@ import UpdateBookCard from "@/components/novelCard/UpdateBookCard";
 import ContinueReadingSwiper from "@/components/swiper/ContinueReadingSwiper";
 import PinnedReviewsSwiper from "@/components/swiper/PinnedReviewsSwiper";
 import GifLoader from "@/components/utility/GifLoader";
+import FloatingGiftButton from "@/components/utility/FloatingGiftButton";
 import { BackToTopButton } from "@/components/utility/BackToTopButton";
 import DailyPopup from "@/components/utility/DailyPopup";
 import { useAuthStore } from "@/stores/authStore";
@@ -370,6 +371,7 @@ export default function HomeContent({
           </div>
 
           <BackToTopButton />
+          <FloatingGiftButton />
           {showPopups ? <DailyPopup /> : null}
         </div>
       </div>
