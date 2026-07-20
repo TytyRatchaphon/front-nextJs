@@ -12,14 +12,20 @@ vi.mock('antd', () => ({
   App: {
     useApp: () => ({ message: { success: vi.fn() } }),
   },
-  Dropdown: ({ children, menu }: { children: React.ReactNode; menu: { items: Array<Record<string, any>> } }) => (
+  Dropdown: ({ children, menu }: {
+    children: React.ReactNode;
+    menu: {
+      items: Array<Record<string, any>>;
+      onClick?: (info: { key: string; domEvent: { stopPropagation: () => void } }) => void;
+    };
+  }) => (
     <div>
       {children}
       {menu.items.map((item) => (
         <button
           key={item.key}
           disabled={item.disabled}
-          onClick={() => item.onClick?.({ domEvent: { stopPropagation: vi.fn() } })}
+          onClick={() => menu.onClick?.({ key: item.key, domEvent: { stopPropagation: vi.fn() } })}
         >
           {item.label}
         </button>
@@ -130,7 +136,7 @@ describe('StoryGroupSlide video report action', () => {
     });
 
     const reportButton = Array.from(container.querySelectorAll('button'))
-      .find((button) => button.textContent === 'รายงานปัญหา');
+      .find((button) => button.textContent === 'รายงานวิดีโอ');
     expect(reportButton).toBeTruthy();
 
     act(() => reportButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));

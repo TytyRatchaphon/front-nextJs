@@ -9,6 +9,7 @@ import StoryLikeButton from './StoryLikeButton';
 import { CloseOutlined, LinkOutlined } from '@ant-design/icons';
 import { VolumeX, Volume2, Play, Pause, X, MessageCircle, Send } from 'lucide-react';
 import { Dropdown, App } from 'antd';
+import type { MenuProps } from 'antd';
 import Image from 'next/image';
 import StoryCommentModal from './StoryCommentModal';
 import StoryReportModal from './StoryReportModal';
@@ -59,12 +60,15 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
   const [commentText, setCommentText] = useState('');
 
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
   const openLoginModal = useUIStore((state) => state.openLoginModal);
   const isMuted = useStoryStore((state) => state.isMuted);
   const setMuted = useStoryStore((state) => state.setMuted);
 
-  const isOwnStory = group.section === 'own' || (isLoggedIn && user && user.user_id === group.user_id);
+  const isOwnStory = group.section === 'own' || (
+    isLoggedIn && user?.user_id != null && Number(user.user_id) === Number(group.user_id)
+  );
   const currentItemKey = currentItem ? `${currentItem.type}:${currentItem.ref_id}` : null;
   const isCurrentItemReported = currentItemKey ? reportedItems.has(currentItemKey) : false;
 
@@ -86,6 +90,26 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
         message.success('ส่งความคิดเห็นเรียบร้อยแล้ว');
       }
     });
+  };
+
+  const handleViewerMenuClick: NonNullable<MenuProps['onClick']> = ({ key, domEvent }) => {
+    domEvent.stopPropagation();
+
+    if (key === 'copy-link') {
+      void navigator.clipboard.writeText(window.location.href);
+      message.success('คัดลอกลิงก์แล้ว');
+      return;
+    }
+
+    if (key !== 'report' || !currentItem || isCurrentItemReported) return;
+
+    if (!isLoggedIn || !token) {
+      openLoginModal();
+      return;
+    }
+
+    videoRef.current?.pause();
+    setIsReportModalOpen(true);
   };
 
   const { playerState, errorMessage } = useStoryPlayer({
@@ -144,6 +168,7 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
                 else videoRef.current.pause();
               }
             }}
+            aria-label={playerState === 'playing' ? 'หยุดชั่วคราว' : 'เล่นวิดีโอ'}
             className="w-8 h-8 flex items-center justify-center transition-colors cursor-pointer bg-black/20 hover:bg-black/40 rounded-full"
           >
             {playerState === 'playing' ? <Pause className="w-5 h-5 text-white" color="white" /> : <Play className="w-5 h-5 text-white" color="white" />}
@@ -171,6 +196,9 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
               trigger={['click']}
               placement="bottomRight"
               getPopupContainer={(trigger) => trigger.parentNode as HTMLElement}
+              onOpenChange={(open) => {
+                if (open) videoRef.current?.pause();
+              }}
             >
               <button className="w-8 h-8 flex items-center justify-center transition-colors cursor-pointer bg-black/20 hover:bg-black/40 rounded-full">
                 <span className="tracking-widest text-lg font-bold leading-none mb-2 text-white">...</span>
@@ -183,33 +211,25 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
                   {
                     key: 'copy-link',
                     label: 'คัดลอกลิงก์',
-                    onClick: ({ domEvent }) => {
-                      domEvent.stopPropagation();
-                      navigator.clipboard.writeText(window.location.href);
-                      message.success('คัดลอกลิงก์แล้ว');
-                    },
                   },
                   {
                     key: 'report',
-                    label: isCurrentItemReported ? 'รายงานแล้ว' : 'รายงานปัญหา',
+                    label: isCurrentItemReported ? 'รายงานแล้ว' : 'รายงานวิดีโอ',
                     danger: true,
                     disabled: !currentItem || isCurrentItemReported,
-                    onClick: ({ domEvent }) => {
-                      domEvent.stopPropagation();
-                      if (!isLoggedIn) {
-                        openLoginModal();
-                        return;
-                      }
-                      setIsReportModalOpen(true);
-                    },
                   }
-                ]
+                ],
+                onClick: handleViewerMenuClick,
               }}
               trigger={['click']}
               placement="bottomRight"
               getPopupContainer={(trigger) => trigger.parentNode as HTMLElement}
+              onOpenChange={(open) => {
+                if (open) videoRef.current?.pause();
+              }}
             >
               <button
+                aria-label="ตัวเลือกเพิ่มเติม"
                 className="w-8 h-8 flex items-center justify-center transition-colors cursor-pointer bg-black/20 hover:bg-black/40 rounded-full"
               >
                 <span className="tracking-widest text-lg font-bold leading-none mb-2 text-white">...</span>
