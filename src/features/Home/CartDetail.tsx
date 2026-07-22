@@ -113,6 +113,13 @@ export default function CartDetail() {
                 placement: 'topRight',
              });
         },
+        onError: (error: any) => {
+            notification.error({
+                message: 'เกิดข้อผิดพลาด',
+                description: error?.response?.data?.message || 'ไม่สามารถลบรายการสินค้าได้',
+                placement: 'topRight',
+            });
+        },
     });
 
     const clearCartMutation = useMutation({
@@ -127,6 +134,13 @@ export default function CartDetail() {
                 description: 'ลบรายการสินค้าทั้งหมดสำเร็จ',
                 placement: 'topRight',
              });
+        },
+        onError: (error: any) => {
+            notification.error({
+                message: 'เกิดข้อผิดพลาด',
+                description: error?.response?.data?.message || 'ไม่สามารถล้างตะกร้าสินค้าได้',
+                placement: 'topRight',
+            });
         },
     });
 

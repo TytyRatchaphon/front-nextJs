@@ -1,4 +1,4 @@
-import AuthGuard from '@/components/auth/AuthGuard'
+import AuthGuard from '@/features/auth/components/AuthGuard'
 import CartClientLoader from '@/features/Home/CartClientLoader'
 import { Metadata } from 'next'
 

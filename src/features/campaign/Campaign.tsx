@@ -12,6 +12,7 @@ import 'dayjs/locale/th';
 
 dayjs.locale('th');
 import { postCampaignClick, fetchCampaigns, type CampaignData } from '@/services/apiServices';
+import { queryKeys } from '@/constants/query';
 
 function CountdownTimer({ targetDate }: { targetDate: string }) {
   const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number } | null>(null);
@@ -50,9 +51,10 @@ function CountdownTimer({ targetDate }: { targetDate: string }) {
 
 function Campaign({ initialData }: { initialData?: CampaignData[] }) {
   const { data: campaigns, isLoading, isError, error } = useQuery({
-    queryKey: ['campaigns'],
+    queryKey: queryKeys.campaigns.list(),
     queryFn: fetchCampaigns,
     initialData,
+    initialDataUpdatedAt: initialData ? Date.now() : undefined,
   });
 
   return (
@@ -94,12 +96,14 @@ function Campaign({ initialData }: { initialData?: CampaignData[] }) {
                 onClick={() => postCampaignClick(campaign.cp_id)}
               >
                 {/* Banner Image */}
-                <div className="relative w-full aspect-[2/1] bg-gray-100">
+                <div className="relative w-full bg-gray-100">
                   <Image
                     src={campaign.img_banner}
                     alt={campaign.name}
-                    fill
-                    className="object-cover"
+                    width={0}
+                    height={0}
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="w-full h-auto block object-contain"
                   />
                 </div>
 

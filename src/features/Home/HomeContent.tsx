@@ -2,14 +2,14 @@
 import * as React from "react";
 import { App } from "antd";
 import { CloseCircleOutlined } from "@ant-design/icons";
-import Banner from "@/components/home/Banner";
-import BannerButtons from "@/components/home/BannerButtons";
-import DailyCheckinModal from "@/components/home/DailyCheckinModal";
-import ActiveCategoriesStrip from "@/components/home/ActiveCategoriesStrip";
-import BookGroups from "@/components/home/BookGroups";
-import RankingCategoryLeft from "@/components/home/RankingCategoryLeft";
-import RankingCategoryRight from "@/components/home/RankingCategoryRight";
-import SpotlightFeatureSection from "@/components/home/SpotlightFeatureSection";
+import Banner from "@/features/Home/components/Banner";
+import BannerButtons from "@/features/Home/components/BannerButtons";
+import DailyCheckinModal from "@/features/Home/components/DailyCheckinModal";
+import ActiveCategoriesStrip from "@/features/Home/components/ActiveCategoriesStrip";
+import BookGroups from "@/features/Home/components/BookGroups";
+import RankingCategoryLeft from "@/features/Home/components/RankingCategoryLeft";
+import RankingCategoryRight from "@/features/Home/components/RankingCategoryRight";
+import SpotlightFeatureSection from "@/features/Home/components/SpotlightFeatureSection";
 import UpdateBookCard from "@/components/novelCard/UpdateBookCard";
 import ContinueReadingSwiper from "@/components/swiper/ContinueReadingSwiper";
 import PinnedReviewsSwiper from "@/components/swiper/PinnedReviewsSwiper";
@@ -32,7 +32,7 @@ import {
   useRankingCategories,
   useContinueBooks,
   usePinnedReviews,
-} from "@/hooks/home/useHomeQueries";
+} from "@/features/Home/hooks/useHomeQueries";
 
 interface HomeContentProps {
   initialData: HomeDataResponse | null;

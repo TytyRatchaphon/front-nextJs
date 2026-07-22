@@ -15,7 +15,7 @@ import { useHistoryTab } from './hooks/useHistoryTab'
 import { clampHistoryPage, getHistoryTotal, type HistoryQueryLike } from './historyPagination'
 import { createHistoryColumns, createStoreHistoryExpandable, HISTORY_TABS } from './historyColumns'
 import { get_date as use_date } from '@/utils/dateUtils'
-import '@/components/home/Banner';
+import '@/features/Home/components/Banner';
 import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import GifLoader from '@/components/utility/GifLoader';
 import '@/utils/imageUtils';

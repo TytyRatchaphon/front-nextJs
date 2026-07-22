@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: 'แลกไอเทมโค้ดรับของรางวัลบน Enjoybook',
   alternates: { canonical: '/redeem' },
 };
-import AuthGuard from '@/components/auth/AuthGuard'
+import AuthGuard from '@/features/auth/components/AuthGuard'
 
 export default function Page() {
   return (

@@ -22,7 +22,7 @@ export default function robots(): MetadataRoute.Robots {
         '/test-notifications',
         '/achievement',
         '/all-quest',
-        '/royale-pass',
+        '/reader-pass',
         '/wheel',
       ],
     },

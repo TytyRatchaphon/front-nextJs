@@ -1,5 +1,5 @@
 import EditChapter from '@/features/mybook/EditEpisode'
-import AuthGuard from '@/components/auth/AuthGuard'
+import AuthGuard from '@/features/auth/components/AuthGuard'
 
 
 interface PageProps {

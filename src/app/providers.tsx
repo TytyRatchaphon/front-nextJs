@@ -7,8 +7,8 @@ import { useState } from 'react';
 import { HydrationBoundary, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { DehydratedState } from "@tanstack/react-query";
 
-import ApiAuthEventBridge from '@/components/auth/ApiAuthEventBridge';
-import BlockedUserModal from '@/components/auth/BlockedUserModal';
+import ApiAuthEventBridge from '@/features/auth/components/ApiAuthEventBridge';
+import BlockedUserModal from '@/features/auth/components/BlockedUserModal';
 
 const ReactQueryDevtoolsLazy = React.lazy(() =>
   import('@tanstack/react-query-devtools').then((d) => ({
@@ -51,7 +51,7 @@ export default function TanstackProvider({
       <HydrationBoundary state={dehydratedState}>{children}</HydrationBoundary>
       {process.env.NODE_ENV === 'development' && (
         <React.Suspense fallback={null}>
-          <ReactQueryDevtoolsLazy initialIsOpen={false} />
+          <ReactQueryDevtoolsLazy initialIsOpen={false} buttonPosition="bottom-left" />
         </React.Suspense>
       )}
       <BlockedUserModal />

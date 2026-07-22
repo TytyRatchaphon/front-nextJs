@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 
 import Link from "next/link";
 import { BookOpenCheck, ExternalLink } from "lucide-react";
@@ -38,11 +39,12 @@ export default function CouponApplicableBooks({ books }: CouponApplicableBooksPr
               className="group flex gap-3 rounded-2xl border border-red-100/70 bg-gradient-to-br from-white to-red-50/40 p-2.5 transition hover:border-red-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-red-400"
             >
               <div className="h-[84px] w-[58px] flex-shrink-0 overflow-hidden rounded-xl bg-gray-100 shadow-sm">
-                <img
-                  src={getBookCover(book)}
-                  alt={book.name}
-                  className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                  loading="lazy"
+                <Image
+                  src={getBookCover(book) || ''}
+                  alt={book.name || ''}
+                  fill
+                  className="object-cover transition duration-300 group-hover:scale-105"
+                  unoptimized
                 />
               </div>
               <div className="min-w-0 flex-1 py-1">

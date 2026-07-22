@@ -134,16 +134,18 @@ function RewardStack({
   const isMega = level % 5 === 0;
 
   return (
-    <div className={`flex flex-col items-center shrink-0 min-w-0 ${containerClassName || "w-[80px] h-[116px]"}`}>
+    <div className={`flex flex-col items-center justify-center shrink-0 min-w-0 ${containerClassName || "w-[80px] h-[116px]"}`}>
       <button
         type="button"
         onClick={() => onSelect(level, track, rewards)}
         className={`relative flex h-[80px] w-[80px] shrink-0 flex-col items-center justify-center rounded-2xl border-2 transition-all duration-300 ease-out ${
           isMega 
-            ? "border-yellow-400 bg-red-50" 
+            ? "border-yellow-400 bg-red-50 hover:bg-red-100" 
             : claimed
               ? "border-transparent bg-slate-50 opacity-60 grayscale-[30%]"
-              : track === "premium" ? "border-transparent bg-red-50/60 hover:bg-red-50" : "border-transparent bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md"
+              : track === "premium" 
+                ? `border-transparent bg-red-50/60 ${level === currentLevel ? "hover:bg-red-200 shadow-sm" : "hover:bg-red-50"}` 
+                : `border-transparent bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md ${level === currentLevel ? "hover:bg-slate-100" : ""}`
         }`}
       >
         {isMega && (
@@ -244,8 +246,8 @@ export default function RoyalePassDetailPage({ passId }: RoyalePassDetailPagePro
   const [nextMegaLevel, setNextMegaLevel] = React.useState<number | null>(null);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = React.useState(false);
   const [swiperInstance, setSwiperInstance] = React.useState<any>(null);
-  const [isMobile, setIsMobile] = React.useState(false);
-
+  // ponytail: init from window directly since we only render after hasMounted
+  const [isMobile, setIsMobile] = React.useState(typeof window !== "undefined" && window.innerWidth < 768);
 
   React.useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -315,6 +317,7 @@ export default function RoyalePassDetailPage({ passId }: RoyalePassDetailPagePro
   }
   const isPremium = Boolean(detail?.user_state?.is_premium || ["active", "unlocked"].includes(String(detail?.user_state?.premium_status ?? "").toLowerCase()));
   const canUsePass = Boolean(detail?.is_started);
+  const canBuyPremium = Boolean(detail?.is_started) || Boolean(detail?.is_preorder_period);
   const purchaseOptions = detail?.purchase_options;
   const isPreorder = detail?.is_preorder_period;
   
@@ -397,7 +400,7 @@ export default function RoyalePassDetailPage({ passId }: RoyalePassDetailPagePro
     return (
       <main className="flex min-h-screen flex-col items-center justify-center bg-white px-4 text-center font-primary">
         <Lock size={36} className="text-red-600" />
-        <h1 className="mt-4 text-2xl font-black text-slate-950">กรุณาเข้าสู่ระบบก่อนดู Royale Pass</h1>
+        <h1 className="mt-4 text-2xl font-black text-slate-950">กรุณาเข้าสู่ระบบก่อนดู Reader Pass</h1>
       </main>
     );
   }
@@ -406,7 +409,7 @@ export default function RoyalePassDetailPage({ passId }: RoyalePassDetailPagePro
     return (
       <main className="min-h-screen bg-[#f5f6f8] px-4 py-10 font-primary">
         <div className="mx-auto max-w-[720px] rounded-xl bg-white p-8 text-center shadow-sm">
-          <h1 className="text-2xl font-black text-slate-950">ไม่พบ Royale Pass</h1>
+          <h1 className="text-2xl font-black text-slate-950">ไม่พบ Reader Pass</h1>
         </div>
       </main>
     );
@@ -419,9 +422,9 @@ export default function RoyalePassDetailPage({ passId }: RoyalePassDetailPagePro
           <Image src={getPassBannerSrc(detail)} alt={detail.name} fill className="object-cover object-center" />
         </div>
         <div className="relative mx-auto max-w-[1440px] px-4 py-8 md:px-6 md:py-12">
-            <Link href="/royale-pass" className="inline-flex items-center gap-2 mb-6 px-5 py-2.5 rounded-xl border border-white/20 hover:-translate-y-0.5 w-fit shadow-xl" style={{ backgroundColor: '#1a1b1e', color: 'white' }}>
+            <Link href="/reader-pass" className="inline-flex items-center gap-2 mb-6 px-5 py-2.5 rounded-xl border border-white/20 hover:-translate-y-0.5 w-fit shadow-xl" style={{ backgroundColor: '#1a1b1e', color: 'white' }}>
               <ChevronLeft size={18} style={{ color: 'white' }} />
-              <span className="font-bold text-sm tracking-wide" style={{ color: 'white' }}>ย้อนกลับหน้ารวม Royale Pass</span>
+              <span className="font-bold text-sm tracking-wide" style={{ color: 'white' }}>ย้อนกลับหน้ารวม Reader Pass</span>
             </Link>
 
           <div className="max-w-3xl p-6 md:p-8 bg-black/40 backdrop-blur-md rounded-3xl border border-white/10 shadow-2xl">
@@ -434,7 +437,7 @@ export default function RoyalePassDetailPage({ passId }: RoyalePassDetailPagePro
             )}
 
             <div className="mt-6 flex flex-wrap items-center gap-4">
-              {!isPremium && canUsePass && (
+              {!isPremium && canBuyPremium && (
                 <button
                   onClick={handleBuyPremium}
                   className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 px-6 py-3 text-sm font-extrabold text-amber-950 shadow-[0_4px_16px_rgba(251,191,36,0.3)] transition-all hover:-translate-y-0.5 hover:shadow-lg"
@@ -467,16 +470,20 @@ export default function RoyalePassDetailPage({ passId }: RoyalePassDetailPagePro
       {activePageTab === "rewards" ? (
         <section className="mx-auto max-w-[1440px] px-4 py-8 md:px-6">
           <div className={`flex items-start bg-white border border-slate-100 p-5 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.02)] overflow-hidden ${isMobile ? "flex-col gap-3 h-[600px]" : "flex-row gap-4"}`}>
-            <div className={`shrink-0 select-none z-10 bg-white ${isMobile ? "grid grid-cols-[60px_1fr_1fr] w-full gap-4 pb-4 border-b border-slate-100" : "flex flex-col w-[130px] pr-4 gap-4"}`}>
-              <div className={`${isMobile ? "h-auto py-2" : "h-[64px] shrink-0 pt-1.5"} flex flex-col items-center justify-center rounded-xl bg-gradient-to-b from-[#ce2424] to-[#a61313] text-white shadow-[0_2px_8px_rgba(220,38,38,0.25)] border border-red-500/20`}>
-                <p className="text-[7.5px] font-extrabold text-white/90 tracking-wider">เลเวล</p>
-                <p className="text-[13px] font-black tracking-widest leading-none mt-1.5">LV. {currentLevel}</p>
-                <p className="text-[8px] font-bold text-white/80 mt-1.5 tracking-wider">{currentExp} / {nextRequiredExp} EXP</p>
+            {/* ponytail: fix hydration mismatch by using pure CSS media queries (md:) instead of isMobile JS ternary */}
+            <div className="shrink-0 select-none z-10 bg-white grid grid-cols-[60px_1fr_1fr] md:flex md:flex-col w-full md:w-[130px] md:pr-4 gap-4 pb-4 md:pb-0 border-b md:border-b-0 border-slate-100 items-center md:items-stretch">
+              <div className="h-[48px] md:h-[64px] pt-3 pb-1 md:pb-0 md:pt-1.5 gap-0.5 md:gap-0 md:shrink-0 flex flex-col items-center justify-center rounded-xl bg-gradient-to-b from-[#ce2424] to-[#a61313] hover:from-[#a61313] hover:to-[#850d0d] transition-colors cursor-default text-white shadow-[0_2px_8px_rgba(220,38,38,0.25)] border border-red-500/20 overflow-hidden">
+                <p className="hidden md:block text-[7.5px] font-extrabold text-white/90 tracking-wider">เลเวล</p>
+                <p className="text-[14px] md:text-[13px] md:mt-1.5 font-black tracking-widest leading-none">LV. {currentLevel}</p>
+                <p className="text-[8px] font-bold text-white/80 tracking-wider scale-90 md:scale-100 md:mt-1.5">
+                  <span className="md:hidden">{currentExp}/{nextRequiredExp}</span>
+                  <span className="hidden md:inline">{currentExp} / {nextRequiredExp} EXP</span>
+                </p>
               </div>
-              <div className={`${isMobile ? "h-[48px] text-[13px]" : "h-[116px] text-[15px] shrink-0"} flex items-center justify-center rounded-xl bg-white border border-red-100 font-black text-red-500 shadow-sm`}>ฟรี</div>
-              <div className={`${isMobile ? "h-[48px] flex-row gap-1.5 p-1" : "h-[116px] flex-col gap-1.5 p-2 shrink-0"} flex items-center justify-center rounded-xl bg-gradient-to-b from-red-700 to-red-900 border border-red-500/30 text-center relative overflow-hidden shadow-[0_4px_12px_rgba(153,27,27,0.3)]`}>
+              <div className="h-[48px] md:h-[116px] text-[13px] md:text-[15px] md:shrink-0 flex items-center justify-center rounded-xl bg-white border border-red-100 font-black text-red-500 shadow-sm">ฟรี</div>
+              <div className="h-[48px] md:h-[116px] flex flex-row md:flex-col gap-1.5 p-1 md:p-2 md:shrink-0 items-center justify-center rounded-xl bg-gradient-to-b from-red-700 to-red-900 border border-red-500/30 text-center relative overflow-hidden shadow-[0_4px_12px_rgba(153,27,27,0.3)]">
                 <Crown size={isMobile ? 18 : 24} className="text-amber-300 drop-shadow-[0_0_8px_rgba(252,211,77,0.5)]" />
-                {isMobile && <span className="text-[10px] font-black tracking-widest text-amber-300 mt-0.5">พรีเมียม</span>}
+                <span className="md:hidden text-[10px] font-black tracking-widest text-amber-300 mt-0.5">พรีเมียม</span>
               </div>
             </div>
 
@@ -504,12 +511,13 @@ export default function RoyalePassDetailPage({ passId }: RoyalePassDetailPagePro
                     <SwiperSlide key={level.level} data-level={level.level} className={`shrink-0 ${isMobile ? "!h-auto w-full pb-4 border-b border-slate-50 last:border-0" : "!w-auto flex flex-col pr-2"}`}>
                       <div className={`${isMobile ? "grid grid-cols-[60px_1fr_1fr] w-full gap-4 items-center" : "flex flex-col gap-4 shrink-0"}`}>
                         {/* Level Number & Path */}
-                        <div className={`relative flex items-center justify-center ${isMobile ? "h-[80px]" : "h-[64px] w-[80px] shrink-0"}`}>
+                        <div className={`relative flex items-center justify-center ${isMobile ? "h-[116px]" : "h-[64px] w-[80px] shrink-0"}`}>
                           {/* Connecting Line to Next Level */}
+                          {/* ponytail: line must reach center of next circle (58px) + gap (16px) = 74px below container */}
                           {index < rewardLevels.length - 1 && (
                             <div className={`absolute z-0 bg-slate-100 overflow-hidden rounded-full ${
                               isMobile 
-                                ? "left-1/2 -translate-x-1/2 top-1/2 bottom-[-16px] w-[3px]" 
+                                ? "left-1/2 -translate-x-1/2 top-1/2 bottom-[-74px] w-[3px]" 
                                 : "top-1/2 -translate-y-1/2 left-1/2 right-[-52px] h-[3px]"
                             }`}>
                               <div 
@@ -527,7 +535,7 @@ export default function RoyalePassDetailPage({ passId }: RoyalePassDetailPagePro
                             currentLevel >= level.level
                               ? "border-red-500 text-red-600 shadow-[0_2px_8px_rgba(239,68,68,0.2)]"
                               : "border-slate-100 text-slate-400"
-                          }`}>
+                          } ${currentLevel === level.level ? "hover:bg-red-600 hover:text-white hover:border-red-600 hover:scale-110 cursor-default" : ""}`}>
                             {level.level}
                           </div>
                           
@@ -550,7 +558,7 @@ export default function RoyalePassDetailPage({ passId }: RoyalePassDetailPagePro
                           track="free"
                           currentLevel={currentLevel}
                           isPremium={isPremium}
-                          containerClassName={isMobile ? "w-full h-[80px]" : "w-[80px] h-[116px]"}
+                          containerClassName={isMobile ? "w-full h-[116px]" : "w-[80px] h-[116px]"}
                         />
 
                         {/* Premium rewards */}
@@ -562,7 +570,7 @@ export default function RoyalePassDetailPage({ passId }: RoyalePassDetailPagePro
                           track="premium"
                           currentLevel={currentLevel}
                           isPremium={isPremium}
-                          containerClassName={isMobile ? "w-full h-[80px]" : "w-[80px] h-[116px]"}
+                          containerClassName={isMobile ? "w-full h-[116px]" : "w-[80px] h-[116px]"}
                         />
                       </div>
                     </SwiperSlide>
@@ -757,7 +765,7 @@ export default function RoyalePassDetailPage({ passId }: RoyalePassDetailPagePro
         }
       >
         <div className="p-10 font-primary">
-          <h2 className="text-center text-2xl font-black tracking-tight text-slate-800">อัปเกรด Premium Royale Pass</h2>
+          <h2 className="text-center text-2xl font-black tracking-tight text-slate-800">อัปเกรด Premium Reader Pass</h2>
           <p className="text-center text-sm font-semibold text-slate-500 mt-3 mb-10 px-4">
             เลือกวิธีชำระเงินที่คุณต้องการเพื่อปลดล็อครางวัลแถว Premium ทั้งหมดทันที!
           </p>

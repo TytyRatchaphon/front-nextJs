@@ -1,4 +1,4 @@
-import AuthGuard from '@/components/auth/AuthGuard';
+import AuthGuard from '@/features/auth/components/AuthGuard';
 import CheckoutContent from '@/features/Home/CheckoutContent';
 import { Metadata } from 'next';
 

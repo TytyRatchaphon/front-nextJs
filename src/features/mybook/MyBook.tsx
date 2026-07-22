@@ -10,12 +10,12 @@ import { fetchUserMyBookInfo, fetchUserMyBookListNames, fetchUserMyBooks, fetchW
 import type { WriterCheckResponse } from '@/services/api/userApi';
 import Cookies from 'js-cookie';
 
-import MyBookHeader from '../../components/myBook/MyBookHeader';
-import MyBookListTab from '../../components/myBook/MyBookListTab';
-import MyBookStatsTab from '../../components/myBook/MyBookStatsTab';
-import MyBookSalesTab from '../../components/myBook/MyBookSalesTab';
-import MyBookWithdrawTab from '../../components/myBook/MyBookWithdrawTab';
-import MyBookWriterInfoTab from '../../components/myBook/MyBookWriterInfoTab';
+import MyBookHeader from './components/MyBookHeader';
+import MyBookListTab from './components/MyBookListTab';
+import MyBookStatsTab from './components/MyBookStatsTab';
+import MyBookSalesTab from './components/MyBookSalesTab';
+import MyBookWithdrawTab from './components/MyBookWithdrawTab';
+import MyBookWriterInfoTab from './components/MyBookWriterInfoTab';
 
 type WriterReviewBanner = {
   title: string;

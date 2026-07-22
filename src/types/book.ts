@@ -300,8 +300,38 @@ export interface BookDetail {
   ep_purchase_reward?: EpPurchaseRewardInfo | null;
 }
 
+export interface BookDetailVideoSource {
+  type: string;
+  mimeType: string;
+  url: string;
+  isPreferred?: boolean;
+}
+
+export interface BookDetailTrailer {
+  hasTrailer: boolean;
+  id: number;
+  hlsUrl?: string | null;
+  expiresAt?: number | null;
+  preferredSource?: BookDetailVideoSource | null;
+  sources?: BookDetailVideoSource[];
+  thumbnailUrl?: string | null;
+  qualityLabel?: string | null;
+  durationSeconds?: number | null;
+  width?: number | null;
+  height?: number | null;
+}
+
+export interface BookDetailPresentation {
+  detailStartsWith: 'gif' | 'image';
+  detailAutoplayDelayMs: number;
+  detailUsesTrailer: boolean;
+  listUsesTrailer: boolean;
+}
+
 export interface BookDetailVideo {
   original: string;
+  trailer?: BookDetailTrailer;
+  presentation?: BookDetailPresentation;
 }
 
 export interface BookDetailResponse {

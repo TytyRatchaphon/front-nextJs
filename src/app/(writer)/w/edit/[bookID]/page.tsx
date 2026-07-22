@@ -1,5 +1,5 @@
 import EditBook from '@/features/mybook/EditBook'
-import AuthGuard from '@/components/auth/AuthGuard'
+import AuthGuard from '@/features/auth/components/AuthGuard'
 
 // 1. แก้ Type ให้ params เป็น Promise
 interface PageProps {

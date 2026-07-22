@@ -57,6 +57,7 @@ export default function NavbarUserDrawer({
       styles={{ body: { padding: 0 } }}
       width="100vw"
       zIndex={1320}
+      rootClassName="reader-user-popover reader-user-drawer"
     >
       <UserMenuPopover
         avatarSrc={avatarSrc}

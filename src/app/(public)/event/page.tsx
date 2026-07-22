@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
-import UserProfileEvent from '@/components/event/UserProfileEvent'
-import UserUseCoin from '@/components/event/UserUseCoin'
-import SevenDaysLoginWrapper from '@/components/event/SevenDaysLoginWrapper'
-import UserTopupCoin from '@/components/event/UserTopupCoin'
-import AuthGuard from '@/components/auth/AuthGuard'
+import UserProfileEvent from '@/features/event/components/UserProfileEvent'
+import UserUseCoin from '@/features/event/components/UserUseCoin'
+import SevenDaysLoginWrapper from '@/features/event/components/SevenDaysLoginWrapper'
+import UserTopupCoin from '@/features/event/components/UserTopupCoin'
+import AuthGuard from '@/features/auth/components/AuthGuard'
 
 export const metadata: Metadata = {
   title: 'กิจกรรม',

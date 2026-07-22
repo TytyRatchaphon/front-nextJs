@@ -57,6 +57,17 @@ export interface FAQItem {
   answer: string;
 }
 
+export interface ProfilePageSchemaInput {
+  name: string;
+  description: string;
+  url: string;
+  image?: string;
+  interactionStatistic?: {
+    interactionType: string;
+    userInteractionCount: number;
+  };
+}
+
 // ─── Generators ─────────────────────────────────────────────
 
 /**
@@ -274,4 +285,31 @@ export function generateFAQSchema(faqs: FAQItem[]) {
       },
     })),
   };
+}
+
+/**
+ * Generates a ProfilePage schema for user/writer profiles.
+ * Maps to https://schema.org/ProfilePage
+ */
+export function generateProfilePageSchema(input: ProfilePageSchemaInput) {
+  const schema: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'ProfilePage',
+    mainEntity: {
+      '@type': 'Person',
+      name: input.name,
+      description: input.description,
+      url: input.url,
+      ...(input.image && { image: input.image }),
+      ...(input.interactionStatistic && {
+        interactionStatistic: {
+          '@type': 'InteractionCounter',
+          interactionType: `https://schema.org/${input.interactionStatistic.interactionType}`,
+          userInteractionCount: input.interactionStatistic.userInteractionCount,
+        },
+      }),
+    },
+  };
+
+  return schema;
 }

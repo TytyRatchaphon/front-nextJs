@@ -1,5 +1,5 @@
 import CouponDetail from '@/features/Home/CouponDetail'
-import AuthGuard from '@/components/auth/AuthGuard'
+import AuthGuard from '@/features/auth/components/AuthGuard'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {

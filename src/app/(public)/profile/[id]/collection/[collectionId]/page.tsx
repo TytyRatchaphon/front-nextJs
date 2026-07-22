@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import PublicCollectionDetail from '@/components/collection/PublicCollectionDetail';
+import PublicCollectionDetail from '@/features/collection/components/PublicCollectionDetail';
 
 interface PageProps {
   params: Promise<{ id: string; collectionId: string }>;

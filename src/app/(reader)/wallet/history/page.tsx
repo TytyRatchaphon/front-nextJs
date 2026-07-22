@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: 'ดูประวัติการทำรายการกระเป๋าเงินของคุณบน Enjoybook',
   alternates: { canonical: '/wallet/history' },
 };
-import AuthGuard from '@/components/auth/AuthGuard'
+import AuthGuard from '@/features/auth/components/AuthGuard'
 
 function page() {
   return (

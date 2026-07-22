@@ -20,6 +20,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
+import { queryKeys } from '@/constants/query';
 import { useAuthStore } from '@/stores/authStore';
 import Image from 'next/image';
 import SuccessAnimation from '@/components/utility/SuccessAnimation';
@@ -166,7 +167,7 @@ export default function CheckoutContent() {
     }, [currentStep]);
 
     const { data: checkoutItemsData, isLoading: isLoadingItems } = useQuery({
-        queryKey: ['checkoutItems'],
+        queryKey: queryKeys.cart.checkoutItems(),
         queryFn: fetchCheckoutItems,
         enabled: currentStep === 0,
         refetchOnMount: 'always',
@@ -175,7 +176,7 @@ export default function CheckoutContent() {
     });
 
     const { data: checkoutAddressData, isLoading: isLoadingAddress, refetch: refetchAddress } = useQuery({
-        queryKey: ['checkoutAddress'],
+        queryKey: queryKeys.cart.checkoutAddress(),
         queryFn: fetchCheckoutAddress,
         enabled: currentStep <= 1,
         refetchOnMount: 'always',
@@ -184,7 +185,7 @@ export default function CheckoutContent() {
     });
 
     const { data: checkoutSummaryData, isLoading: isLoadingSummary } = useQuery({
-        queryKey: ['checkoutSummary'],
+        queryKey: queryKeys.cart.checkoutSummary(),
         queryFn: fetchCheckoutSummary,
         refetchOnMount: 'always',
         refetchOnWindowFocus: true,
@@ -192,9 +193,9 @@ export default function CheckoutContent() {
     });
 
     useEffect(() => {
-        queryClient.invalidateQueries({ queryKey: ['checkoutItems'] });
-        queryClient.invalidateQueries({ queryKey: ['checkoutAddress'] });
-        queryClient.invalidateQueries({ queryKey: ['checkoutSummary'] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.cart.checkoutItems() });
+        queryClient.invalidateQueries({ queryKey: queryKeys.cart.checkoutAddress() });
+        queryClient.invalidateQueries({ queryKey: queryKeys.cart.checkoutSummary() });
     }, [queryClient]);
 
     const steps = [
@@ -350,8 +351,8 @@ export default function CheckoutContent() {
 
                             {!can_purchase && (
                                 <div className="p-4 bg-red-500 text-white rounded-2xl flex items-center gap-3 shadow-lg shadow-red-100">
-                                    <CloseCircleOutlined className="text-xl" />
-                                    <Text className="!text-white font-medium">{limit_error || "ยอดเงินคงเหลือไม่เพียงพอ"}</Text>
+                                    <CloseCircleOutlined className="text-3xl" />
+                                    <Text className="!text-white font-semibold text-lg md:text-xl">{limit_error || "ยอดเงินคงเหลือไม่เพียงพอ"}</Text>
                                 </div>
                             )}
                         </div>
@@ -367,7 +368,7 @@ export default function CheckoutContent() {
             const data = await confirmCheckout();
             if (data?.success) {
                 if (data.token) updateToken(data.token);
-                queryClient.invalidateQueries({ queryKey: ['cartItems'] });
+                queryClient.invalidateQueries({ queryKey: queryKeys.cart.items() });
                 setShowSuccess(true);
                 setShowPostSuccessActions(false);
             } else {

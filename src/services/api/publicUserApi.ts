@@ -1,6 +1,12 @@
 import apiClient from '../apiClient';
 import type { CollectionBook } from './collectionApi';
 
+export interface PublicUserVipSummary {
+    icon_url?: string | null;
+    card_image_url?: string | null;
+    color_config?: any | null;
+}
+
 export interface PublicUserProfile {
     user_id: number;
     fullname: string;
@@ -13,6 +19,7 @@ export interface PublicUserProfile {
         name: string;
         img: string;
     } | null;
+    vip_summary?: PublicUserVipSummary | null;
 }
 
 export interface PublicUserRank {
@@ -79,7 +86,11 @@ export interface PublicUserAchievementDetail {
 
 export const getPublicUserProfile = async (userId: string): Promise<PublicUserProfile> => {
     const response = await apiClient.get(`/public/users/${userId}/profile`);
-    return response.data.data;
+    const profile = response.data.data;
+    if (profile?.vip_summary && typeof profile.vip_summary.color_config === 'string') {
+        try { profile.vip_summary.color_config = JSON.parse(profile.vip_summary.color_config); } catch (e) {}
+    }
+    return profile;
 };
 
 export const getPublicUserRank = async (userId: string): Promise<PublicUserRank> => {
@@ -97,9 +108,23 @@ export const getPublicUserCollections = async (userId: string, page: number = 1,
     return response.data.data;
 };
 
-export const getPublicUserCollectionDetail = async (userId: string, collectionId: string | number): Promise<CollectionBook[]> => {
+export const getPublicUserCollectionDetail = async (userId: string, collectionId: string | number): Promise<{ collection: any; books: CollectionBook[] } | null> => {
     const response = await apiClient.get(`/public/users/${userId}/collections/${collectionId}`);
-    return response.data?.data ?? [];
+    const payload = response.data?.data;
+    
+    if (payload && payload.collection && Array.isArray(payload.books)) {
+        return payload;
+    }
+    
+    if (Array.isArray(payload)) {
+        console.warn("API returned old format for public collection detail, adapting locally...");
+        return {
+            collection: { id: collectionId, name: 'Collection', description: '', is_public: true, cover_image: null, is_pinned: false, order_index: 0, created_at: '', updated_at: '', book_count: payload.length },
+            books: payload
+        };
+    }
+    
+    return null;
 };
 
 export const getPublicUserAchievementDetail = async (userId: string, achievementId: string | number): Promise<PublicUserAchievementDetail | null> => {

@@ -1,6 +1,6 @@
 "use client";
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { imageUploadHandler } from '../editor/editor_api';
+import { imageUploadHandler } from '@/features/editor/components/editor_api';
 
 declare global {
   interface Window {

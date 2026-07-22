@@ -12,7 +12,7 @@ import secureProxyClient from "@/services/secureProxyClient";
 import { canSetEpisodePrice, getEpisodePriceRestrictionMessage } from "./writerPermissionUtils";
 
 // Import TextEditor
-import TextEditorTiny from "@/components/editor/TextEditorTiny";
+import TextEditorTiny from "@/features/editor/components/TextEditorTiny";
 import GifLoader from '@/components/utility/GifLoader';
 
 dayjs.extend(customParseFormat);

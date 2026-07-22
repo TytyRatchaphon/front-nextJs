@@ -3,9 +3,9 @@
 import type { ReactNode } from "react";
 import { Suspense } from "react";
 
-import TokenUpdater from "@/components/auth/TokenUpdater";
+import TokenUpdater from "@/features/auth/components/TokenUpdater";
 import CookieConsentBanner from "@/components/common/CookieConsentBanner";
-import FooterWrapper from "@/components/home/FooterWrapper";
+import FooterWrapper from "@/features/Home/components/FooterWrapper";
 import Navbar from "@/components/navbar/navbar";
 import NotificationAlertSocketListener from "@/components/socket/NotificationAlertSocketListener";
 import RpQuestSocketListener from "@/components/socket/RpQuestSocketListener";

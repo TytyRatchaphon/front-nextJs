@@ -7,7 +7,7 @@ import type { TabsProps } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import GifLoader from '@/components/utility/GifLoader';
 import CardBook from '@/components/novelCard/CardBook';
-import CollectionTab from '@/components/collection/CollectionTab';
+import CollectionTab from '@/features/collection/components/CollectionTab';
 import ContinueCardBook from '@/components/novelCard/ContinueCardbook';
 import {
   fetchUserShelve,

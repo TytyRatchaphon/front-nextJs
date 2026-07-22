@@ -35,12 +35,15 @@ export async function generateSitemaps() {
     return Array.from({ length: sitemapCount }, (_, i) => ({ id: i }));
 }
 
-export default async function sitemap({ id }: { id: number }): Promise<MetadataRoute.Sitemap> {
+export default async function sitemap({ id = 0 }: { id?: Promise<string | number> | string | number } = {}): Promise<MetadataRoute.Sitemap> {
+    const resolvedId = await id;
+    console.log("SITEMAP PROPS ID:", resolvedId, "TYPEOF ID:", typeof resolvedId);
     const booksRaw = await getCachedBooks();
     const books = booksRaw || [];
     
     // Slice books for the current sitemap chunk
-    const startIdx = id * CHUNK_SIZE;
+    const numericId = Number(resolvedId);
+    const startIdx = numericId * CHUNK_SIZE;
     const endIdx = startIdx + CHUNK_SIZE;
     const chunkedBooks = books.slice(startIdx, endIdx);
 
@@ -48,13 +51,13 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
     let articleRoutes: MetadataRoute.Sitemap = [];
     let categoryRoutes: MetadataRoute.Sitemap = [];
     // Only include static and other non-paginated routes in the FIRST sitemap (id = 0)
-    if (id === 0) {
+    if (numericId === 0) {
         const staticPaths = [
             '', '/faq', '/about-us', '/allnovel', '/article', '/campaign', 
             '/howto', '/ranking', '/search', '/how-payment', '/policy-conditions', 
             '/policy-privacy', '/writer-nc-policy', '/contact', '/events', '/news',
             '/novel-pack', '/fiction-novel', '/translated-novel', '/book-updates',
-            '/store', '/other-policy', '/rank'
+            '/store', '/other-policy', '/rank', '/login', '/register'
         ];
 
         staticPaths.forEach((route) => {

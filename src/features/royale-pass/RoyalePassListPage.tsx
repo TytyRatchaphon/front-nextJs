@@ -68,7 +68,7 @@ function RoyalePassCard({ pass }: { pass: RoyalePassSummary }) {
 
   return (
     <Link
-      href={`/royale-pass/${pass.pass_id}`}
+      href={`/reader-pass/${pass.pass_id}`}
       className="group flex flex-col overflow-hidden rounded-3xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgba(220,38,38,0.08)] hover:border-red-100"
     >
       {/* Banner Area */}
@@ -155,7 +155,7 @@ export default function RoyalePassListPage() {
   });
 
   React.useEffect(() => {
-    document.title = "Royale Pass - EnjoyBook";
+    document.title = "Reader Pass - EnjoyBook";
   }, []);
 
   if (!hasMounted) {
@@ -201,7 +201,7 @@ export default function RoyalePassListPage() {
               <Crown size={30} className="drop-shadow-sm" />
             </div>
             <div>
-              <h1 className="text-4xl font-extrabold text-white tracking-tight md:text-5xl drop-shadow-sm">Royale Pass</h1>
+              <h1 className="text-4xl font-extrabold text-white tracking-tight md:text-5xl drop-shadow-sm">Reader Pass</h1>
               <p className="mt-3 text-sm text-red-50 md:text-base font-medium max-w-2xl leading-relaxed">
                 ทำภารกิจสุดท้าทาย สะสม เลเวล เพื่อปลดล็อกของรางวัลสุดพิเศษมากมาย ทั้งในแบบ <span className="text-red-700 font-bold px-2 py-0.5 rounded-md bg-white shadow-sm mx-0.5">ฟรี</span> และ <span className="text-red-800 font-bold px-2 py-0.5 rounded-md bg-amber-400 shadow-sm mx-0.5">พรีเมียม</span>
               </p>
@@ -225,7 +225,7 @@ export default function RoyalePassListPage() {
               <Sparkles size={28} />
             </div>
             <h2 className="text-2xl font-extrabold text-slate-900">เกิดข้อผิดพลาด</h2>
-            <p className="mt-3 text-slate-500 font-medium leading-relaxed">ไม่สามารถโหลดข้อมูล Royale Pass ได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง</p>
+            <p className="mt-3 text-slate-500 font-medium leading-relaxed">ไม่สามารถโหลดข้อมูล Reader Pass ได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง</p>
             <Button className="mt-8 rounded-xl font-bold px-8 h-12 shadow-[0_4px_12px_rgba(220,38,38,0.2)] bg-gradient-to-r from-red-500 to-red-600 border-none text-white hover:from-red-600 hover:to-red-700" onClick={() => refetch()}>
               โหลดข้อมูลใหม่
             </Button>
@@ -237,8 +237,8 @@ export default function RoyalePassListPage() {
             <div className="mx-auto w-16 h-16 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mb-6">
               <Crown size={28} />
             </div>
-            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">ยังไม่มี Royale Pass</h2>
-            <p className="mt-3 text-slate-500 font-medium leading-relaxed">เมื่อมี Royale Pass ที่เปิดอยู่หรือกำลังจะเปิดให้สั่งจองล่วงหน้า ระบบจะแสดงรายการที่นี่โดยอัตโนมัติ</p>
+            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">ยังไม่มี Reader Pass</h2>
+            <p className="mt-3 text-slate-500 font-medium leading-relaxed">เมื่อมี Reader Pass ที่เปิดอยู่หรือกำลังจะเปิดให้สั่งจองล่วงหน้า ระบบจะแสดงรายการที่นี่โดยอัตโนมัติ</p>
           </div>
         )}
 

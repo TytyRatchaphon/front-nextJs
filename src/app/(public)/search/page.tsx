@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 // import Image from "next/image";
-import SearchClient from "@/components/search/SearchClient";
+import SearchClient from "@/features/search/components/SearchClient";
 import GifLoader from "@/components/utility/GifLoader";
 import type { Metadata } from 'next';
 

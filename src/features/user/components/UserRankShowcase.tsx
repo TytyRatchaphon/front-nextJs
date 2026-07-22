@@ -793,11 +793,13 @@ export default function UserRankShowcase({
                               : "bg-gray-50"
                           }`}
                         >
-                          <img
-                            src={resolveRankImage(rank.rank_img)}
-                            alt={rank.name}
-                            className="h-10 w-10 object-contain sm:h-12 sm:w-12"
+                          <Image
+                            src={resolveRankImage(rank.rank_img) || ''}
+                            alt={rank.name || ''}
+                            fill
+                            className="object-contain"
                             onError={handleRankImageError}
+                            unoptimized
                           />
                           {/* noti dot per rank card */}
                           {rank.noti_rewards && (

@@ -45,6 +45,15 @@ export interface CollectionItem {
   created_at: string;
   updated_at: string;
   book_count: number;
+  like_count?: number;
+  is_liked?: boolean;
+  owner?: {
+    user_id: number;
+    writer_name: string;
+    fullname: string;
+    img: string | null;
+    banner: string | null;
+  };
   books?: CollectionBook[];
 }
 
@@ -102,7 +111,59 @@ export interface CollectionDetailResponse {
   code: number;
   status: string;
   message: string;
-  data: CollectionBook[];
+  data: {
+    collection: CollectionItem;
+    books: CollectionBook[];
+  };
+}
+
+export interface CollectionLikeResponse {
+  liked: boolean;
+  like_count: number;
+}
+
+export interface CollectionPickerItem extends CollectionItem {
+  contains_book: boolean;
+  collection_book_id: number | null;
+  book_order_index: number | null;
+  is_hidden: boolean | null;
+}
+
+export interface CollectionPickerResponse {
+  book_id: number;
+  existing_collection_ids: number[];
+  collections: CollectionPickerItem[];
+}
+
+export interface BulkAddResult {
+  collection_id: number;
+  status: "added" | "already_exists" | "not_found" | "invalid_owner";
+  collection_book_id?: number;
+  book_order_index?: number;
+  is_hidden?: boolean;
+}
+
+export interface BulkAddResponse {
+  book_id: number;
+  results: BulkAddResult[];
+  summary: {
+    requested: number;
+    added: number;
+    already_exists: number;
+    not_found: number;
+    invalid_owner: number;
+  };
+}
+
+export interface CreateAndAddResponse {
+  collection: CollectionItem;
+  collection_book: {
+    id: number;
+    collection_id: number;
+    book_id: number;
+    order_index: number;
+    is_hidden: boolean;
+  };
 }
 
 // --- API Functions ---
@@ -124,11 +185,21 @@ export const fetchUserCollections = async (): Promise<CollectionItem[] | null> =
 /** GET /user/collections/:id — fetch books in a collection */
 export const fetchCollectionBooks = async (
   collectionId: number
-): Promise<CollectionBook[] | null> => {
+): Promise<{ collection: CollectionItem; books: CollectionBook[] } | null> => {
   try {
     const response = await apiClient.get<CollectionDetailResponse>(`/user/collections/${collectionId}`);
     const payload = response.data?.data;
-    if (Array.isArray(payload)) return payload;
+    if (payload && payload.collection && Array.isArray(payload.books)) return payload;
+    
+    // Legacy fallback check just in case API hasn't been updated yet
+    if (Array.isArray(payload)) {
+      console.warn("API returned old format for collection detail, adapting locally...");
+      return {
+        collection: { id: collectionId, name: 'Collection', description: '', is_public: false, cover_image: null, is_pinned: false, order_index: 0, created_at: '', updated_at: '', book_count: payload.length },
+        books: payload
+      };
+    }
+    
     warnApiFallback(`/user/collections/${collectionId}`, 'null', response.data);
     return null;
   } catch (error) {
@@ -174,6 +245,77 @@ export const addBooksToCollection = async (
     return response.data;
   } catch (error: any) {
     console.error('addBooksToCollection error:', error);
+    throw error;
+  }
+};
+
+/** POST /user/collections/:id/like — like or unlike a collection */
+export const likeCollection = async (
+  collectionId: number
+): Promise<CollectionLikeResponse> => {
+  try {
+    const response = await apiClient.post(`/user/collections/${collectionId}/like`);
+    return response.data?.data;
+  } catch (error: any) {
+    console.error('likeCollection error:', error);
+    throw error;
+  }
+};
+
+/** GET /user/collections/book/:bookId/picker — fetch collection picker for a book */
+export const fetchCollectionPicker = async (
+  bookId: number
+): Promise<CollectionPickerResponse> => {
+  try {
+    const response = await apiClient.get(`/user/collections/book/${bookId}/picker`);
+    return response.data?.data;
+  } catch (error: any) {
+    console.error('fetchCollectionPicker error:', error);
+    throw error;
+  }
+};
+
+/** POST /user/collections/book/:bookId/bulk-add — add a book to multiple collections */
+export const bulkAddBookToCollections = async (
+  bookId: number,
+  collectionIds: number[]
+): Promise<BulkAddResponse> => {
+  try {
+    const response = await apiClient.post(`/user/collections/book/${bookId}/bulk-add`, {
+      collection_ids: collectionIds,
+    });
+    return response.data?.data;
+  } catch (error: any) {
+    console.error('bulkAddBookToCollections error:', error);
+    throw error;
+  }
+};
+
+/** POST /user/collections/book/:bookId/create-and-add — create collection and add a book */
+export const createAndAddCollection = async (
+  bookId: number,
+  data: {
+    name: string;
+    description: string;
+    is_public: boolean;
+    cover_image?: File | null;
+  }
+): Promise<CreateAndAddResponse> => {
+  try {
+    const formData = new FormData();
+    formData.append('name', data.name);
+    formData.append('description', data.description);
+    formData.append('is_public', String(data.is_public));
+    if (data.cover_image) {
+      formData.append('cover_image', data.cover_image);
+    }
+    
+    const response = await apiClient.post(`/user/collections/book/${bookId}/create-and-add`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data?.data;
+  } catch (error: any) {
+    console.error('createAndAddCollection error:', error);
     throw error;
   }
 };

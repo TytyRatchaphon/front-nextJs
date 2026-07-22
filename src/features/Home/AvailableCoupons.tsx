@@ -4,13 +4,14 @@ import { fetchAvailableCoupons, claimCoupon, fetchUserCoupons } from '@/services
 import { App, Empty, Modal, Button, Image as AntImage } from 'antd';
 import { Ticket, Percent, Coins, BookOpenCheck, AlertCircle, Clock } from 'lucide-react';
 import GifLoader from '@/components/utility/GifLoader';
-import CouponCard from '@/components/coupon/CouponCard';
+import CouponCard from '@/features/coupon/components/CouponCard';
 import { processCoupons, CouponUI } from '@/utils/couponUtils';
 import CouponApplicableBooks from './CouponApplicableBooks';
 import dayjs from 'dayjs';
 import 'dayjs/locale/th';
 import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
+import { queryKeys } from '@/constants/query';
 
 const AvailableCoupons = () => {
     const queryClient = useQueryClient();
@@ -27,7 +28,7 @@ const AvailableCoupons = () => {
 
     // Fetch User Coupons to calculate ownedCount
     const { data: userCoupons = [] } = useQuery({
-        queryKey: ['userCoupons'],
+        queryKey: queryKeys.coupons.user(),
         queryFn: async () => {
              const data = await fetchUserCoupons();
              return processCoupons(data);
@@ -35,7 +36,7 @@ const AvailableCoupons = () => {
     });
 
     const { data: availableCoupons = [], isLoading, isError } = useQuery({
-        queryKey: ['availableCoupons'],
+        queryKey: queryKeys.coupons.available(),
         queryFn: async () => {
              const data = await fetchAvailableCoupons();
              return processCoupons(data);
@@ -46,8 +47,8 @@ const AvailableCoupons = () => {
         mutationFn: claimCoupon,
         onSuccess: () => {
             messageApi.success('เก็บคูปองเรียบร้อยแล้ว!');
-            queryClient.invalidateQueries({ queryKey: ['availableCoupons'] });
-            queryClient.invalidateQueries({ queryKey: ['userCoupons'] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.coupons.availableRoot() });
+            queryClient.invalidateQueries({ queryKey: queryKeys.coupons.userRoot() });
             setIsModalOpen(false); // Close modal if claimed via modal (future feature)
         },
         onError: (error: any) => {

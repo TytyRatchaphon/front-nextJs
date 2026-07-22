@@ -11,6 +11,7 @@ interface StoryState {
   currentGroupIndex: number;
   currentItemIndex: number;
   viewerItems: StoryItem[];
+  isViewerMuted: boolean;
 
   // Upload
   uploadStatus: 'idle' | 'validating' | 'uploading' | 'queued' | 'processing' | 'completed' | 'failed';
@@ -31,6 +32,7 @@ interface StoryState {
   nextGroup: () => void;
   prevGroup: () => void;
   setCurrentGroupIndex: (index: number) => void;
+  setViewerMuted: (muted: boolean) => void;
   markItemViewed: (refId: number, type: StoryItemType) => void;
   toggleItemLike: (refId: number, type: StoryItemType, isLiked: boolean, likeCount?: number | null) => void;
   updateItemLinks: (refId: number, type: StoryItemType, links: StoryLink[]) => void;
@@ -49,6 +51,7 @@ export const useStoryStore = create<StoryState>()((set, get) => ({
   currentGroupIndex: 0,
   currentItemIndex: 0,
   viewerItems: [],
+  isViewerMuted: true,
   uploadStatus: 'idle',
   uploadProgress: 0,
   uploadStage: '',
@@ -72,6 +75,7 @@ export const useStoryStore = create<StoryState>()((set, get) => ({
       isViewerOpen: false,
       viewerItems: [],
       currentItemIndex: 0,
+      isViewerMuted: true,
     }),
 
   setViewerItems: (items, startIndex = 0) => set((state) => {
@@ -140,6 +144,8 @@ export const useStoryStore = create<StoryState>()((set, get) => ({
       ? state
       : { currentGroupIndex: index, currentItemIndex: 0, viewerItems: [] });
   },
+
+  setViewerMuted: (muted) => set({ isViewerMuted: muted }),
 
   markItemViewed: (refId, type) => {
     set((state) => {

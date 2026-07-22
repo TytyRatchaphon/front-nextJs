@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { postPinnedReview } from '@/services/api/commentApi';      
 import SelectNovelModal from './SelectNovelModal';
 import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/constants/query';
 import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 const { TextArea } = Input;
@@ -63,7 +64,8 @@ export default function WriteReviewModal({ isOpen, onClose, initialBook, lockBoo
         message: res?.message || 'ส่งรีวิวสำเร็จ', 
         placement: 'topRight' 
       });
-      queryClient.invalidateQueries({ queryKey: ['allPinnedReviews'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.reviews.allPinnedRoot() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.reviews.book(bookId) });
       onSuccess?.();
       onClose();
     } catch (error: any) {

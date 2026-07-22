@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 
-import '@/components/home/Banner';
+import '@/features/Home/components/Banner';
 import { useState } from 'react'
 import { Tabs, Image as AntdImage, App } from 'antd'
 import { useAuthStore } from '@/stores/authStore'

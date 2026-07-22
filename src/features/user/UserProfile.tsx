@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import GifLoader from '@/components/utility/GifLoader';
 import { imageLoader } from '@/utils/imageUtils';
 import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
-import CollectionCard from "@/components/collection/CollectionCard";
+import CollectionCard from "@/features/collection/components/CollectionCard";
 import { usePublicUserProfileData } from "./hooks/usePublicUserProfile";
 import { AchievementShowcaseCard } from "./components/AchievementShowcaseCard";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -171,6 +171,29 @@ function UserProfileContent({ userId }: { userId: string }) {
                                     <span className="text-sm font-bold text-emerald-700 leading-none">{profile.totalBooksInShelf.toLocaleString()}</span>
                                 </div>
                             </div>
+                            
+                            {/* VIP Badge */}
+                            {profile.vip_summary && (
+                                <div 
+                                    className="px-4 py-2 rounded-2xl flex items-center gap-2 border"
+                                    style={{
+                                        backgroundColor: profile.vip_summary.color_config?.badge_bg || '#fffbeb',
+                                        borderColor: profile.vip_summary.color_config?.badge_border || '#fde68a'
+                                    }}
+                                >
+                                    {profile.vip_summary.icon_url && (
+                                        <img src={profile.vip_summary.icon_url} alt="VIP" className="w-6 h-6 object-contain drop-shadow-sm" />
+                                    )}
+                                    <div className="flex flex-col justify-center">
+                                        <span 
+                                            className="text-sm font-bold leading-none"
+                                            style={{ color: profile.vip_summary.color_config?.badge_text || '#d97706' }}
+                                        >
+                                            VIP
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

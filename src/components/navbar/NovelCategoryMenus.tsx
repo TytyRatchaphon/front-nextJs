@@ -38,8 +38,8 @@ export function DesktopNovelDropdown({
         <ChevronDown className="h-3.5 w-3.5 transition-transform duration-200 group-hover:rotate-180" />
       </Link>
 
-      <div className="invisible absolute left-1/2 top-[calc(100%-10px)] z-50 w-[520px] -translate-x-1/2 pt-[20px] opacity-0 transition-all duration-200 ease-out group-hover:visible group-hover:opacity-100">
-        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-xl">
+      <div className="hidden absolute left-1/2 top-[calc(100%-10px)] z-50 w-[520px] -translate-x-1/2 pt-[20px] group-hover:block">
+        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-xl reader-novel-dropdown-box">
           <div className="mb-4 border-b border-gray-100 pb-2">
             <h3 className="text-lg font-bold text-gray-800">
               หมวดหมู่{label}

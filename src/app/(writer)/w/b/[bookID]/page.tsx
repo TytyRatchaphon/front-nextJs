@@ -1,5 +1,5 @@
 import EditMyBook from '@/features/user/EditMyBook'
-import AuthGuard from '@/components/auth/AuthGuard'
+import AuthGuard from '@/features/auth/components/AuthGuard'
 
 interface Props {
   params: { bookID: string }

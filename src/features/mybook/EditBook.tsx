@@ -1,4 +1,5 @@
 "use client";
+import Image from 'next/image';
 import * as React from "react";
 import { useEffect, useState } from "react";
 import { Checkbox, Form, Input, Select, Modal, Slider, Spin, Upload, notification, Switch } from "antd";
@@ -8,7 +9,8 @@ import type { RcFile } from 'antd/es/upload/interface';
 import { useParams, useRouter } from "next/navigation";
 
 // Import Components
-import TextEditorTiny from "@/components/editor/TextEditorTiny";
+import TextEditorTiny from "@/features/editor/components/TextEditorTiny";
+import TrailerUploader from "./TrailerUploader";
 import UploadCropBook from "@/components/upload/UploadBook";
 import UploadCropBookBanner from "@/components/upload/UploadCropBookBanner";
 import secureProxyClient from "@/services/secureProxyClient";
@@ -665,7 +667,7 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                                                         <div className="flex items-center gap-3">
                                                             <div className="h-14 w-10 rounded overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
                                                                 {gifPreview ? (
-                                                                    <img src={gifPreview} alt="GIF preview" className="h-full w-full object-cover" />
+                                                                    <Image src={gifPreview} alt="GIF preview" fill className="object-cover" unoptimized />
                                                                 ) : (
                                                                     <div className="h-full w-full flex items-center justify-center text-[10px] text-gray-400">GIF</div>
                                                                 )}
@@ -701,6 +703,15 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                                             </Form.Item>
                                         </div>
                                     </div>
+                                </div>
+
+                                <div className="mt-4">
+                                    <p className='body-text'>วิดีโอตัวอย่าง (Trailer) <span className='text-[13px] text-gray-400'>(ไฟล์ MP4/MOV)</span></p>
+                                    <TrailerUploader 
+                                        bookId={Number(finalBookId)}
+                                        autoStart={true}
+                                        mode="normal"
+                                    />
                                 </div>
 
                                 <div className='grid gap-4'>
@@ -943,7 +954,7 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                             <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
                                 <div className="mx-auto w-[180px] aspect-[330/467] rounded overflow-hidden bg-white border border-gray-200 flex items-center justify-center">
                                     {gifFramePreview ? (
-                                        <img src={gifFramePreview} alt="Selected frame preview" className="h-full w-full object-cover" />
+                                        <Image src={gifFramePreview} alt="Selected frame preview" fill className="object-cover" unoptimized />
                                     ) : (
                                         <div className="text-xs text-gray-400">กำลังโหลดตัวอย่างเฟรม</div>
                                     )}

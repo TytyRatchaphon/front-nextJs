@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
-import AuthGuard from '@/components/auth/AuthGuard';
-import CollectionDetail from '@/components/collection/CollectionDetail';
+import AuthGuard from '@/features/auth/components/AuthGuard';
+import CollectionDetail from '@/features/collection/components/CollectionDetail';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {

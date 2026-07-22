@@ -9,6 +9,7 @@ import { Trophy, Award, Target, BookOpen, Coins, Flame, Gift, X } from 'lucide-r
 import { fetchAchievements, fetchAchievementDetail, claimAchievement } from '@/services/api/achievementApi';
 import { useAuthStore } from '@/stores/authStore';
 import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
+import { queryKeys } from '@/constants/query';
 
 const conditionLabels: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   login_streak: { label: 'ล็อกอินต่อเนื่อง', icon: <Flame size={16} />, color: '#F59E0B' },
@@ -30,14 +31,14 @@ export default function AchievementPageClient() {
     const { settings } = useWebsiteSettings();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['achievements'],
+    queryKey: queryKeys.achievements.list(),
     queryFn: fetchAchievements,
     staleTime: 60000,
     refetchOnWindowFocus: false,
   });
 
   const { data: detail, isLoading: detailLoading } = useQuery({
-    queryKey: ['achievementDetail', selectedId],
+    queryKey: queryKeys.achievements.detail(selectedId),
     queryFn: () => fetchAchievementDetail(selectedId!),
     enabled: !!selectedId,
     staleTime: 60000,
@@ -71,8 +72,8 @@ export default function AchievementPageClient() {
         placement: 'topRight',
       });
       // Refetch both list and detail
-      queryClient.invalidateQueries({ queryKey: ['achievements'] });
-      queryClient.invalidateQueries({ queryKey: ['achievementDetail', achievementId] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.achievements.list() });
+        queryClient.invalidateQueries({ queryKey: queryKeys.achievements.detail(achievementId) });
     } catch (err: any) {
       notification.error({
         message: err?.response?.data?.message || 'ไม่สามารถรับรางวัลได้',

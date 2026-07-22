@@ -14,6 +14,7 @@ import "@/types/api";
 import { Select } from 'antd';
 import GifLoader from '@/components/utility/GifLoader';
 import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
+import { queryKeys } from '@/constants/query';
 
 interface CategoryRankProps {
     categoryId?: string | number;
@@ -24,12 +25,12 @@ export default function CategoryRank({ categoryId }: CategoryRankProps) {
     const [activeTab, setActiveTab] = useState<'weekly' | 'monthly' | 'yearly'>('weekly');
 
     const { data: categories = [] } = useQuery({
-        queryKey: ['bookCategories'],
+        queryKey: queryKeys.categories.bookCategories(),
         queryFn: fetchBookCategoryAll,
     });
 
     const { data: books = [], isLoading } = useQuery({
-        queryKey: ['categoryRankingPage', categoryId, activeTab],
+        queryKey: queryKeys.categories.rankingPage(categoryId, activeTab),
         queryFn: () => {
             // Changed from number days to string keywords
             if (!categoryId) return [];

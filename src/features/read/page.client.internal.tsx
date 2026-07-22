@@ -7,7 +7,7 @@ import { App } from "antd";
 import parse from "html-react-parser";
 import { queryKeys } from "@/constants/query";
 import { BackToTopButton } from "@/components/utility/BackToTopButton";
-import EpisodeCommentSection from "@/components/bookdetail/EpisodeCommentSection";
+import EpisodeCommentSection from "@/features/book/components/detail/EpisodeCommentSection";
 import { modifiedHtml, addParagraphIndexes, obfuscateClipboardText, obfuscateHtmlTextNodes } from "@/utils/htmlUtils";
 import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { fetchBookDetail, fetchHasPaymentHistory } from "@/services/apiServices";
@@ -16,22 +16,22 @@ import { useUIStore } from '@/stores/uiStore';
 import '@/utils/imageUtils';
 
 // Hooks
-import { useContentProtection } from "@/hooks/reader/useContentProtection";
-import { useReadingProgress } from "@/hooks/reader/useReadingProgress";
-import { useReadFreeQuota } from "@/hooks/reader/useReadFreeQuota";
+import { useContentProtection } from "@/features/read/hooks/useContentProtection";
+import { useReadingProgress } from "@/features/read/hooks/useReadingProgress";
+import { useReadFreeQuota } from "@/features/read/hooks/useReadFreeQuota";
 import { useLogger } from "@/hooks/useLogger";
 import { getReadEpisodePurchaseState } from "./purchaseUtils";
 import {
   READER_TOGGLE_IGNORE_SELECTOR,
 } from "./readerContentUtils";
 import { fetchEpisodeContent } from "./readerApi";
-import { useEpisodeBookmarks } from "./hooks/useEpisodeBookmarks";
-import { useReadEpisodePurchase } from "./hooks/useReadEpisodePurchase";
-import { useReadEpisodeList } from "./hooks/useReadEpisodeList";
-import { useReadScheduledRelease } from "./hooks/useReadScheduledRelease";
-import { useReaderParagraphTracking } from "./hooks/useReaderParagraphTracking";
-import { useReaderObfuscationAssets } from "./hooks/useReaderObfuscationAssets";
-import { useReaderPageEffects } from "./hooks/useReaderPageEffects";
+import { useEpisodeBookmarks } from '@/features/read/hooks/useEpisodeBookmarks';
+import { useReadEpisodePurchase } from '@/features/read/hooks/useReadEpisodePurchase';
+import { useReadEpisodeList } from '@/features/read/hooks/useReadEpisodeList';
+import { useReadScheduledRelease } from '@/features/read/hooks/useReadScheduledRelease';
+import { useReaderParagraphTracking } from '@/features/read/hooks/useReaderParagraphTracking';
+import { useReaderObfuscationAssets } from '@/features/read/hooks/useReaderObfuscationAssets';
+import { useReaderPageEffects } from '@/features/read/hooks/useReaderPageEffects';
 import { ReadStickyEpisodeNav } from "./components/ReadStickyEpisodeNav";
 import { ReadQuotaModals } from "./components/ReadQuotaModals";
 import { ReadConfirmPurchaseModal } from "./components/ReadConfirmPurchaseModal";
@@ -41,7 +41,7 @@ import { ReaderTopBar } from "./components/ReaderTopBar";
 import { ReadEpisodeSidebarDrawer } from "./components/ReadEpisodeSidebarDrawer";
 import { ReaderGlobalStyles } from "./components/ReaderGlobalStyles";
 import { ReadEpisodeErrorState, ReadEpisodeLoadingState } from "./components/ReadEpisodeStatusStates";
-import { useReadingSession } from "@/hooks/reader/useReadingSession";
+import { useReadingSession } from "@/features/read/hooks/useReadingSession";
 import { ReadConflictModal } from "./components/ReadConflictModal";
 
 type Props = {
@@ -124,7 +124,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
     fetchSessions
   } = useReadingSession(bookId, episodeId, user);
 
-  const { contentRef, showNav, setShowNav } = useReadingProgress(bookId, episodeId, user, (data) => {
+  const { contentRef, showNav, setShowNav } = useReadingProgress(bookId, episodeId, user, (data: any) => {
     handleConflict(data);
   });
 
@@ -243,7 +243,7 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
       return;
     }
 
-    setShowNav((prev) => !prev);
+    setShowNav((prev: boolean) => !prev);
   };
 
   const openCreateBookmarkModal = () => {
@@ -620,7 +620,12 @@ export default function ReadEpisodePage({ bookId, episodeId: routeEpisodeId }: P
             {/* Comment Section */}
             {episodeId && (
               <div className="px-4 pb-8" data-reader-ignore-toggle="true">
-                <EpisodeCommentSection episodeId={episodeId} theme={currentBg} />
+                <EpisodeCommentSection 
+                  episodeId={episodeId} 
+                  bookId={bookId}
+                  isAddedToShelf={(bookDetail as any)?.isAddedToShelf}
+                  theme={currentBg} 
+                />
               </div>
             )}
           </div>

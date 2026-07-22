@@ -2,8 +2,9 @@ import * as React from "react";
 import { useState } from 'react';
 import { Modal, Rate, Input, Switch, Button, App } from 'antd';
 import Image from 'next/image';
-import { updateBookReview } from '@/services/api/commentApi';      
+import { updateBookReview } from '@/services/apiServices';
 import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/constants/query';
 import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 
 const { TextArea } = Input;
@@ -67,8 +68,8 @@ export default function EditReviewModal({ isOpen, onClose, review, onSuccess }: 
       });
       
       // Invalidate queries to refresh the reviews list
-      queryClient.invalidateQueries({ queryKey: ['allPinnedReviews'] });
-      queryClient.invalidateQueries({ queryKey: ['bookReviews', review.book?.book_id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.reviews.allPinnedRoot() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.reviews.book(review.book?.book_id) });
       onSuccess?.();
       
       onClose();

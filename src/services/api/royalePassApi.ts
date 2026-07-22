@@ -71,7 +71,7 @@ export const royalePassPurchaseOptionsSchema = z.object({
 
 export const royalePassSummarySchema = z.object({
   pass_id: numberSchema,
-  name: z.string().catch("Royale Pass"),
+  name: z.string().catch("Reader Pass"),
   description: z.string().nullable().optional(),
   banner_img: nullableStringSchema,
   pre_banner_img: nullableStringSchema,

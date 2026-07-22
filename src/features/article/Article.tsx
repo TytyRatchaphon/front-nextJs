@@ -11,6 +11,7 @@ import {
   PopularArticle,
   ArticlePagination,
 } from '@/services/apiServices';
+import { queryKeys } from '@/constants/query';
 
 // Helper to format date to Thai string "19 พ.ค. 2025"
 const formatDate = (dateString: string) => {
@@ -44,16 +45,18 @@ export default function Article({ initialPopularArticles = [], initialLatestData
   const [page, setPage] = React.useState(1);
 
   const { data: popularArticles = [], isLoading: isLoadingPopular } = useQuery({
-    queryKey: ['popularArticles'],
+    queryKey: queryKeys.articles.popular(),
     queryFn: fetchPopularArticles,
     initialData: initialPopularArticles,
+    initialDataUpdatedAt: initialPopularArticles ? Date.now() : undefined,
     staleTime: 2 * 60 * 1000,
   });
 
   const { data: latestData, isLoading: isLoadingLatest } = useQuery({
-    queryKey: ['latestArticles', page],
+    queryKey: queryKeys.articles.latest(page),
     queryFn: () => fetchLatestArticles(page, 8),
     initialData: page === 1 ? initialLatestData : undefined,
+    initialDataUpdatedAt: page === 1 && initialLatestData ? Date.now() : undefined,
     placeholderData: (previousData) => previousData,
     staleTime: 60 * 1000,
   });

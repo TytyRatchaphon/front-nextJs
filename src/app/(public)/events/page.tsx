@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { Crown, CalendarDays, Gift, ChevronRight, Sparkles, Star, Target, Trophy, ListTodo } from "lucide-react";
+import { Crown, CalendarDays, Gift, ChevronRight, Sparkles, Star, Target, Trophy, ListTodo, Coins } from "lucide-react";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -13,10 +13,10 @@ export default function EventCenterPage() {
   const events = [
     {
       id: "royale-pass",
-      title: "Royale Pass",
+      title: "Reader Pass",
       description: "ทำภารกิจสะสมเลเวล รับของรางวัลสุดเอ็กซ์คลูซีฟมากมาย ทั้งกรอบโปรไฟล์ เหรียญ และคูปอง",
       icon: <Crown size={32} className="text-amber-400 drop-shadow-[0_2px_10px_rgba(251,191,36,0.5)]" />,
-      href: "/royale-pass",
+      href: "/reader-pass",
       bgGradient: "from-red-600 via-red-500 to-orange-500",
       cardGradient: "from-red-50 to-orange-50/50",
       borderGlow: "group-hover:border-red-300 group-hover:shadow-[0_20px_60px_rgba(220,38,38,0.15)]",
@@ -75,6 +75,19 @@ export default function EventCenterPage() {
       hoverText: "group-hover:text-blue-600",
       badge: { text: "ภารกิจ", color: "bg-blue-100 text-blue-600 border-blue-200" },
       decoration: <Target className="absolute -top-4 -right-4 text-blue-500/10 transform transition-transform duration-700 group-hover:scale-125 group-hover:-rotate-12" size={120} />,
+    },
+    {
+      id: "daily-coin-pass",
+      title: "ตั๋วรับเหรียญรายวัน",
+      description: "กดรับเหรียญฟรีทุกวันจากพาสพิเศษของคุณ ไม่ต้องกลัวพลาด เพราะมีระบบกดรับย้อนหลังได้ด้วย!",
+      icon: <Coins size={32} className="text-pink-400 drop-shadow-[0_2px_10px_rgba(244,114,182,0.5)]" />,
+      href: "/daily-coin-pass",
+      bgGradient: "from-pink-600 via-pink-500 to-rose-500",
+      cardGradient: "from-pink-50 to-rose-50/50",
+      borderGlow: "group-hover:border-pink-300 group-hover:shadow-[0_20px_60px_rgba(244,114,182,0.15)]",
+      hoverText: "group-hover:text-pink-600",
+      badge: { text: "สุดคุ้ม", color: "bg-pink-100 text-pink-600 border-pink-200" },
+      decoration: <Sparkles className="absolute -top-4 -right-4 text-pink-500/10 transform transition-transform duration-700 group-hover:scale-125 group-hover:rotate-12" size={120} />,
     },
   ];
 

@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import Shelve from '@/features/user/Shelve'
-import AuthGuard from '@/components/auth/AuthGuard'
+import AuthGuard from '@/features/auth/components/AuthGuard'
 import { Metadata } from 'next'
 
 export const dynamic = 'force-dynamic'

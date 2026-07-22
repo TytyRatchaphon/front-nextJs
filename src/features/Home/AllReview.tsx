@@ -10,6 +10,7 @@ import 'dayjs/locale/th';
 import ReviewModal from '@/components/modal/ReviewModal';
 import WriteReviewModal from '@/components/modal/WriteReviewModal';
 import EditReviewModal from '@/components/modal/EditReviewModal';
+import { queryKeys } from '@/constants/query';
 import SpoilerCardWrapper from '@/components/ui/SpoilerCardWrapper';
 import ProfileAvatarLink, { extractFrameSrc, normalizeProfileAssetSrc } from '@/components/ui/ProfileAvatarLink';
 import { useAuthStore } from '@/stores/authStore';
@@ -53,7 +54,7 @@ export default function AllReview() {
   const [currentPage, setCurrentPage] = React.useState(1);
 
   const { data: pinnedReviewsData, isLoading, error, refetch } = useQuery({
-    queryKey: ['allPinnedReviews', selectedSort, currentPage, REVIEW_PAGE_SIZE],
+    queryKey: queryKeys.reviews.allPinned(selectedSort, currentPage, REVIEW_PAGE_SIZE),
     queryFn: () =>
       fetchPinnedReviews({
         sort: selectedSort,

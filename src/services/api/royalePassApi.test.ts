@@ -50,7 +50,7 @@ describe("royalePassApi", () => {
     });
   });
 
-  it("fetches royale pass list and detail endpoints", async () => {
+  it("fetches reader pass list and detail endpoints", async () => {
     mockedApiClient.get
       .mockResolvedValueOnce({ data: { data: [{ pass_id: 1, name: "A" }] } })
       .mockResolvedValueOnce({ data: { data: { pass_id: 1, name: "A", levels: [], rewards: [], quests: [] } } });

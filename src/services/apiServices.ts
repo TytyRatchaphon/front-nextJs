@@ -49,3 +49,4 @@ export * from './api/episodePurchaseRewardApi';
 export * from './api/readingSessionApi';
 export * from './api/bookQuestApi';
 export * from './api/royalePassApi';
+export * from '@/features/video/services/videoApi';

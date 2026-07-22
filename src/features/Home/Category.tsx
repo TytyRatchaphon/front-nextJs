@@ -15,6 +15,7 @@ import 'swiper/css/navigation';
 import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import CategoryTypeSwiper from "./CategoryTypeSwiper";
 import CategoryGenreSwiper from "./CategoryGenreSwiper";
+import { queryKeys } from '@/constants/query';
 import { useLogger } from "@/hooks/useLogger";
 import { resolveBannerImageSrc } from "@/utils/imageUtils";
 import { navigateSafely } from "@/utils/navigationUtils";
@@ -193,7 +194,7 @@ export default function Category() {
 
   // React Query to fetch books
   const { data, isLoading, isError } = useQuery<CategoryBookListResponse | null>({
-    queryKey: ["categoryBooks", type, categoryId, tab, page, period],
+    queryKey: queryKeys.categories.books(type, categoryId, tab, page, period),
     queryFn: () => fetchCategoryBooks(type, categoryId, tab, page, 20, period),
   });
   const books = data?.data?.books ?? [];
@@ -202,13 +203,13 @@ export default function Category() {
 
   // Use Active Categories to get immediate banner if available
   const { data: activeCategories = [] } = useQuery({
-    queryKey: ['activeCategories', type],
+    queryKey: queryKeys.categories.active(type),
     queryFn: () => fetchActiveCategories(type),
     staleTime: 5 * 60 * 1000,
   });
 
   const { data: categoryBanners = [] } = useQuery({
-    queryKey: ["categoryBanners"],
+    queryKey: queryKeys.categories.banners(),
     queryFn: fetchCategoryBanners,
     staleTime: 5 * 60 * 1000,
   });
@@ -311,7 +312,7 @@ export default function Category() {
           </div>
         )}
 
-        {/* Tabs - Sticky Swiper */}
+        {/* Tabs - Normal Swiper (Not Sticky) */}
         <div className="bg-white border-b border-gray-200 mb-8 pt-2 flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-2">
           <Swiper
             spaceBetween={20}

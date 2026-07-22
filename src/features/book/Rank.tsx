@@ -10,7 +10,7 @@ import {
   fetchRankingBooks,
   RankingTimeRange,
 } from "@/services/apiServices";
-import { useActiveCategories } from "@/hooks/home/useHomeQueries";
+import { useActiveCategories } from "@/features/Home/hooks/useHomeQueries";
 import { TagSwiper } from "@/components/swiper/ImageSlider";
 import GifLoader from "@/components/utility/GifLoader";
 import { useAuthStore } from "@/stores/authStore";

@@ -1,3 +1,5 @@
+import * as React from "react";
+import Image from "next/image";
 import { getBookPurchaseRewardImage } from "@/utils/bookPurchaseReward";
 
 const STATIC_REWARD_BADGE_FALLBACK = "/images/gift_box.png";
@@ -28,12 +30,12 @@ export function BookPurchaseRewardBadge({
       ].filter(Boolean).join(" ")}
       aria-label="EP purchase reward"
     >
-      <img
-        src={imageSrc}
+      <Image
+        src={imageSrc || ''}
         alt="EP purchase reward"
-        className="h-full w-full object-contain drop-shadow-md"
-        loading="lazy"
-        decoding="async"
+        fill
+        className="object-contain drop-shadow-md"
+        unoptimized
       />
     </span>
   );

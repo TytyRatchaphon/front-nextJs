@@ -5,6 +5,7 @@ import GifLoader from '@/components/utility/GifLoader';
 import { useQuery } from '@tanstack/react-query';
 import CardBook from '@/components/novelCard/CardBook';
 import { normalizeBookPurchaseReward } from '@/utils/bookPurchaseReward';
+import { queryKeys } from '@/constants/query';
 
 export interface SearchParams {
   query: string;
@@ -73,10 +74,11 @@ function AllNovel({ initialData }: { initialData?: any }) {
     isError,
     error,
   } = useQuery({
-    queryKey: ["searchBooks", searchParams, currentPage],
+    queryKey: queryKeys.search.books(searchParams, currentPage, pageSize),
     queryFn: () => searchBooks(searchParams, currentPage, pageSize),
     staleTime: 5 * 60 * 1000,
     initialData: currentPage === 1 ? initialData : undefined,
+    initialDataUpdatedAt: currentPage === 1 && initialData ? Date.now() : undefined,
   });
 
   const handlePageChange = (page: number) => {

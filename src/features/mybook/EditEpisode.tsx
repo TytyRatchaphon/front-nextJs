@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 
 // Import TextEditor
-import TextEditorTiny from "@/components/editor/TextEditorTiny";
+import TextEditorTiny from "@/features/editor/components/TextEditorTiny";
 import GifLoader from '@/components/utility/GifLoader';
 import { fetchGroupEpisodes, fetchWriterCheck } from "@/services/apiServices";
 import secureProxyClient from "@/services/secureProxyClient";

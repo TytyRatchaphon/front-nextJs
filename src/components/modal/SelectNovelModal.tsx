@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
 import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
+import { queryKeys } from '@/constants/query';
 
 interface SelectNovelModalProps {
   isOpen: boolean;
@@ -46,7 +47,7 @@ export default function SelectNovelModal({ isOpen, onClose, onSelect, selectedBo
   }, [isOpen]);
 
   const { data: searchData, isLoading } = useQuery({
-    queryKey: ['novelSearch', committedQuery, page],
+    queryKey: queryKeys.search.novel(committedQuery, page),
     queryFn: () => searchBooksApi(committedQuery, page, 20),
     enabled: isOpen,
   });

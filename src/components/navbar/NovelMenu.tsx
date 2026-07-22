@@ -31,7 +31,7 @@ const NovelMenu = () => {
     }
 
     return (
-        <div className="flex w-[800px] bg-white shadow-xl rounded-xl overflow-hidden border border-gray-100">
+        <div className="flex w-[800px] bg-white shadow-xl rounded-xl overflow-hidden border border-gray-100 reader-novel-dropdown-box">
             {/* Left Column: Types */}
             <div className="w-[200px] bg-gray-50 flex-shrink-0 py-4 border-r border-gray-100">
                 <div className="flex flex-col">

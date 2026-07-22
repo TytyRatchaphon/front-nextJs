@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type RefObject } from "react";
 import {
   useReadingTheme,
   type ReadingThemeFontOption,
-} from "@/hooks/reader/useReadingTheme";
+} from '@/features/read/hooks/useReadingTheme';
 import {
   READER_OBFUSCATION_CSS_ID,
   READER_OBFUSCATION_CSS_PRELOAD_ID,

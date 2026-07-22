@@ -1,5 +1,5 @@
 import MyBook from '@/features/mybook/MyBook'
-import AuthGuard from '@/components/auth/AuthGuard'
+import AuthGuard from '@/features/auth/components/AuthGuard'
 
 function page() {
   return (

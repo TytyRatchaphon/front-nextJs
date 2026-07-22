@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 
 import * as React from "react";
 import { App } from "antd";
@@ -144,10 +145,13 @@ export default function NotificationAlertSocketListener() {
         key: `notification-alert-${payload.type || "general"}-${Date.now()}`,
         message,
         icon: img ? (
-          <img
-            src={img}
+          <Image
+            src={img || ''}
             alt=""
+            width={32}
+            height={32}
             className="h-8 w-8 rounded-full object-contain"
+            unoptimized
           />
         ) : undefined,
         placement: "topRight",

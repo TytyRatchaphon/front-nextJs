@@ -1,4 +1,4 @@
-import BookDetailClient from "@/components/bookdetail/BookDetailClient";
+import BookDetailClient from "@/features/book/components/detail/BookDetailClient";
 import type { Metadata, ResolvingMetadata } from 'next'
 import { fetchBookDetail, resolveBookId } from "@/services/apiServices";
 import { redirect } from 'next/navigation';

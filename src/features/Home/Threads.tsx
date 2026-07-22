@@ -13,6 +13,7 @@ import TextEditor from '@/components/utility/TextEditor';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useEffect } from 'react';
+import { queryKeys } from '@/constants/query';
 
 dayjs.locale('th');
 
@@ -73,7 +74,7 @@ export default function Threads({ initialThreadResponse }: ThreadsProps) {
   }, [token]);
 
   const { data: threadResponse, isLoading } = useQuery({
-    queryKey: ['threads', activeType, page, sort],
+    queryKey: queryKeys.threads.list(activeType, page, sort),
     queryFn: () => fetchThreads({ 
       page, 
       limit: 9, 
@@ -81,6 +82,7 @@ export default function Threads({ initialThreadResponse }: ThreadsProps) {
       sort 
     }),
     initialData: activeType === 0 && page === 1 && sort === 'newest' ? (initialThreadResponse ?? undefined) : undefined,
+    initialDataUpdatedAt: activeType === 0 && page === 1 && sort === 'newest' && initialThreadResponse ? Date.now() : undefined,
     staleTime: 60 * 1000,
   });
 
@@ -90,7 +92,7 @@ export default function Threads({ initialThreadResponse }: ThreadsProps) {
       messageApi.success('ตั้งกระทู้สำเร็จ');
       setIsModalOpen(false);
       form.resetFields();
-      queryClient.invalidateQueries({ queryKey: ['threads'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.threads.listRoot() });
     },
     onError: () => {
       messageApi.error('เกิดข้อผิดพลาดในการตั้งกระทู้');
@@ -101,7 +103,7 @@ export default function Threads({ initialThreadResponse }: ThreadsProps) {
     mutationFn: deleteThread,
     onSuccess: () => {
       messageApi.success('ลบกระทู้สำเร็จ');
-      queryClient.invalidateQueries({ queryKey: ['threads'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.threads.listRoot() });
     },
     onError: () => {
         messageApi.error('เกิดข้อผิดพลาดในการลบกระทู้');

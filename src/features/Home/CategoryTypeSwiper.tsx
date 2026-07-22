@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { fetchActiveTypes } from '@/services/apiServices';
+import { queryKeys } from '@/constants/query';
 
 export default function CategoryTypeSwiper() {
   const searchParams = useSearchParams();
@@ -32,7 +33,7 @@ export default function CategoryTypeSwiper() {
   };
 
   const { data: categoryTypes = [] } = useQuery({
-    queryKey: ['activeTypes'],
+    queryKey: queryKeys.categories.activeTypes(),
     queryFn: fetchActiveTypes,
     staleTime: 5 * 60 * 1000, 
   });

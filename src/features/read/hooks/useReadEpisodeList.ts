@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useEpisodeNavigation } from "@/hooks/reader/useEpisodeNavigation";
+import { useEpisodeNavigation } from '@/features/read/hooks/useEpisodeNavigation';
 import { isEpisodeSequentiallyUnlockable } from "@/utils/earlyAccessUtils";
 import {
   getEpisodeFreeMeta,

@@ -2,24 +2,14 @@ import { useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 
 import { queryKeys } from '@/constants/query';
-import { fetchWebsiteSettings } from '@/services/api/userApi';
-import type { WebsiteSettingsData, WebsiteSettingsResponse } from '@/types/api';
+import { fetchWebsiteSettingsQuery } from '@/services/websiteSettingsQuery';
+import type { WebsiteSettingsData } from '@/types/api';
 import { getErrorMessage } from '@/types/errors';
+
+export { fetchWebsiteSettingsQuery } from '@/services/websiteSettingsQuery';
 
 export const WEBSITE_SETTINGS_CACHE_TTL_MS = 5 * 60 * 1000;
 export const WEBSITE_SETTINGS_QUERY_KEY = queryKeys.website.settings();
-
-const normalizeWebsiteSettings = (
-  response: WebsiteSettingsResponse | null,
-): WebsiteSettingsData | null => {
-  if (!response || response.status !== 'success') return null;
-  return response.data ?? null;
-};
-
-export const fetchWebsiteSettingsQuery = async (): Promise<WebsiteSettingsData | null> => {
-  const response = await fetchWebsiteSettings();
-  return normalizeWebsiteSettings(response);
-};
 
 export const prefetchWebsiteSettings = async (
   queryClient: QueryClient,

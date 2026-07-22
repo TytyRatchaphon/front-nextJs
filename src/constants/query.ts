@@ -127,6 +127,75 @@ export const queryKeys = {
         sort ?? "publish_time",
       ] as const,
   },
+  video: {
+    trailerPlayback: (trailerId: number | string | null | undefined) =>
+      ["trailerPlayback", String(trailerId ?? "")] as const,
+  },
+  coupons: {
+    userRoot: () => ["userCoupons"] as const,
+    user: () => ["userCoupons"] as const,
+    userCount: () => ["userCouponsForCount"] as const,
+    availableRoot: () => ["availableCoupons"] as const,
+    available: () => ["availableCoupons"] as const,
+    availableCount: () => ["availableCouponsForCount"] as const,
+  },
+  threads: {
+    listRoot: () => ["threads"] as const,
+    list: (type?: number | string | null, page?: number | string | null, sort?: string | null) => 
+      ["threads", type ?? 0, page ?? 1, sort ?? "newest"] as const,
+  },
+  campaigns: {
+    list: () => ["campaigns"] as const,
+  },
+  events: {
+    weeklyLoginRoot: () => ["weekly-login"] as const,
+    weeklyLogin: (token?: string | null) => ["weekly-login", token ?? "guest"] as const,
+    bookPromotions: () => ["bookPromotions"] as const,
+  },
+  categories: {
+    booksRoot: () => ["categoryBooks"] as const,
+    books: (type?: string | null, categoryId?: number | string | null, tab?: string | null, page?: number | string | null, period?: string | null) => 
+      ["categoryBooks", type ?? "", categoryId ?? "", tab ?? "", page ?? 1, period ?? ""] as const,
+    activeTypes: () => ["activeTypes"] as const,
+    activeRoot: () => ["activeCategories"] as const,
+    active: (type?: string | null) => ["activeCategories", type ?? "all"] as const,
+    banners: () => ["categoryBanners"] as const,
+    rankingPageRoot: () => ["categoryRankingPage"] as const,
+    rankingPage: (categoryId?: number | string | null, activeTab?: string | null) => 
+      ["categoryRankingPage", categoryId ?? "", activeTab ?? ""] as const,
+    rankingRoot: () => ["categoryRanking"] as const,
+    ranking: (categoryId?: number | string | null, activeTab?: string | null, tab?: string | null) => 
+      ["categoryRanking", categoryId ?? "", activeTab ?? "", tab ?? "novel"] as const,
+    bookCategories: () => ["bookCategories"] as const,
+    newNovels: (page?: number | string | null, limit?: number | string | null, filter?: string | null) =>
+      ["newNovels", page ?? 1, limit ?? 20, filter ?? ""] as const,
+    promotingGroups: () => ["promotingGroups"] as const,
+    promotingBlockBooks: (blockId?: number | string | null, page?: number | string | null) =>
+      ["promotingBlockBooks", String(blockId ?? ""), page ?? 1] as const,
+  },
+  search: {
+    novelRoot: () => ["novelSearch"] as const,
+    novel: (query?: string | null, page?: number | string | null) => 
+      ["novelSearch", query ?? "", page ?? 1] as const,
+    booksRoot: () => ["searchBooks"] as const,
+    books: (searchParams: any, page?: number, pageSize?: number) =>
+      ["searchBooks", searchParams, page ?? 1, pageSize ?? 10] as const,
+  },
+  articles: {
+    popular: () => ["popularArticles"] as const,
+    latest: (page?: number | string | null) => ["latestArticles", page ?? 1] as const,
+  },
+  reviews: {
+    allPinnedRoot: () => ["allPinnedReviews"] as const,
+    allPinned: (sort?: string | null, page?: number | string | null, limit?: number | string | null) => 
+      ["allPinnedReviews", sort ?? "latest", page ?? 1, limit ?? 20] as const,
+    bookRoot: () => ["bookReviews"] as const,
+    book: (bookId?: number | string | null) => ["bookReviews", String(bookId ?? "")] as const,
+  },
+  achievements: {
+    list: () => ["achievements"] as const,
+    detail: (id?: number | string | null) => ["achievementDetail", String(id ?? "")] as const,
+  },
 } as const;
 
 /**

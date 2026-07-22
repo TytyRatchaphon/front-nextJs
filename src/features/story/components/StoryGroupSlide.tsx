@@ -36,11 +36,12 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
   const prevItem = useStoryStore((state) => state.prevItem);
   const markItemViewed = useStoryStore((state) => state.markItemViewed);
   const closeViewer = useStoryStore((state) => state.closeViewer);
+  const isViewerMuted = useStoryStore((state) => state.isViewerMuted);
+  const setViewerMuted = useStoryStore((state) => state.setViewerMuted);
   const { message } = App.useApp();
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const [progress, setProgress] = useState(0);
-  const [isMuted, setIsMuted] = useState(true);
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
   const [commentText, setCommentText] = useState('');
 
@@ -93,9 +94,9 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
   useEffect(() => {
     setProgress(0);
     if (videoRef.current) {
-      videoRef.current.muted = isMuted;
+      videoRef.current.muted = isViewerMuted;
     }
-  }, [currentItemIndex, isMuted]);
+  }, [currentItemIndex, isViewerMuted]);
 
   // Active state: render full video and interactions
   return (
@@ -144,10 +145,10 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
             {playerState === 'playing' ? <Pause className="w-5 h-5 text-white" color="white" /> : <Play className="w-5 h-5 text-white" color="white" />}
           </button>
           <button
-            onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
+            onClick={(e) => { e.stopPropagation(); setViewerMuted(!isViewerMuted); }}
             className="w-8 h-8 flex items-center justify-center transition-colors cursor-pointer bg-black/20 hover:bg-black/40 rounded-full"
           >
-            {isMuted ? <VolumeX className="w-5 h-5 text-white" color="white" /> : <Volume2 className="w-5 h-5 text-white" color="white" />}
+            {isViewerMuted ? <VolumeX className="w-5 h-5 text-white" color="white" /> : <Volume2 className="w-5 h-5 text-white" color="white" />}
           </button>
 
           {isOwnStory ? (
@@ -276,7 +277,7 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
           ref={videoRef}
           className="absolute inset-0 w-full h-full object-cover"
           playsInline
-          muted={isMuted}
+          muted={isViewerMuted}
           autoPlay
         />
       </div>

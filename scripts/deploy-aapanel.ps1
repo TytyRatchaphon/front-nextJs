@@ -29,9 +29,9 @@ $targetDefaults = @{
   }
   production = @{
     ServerHost = "192.168.250.73"
-    RemoteRoot = "/www/wwwroot/web/test"
-    Pm2AppName = "web_test"
-    AppPort = 5079
+    RemoteRoot = "/www/wwwroot/web/5076"
+    Pm2AppName = "web_5076"
+    AppPort = 5076
   }
 }
 $targetConfig = $targetDefaults[$Target]

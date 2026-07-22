@@ -10,6 +10,7 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/th';
 import buddhistEra from 'dayjs/plugin/buddhistEra';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { queryKeys } from '@/constants/query';
 
 dayjs.extend(buddhistEra);
 dayjs.locale('th');
@@ -26,14 +27,14 @@ const CouponDetail = () => {
     // The prompt shows "มีคูปอง X ใบที่เก็บได้".
     // I Will keep it to maintain feature parity.
     const { data: availableCoupons = [] } = useQuery({
-        queryKey: ['availableCouponsForCount'],
+        queryKey: queryKeys.coupons.availableCount(),
         queryFn: async () => {
              const data = await fetchAvailableCoupons();
              return data || [];
         }
     });
      useQuery({
-        queryKey: ['userCouponsForCount'],
+        queryKey: queryKeys.coupons.userCount(),
         queryFn: async () => {
              const data = await fetchUserCoupons();
              return data || [];
@@ -50,9 +51,9 @@ const CouponDetail = () => {
                 placement: 'topRight',
             });
             setCouponCode('');
-            queryClient.invalidateQueries({ queryKey: ['availableCoupons'] });
-            queryClient.invalidateQueries({ queryKey: ['userCoupons'] });
-            queryClient.invalidateQueries({ queryKey: ['availableCouponsForCount'] });
+            queryClient.invalidateQueries({ queryKey: queryKeys.coupons.availableRoot() });
+            queryClient.invalidateQueries({ queryKey: queryKeys.coupons.userRoot() });
+            queryClient.invalidateQueries({ queryKey: queryKeys.coupons.availableCount() });
         },
         onError: (error: any) => {
             notification.error({

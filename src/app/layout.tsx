@@ -5,7 +5,6 @@ import { dehydrate, QueryClient } from "@tanstack/react-query";
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
-import 'antd/dist/reset.css';
 import "./globals.css";
 import { Bai_Jamjuree } from "next/font/google";
 import ClientProviders from "./client-providers";
@@ -16,22 +15,14 @@ const baiJamjuree = Bai_Jamjuree({
   variable: "--font-bai-jamjuree",
   display: "swap",
 });
-
+import Image from 'next/image'
 import { unstable_cache } from 'next/cache';
-import { fetchWebsiteSettings } from "@/services/api/userApi";
 import { queryKeys } from "@/constants/query";
 import { WEBSITE_SETTINGS_CACHE_TTL_MS } from "@/hooks/useWebsiteSettings";
+import { fetchWebsiteSettingsQuery } from '@/services/websiteSettingsQuery';
 
 const getCachedSettings = unstable_cache(
-  async () => {
-    try {
-      const res = await fetchWebsiteSettings();
-      return res?.data;
-    } catch (e) {
-       console.error("Error fetching cached website settings:", e);
-       return null;
-    }
-  },
+  fetchWebsiteSettingsQuery,
   ['website-settings'],
   { revalidate: 300 } // cache 5 minutes
 );
@@ -41,6 +32,9 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'https://enjoybook.co'),
+    verification: {
+      google: 's6Eb1YsalJ_H50bHYWUGV8bsZXQhrg_GdplUZjFRsfk',
+    },
     title: {
       default: settings?.seo_title || 'Enjoybook - อ่านนิยายออนไลน์ นิยายแปล นิยายจีน แฟนตาซี',
       template: '%s | Enjoybook',
@@ -63,6 +57,15 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       card: 'summary_large_image',
       images: ['https://image.enjoybook.co/enjoybook.image/web/2026021217054495nw.png'],
+    },
+    icons: {
+      icon: [
+        { url: '/favicon.ico', sizes: '48x48', type: 'image/x-icon' },
+        { url: '/icon.png', sizes: '192x192', type: 'image/png' },
+      ],
+      apple: [
+        { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
+      ],
     },
     // NOTE: Do NOT set a global canonical here — each page must define its own.
     // A root-level canonical: '/' causes Google to treat ALL pages as duplicates of the homepage.
@@ -126,24 +129,71 @@ export default async function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+            __html: JSON.stringify([{
               '@context': 'https://schema.org',
               '@type': 'Organization',
               name: 'Enjoybook',
               url: 'https://enjoybook.co',
-              logo: 'https://enjoybook.co/favicon.ico',
+              logo: 'https://enjoybook.co/icon.png',
               description: 'แหล่งรวมนิยายออนไลน์ นิยายแปล นิยายจีน แฟนตาซี กำลังภายใน อ่านฟรี',
               sameAs: [
                 'https://www.facebook.com/webenjoybook',
                 'https://www.instagram.com/enjoybook_official',
                 'https://www.tiktok.com/@enjoybook.official'
               ],
-            }),
+            },
+            {
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: 'Enjoybook',
+              url: 'https://enjoybook.co/',
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: 'https://enjoybook.co/search?q={search_term_string}',
+                'query-input': 'required name=search_term_string'
+              }
+            },
+            {
+              '@context': 'https://schema.org',
+              '@type': 'ItemList',
+              itemListElement: [
+                {
+                  '@type': 'SiteNavigationElement',
+                  position: 1,
+                  name: 'จัดอันดับ',
+                  url: 'https://enjoybook.co/ranking'
+                },
+                {
+                  '@type': 'SiteNavigationElement',
+                  position: 2,
+                  name: 'เข้าสู่ระบบ',
+                  url: 'https://enjoybook.co/login'
+                },
+                {
+                  '@type': 'SiteNavigationElement',
+                  position: 3,
+                  name: 'นิยายทั้งหมด',
+                  url: 'https://enjoybook.co/allnovel'
+                },
+                {
+                  '@type': 'SiteNavigationElement',
+                  position: 4,
+                  name: 'บทความ',
+                  url: 'https://enjoybook.co/article'
+                },
+                {
+                  '@type': 'SiteNavigationElement',
+                  position: 5,
+                  name: 'แคมเปญ',
+                  url: 'https://enjoybook.co/campaign'
+                }
+              ]
+            }]),
           }}
         />
         {/* Facebook Pixel NoScript */}
         <noscript>
-          <img
+          <Image
             height="1"
             width="1"
             style={{ display: "none" }}

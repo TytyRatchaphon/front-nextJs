@@ -6,7 +6,7 @@ import { fetchUserCoupons, useCoupon as applyCoupon } from '@/services/apiServic
 import { App, Empty, Modal, Checkbox, Button, Image as AntImage } from 'antd';
 import { Ticket, Percent, Coins, BookOpenCheck, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
 import GifLoader from '@/components/utility/GifLoader';
-import CouponCard from '@/components/coupon/CouponCard';
+import CouponCard from '@/features/coupon/components/CouponCard';
 import { processCoupons, CouponUI } from '@/utils/couponUtils';
 import CouponApplicableBooks from './CouponApplicableBooks';
 import dayjs from 'dayjs';
@@ -14,6 +14,7 @@ import 'dayjs/locale/th';
 import { useAuthStore } from '@/stores/authStore';
 import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
+import { queryKeys } from '@/constants/query';
 
 const MyCoupons = () => {
     const queryClient = useQueryClient();
@@ -30,7 +31,7 @@ const MyCoupons = () => {
     const { settings } = useWebsiteSettings();
 
     const { data: userCoupons = [], isLoading, isError } = useQuery({
-        queryKey: ['userCoupons'],
+        queryKey: queryKeys.coupons.user(),
         queryFn: async () => {
             const data = await fetchUserCoupons();
             // processCoupons handles the data structure provided in the prompt
@@ -46,7 +47,7 @@ const MyCoupons = () => {
              setSelectedRewardIds([]);
              
              // Invalidate queries
-             queryClient.invalidateQueries({ queryKey: ['userCoupons'] });
+             queryClient.invalidateQueries({ queryKey: queryKeys.coupons.userRoot() });
 
              // Update token if provided (New Logic)
              const  responseData = response?.data || response; // Handle potential response wrapping

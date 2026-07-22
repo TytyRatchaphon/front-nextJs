@@ -1,13 +1,15 @@
 "use client";
+import Image from 'next/image';
 import * as React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Checkbox, Form, Input, Select, Modal, Slider, Spin, Upload, notification, Switch } from "antd"; // เพิ่ม notification
 import type { CheckboxChangeEvent } from "antd/es/checkbox";
 import type { RcFile } from 'antd/es/upload/interface';
 import axios from "axios";
 
 // Import Components ที่คุณมีอยู่แล้ว
-import TextEditorTiny from "@/components/editor/TextEditorTiny";
+import TextEditorTiny from "@/features/editor/components/TextEditorTiny";
+import TrailerUploader from "./TrailerUploader";
 import UploadCropBook from "@/components/upload/UploadBook";
 import UploadCropBookBanner from "@/components/upload/UploadCropBookBanner";
 import GifLoader from '@/components/utility/GifLoader';
@@ -102,6 +104,11 @@ const NewBook: React.FC = () => {
     const [appliedGifFrameIndex, setAppliedGifFrameIndex] = useState(0);
     const ENABLE_GIF_UPLOAD = true;
     const [isFastUnlockEnabled, setIsFastUnlockEnabled] = useState<boolean>(true);
+
+    // --- Trailer Video Upload ---
+    const trailerFileRef = useRef<File | null>(null);
+    const [trailerUploadModalOpen, setTrailerUploadModalOpen] = useState(false);
+    const [newBookId, setNewBookId] = useState<number | null>(null);
 
     // State สำหรับเก็บข้อมูลที่เคยอยู่ใน Context
     const [category, setCategory] = useState<Category[]>([]);
@@ -465,6 +472,9 @@ const NewBook: React.FC = () => {
             // แปลงชื่อ key
             if (key === 'imgBook') keyName = 'img';
 
+            // ข้าม trailer_file — จะอัปโหลดแยกผ่าน multipart API หลังสร้างหนังสือสำเร็จ
+            if (key === 'trailer_file') continue;
+
             // 1. เช็คค่าว่าง: ถ้าไม่มีข้อมูล หรือเป็นค่าว่าง ให้ข้ามไปเลย (รวมถึงรูปที่ไม่อัปโหลดด้วย)
             if (value === undefined || value === null || value === '') {
                 continue;
@@ -515,9 +525,35 @@ const NewBook: React.FC = () => {
 
 
             if (response.data.status === 'ok' || response.status === 200) {
-                api.success({ message: 'เพิ่มนิยายสำเร็จ' });
-                // Redirect ไปหน้าอื่น หรือ Reset Form ตรงนี้
-                router.push('/w/mybook');
+                // Debug: ดู response structure เพื่อหา bookId
+                console.log('[Newbook] Create book response:', JSON.stringify(response.data, null, 2));
+
+                // ลองหา bookId จากหลาย path ที่เป็นไปได้
+                const createdBookId = response.data?.data?.id 
+                    || response.data?.id 
+                    || response.data?.data?.book_id 
+                    || response.data?.book_id
+                    || response.data?.data?.bookId
+                    || response.data?.bookId;
+
+                console.log('[Newbook] createdBookId:', createdBookId, 'trailerFile:', !!trailerFileRef.current);
+
+                // ถ้ามีไฟล์ trailer ที่เลือกไว้ → เปิด modal อัปโหลดวิดีโอ
+                if (trailerFileRef.current && createdBookId) {
+                    setNewBookId(Number(createdBookId));
+                    api.success({ message: 'เพิ่มนิยายสำเร็จ กำลังอัปโหลดวิดีโอ...' });
+                    setTrailerUploadModalOpen(true);
+                } else if (trailerFileRef.current && !createdBookId) {
+                    // มีไฟล์แต่หา bookId ไม่เจอ → แจ้ง user ให้ไปอัปโหลดในหน้าแก้ไข
+                    api.warning({ 
+                        message: 'เพิ่มนิยายสำเร็จ', 
+                        description: 'ไม่สามารถอัปโหลดวิดีโอได้ตอนนี้ กรุณาอัปโหลดในหน้าแก้ไขหนังสือ' 
+                    });
+                    router.push('/w/mybook');
+                } else {
+                    api.success({ message: 'เพิ่มนิยายสำเร็จ' });
+                    router.push('/w/mybook');
+                }
             } else {
                 api.error({ message: 'ทำรายการไม่สำเร็จ', description: response.data.message || 'เกิดข้อผิดพลาด' });
             }
@@ -590,7 +626,7 @@ const NewBook: React.FC = () => {
                                                     <div className="flex items-center gap-3">
                                                         <div className="h-14 w-10 rounded overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
                                                             {gifPreview ? (
-                                                                <img src={gifPreview} alt="GIF preview" className="h-full w-full object-cover" />
+                                                                <Image src={gifPreview} alt="GIF preview" fill className="object-cover" unoptimized />
                                                             ) : (
                                                                 <div className="h-full w-full flex items-center justify-center text-[10px] text-gray-400">GIF</div>
                                                             )}
@@ -626,6 +662,17 @@ const NewBook: React.FC = () => {
                                         </Form.Item>
                                     </div>
                                 </div>
+                            </div>
+
+                            <div className="mt-4">
+                                <p className='body-text'>วิดีโอตัวอย่าง (Trailer) <span className='text-[13px] text-gray-400'>(ไฟล์ MP4/MOV)</span></p>
+                                <TrailerUploader 
+                                    mode="select-only"
+                                    onFileSelect={(file) => {
+                                        trailerFileRef.current = file;
+                                        formNewBook.setFieldsValue({ trailer_file: file });
+                                    }}
+                                />
                             </div>
 
                             <div className='grid gap-4'>
@@ -865,7 +912,7 @@ const NewBook: React.FC = () => {
                     <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
                         <div className="mx-auto w-[180px] aspect-[330/467] rounded overflow-hidden bg-white border border-gray-200 flex items-center justify-center">
                             {gifFramePreview ? (
-                                <img src={gifFramePreview} alt="Selected frame preview" className="h-full w-full object-cover" />
+                                <Image src={gifFramePreview} alt="Selected frame preview" fill className="object-cover" unoptimized />
                             ) : (
                                 <div className="text-xs text-gray-400">กำลังโหลดตัวอย่างเฟรม</div>
                             )}
@@ -902,6 +949,36 @@ const NewBook: React.FC = () => {
             <Modal title='' footer='' open={openModal} onCancel={() => setOpenModal(false)}>
                 <div>
                     <div dangerouslySetInnerHTML={{ __html: safeBookConditionsHtml }} />
+                </div>
+            </Modal>
+
+            {/* Trailer Upload Modal — หลังสร้างหนังสือสำเร็จ */}
+            <Modal
+                title="อัปโหลดวิดีโอ Trailer"
+                open={trailerUploadModalOpen}
+                footer={null}
+                closable={false}
+                maskClosable={false}
+                width={600}
+            >
+                {newBookId && trailerFileRef.current && (
+                    <TrailerUploader
+                        bookId={newBookId}
+                        initialFile={trailerFileRef.current}
+                        autoStart={true}
+                        mode="normal"
+                        onSuccess={() => {
+                            api.success({ message: 'อัปโหลดวิดีโอสำเร็จ!' });
+                            setTrailerUploadModalOpen(false);
+                            router.push('/w/mybook');
+                        }}
+                        onError={(err) => {
+                            api.error({ message: 'อัปโหลดวิดีโอไม่สำเร็จ', description: err });
+                        }}
+                    />
+                )}
+                <div className="mt-4 text-right">
+                    <p className='text-xs text-gray-500'>กรุณารอวิดีโออัปโหลดเสร็จ</p>
                 </div>
             </Modal>
         </div>

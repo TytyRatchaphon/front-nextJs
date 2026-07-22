@@ -4,6 +4,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { fetchActiveCategories } from '@/services/apiServices';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { queryKeys } from '@/constants/query';
 
 export default function CategoryGenreSwiper() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function CategoryGenreSwiper() {
   const [showExpandButton, setShowExpandButton] = useState(false);
 
   const { data: genres = [] } = useQuery({
-    queryKey: ['activeCategories', currentType],
+    queryKey: queryKeys.categories.active(currentType),
     queryFn: () => fetchActiveCategories(currentType),
     staleTime: 5 * 60 * 1000,
   });

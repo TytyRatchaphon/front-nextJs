@@ -1,6 +1,7 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
 import { Image as AntdImage, Button } from "antd";
+import { Crown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
 import GifLoader from "@/components/utility/GifLoader";
@@ -9,7 +10,7 @@ import AmountPill from "@/components/utility/AmountPill";
 import FreeCoinPill from "@/components/utility/FreeCoinPill";
 import StampPill from "@/components/utility/StampPill";
 import RPPill from "@/components/utility/RPPill";
-import ProfileAchievements from "@/components/achievement/ProfileAchievements";
+import ProfileAchievements from "@/features/achievement/components/ProfileAchievements";
 import UserRankShowcase from "@/features/user/components/UserRankShowcase";
 import RpQuestPanel from "@/features/user/components/RpQuestPanel";
 import FrameOverlayImage from "@/components/ui/FrameOverlayImage";
@@ -147,6 +148,13 @@ function MyProfileContent() {
                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
               </svg>
               แก้ไขข้อมูล
+            </Button>
+            <Button
+              onClick={() => router.push("/vip")}
+              className="flex h-12 items-center gap-2 rounded-full border border-red-200 bg-red-50 px-8 text-base font-medium text-red-600 shadow-sm transition-all hover:!border-red-600 hover:!bg-red-600 hover:!text-white"
+            >
+              <Crown size={18} />
+              จัดการ VIP
             </Button>
           </div>
         </div>

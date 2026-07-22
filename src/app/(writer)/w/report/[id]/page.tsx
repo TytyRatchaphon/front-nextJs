@@ -1,5 +1,5 @@
 import Report from '@/features/mybook/Report';
-import AuthGuard from '@/components/auth/AuthGuard';
+import AuthGuard from '@/features/auth/components/AuthGuard';
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
