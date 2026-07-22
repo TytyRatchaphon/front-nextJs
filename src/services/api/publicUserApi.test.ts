@@ -104,6 +104,62 @@ describe("publicUserApi", () => {
     await expect(getPublicUserCollectionDetail("7", 88)).resolves.toEqual([]);
   });
 
+  it.each([
+    ["books", { books: [{ book_id: 2 }] }],
+    ["list", { list: [{ book_id: 3 }] }],
+    ["items", { items: [{ book_id: 4 }] }],
+    ["nested data", { data: [{ book_id: 5 }] }],
+  ])("getPublicUserCollectionDetail normalizes the %s response shape", async (_name, payload) => {
+    mockedApiClient.get.mockResolvedValueOnce({ data: { data: payload } });
+
+    await expect(getPublicUserCollectionDetail("7", 88)).resolves.toEqual(
+      Object.values(payload)[0],
+    );
+  });
+
+  it("getPublicUserCollectionDetail rejects non-array nested book data", async () => {
+    mockedApiClient.get.mockResolvedValueOnce({
+      data: { data: { books: { book_id: 6 } } },
+    });
+
+    await expect(getPublicUserCollectionDetail("7", 88)).resolves.toEqual([]);
+  });
+
+  it.each(["book", "Book", "book_detail", "book_data"]) (
+    "getPublicUserCollectionDetail flattens a nested %s relation",
+    async (bookKey) => {
+      mockedApiClient.get.mockResolvedValueOnce({
+        data: {
+          data: {
+            books: [{
+              collection_book_id: 90,
+              collection_id: 88,
+              order_index: 4,
+              [bookKey]: {
+                book_id: 12,
+                name: "Nested title",
+                writer_name: "Nested author",
+                img: "/nested-cover.jpg",
+              },
+            }],
+          },
+        },
+      });
+
+      await expect(getPublicUserCollectionDetail("7", 88)).resolves.toEqual([
+        expect.objectContaining({
+          book_id: 12,
+          name: "Nested title",
+          writer_name: "Nested author",
+          img: "/nested-cover.jpg",
+          collection_book_id: 90,
+          collection_id: 88,
+          order_index: 4,
+        }),
+      ]);
+    },
+  );
+
   it("getPublicUserAchievementDetail returns null fallback when data is absent", async () => {
     mockedApiClient.get.mockResolvedValueOnce({
       data: { data: { achievement_id: 10 } },

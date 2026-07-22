@@ -20,7 +20,7 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
-import { Image as AntImage } from "antd";
+import { App, Image as AntImage } from "antd";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -153,6 +153,7 @@ function MessageBubble({
 
 export default function LiveChatContactPage() {
   const queryClient = useQueryClient();
+  const { notification } = App.useApp();
   const { socket, isConnected } = useSocket();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const hasMounted = useAuthStore((state) => state.hasMounted);
@@ -177,6 +178,7 @@ export default function LiveChatContactPage() {
   const [hasMoreHistory, setHasMoreHistory] = useState(false);
   const messageListRef = useRef<HTMLDivElement>(null);
   const shouldJumpToLatestRef = useRef(false);
+  const shouldCreateNewThreadRef = useRef(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const jumpToLatestMessage = useCallback(() => {
@@ -399,9 +401,15 @@ export default function LiveChatContactPage() {
     onError: recoverIntakeError,
   });
   const completeMutation = useMutation({
-    mutationFn: (outcome: "skip" | "self_resolved" | "escalated") =>
-      completeLiveChatIntake(intake!.intake_id, outcome),
+    mutationFn: async (outcome: "skip" | "self_resolved" | "escalated") => {
+      if (outcome === "escalated" && shouldCreateNewThreadRef.current) {
+        await createNewLiveChatThread();
+        shouldCreateNewThreadRef.current = false;
+      }
+      return completeLiveChatIntake(intake!.intake_id, outcome);
+    },
     onSuccess: ({ intake: nextIntake, thread }) => {
+      shouldCreateNewThreadRef.current = false;
       setIntake(nextIntake);
       if (thread) {
         setSelectedThread(thread);
@@ -415,17 +423,15 @@ export default function LiveChatContactPage() {
     },
     onError: recoverIntakeError,
   });
-  const newThreadMutation = useMutation({
-    mutationFn: createNewLiveChatThread,
-    onSuccess: ({ thread }) => {
-      setSelectedThread(thread);
-      setIntake(null);
-      setMessages([]);
-      setView("chat");
-      void queryClient.invalidateQueries({ queryKey: liveChatQueryKeys.threads });
-    },
-    onError: handleError,
-  });
+  const handleStartNewCase = () => {
+    shouldCreateNewThreadRef.current = true;
+    intakeMutation.reset();
+    answerMutation.reset();
+    completeMutation.reset();
+    setIntake(null);
+    setError(null);
+    setView("topics");
+  };
   const feedbackMutation = useMutation({
     mutationFn: () => saveLiveChatFeedback(selectedThread!.thread_id, {
       rating,
@@ -435,6 +441,11 @@ export default function LiveChatContactPage() {
     onSuccess: ({ feedback }) => {
       setSelectedThread((thread) => thread ? { ...thread, feedback_summary: feedback } : thread);
       setError(null);
+      notification.success({
+        message: "ส่งแบบประเมินเรียบร้อยแล้ว",
+        description: "ขอบคุณสำหรับความคิดเห็นของคุณ",
+        placement: "topRight",
+      });
     },
     onError: handleError,
   });
@@ -713,7 +724,7 @@ export default function LiveChatContactPage() {
                           <CheckCircle2 className="size-6" />
                         </div>
                         <h3 className="mt-5 text-3xl font-bold">{intake.terminal.title}</h3>
-                        <p className="mt-4 whitespace-pre-wrap text-base leading-7 text-stone-600">{intake.terminal.body}</p>
+                        <div className="mt-4 whitespace-pre-wrap text-base leading-7 text-stone-600 [&>p]:mb-2" dangerouslySetInnerHTML={{ __html: intake.terminal.body }} />
                         {intake.terminal.images.length > 0 && (
                           <div className="mt-6 grid gap-4 sm:grid-cols-2">
                             {[...intake.terminal.images]
@@ -815,7 +826,7 @@ export default function LiveChatContactPage() {
                   <h2 className="text-3xl font-bold tracking-tight sm:text-5xl">เคสทั้งหมดของคุณ</h2>
                   <button
                     type="button"
-                    onClick={() => newThreadMutation.mutate()}
+                    onClick={handleStartNewCase}
                     className="hidden min-h-11 rounded-full border border-[#dc2626] bg-white px-5 text-sm font-bold text-[#dc2626] hover:bg-red-50 sm:block"
                   >
                     เริ่มเคสใหม่
@@ -879,8 +890,7 @@ export default function LiveChatContactPage() {
                 {selectedThread && (
                   <button
                     type="button"
-                    onClick={() => newThreadMutation.mutate()}
-                    disabled={newThreadMutation.isPending}
+                    onClick={handleStartNewCase}
                     className="shrink-0 rounded-full border border-stone-300 px-4 py-2 text-xs font-bold hover:border-[#dc2626] hover:text-[#dc2626]"
                   >
                     เริ่มเคสใหม่
@@ -923,7 +933,6 @@ export default function LiveChatContactPage() {
                   {selectedThread?.feedback_eligible && (
                     <section className="mt-8 border-t border-stone-300 py-8">
                       <div className="flex items-center gap-3">
-                        <Star className="size-5 text-[#dc2626]" />
                         <h3 className="text-xl font-bold">ประเมินการช่วยเหลือ</h3>
                       </div>
                       <div className="mt-5 flex gap-2" aria-label="คะแนน">
@@ -950,7 +959,7 @@ export default function LiveChatContactPage() {
                                 selected ? current.filter((key) => key !== tag.key) : [...current, tag.key],
                               )}
                               className={`rounded-full px-4 py-2 text-xs font-bold ${
-                                selected ? "bg-[#dc2626] text-white" : "bg-white text-stone-600"
+                                selected ? "bg-[#dc2626] !text-white" : "bg-white text-stone-600"
                               }`}
                             >
                               {tag.label_th}
@@ -972,7 +981,7 @@ export default function LiveChatContactPage() {
                           if (validationMessage) setError({ message: validationMessage });
                           else feedbackMutation.mutate();
                         }}
-                        className="mt-4 min-h-11 rounded-full bg-[#dc2626] px-6 text-sm font-bold text-white hover:bg-[#b91c1c] disabled:opacity-50"
+                        className="mt-4 min-h-11 rounded-full bg-[#dc2626] px-6 text-sm font-bold !text-white hover:bg-[#b91c1c] disabled:opacity-50"
                       >
                         {selectedThread.feedback_summary ? "อัปเดตแบบประเมิน" : "ส่งแบบประเมิน"}
                       </button>

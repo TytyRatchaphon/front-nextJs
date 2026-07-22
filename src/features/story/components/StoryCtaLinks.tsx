@@ -16,16 +16,18 @@ const StoryCtaLinks = ({ links }: { links: StoryLink[] }) => {
 
   return (
     <>
-      <div className="flex flex-col items-center gap-2">
+      <div className="flex flex-col items-center gap-4">
         {visibleLinks.map((link, index) => (
           <button
             key={`${link.url}-${index}`}
             type="button"
             onClick={(event) => openLink(event, link.url)}
-            className="flex max-w-full items-center gap-2 rounded-full bg-white px-5 py-2.5 font-semibold text-black shadow-lg hover:bg-gray-100"
+            className="group flex flex-col items-center gap-1.5 hover:-translate-y-1 transition-transform"
           >
-            <LinkOutlined />
-            <span className="truncate">{link.label}</span>
+            <div className="w-[48px] h-[48px] rounded-full flex items-center justify-center text-white shadow-lg bg-white/20 backdrop-blur-md border border-white/30 group-hover:bg-red-500 group-hover:border-red-500 group-hover:shadow-red-500/50 transition-all">
+              <LinkOutlined className="text-xl" />
+            </div>
+            <span className="text-xs font-semibold text-white drop-shadow-md truncate max-w-[70px] text-center">{link.label}</span>
           </button>
         ))}
         {links.length > 3 ? (
@@ -35,9 +37,12 @@ const StoryCtaLinks = ({ links }: { links: StoryLink[] }) => {
               event.stopPropagation();
               setIsOpen(true);
             }}
-            className="rounded-full bg-black/60 px-4 py-2 font-medium text-white backdrop-blur-md hover:bg-black/80"
+            className="group flex flex-col items-center gap-1.5 hover:-translate-y-1 transition-transform"
           >
-            เพิ่มเติม
+            <div className="w-[40px] h-[40px] rounded-full bg-black/60 flex items-center justify-center text-white shadow-lg backdrop-blur-md border border-white/20">
+              <span className="text-xl leading-none -mt-2">...</span>
+            </div>
+            <span className="text-[10px] font-medium text-white drop-shadow-md">เพิ่มเติม</span>
           </button>
         ) : null}
       </div>

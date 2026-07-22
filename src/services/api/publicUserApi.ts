@@ -97,9 +97,47 @@ export const getPublicUserCollections = async (userId: string, page: number = 1,
     return response.data.data;
 };
 
+const normalizeCollectionBooks = (value: unknown): CollectionBook[] => {
+    if (!Array.isArray(value)) return [];
+
+    return value.map((entry) => {
+        if (!entry || typeof entry !== 'object') return entry as CollectionBook;
+
+        const relation = entry as Record<string, unknown>;
+        const nestedBook = relation.book ?? relation.Book ?? relation.book_detail ?? relation.book_data;
+        if (!nestedBook || typeof nestedBook !== 'object' || Array.isArray(nestedBook)) {
+            return relation as unknown as CollectionBook;
+        }
+
+        const book = nestedBook as Record<string, unknown>;
+        return {
+            ...relation,
+            ...book,
+            order_index: relation.order_index ?? book.order_index,
+            collection_book_id: relation.collection_book_id ?? book.collection_book_id,
+            collection_id: relation.collection_id ?? book.collection_id,
+        } as unknown as CollectionBook;
+    });
+};
+
 export const getPublicUserCollectionDetail = async (userId: string, collectionId: string | number): Promise<CollectionBook[]> => {
     const response = await apiClient.get(`/public/users/${userId}/collections/${collectionId}`);
-    return response.data?.data ?? [];
+    const payload = response.data?.data;
+
+    if (Array.isArray(payload)) return normalizeCollectionBooks(payload);
+    if (!payload || typeof payload !== 'object') return [];
+
+    // The collection-detail endpoint can return a paginated/object payload
+    // instead of the array returned by older API versions.
+    const nestedPayload = payload as {
+        books?: unknown;
+        list?: unknown;
+        items?: unknown;
+        data?: unknown;
+    };
+    const books = nestedPayload.books ?? nestedPayload.list ?? nestedPayload.items ?? nestedPayload.data;
+
+    return normalizeCollectionBooks(books);
 };
 
 export const getPublicUserAchievementDetail = async (userId: string, achievementId: string | number): Promise<PublicUserAchievementDetail | null> => {

@@ -26,6 +26,7 @@ import FreeCoinPill from "@/components/utility/FreeCoinPill";
 import RPPill from "@/components/utility/RPPill";
 import StampPill from "@/components/utility/StampPill";
 import FrameOverlayImage from "@/components/ui/FrameOverlayImage";
+import { FEATURE_FLAGS } from "@/constants/featureFlags";
 import type { RankItem } from "@/services/api/userApi";
 
 type NavbarUser = {
@@ -225,12 +226,14 @@ export default function UserMenuPopover({
               {profileMenuItem.label}
             </span>
           </Link>
-          <Link href="/contact" onClick={onClose} className={linkClass}>
-            <MessageCircle className={iconClass} />
-            <span className="font-primary whitespace-nowrap text-sm text-black transition-colors group-hover:text-red-600">
-              ติดต่อเรา
-            </span>
-          </Link>
+          {FEATURE_FLAGS.contactMenu ? (
+            <Link href="/contact" onClick={onClose} className={linkClass}>
+              <MessageCircle className={iconClass} />
+              <span className="font-primary whitespace-nowrap text-sm text-black transition-colors group-hover:text-red-600">
+                ติดต่อเรา
+              </span>
+            </Link>
+          ) : null}
         </div>
 
         <div className="my-2 flex justify-center">

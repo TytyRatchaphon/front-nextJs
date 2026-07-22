@@ -8,6 +8,7 @@ import RecommendSwiper from "@/components/swiper/RecommendSwiper";
 import ArticleSwiper from "@/components/swiper/ArticleSwiper";
 import RewardSwiper from "@/components/swiper/RewardSwiper";
 import ImgLeftBgBookGrid from "@/components/home/ImgLeftBgBookGrid";
+import PopularCollectionSection from "@/components/home/PopularCollectionSection";
 import Image from "next/image";
 import Link from "next/link";
 import { trackUserBookhomeSectionClick } from "@/services/apiServices";
@@ -27,6 +28,12 @@ const EXCLUDED_AUTO_MORE_GROUP_TYPES = new Set([
   "article",
   "spotlight",
   "recommend_admin",
+]);
+const COLLECTION_GROUP_TYPES = new Set([
+  'collection',
+  'collections',
+  'popular_collection',
+  'user_collections',
 ]);
 
 const buildHomeGroupMoreLink = (group: any, contentType?: string) => {
@@ -171,6 +178,17 @@ export default function BookGroups({ groupBookHome, contentType }: BookGroupsPro
                   initialNow={0}
                 />
               </div>
+            );
+          }
+          if (COLLECTION_GROUP_TYPES.has(group.type)) {
+            return (
+              <PopularCollectionSection
+                key={group.home_group_id ?? group.id ?? index}
+                title={group.name_web || group.name || 'คอลเลกชันยอดนิยม'}
+                collections={group.list || group.collections || group.items || []}
+                icon={group.img}
+                link={moreLink}
+              />
             );
           }
           if (group.type === 'img_left_bg_book_grid_2row') {

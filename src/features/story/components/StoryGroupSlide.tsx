@@ -314,7 +314,7 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
       </div>
 
       {/* Footer / Links */}
-      <div className="absolute bottom-16 left-0 right-0 z-50 px-4 pointer-events-none flex flex-col items-center">
+      <div className="absolute bottom-[88px] left-2 z-50 px-2 pointer-events-none flex flex-col items-start">
         {currentItem?.links && currentItem.links.length > 0 && (
           <div className="pointer-events-auto w-full max-w-sm mb-2">
             <StoryCtaLinks links={currentItem.links} />

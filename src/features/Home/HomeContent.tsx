@@ -17,6 +17,7 @@ import GifLoader from "@/components/utility/GifLoader";
 import FloatingGiftButton from "@/components/utility/FloatingGiftButton";
 import { BackToTopButton } from "@/components/utility/BackToTopButton";
 import DailyPopup from "@/components/utility/DailyPopup";
+import { FEATURE_FLAGS } from "@/constants/featureFlags";
 import { useAuthStore } from "@/stores/authStore";
 import { parseJwtToken } from "@/utils/jwtParser";
 import { resolveBookCoverImageSrc } from "@/utils/imageUtils";
@@ -244,7 +245,7 @@ export default function HomeContent({
 
       <div className="mt-4 flex w-full justify-center lg:mt-8">
         <div className="w-full max-w-[1440px] px-4 lg:px-[156px]">
-          <StoryBar />
+          {FEATURE_FLAGS.story ? <StoryBar /> : null}
           <div className="mx-auto mb-2 w-full max-w">
             <BannerButtons />
           </div>
@@ -378,7 +379,7 @@ export default function HomeContent({
           {showPopups ? <DailyPopup /> : null}
         </div>
       </div>
-      <StoryViewer />
+      {FEATURE_FLAGS.story ? <StoryViewer /> : null}
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { fetchUserMyBookInfo, fetchUserMyBookListNames, fetchUserMyBooks, fetchWriterCheck } from '@/services/apiServices';
 import type { WriterCheckResponse } from '@/services/api/userApi';
 import Cookies from 'js-cookie';
+import { FEATURE_FLAGS } from '@/constants/featureFlags';
 
 import MyBookHeader from '../../components/myBook/MyBookHeader';
 import MyBookListTab from '../../components/myBook/MyBookListTab';
@@ -312,7 +313,7 @@ function MyBook() {
       ),
       children: <MyBookWriterInfoTab user={user} token={token} isWriter={isWriter} updateToken={updateToken} />,
     },
-    {
+    ...(FEATURE_FLAGS.story ? [{
       key: 'story',
       label: (
         <div className='flex items-center gap-2'>
@@ -321,7 +322,7 @@ function MyBook() {
         </div>
       ),
       children: null,
-    },
+    }] : []),
   ], [myBooks, myBooksForStats, isLoadingMyBooks, token, coinIncome, setCoinIncome, updateToken, user, isWriter, booksPage, myBooksTotal, filterStatus, filterSortBy, filterOrder, filterEnd, filterQ]);
 
   const { data: writerInfoData } = useQuery({

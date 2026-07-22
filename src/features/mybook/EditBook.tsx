@@ -11,6 +11,7 @@ import { useParams, useRouter } from "next/navigation";
 import TextEditorTiny from "@/components/editor/TextEditorTiny";
 import UploadCropBook from "@/components/upload/UploadBook";
 import UploadCropBookBanner from "@/components/upload/UploadCropBookBanner";
+import TrailerUploader from "./TrailerUploader";
 import secureProxyClient from "@/services/secureProxyClient";
 import GifLoader from '@/components/utility/GifLoader';
 import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
@@ -77,6 +78,7 @@ interface MyBookPermissionData {
     set_content_type: boolean;
     set_fast_ticket: boolean;
     set_fast_coin: boolean;
+    set_vdo?: boolean;
     suggest_configs: MyBookPermissionSuggestConfig[];
 }
 
@@ -702,6 +704,17 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                                         </div>
                                     </div>
                                 </div>
+
+                                {permissions?.set_vdo && (
+                                    <div className="mt-4">
+                                        <p className='body-text'>Promo Video (Trailer) <span className='text-[13px] text-gray-400'>(MP4/MOV files)</span></p>
+                                        <TrailerUploader 
+                                            bookId={Number(finalBookId)}
+                                            autoStart={true}
+                                            mode="normal"
+                                        />
+                                    </div>
+                                )}
 
                                 <div className='grid gap-4'>
                                     <div className=''>

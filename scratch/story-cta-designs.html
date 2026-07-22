@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Story CTA Layout Designs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #111;
+            color: white;
+            margin: 0;
+            padding: 0;
+        }
+        .story-container {
+            width: 100%;
+            max-width: 380px; /* Mobile width */
+            height: 700px; /* Mobile height */
+            margin: 0 auto;
+            background-image: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #333;
+            border-radius: 24px;
+        }
+        
+        /* Dark gradient at the bottom for text readability */
+        .bottom-gradient::before {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0; height: 50%;
+            background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.8) 100%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .content {
+            position: relative;
+            z-index: 2;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end; /* Push to bottom */
+            padding: 24px 20px 40px 20px; /* Padding for safe area */
+        }
+
+        .layout-label {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            background: rgba(0,0,0,0.6);
+            padding: 4px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 10;
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen bg-gray-900 overflow-x-hidden p-8">
+
+    <div class="flex flex-wrap justify-center gap-10 w-full max-w-7xl">
+        
+        <!-- Layout 1: Clean Bottom Stack (จัดเรียงด้านล่างให้เป็นระเบียบ) -->
+        <div class="story-container bottom-gradient shadow-2xl">
+            <div class="layout-label">1. Clean Bottom Stack</div>
+            <div class="content">
+                <div class="flex flex-col gap-3">
+                    <button class="flex items-center justify-center gap-2 w-full px-6 py-3.5 rounded-full bg-white text-gray-900 font-semibold shadow-lg hover:scale-[1.02] transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M136.37,187.53a12,12,0,0,1,0,17l-11.31,11.31a60,60,0,0,1-84.85-84.85l11.31-11.31a12,12,0,0,1,17,17L57.21,148a36,36,0,0,0,50.91,50.91l11.31-11.31A12,12,0,0,1,136.37,187.53Zm68.12-143a60,60,0,0,0-84.85,0l-11.31,11.31a12,12,0,0,0,17,17l11.31-11.31a36,36,0,0,1,50.91,50.91l-11.31,11.31a12,12,0,0,0,17,17l11.31-11.31A60,60,0,0,0,204.49,44.49Zm-42.55,60.59a12,12,0,0,0-17-17l-42.43,42.43a12,12,0,0,0,17,17Z"></path></svg>
+                        <span>เติมเลย!</span>
+                    </button>
+                    <button class="flex items-center justify-center gap-2 w-full px-6 py-3.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white font-medium hover:bg-white/30 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M136.37,187.53a12,12,0,0,1,0,17l-11.31,11.31a60,60,0,0,1-84.85-84.85l11.31-11.31a12,12,0,0,1,17,17L57.21,148a36,36,0,0,0,50.91,50.91l11.31-11.31A12,12,0,0,1,136.37,187.53Zm68.12-143a60,60,0,0,0-84.85,0l-11.31,11.31a12,12,0,0,0,17,17l11.31-11.31a36,36,0,0,1,50.91,50.91l-11.31,11.31a12,12,0,0,0,17,17l11.31-11.31A60,60,0,0,0,204.49,44.49Zm-42.55,60.59a12,12,0,0,0-17-17l-42.43,42.43a12,12,0,0,0,17,17Z"></path></svg>
+                        <span>มีเรื่องบ่</span>
+                    </button>
+                    <button class="flex items-center justify-center gap-2 w-full px-6 py-3.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white font-medium hover:bg-white/30 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M136.37,187.53a12,12,0,0,1,0,17l-11.31,11.31a60,60,0,0,1-84.85-84.85l11.31-11.31a12,12,0,0,1,17,17L57.21,148a36,36,0,0,0,50.91,50.91l11.31-11.31A12,12,0,0,1,136.37,187.53Zm68.12-143a60,60,0,0,0-84.85,0l-11.31,11.31a12,12,0,0,0,17,17l11.31-11.31a36,36,0,0,1,50.91,50.91l-11.31,11.31a12,12,0,0,0,17,17l11.31-11.31A60,60,0,0,0,204.49,44.49Zm-42.55,60.59a12,12,0,0,0-17-17l-42.43,42.43a12,12,0,0,0,17,17Z"></path></svg>
+                        <span>ซ้อนแกง</span>
+                    </button>
+                </div>
+                <p class="text-center text-white/50 text-xs mt-4">ปัดขึ้นเพื่อดูเพิ่มเติม</p>
+            </div>
+        </div>
+
+        <!-- Layout 2: Bottom Sheet Menu (รวมเป็นเมนูการ์ดด้านล่าง) -->
+        <div class="story-container shadow-2xl" style="background-image: url('https://images.unsplash.com/photo-1620121692029-d088224ddc74?q=80&w=2564&auto=format&fit=crop');">
+            <div class="layout-label">2. Bottom Sheet Card</div>
+            <div class="content !px-0 !pb-0 !justify-end">
+                <!-- Bottom Sheet Container -->
+                <div class="bg-black/60 backdrop-blur-xl w-full rounded-t-3xl p-6 pb-8 border-t border-white/20">
+                    <div class="w-12 h-1.5 bg-white/30 rounded-full mx-auto mb-6"></div> <!-- Grabber -->
+                    
+                    <div class="flex flex-col gap-3">
+                        <!-- Primary Action -->
+                        <button class="flex items-center justify-between w-full px-5 py-4 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold shadow-lg hover:brightness-110 transition-all">
+                            <span class="flex items-center gap-3">
+                                <span class="bg-white/20 p-2 rounded-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M136.37,187.53a12,12,0,0,1,0,17l-11.31,11.31a60,60,0,0,1-84.85-84.85l11.31-11.31a12,12,0,0,1,17,17L57.21,148a36,36,0,0,0,50.91,50.91l11.31-11.31A12,12,0,0,1,136.37,187.53Zm68.12-143a60,60,0,0,0-84.85,0l-11.31,11.31a12,12,0,0,0,17,17l11.31-11.31a36,36,0,0,1,50.91,50.91l-11.31,11.31a12,12,0,0,0,17,17l11.31-11.31A60,60,0,0,0,204.49,44.49Zm-42.55,60.59a12,12,0,0,0-17-17l-42.43,42.43a12,12,0,0,0,17,17Z"></path></svg>
+                                </span>
+                                เติมเลย!
+                            </span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"></path></svg>
+                        </button>
+                        
+                        <!-- Secondary Actions -->
+                        <div class="grid grid-cols-2 gap-3 mt-1">
+                            <button class="flex flex-col items-center justify-center gap-2 w-full p-4 rounded-xl bg-white/10 hover:bg-white/15 border border-white/5 text-white font-medium transition-colors">
+                                <span class="text-sm">มีเรื่องบ่</span>
+                            </button>
+                            <button class="flex flex-col items-center justify-center gap-2 w-full p-4 rounded-xl bg-white/10 hover:bg-white/15 border border-white/5 text-white font-medium transition-colors">
+                                <span class="text-sm">ซ้อนแกง</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Layout 3: Hierarchy Split (เน้นอันดับ 1 ใหญ่สุด อันอื่นรองลงมา) -->
+        <div class="story-container bottom-gradient shadow-2xl" style="background-image: url('https://images.unsplash.com/photo-1557682250-33bd709cbe85?q=80&w=2564&auto=format&fit=crop');">
+            <div class="layout-label">3. 1 Primary + 2 Secondary</div>
+            <div class="content">
+                <div class="flex flex-col gap-3">
+                    <!-- Main Button -->
+                    <button class="flex items-center justify-center w-full px-6 py-4 rounded-2xl bg-white text-gray-900 font-bold text-lg shadow-xl hover:scale-[1.02] transition-transform">
+                        🔥 เติมเลย!
+                    </button>
+                    <!-- Sub Buttons -->
+                    <div class="flex gap-3">
+                        <button class="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20 text-white font-medium text-sm hover:bg-black/60 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256"><path d="M136.37,187.53a12,12,0,0,1,0,17l-11.31,11.31a60,60,0,0,1-84.85-84.85l11.31-11.31a12,12,0,0,1,17,17L57.21,148a36,36,0,0,0,50.91,50.91l11.31-11.31A12,12,0,0,1,136.37,187.53Zm68.12-143a60,60,0,0,0-84.85,0l-11.31,11.31a12,12,0,0,0,17,17l11.31-11.31a36,36,0,0,1,50.91,50.91l-11.31,11.31a12,12,0,0,0,17,17l11.31-11.31A60,60,0,0,0,204.49,44.49Zm-42.55,60.59a12,12,0,0,0-17-17l-42.43,42.43a12,12,0,0,0,17,17Z"></path></svg>
+                            มีเรื่องบ่
+                        </button>
+                        <button class="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20 text-white font-medium text-sm hover:bg-black/60 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256"><path d="M136.37,187.53a12,12,0,0,1,0,17l-11.31,11.31a60,60,0,0,1-84.85-84.85l11.31-11.31a12,12,0,0,1,17,17L57.21,148a36,36,0,0,0,50.91,50.91l11.31-11.31A12,12,0,0,1,136.37,187.53Zm68.12-143a60,60,0,0,0-84.85,0l-11.31,11.31a12,12,0,0,0,17,17l11.31-11.31a36,36,0,0,1,50.91,50.91l-11.31,11.31a12,12,0,0,0,17,17l11.31-11.31A60,60,0,0,0,204.49,44.49Zm-42.55,60.59a12,12,0,0,0-17-17l-42.43,42.43a12,12,0,0,0,17,17Z"></path></svg>
+                            ซ้อนแกง
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Layout 4: Social Sidebar (เหมือนเมนู TikTok/Reels มุมขวาล่าง) -->
+        <div class="story-container bottom-gradient shadow-2xl" style="background-image: url('https://images.unsplash.com/photo-1615529182904-14819c35d51d?q=80&w=2564&auto=format&fit=crop');">
+            <div class="layout-label">4. Vertical Sidebar</div>
+            <div class="content !flex-row !justify-between !items-end">
+                
+                <!-- Some dummy text on the left to show context -->
+                <div class="mb-4 text-white/80 max-w-[200px]">
+                    <h3 class="font-bold text-white text-lg">Story Title</h3>
+                    <p class="text-sm line-clamp-2">ดูรายละเอียดเพิ่มเติมได้ที่ลิงก์ด้านขวานี้เลยครับ 👇</p>
+                </div>
+
+                <!-- Right Sidebar Buttons -->
+                <div class="flex flex-col gap-4 mb-4 items-center">
+                    <button class="group flex flex-col items-center gap-1 hover:-translate-y-1 transition-transform">
+                        <div class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/50">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256"><path d="M136.37,187.53a12,12,0,0,1,0,17l-11.31,11.31a60,60,0,0,1-84.85-84.85l11.31-11.31a12,12,0,0,1,17,17L57.21,148a36,36,0,0,0,50.91,50.91l11.31-11.31A12,12,0,0,1,136.37,187.53Zm68.12-143a60,60,0,0,0-84.85,0l-11.31,11.31a12,12,0,0,0,17,17l11.31-11.31a36,36,0,0,1,50.91,50.91l-11.31,11.31a12,12,0,0,0,17,17l11.31-11.31A60,60,0,0,0,204.49,44.49Zm-42.55,60.59a12,12,0,0,0-17-17l-42.43,42.43a12,12,0,0,0,17,17Z"></path></svg>
+                        </div>
+                        <span class="text-xs font-semibold drop-shadow-md">เติมเลย!</span>
+                    </button>
+
+                    <button class="group flex flex-col items-center gap-1 hover:-translate-y-1 transition-transform">
+                        <div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256"><path d="M136.37,187.53a12,12,0,0,1,0,17l-11.31,11.31a60,60,0,0,1-84.85-84.85l11.31-11.31a12,12,0,0,1,17,17L57.21,148a36,36,0,0,0,50.91,50.91l11.31-11.31A12,12,0,0,1,136.37,187.53Zm68.12-143a60,60,0,0,0-84.85,0l-11.31,11.31a12,12,0,0,0,17,17l11.31-11.31a36,36,0,0,1,50.91,50.91l-11.31,11.31a12,12,0,0,0,17,17l11.31-11.31A60,60,0,0,0,204.49,44.49Zm-42.55,60.59a12,12,0,0,0-17-17l-42.43,42.43a12,12,0,0,0,17,17Z"></path></svg>
+                        </div>
+                        <span class="text-xs font-medium drop-shadow-md">มีเรื่องบ่</span>
+                    </button>
+
+                    <button class="group flex flex-col items-center gap-1 hover:-translate-y-1 transition-transform">
+                        <div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256"><path d="M136.37,187.53a12,12,0,0,1,0,17l-11.31,11.31a60,60,0,0,1-84.85-84.85l11.31-11.31a12,12,0,0,1,17,17L57.21,148a36,36,0,0,0,50.91,50.91l11.31-11.31A12,12,0,0,1,136.37,187.53Zm68.12-143a60,60,0,0,0-84.85,0l-11.31,11.31a12,12,0,0,0,17,17l11.31-11.31a36,36,0,0,1,50.91,50.91l-11.31,11.31a12,12,0,0,0,17,17l11.31-11.31A60,60,0,0,0,204.49,44.49Zm-42.55,60.59a12,12,0,0,0-17-17l-42.43,42.43a12,12,0,0,0,17,17Z"></path></svg>
+                        </div>
+                        <span class="text-xs font-medium drop-shadow-md">ซ้อนแกง</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

@@ -34,7 +34,9 @@ export default function PublicCollectionDetail({ userId, collectionId }: Props) 
   );
 
   const sortedBooks = useMemo(
-    () => [...books].sort((a: CollectionBook, b: CollectionBook) => (a.order_index ?? 0) - (b.order_index ?? 0)),
+    () => (Array.isArray(books) ? [...books] : []).sort(
+      (a: CollectionBook, b: CollectionBook) => (a.order_index ?? 0) - (b.order_index ?? 0)
+    ),
     [books]
   );
 

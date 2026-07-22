@@ -553,7 +553,7 @@ const BookDetailHeaderContent = ({ book, episodesData }: BookDetailHeaderProps) 
                 <div className="flex items-center gap-2 mb-2 sm:mb-3 flex-wrap">
                   <span className="text-xs sm:text-sm text-gray-800 font-medium ml-1 -mr-3">โดย</span>
                   <Link
-                    href={book.writer?.user_id ? `/wprofile?id=${book.writer.user_id}` : '#'}
+                    href={book.writer?.user_id ? `/wprofile/${book.writer.user_id}` : '#'}
                     className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full hover:bg-red-50 transition-colors group ${!book.writer?.user_id ? 'pointer-events-none' : ''}`}
                   >
                     {book.writer?.img && (
@@ -737,7 +737,7 @@ const BookDetailHeaderContent = ({ book, episodesData }: BookDetailHeaderProps) 
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">โดย</span>
                 {book.writer?.user_id ? (
-                  <Link href={`/wprofile?id=${book.writer.user_id}`} className="text-gray-900 font-medium hover:text-red-600 hover:underline transition-colors">
+                  <Link href={`/wprofile/${book.writer.user_id}`} className="text-gray-900 font-medium hover:text-red-600 hover:underline transition-colors">
                     {book.writer.writer_name}
                   </Link>
                 ) : (
