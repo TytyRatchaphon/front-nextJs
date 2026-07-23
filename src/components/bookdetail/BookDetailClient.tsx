@@ -49,6 +49,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
     bookDetail, // Raw data for About Tab
     episodesData,
     novelPackCheck,
+    videoData,
     isLoading,
     isLoadingEpisodes,
     isError,
@@ -255,7 +256,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
       {/* Full-width Header Container - Responsive */}
       <div className="w-full">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-4 sm:py-0">
-          <BookDetailHeader book={book} episodesData={episodesData} />
+          <BookDetailHeader book={book} episodesData={episodesData} videoData={videoData} />
         </div>
       </div>
 

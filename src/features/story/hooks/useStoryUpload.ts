@@ -25,9 +25,23 @@ export const useStoryUpload = () => {
       return `ไฟล์ใหญ่เกินไป (จำกัด ${Math.floor(config.maxUploadBytes / (1024 * 1024))}MB)`;
     }
 
-    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-    if (!config.allowedExtensions.includes(fileExtension) || !config.allowedMimeTypes.includes(file.type)) {
-      return `รองรับเฉพาะไฟล์ ${config.allowedExtensions.join(', ')}`;
+    const rawExt = (file.name.split('.').pop() || '').toLowerCase();
+    const allowedExts = config.allowedExtensions || ['mp4', 'mov', 'webm'];
+    const isExtensionAllowed = allowedExts.some((ext) => {
+      const clean = ext.replace(/^\./, '').toLowerCase();
+      return clean === rawExt;
+    });
+
+    const fileMime = (file.type || '').toLowerCase();
+    const allowedMimes = config.allowedMimeTypes || [];
+    const isMimeAllowed =
+      !fileMime ||
+      allowedMimes.length === 0 ||
+      allowedMimes.map((m) => m.toLowerCase()).includes(fileMime) ||
+      fileMime.startsWith('video/');
+
+    if (!isExtensionAllowed || !isMimeAllowed) {
+      return `รองรับเฉพาะไฟล์ ${allowedExts.join(', ')}`;
     }
 
     const objectUrl = URL.createObjectURL(file);

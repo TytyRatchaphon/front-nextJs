@@ -17,9 +17,12 @@ import { FacebookShareButton, TwitterShareButton, LineShareButton } from "react-
 import { TagSwiper } from "@/components/swiper/ImageSlider";
 import { resolveBookCoverImageSrc } from '@/utils/imageUtils';
 import { normalizeEpisodeEarlyAccess } from "@/utils/earlyAccessUtils";
+import type { BookDetailVideo } from '@/types/book';
+import BookTrailerPlayer from '@/features/book/components/detail/BookTrailerPlayer';
 
 interface BookDetailHeaderProps {
   episodesData?: any;
+  videoData?: BookDetailVideo | null;
   book: {
     id?: number | string;
     isAddedToShelf?: boolean;
@@ -111,7 +114,7 @@ const getReadingProgressLines = (episodesData: any): ReadingProgressLine[] => {
   return lines;
 };
 
-const BookDetailHeaderContent = ({ book, episodesData }: BookDetailHeaderProps) => {
+const BookDetailHeaderContent = ({ book, episodesData, videoData }: BookDetailHeaderProps) => {
   const isDeleted = book.status?.toLowerCase().trim() === 'delete';
   const { notification } = App.useApp();
   const { token, hasMounted, user } = useAuthStore() as any;
@@ -481,7 +484,7 @@ const BookDetailHeaderContent = ({ book, episodesData }: BookDetailHeaderProps) 
         <div className="absolute inset-0 bg-white/60 via-white/50 to-white/60"></div>
       </div>
 
-      <div className="relative bg-white/50 backdrop-blur-sm rounded-lg shadow-sm p-2 sm:p-6">
+      <div className="relative bg-white/80 rounded-lg shadow-sm p-2 sm:p-6">
         {/* Mobile & Tablet: Vertical Layout | Desktop: Horizontal Layout */}
         <div className="relative flex flex-col xl:flex-row gap-4 sm:gap-6 items-start">
 
@@ -490,18 +493,26 @@ const BookDetailHeaderContent = ({ book, episodesData }: BookDetailHeaderProps) 
 
             {/* Top part: Cover and Basic Info */}
             <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 items-start">
-              {/* Book Cover with Modal */}
+              {/* Book Cover or Trailer Player */}
               <div className="flex-shrink-0 w-full sm:w-auto flex justify-center sm:justify-start">
-                <div className="cursor-pointer hover:opacity-90 transition-opacity" title="คลิกเพื่อดูรูปขนาดใหญ่">
-                  <AntImage
-                    src={coverImageUrl}
-                    alt={book.title}
-                    width={168}
-                    height={237}
-                    preview={{}}
-                    className="object-cover rounded-lg shadow-md w-[168px] h-[237px]"
+                {videoData?.trailer?.hasTrailer && videoData?.presentation?.detailUsesTrailer !== false ? (
+                  <BookTrailerPlayer
+                    trailer={videoData.trailer}
+                    presentation={videoData.presentation}
+                    poster={coverImageUrl}
                   />
-                </div>
+                ) : (
+                  <div className="cursor-pointer hover:opacity-90 transition-opacity" title="คลิกเพื่อดูรูปขนาดใหญ่">
+                    <AntImage
+                      src={coverImageUrl}
+                      alt={book.title}
+                      width={168}
+                      height={237}
+                      preview={{}}
+                      className="object-cover rounded-lg shadow-md w-[168px] h-[237px]"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Book Info - Full width on mobile/tablet */}

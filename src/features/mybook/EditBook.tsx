@@ -705,16 +705,14 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                                     </div>
                                 </div>
 
-                                {permissions?.set_vdo && (
-                                    <div className="mt-4">
-                                        <p className='body-text'>Promo Video (Trailer) <span className='text-[13px] text-gray-400'>(MP4/MOV files)</span></p>
-                                        <TrailerUploader 
-                                            bookId={Number(finalBookId)}
-                                            autoStart={true}
-                                            mode="normal"
-                                        />
-                                    </div>
-                                )}
+                                <div className="mt-4">
+                                    <p className='body-text'>วิดีโอตัวอย่าง (Trailer) <span className='text-[13px] text-gray-400'>(ไฟล์ MP4/MOV)</span></p>
+                                    <TrailerUploader 
+                                        bookId={Number(finalBookId)}
+                                        autoStart={true}
+                                        mode="normal"
+                                    />
+                                </div>
 
                                 <div className='grid gap-4'>
                                     <div className=''>

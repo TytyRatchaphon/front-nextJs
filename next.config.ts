@@ -9,7 +9,7 @@ const noStoreHeaders = [
 const nextConfig: NextConfig = {
   output: 'standalone',
   poweredByHeader: false,
-  allowedDevOrigins: ['192.168.220.172'],
+  allowedDevOrigins: ['192.168.220.172', '192.168.220.172:4005', '192.168.220.172:3009', '*', '192.168.250.73:4005'],
   async headers() {
     return [
       {
@@ -34,6 +34,27 @@ const nextConfig: NextConfig = {
             value: "camera=(), microphone=(), geolocation=()",
           },
         ],
+      },
+      {
+        source: "/video/trailers/:path*",
+        headers: [
+          { key: "Access-Control-Allow-Credentials", value: "true" },
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Access-Control-Allow-Methods", value: "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
+          { key: "Access-Control-Allow-Headers", value: "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization" },
+        ],
+      },
+    ];
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/api/proxy-video/:path*",
+        destination: "http://192.168.220.214:4005/video/:path*",
+      },
+      {
+        source: "/api/proxy-media/:path*",
+        destination: "http://192.168.220.214:4005/media/:path*",
       },
     ];
   },

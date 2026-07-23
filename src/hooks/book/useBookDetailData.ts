@@ -169,15 +169,20 @@ export function useBookDetailData(bookId: string, token: string | null, isReady:
                 "writer.writer_name": (bookDetail as any)["writer.writer_name"],
                 writer_name: (bookDetail as any).writer_name,
                 status: bookDetail.status,
+                video: bookDetail.video ?? null,
             }
             : null;
     }, [bookDetail, isInShelf, purchaseDetails, firstEpisodeId, latestEpisodeDate]);
+
+    // Extract video data for trailer player
+    const videoData = bookDetail?.video ?? null;
 
     return {
         bookDetail, // Raw object
         book,       // Transformed object
         episodesData,
         novelPackCheck,
+        videoData,  // Video trailer and presentation data
         isLoading: isLoadingDetail,
         isLoadingEpisodes,
         isError: isErrorDetail || isErrorEpisodes,

@@ -95,12 +95,6 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
   const handleViewerMenuClick: NonNullable<MenuProps['onClick']> = ({ key, domEvent }) => {
     domEvent.stopPropagation();
 
-    if (key === 'copy-link') {
-      void navigator.clipboard.writeText(window.location.href);
-      message.success('คัดลอกลิงก์แล้ว');
-      return;
-    }
-
     if (key !== 'report' || !currentItem || isCurrentItemReported) return;
 
     if (!isLoggedIn || !token) {
@@ -209,10 +203,6 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
             <Dropdown
               menu={{
                 items: [
-                  {
-                    key: 'copy-link',
-                    label: 'คัดลอกลิงก์',
-                  },
                   {
                     key: 'report',
                     label: isCurrentItemReported ? 'รายงานแล้ว' : 'รายงานวิดีโอ',
@@ -324,55 +314,69 @@ const StoryGroupSlide: React.FC<StoryGroupSlideProps> = ({
 
       {currentItem && (
         <>
-          <div className="absolute bottom-4 left-4 right-4 z-50 pointer-events-auto flex items-center gap-3">
-            <div className="flex-1 flex items-center bg-transparent border border-white/40 h-11 rounded-full px-1 pl-4 backdrop-blur-sm focus-within:border-white/80 focus-within:bg-black/20 transition-all">
-              <input
-                type="text"
-                placeholder="ส่งข้อความ..."
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                onClick={(e) => e.stopPropagation()}
-                onKeyDown={(e) => {
-                  e.stopPropagation();
-                  if (e.key === 'Enter') handleSendComment();
-                }}
-                className="flex-1 bg-transparent border-none outline-none text-white text-sm placeholder-white/80 h-full"
-              />
-              {commentText.trim() && (
-                <button
-                  onClick={(e) => {
+          {isLoggedIn ? (
+            <div className="absolute bottom-4 left-4 right-4 z-50 pointer-events-auto flex items-center gap-3">
+              <div className="flex-1 flex items-center bg-transparent border border-white/40 h-11 rounded-full px-1 pl-4 backdrop-blur-sm focus-within:border-white/80 focus-within:bg-black/20 transition-all">
+                <input
+                  type="text"
+                  placeholder="ส่งข้อความ..."
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => {
                     e.stopPropagation();
-                    handleSendComment();
+                    if (e.key === 'Enter') handleSendComment();
                   }}
-                  disabled={createCommentMutation.isPending}
-                  className="w-9 h-9 rounded-full bg-blue-500 text-white flex items-center justify-center shrink-0 hover:bg-blue-600 transition-colors mr-0.5"
-                >
-                  <Send className="w-4 h-4 !text-white" color="white" strokeWidth={2.5} />
-                </button>
-              )}
-            </div>
+                  className="flex-1 bg-transparent border-none outline-none text-white text-sm placeholder-white/80 h-full"
+                />
+                {commentText.trim() && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSendComment();
+                    }}
+                    disabled={createCommentMutation.isPending}
+                    className="w-9 h-9 rounded-full bg-blue-500 text-white flex items-center justify-center shrink-0 hover:bg-blue-600 transition-colors mr-0.5"
+                  >
+                    <Send className="w-4 h-4 !text-white" color="white" strokeWidth={2.5} />
+                  </button>
+                )}
+              </div>
 
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsCommentModalOpen(true);
-              }}
-              className="flex flex-col items-center justify-center text-white drop-shadow-md hover:scale-110 active:scale-95 transition-transform shrink-0"
-            >
-              <MessageCircle className="w-8 h-8 text-white" strokeWidth={2.5} />
-            </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsCommentModalOpen(true);
+                }}
+                className="flex flex-col items-center justify-center text-white drop-shadow-md hover:scale-110 active:scale-95 transition-transform shrink-0"
+              >
+                <MessageCircle className="w-8 h-8 text-white" strokeWidth={2.5} />
+              </button>
 
-            <div className="shrink-0 flex items-center justify-center">
-              <StoryLikeButton
-                isLiked={currentItem.is_liked}
-                likeCount={currentItem.like_count}
-                refId={currentItem.ref_id}
-                itemType={currentItem.type}
-                isOwn={isOwnStory ?? false}
-                onLikeChange={onItemLikeChange}
-              />
+              <div className="shrink-0 flex items-center justify-center">
+                <StoryLikeButton
+                  isLiked={currentItem.is_liked}
+                  likeCount={currentItem.like_count}
+                  refId={currentItem.ref_id}
+                  itemType={currentItem.type}
+                  isOwn={isOwnStory ?? false}
+                  onLikeChange={onItemLikeChange}
+                />
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="absolute bottom-4 right-4 z-50 pointer-events-auto flex items-center justify-end">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsCommentModalOpen(true);
+                }}
+                className="flex flex-col items-center justify-center text-white drop-shadow-md hover:scale-110 active:scale-95 transition-transform shrink-0"
+              >
+                <MessageCircle className="w-8 h-8 text-white" strokeWidth={2.5} />
+              </button>
+            </div>
+          )}
 
           {isCommentModalOpen && (
             <StoryCommentModal
