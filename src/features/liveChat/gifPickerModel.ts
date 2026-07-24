@@ -19,6 +19,7 @@ type GiphyGifLike = {
   images?: {
     fixed_width_small?: GiphyRendition;
     downsized?: GiphyRendition;
+    original?: GiphyRendition;
   };
 };
 
@@ -35,17 +36,30 @@ export function isAllowedGiphyMediaUrl(value: string): boolean {
 }
 
 export function toGifPickerItem(gif: GiphyGifLike): GifPickerItem | null {
-  const rendition = gif.images?.fixed_width_small ?? gif.images?.downsized;
-  const previewUrl = rendition?.url ?? "";
-  if (!previewUrl || !isAllowedGiphyMediaUrl(previewUrl)) return null;
+  const previewRendition = gif.images?.fixed_width_small
+    ?? gif.images?.downsized
+    ?? gif.images?.original;
+  const uploadRendition = gif.images?.downsized
+    ?? gif.images?.original
+    ?? previewRendition;
+  const previewUrl = previewRendition?.url ?? "";
+  const uploadUrl = uploadRendition?.url ?? "";
+  if (
+    !previewUrl
+    || !uploadUrl
+    || !isAllowedGiphyMediaUrl(previewUrl)
+    || !isAllowedGiphyMediaUrl(uploadUrl)
+  ) {
+    return null;
+  }
 
-  const width = Number(rendition?.width) || 1;
-  const height = Number(rendition?.height) || 1;
+  const width = Number(uploadRendition?.width) || Number(previewRendition?.width) || 1;
+  const height = Number(uploadRendition?.height) || Number(previewRendition?.height) || 1;
   return {
     id: String(gif.id),
     title: gif.title?.trim() || "GIF",
     previewUrl,
-    downloadUrl: `/api/gifs/media?url=${encodeURIComponent(previewUrl)}`,
+    downloadUrl: `/api/gifs/media?url=${encodeURIComponent(uploadUrl)}`,
     width,
     height,
   };

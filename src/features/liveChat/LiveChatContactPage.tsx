@@ -131,8 +131,14 @@ function MessageBubble({
               src={message.image_url || message.body}
               alt="รูปภาพในบทสนทนา"
               onLoad={onMediaLoad}
-              className="max-h-80 w-auto max-w-full object-contain"
-              rootClassName="block"
+              className="block object-contain"
+              rootClassName="block w-fit max-w-full"
+              style={{
+                width: "auto",
+                height: "auto",
+                maxWidth: "100%",
+                maxHeight: "20rem",
+              }}
               preview={{
                 maskClassName: "rounded-2xl",
               }}
