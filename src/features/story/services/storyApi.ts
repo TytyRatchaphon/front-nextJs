@@ -34,6 +34,11 @@ export const resolveVideoApiUrl = (path: string): string => {
   return baseUrl ? `${baseUrl}/${path.replace(/^\/+/, '')}` : path;
 };
 
+export const createStoryUploadFileName = (fileName: string): string => {
+  const extension = fileName.split('.').pop()?.toLowerCase() || 'mp4';
+  return `story-${Date.now()}.${extension}`;
+};
+
 const unwrapStoryResponse = <T>(payload: StoryApiPayload<T>): T => {
   if (payload && typeof payload === 'object' && 'data' in payload) {
     return payload.data;
@@ -161,11 +166,12 @@ export const storyApi = {
     endDate?: string,
     links?: { label: string; url: string; orderBy?: number }[]
   ): Promise<StoryUploadResponse | number> => {
+    const uploadFileName = createStoryUploadFileName(file.name);
     const headers: Record<string, string> = {
       'Content-Type': file.type || 'video/mp4',
       'Content-Length': file.size.toString(),
       'x-idempotency-key': idempotencyKey,
-      'x-file-name': encodeURIComponent(file.name),
+      'x-file-name': uploadFileName,
       'x-source-type': sourceType,
       'x-priority': '0',
     };

@@ -2,7 +2,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import apiClient from '@/services/apiClient';
 
-import { resolveVideoApiUrl, storyApi, VideoReportApiError } from './storyApi';
+import {
+  createStoryUploadFileName,
+  resolveVideoApiUrl,
+  storyApi,
+  VideoReportApiError,
+} from './storyApi';
 
 vi.mock('@/services/apiClient', () => ({
   default: {
@@ -31,6 +36,36 @@ describe('resolveVideoApiUrl', () => {
     vi.stubEnv('NEXT_PUBLIC_VIDEO_API_BASE_URL', '');
 
     expect(resolveVideoApiUrl('/video/story-bar?limit=20')).toBe('/video/story-bar?limit=20');
+  });
+
+  it('uploads a story with a short generated file name while preserving the extension', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_721_234_567_890);
+    mockedApiClient.post.mockResolvedValueOnce({ data: { data: { id: 42 } } });
+    const file = new File(
+      ['video'],
+      `${'ชื่อวิดีโอที่ยาวมาก'.repeat(30)}.MOV`,
+      { type: 'video/quicktime' },
+    );
+
+    await storyApi.uploadStory(file, 'upload-key');
+
+    expect(mockedApiClient.post).toHaveBeenCalledWith(
+      '/video/story/uploads',
+      file,
+      {
+        headers: expect.objectContaining({
+          'x-file-name': 'story-1721234567890.mov',
+        }),
+      },
+    );
+    const headers = mockedApiClient.post.mock.calls[0]?.[2]?.headers;
+    expect(String(headers?.['x-file-name']).length).toBeLessThanOrEqual(255);
+  });
+
+  it('falls back to mp4 when creating a story upload name without an extension', () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_721_234_567_890);
+
+    expect(createStoryUploadFileName('')).toBe('story-1721234567890.mp4');
   });
 
   it('loads active report presets without authentication', async () => {
