@@ -117,7 +117,7 @@ export const setAuthTokenCookie = async (token: string): Promise<void> => {
   clearClientReadableAuthTokenCookies();
 
   if (typeof window === 'undefined') return;
-  await fetch(AUTH_SESSION_ENDPOINT, {
+  const response = await fetch(AUTH_SESSION_ENDPOINT, {
     method: 'POST',
     credentials: 'same-origin',
     cache: 'no-store',
@@ -126,11 +126,8 @@ export const setAuthTokenCookie = async (token: string): Promise<void> => {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ token }),
-  }).catch(() => undefined);
-};
-
-export const getAuthTokenCookie = () => {
-  return parseJwtToken(Cookies.get('token'));
+  });
+  if (!response.ok) throw new Error('AUTH_SESSION_WRITE_FAILED');
 };
 
 export const getAuthSession = async (): Promise<AuthSessionResponse | null> => {

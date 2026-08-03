@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import apiClient from "../apiClient";
-import Cookies from "js-cookie";
 import axios from "axios";
 import {
   changeUserPassword,
@@ -35,10 +34,17 @@ vi.mock("../apiClient", () => ({
   },
 }));
 
-vi.mock("js-cookie", () => ({
-  default: {
-    get: vi.fn(),
-  },
+const { mockedAuthGetState, mockedGetAuthSession } = vi.hoisted(() => ({
+  mockedAuthGetState: vi.fn<() => { token: string | null }>(() => ({ token: null })),
+  mockedGetAuthSession: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("@/stores/authStore", () => ({
+  useAuthStore: { getState: mockedAuthGetState },
+}));
+
+vi.mock("@/services/authPersistence", () => ({
+  getAuthSession: mockedGetAuthSession,
 }));
 
 vi.mock("axios", () => ({
@@ -53,10 +59,6 @@ const mockedApiClient = apiClient as unknown as {
   post: ReturnType<typeof vi.fn>;
 };
 
-const mockedCookies = Cookies as unknown as {
-  get: ReturnType<typeof vi.fn>;
-};
-
 const mockedAxios = axios as unknown as {
   get: ReturnType<typeof vi.fn>;
   post: ReturnType<typeof vi.fn>;
@@ -65,6 +67,8 @@ const mockedAxios = axios as unknown as {
 describe("userApi more coverage", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    mockedAuthGetState.mockReturnValue({ token: null });
+    mockedGetAuthSession.mockResolvedValue(null);
   });
 
   describe("writer registration/profile actions", () => {
@@ -314,7 +318,7 @@ describe("userApi more coverage", () => {
       await expect(redeemCode("ABC123")).rejects.toThrow("redeem-failed");
     });
 
-    it("refreshToken uses token override, cookie token, and throws on missing token", async () => {
+    it("refreshToken uses token override, lifecycle token, and throws on missing token", async () => {
       mockedApiClient.post.mockResolvedValueOnce({ data: { access: "new-token" } });
       await expect(refreshToken("override-token")).resolves.toEqual({ access: "new-token" });
       expect(mockedApiClient.post).toHaveBeenCalledWith(
@@ -323,17 +327,17 @@ describe("userApi more coverage", () => {
         { headers: { Authorization: "override-token" } }
       );
 
-      mockedCookies.get.mockReturnValueOnce("'cookie-token'");
+      mockedAuthGetState.mockReturnValueOnce({ token: "lifecycle-token" });
       mockedApiClient.post.mockResolvedValueOnce({ data: { access: "cookie-refresh" } });
       await expect(refreshToken()).resolves.toEqual({ access: "cookie-refresh" });
       expect(mockedApiClient.post).toHaveBeenCalledWith(
         "/refresh-token",
         {},
-        { headers: { Authorization: "cookie-token" } }
+        { headers: { Authorization: "lifecycle-token" } }
       );
 
       const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
-      mockedCookies.get.mockReturnValueOnce(undefined);
+      mockedAuthGetState.mockReturnValueOnce({ token: null });
       await expect(refreshToken()).rejects.toThrow("No token");
       expect(consoleErrorSpy).toHaveBeenCalled();
       consoleErrorSpy.mockRestore();

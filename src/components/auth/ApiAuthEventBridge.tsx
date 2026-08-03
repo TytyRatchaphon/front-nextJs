@@ -3,26 +3,34 @@
 import { useEffect } from 'react';
 import { subscribeApiClientEvent } from '@/services/apiEvents';
 import { useUIStore } from '@/stores/uiStore';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function ApiAuthEventBridge() {
   const openDuplicateLoginModal = useUIStore((state) => state.openDuplicateLoginModal);
   const openBlockedUserModal = useUIStore((state) => state.openBlockedUserModal);
+  const logout = useAuthStore((state) => state.logout);
 
   useEffect(() => {
     const unsubscribeDuplicateLogin = subscribeApiClientEvent(
       'duplicate-login',
-      openDuplicateLoginModal,
+      () => {
+        openDuplicateLoginModal();
+        void logout({ navigate: false });
+      },
     );
     const unsubscribeBlockedUser = subscribeApiClientEvent(
       'blocked-user',
-      openBlockedUserModal,
+      () => {
+        openBlockedUserModal();
+        void logout({ navigate: false });
+      },
     );
 
     return () => {
       unsubscribeDuplicateLogin();
       unsubscribeBlockedUser();
     };
-  }, [openBlockedUserModal, openDuplicateLoginModal]);
+  }, [logout, openBlockedUserModal, openDuplicateLoginModal]);
 
   return null;
 }

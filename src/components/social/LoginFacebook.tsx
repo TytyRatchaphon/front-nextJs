@@ -7,6 +7,7 @@ import apiClient from '@/services/apiClient';
 import Image from 'next/image';
 import { useLogger } from '@/hooks/useLogger';
 import { getAuthSession } from '@/services/authPersistence';
+import { completeProviderSession, PUBLIC_AUTH_REQUEST_CONFIG } from '@/features/auth/providerSession';
 
 interface UserData {
   fullname?: string;
@@ -34,7 +35,7 @@ const LoginFacebook = () => {
   // เพิ่ม state เพื่อเช็คว่า SDK พร้อมใช้งานหรือยัง
   const [isSdkLoaded, setIsSdkLoaded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const { login, updateToken } = useAuthStore();
+  const { login } = useAuthStore();
   const { closeLoginModal } = useUIStore();
   const { log: logActivity } = useLogger();
 
@@ -211,7 +212,7 @@ const LoginFacebook = () => {
     try {
       const response = await apiClient.post(`${API_BASE_URL}/login/facebook`, {
         accessToken: accessToken
-      });
+      }, PUBLIC_AUTH_REQUEST_CONFIG);
 
       if (response.data && response.data.data) {
         const userData = response.data.data as UserData | string;
@@ -240,9 +241,7 @@ const LoginFacebook = () => {
           // Set non-auth cookies only (auth token is managed centrally in authStore)
           setCookie('closePopupPolicy', '', 365);
 
-          login(userInfo, token);
-          // ⚠️ ต้อง await ให้ cookie ถูกเขียนเสร็จก่อน reload
-          await updateToken(token);
+          await completeProviderSession(login, userInfo, token, 'FACEBOOK');
 
           logActivity('login', 'user', userInfo.userId || '', { method: 'facebook' });
           notification.success({

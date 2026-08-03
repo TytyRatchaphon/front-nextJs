@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import apiClient from '@/services/apiClient';
 import { useLogger } from '@/hooks/useLogger';
+import { completeProviderSession, PUBLIC_AUTH_REQUEST_CONFIG } from '@/features/auth/providerSession';
 
 declare global {
   interface Window {
@@ -19,7 +20,7 @@ const LoginGoogle = () => {
   const [isSdkReady, setIsSdkReady] = useState(false);
   const googleButtonRef = useRef<HTMLDivElement>(null);
   useRouter();
-  const { login, updateToken } = useAuthStore();
+  const { login } = useAuthStore();
   const { closeLoginModal } = useUIStore();
   const { log: logActivity } = useLogger();
 
@@ -91,7 +92,7 @@ const LoginGoogle = () => {
     try {
       const response = await apiClient.post(`${API_BASE_URL}/login/google`, {
         idToken: idToken,
-      });
+      }, PUBLIC_AUTH_REQUEST_CONFIG);
 
       if (response.data && response.data.data) {
         const userData = response.data.data;
@@ -127,10 +128,7 @@ const LoginGoogle = () => {
           // Set non-auth cookies only (auth token is managed centrally in authStore)
           setCookie('closePopupPolicy', '', 365);
 
-          login(userInfo, token);
-
-          // Update user data from token payload immediately
-          updateToken(token);
+          await completeProviderSession(login, userInfo, token, 'GOOGLE');
 
           logActivity('login', 'user', userInfo.userId || '', { method: 'google' });
 

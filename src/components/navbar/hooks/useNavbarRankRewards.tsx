@@ -4,7 +4,6 @@ import * as React from "react";
 import { App } from "antd";
 import { CheckCircleOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
-import Cookies from "js-cookie";
 
 import { queryKeys } from "@/constants/query";
 import { fetchAllRanksData } from "@/services/api/userApi";
@@ -36,7 +35,7 @@ export function useNavbarRankRewards({
     [user?.user_id],
   );
   const cleanRankToken = React.useMemo(() => (
-    cleanNavbarRankToken(token, Cookies.get("token"))
+    cleanNavbarRankToken(token, null)
   ), [token]);
 
   const { data: rankData } = useQuery({

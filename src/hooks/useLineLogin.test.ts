@@ -8,6 +8,7 @@ type SetupOptions = {
   liffId?: string | null;
   appLoggedIn?: boolean;
   search?: string;
+  loginSucceeds?: boolean;
 };
 
 const LINE_LOGIN_PROCESSING_KEY = "is_line_login_processing";
@@ -28,11 +29,11 @@ const setupUseLineLogin = async (options: SetupOptions = {}) => {
     liffId = null,
     appLoggedIn = false,
     search = "",
+    loginSucceeds = true,
   } = options;
 
   const setLoadingMock = vi.fn();
-  const loginMock = vi.fn();
-  const updateTokenMock = vi.fn();
+  const loginMock = vi.fn().mockResolvedValue(loginSucceeds);
   const routerMock = vi.fn();
   const axiosPostMock = vi.fn();
 
@@ -53,7 +54,6 @@ const setupUseLineLogin = async (options: SetupOptions = {}) => {
   vi.doMock("@/stores/authStore", () => ({
     useAuthStore: () => ({
       login: loginMock,
-      updateToken: updateTokenMock,
       isLoggedIn: appLoggedIn,
     }),
   }));
@@ -147,7 +147,6 @@ const setupUseLineLogin = async (options: SetupOptions = {}) => {
     mocks: {
       setLoadingMock,
       loginMock,
-      updateTokenMock,
       routerMock,
       axiosPostMock,
       ...(withWindow ? (globalThis as any).__LINE_TEST__ : {}),
@@ -224,7 +223,6 @@ describe("useLineLogin", () => {
       },
       "jwt-token-123",
     );
-    expect(mocks.updateTokenMock).toHaveBeenCalledWith("jwt-token-123");
     expect(mocks.locationMock.replace).toHaveBeenCalledWith("/");
     expect(mocks.cookies.some((c: string) => c.startsWith("token=jwt-token-123"))).toBe(false);
     expect(mocks.cookies.some((c: string) => c.startsWith("closePopupPolicy="))).toBe(true);
@@ -297,7 +295,6 @@ describe("useLineLogin", () => {
 
     await hook.loginWithLine();
 
-    expect(mocks.updateTokenMock).toHaveBeenCalledWith("header-token");
     expect(mocks.loginMock).toHaveBeenCalledWith(
       expect.objectContaining({
         fullname: "Header Token User",
@@ -305,6 +302,21 @@ describe("useLineLogin", () => {
       }),
       "header-token",
     );
+  });
+
+  it("does not navigate when the lifecycle rejects the provider session", async () => {
+    const { hook, mocks } = await setupUseLineLogin({
+      liffLoggedIn: true,
+      loginSucceeds: false,
+    });
+    mocks.axiosPostMock.mockResolvedValue({
+      data: { data: "rejected-token" },
+      headers: {},
+    });
+
+    await expect(hook.loginWithLine()).rejects.toThrow("LINE_BACKEND_LOGIN_FAILED");
+    expect(mocks.locationMock.reload).not.toHaveBeenCalled();
+    expect(mocks.locationMock.replace).not.toHaveBeenCalled();
   });
 
   it("does not call liff.init when already initialized with liff.id", async () => {

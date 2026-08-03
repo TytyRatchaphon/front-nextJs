@@ -5,7 +5,6 @@ import 'antd';
 import { useAuthStore } from '@/stores/authStore'
 import { useWebsiteSettings } from '@/hooks/useWebsiteSettings'
 import '@/utils/imageUtils';
-import Cookies from 'js-cookie';
 
 
 type Props = {
@@ -31,7 +30,7 @@ export default function UserProfileEvent({
   coins,
   freecoins,
 }: Props) {
-  const { user, token, updateToken } = useAuthStore();
+  const { user } = useAuthStore();
   const [isMounted, setIsMounted] = useState(false);
   const { settings } = useWebsiteSettings();
 
@@ -39,14 +38,7 @@ export default function UserProfileEvent({
   useEffect(() => {
     setIsMounted(true);
 
-    // พยายามดึง Token จาก Store หรือ Cookie
-    const currentToken = token || Cookies.get('token');
-
-    if (currentToken) {
-      // เรียก updateToken เพื่อให้มัน Decode ข้อมูลล่าสุดจาก Token ลง Store ทันที
-      updateToken(currentToken);
-    }
-  }, [token, updateToken]);
+  }, []);
 
   // 3. ป้องกัน Hydration Mismatch (Optional แต่แนะนำ)
   if (!isMounted) {

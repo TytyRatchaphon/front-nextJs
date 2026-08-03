@@ -1,9 +1,9 @@
 
 import apiClient from "../apiClient";
 import type { WebsiteSettingsResponse } from "@/types/api";
-import Cookies from 'js-cookie';
 import axios from "axios";
 import { getAuthSession } from "@/services/authPersistence";
+import { useAuthStore } from "@/stores/authStore";
 
 // --- Writer Registration & Check ---
 
@@ -361,8 +361,7 @@ export const refreshToken = async (tokenOverride?: string) => {
     let token = tokenOverride;
 
     if (!token) {
-        const rawToken = Cookies.get('token');
-        token = rawToken ? rawToken.replace(/^['"]+|['"]+$/g, '') : '';
+        token = useAuthStore.getState().token || '';
     }
 
     if (!token) {

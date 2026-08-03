@@ -3,7 +3,6 @@ import * as React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { Modal, App } from "antd";
-import Cookies from "js-cookie";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { FreeMode } from "swiper/modules";
 import "swiper/css";
@@ -301,7 +300,7 @@ export default function UserRankShowcase({
     ));
 
   const getCleanToken = useCallback(() => {
-    return cleanTokenValue(Cookies.get("token") || authToken);
+    return cleanTokenValue(authToken);
   }, [authToken]);
 
   const showRewardSuccess = useCallback((title: string) => {
@@ -497,7 +496,7 @@ export default function UserRankShowcase({
     let cancelled = false;
 
     const loadRankData = async () => {
-      const token = cleanTokenValue(Cookies.get("token") || authToken);
+      const token = cleanTokenValue(authToken);
       if (!token) {
         setRankData(null);
         setAllRanks([]);

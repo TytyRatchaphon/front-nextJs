@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { parseJwtToken, decodeAndMapUserFromToken } from '@/utils/jwtParser'
+import {
+  decodeAndMapUserFromToken,
+  decodeJwtClaims,
+  getJwtIdentity,
+  parseJwtToken,
+  validateJwtToken,
+} from '@/utils/jwtParser'
 
 // Helper: create a fake JWT with the given payload
 function createFakeJwt(payload: Record<string, any>): string {
@@ -34,6 +40,22 @@ describe('parseJwtToken', () => {
 
   it('returns cleaned token for normal input', () => {
     expect(parseJwtToken('  normaltoken  ')).toBe('normaltoken')
+  })
+})
+
+describe('session token validation', () => {
+  it('accepts an unexpired JWT with a stable identity', () => {
+    const token = createFakeJwt({ userId: 42, exp: 2_000 })
+
+    expect(validateJwtToken(token, 1_000_000)).toBe(token)
+    expect(getJwtIdentity(token)).toBe('42')
+    expect(decodeJwtClaims(token)?.exp).toBe(2_000)
+  })
+
+  it('rejects expired, malformed, and identity-free tokens', () => {
+    expect(validateJwtToken(createFakeJwt({ userId: 42, exp: 999 }), 1_000_000)).toBeNull()
+    expect(validateJwtToken(createFakeJwt({ exp: 2_000 }), 1_000_000)).toBeNull()
+    expect(validateJwtToken('not-a-jwt', 1_000_000)).toBeNull()
   })
 })
 

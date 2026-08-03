@@ -7,6 +7,7 @@ import { useUIStore } from '@/stores/uiStore';
 import Image from 'next/image';
 import apiClient from '@/services/apiClient';
 import { useLogger } from '@/hooks/useLogger';
+import { completeProviderSession, PUBLIC_AUTH_REQUEST_CONFIG } from '@/features/auth/providerSession';
 
 declare global {
     interface Window {
@@ -20,7 +21,7 @@ const LoginApple = () => {
     const { notification } = App.useApp();
     const [loading, setLoading] = useState(false);
     const router = useRouter();
-    const { login, updateToken } = useAuthStore();
+    const { login } = useAuthStore();
     const { closeLoginModal } = useUIStore();
     const { log: logActivity } = useLogger();
 
@@ -101,7 +102,11 @@ const LoginApple = () => {
                 user: appleResponse.user ? JSON.stringify(appleResponse.user) : undefined
             };
 
-            const response = await apiClient.post(`${API_BASE_URL}/login/apple`, payload);
+            const response = await apiClient.post(
+                `${API_BASE_URL}/login/apple`,
+                payload,
+                PUBLIC_AUTH_REQUEST_CONFIG,
+            );
 
             if (response.data && response.data.data) {
                 const userData = response.data.data;
@@ -126,8 +131,7 @@ const LoginApple = () => {
                 }
 
                 if (token) {
-                    login(userInfo, token);
-                    updateToken(token);
+                    await completeProviderSession(login, userInfo, token, 'APPLE');
 
                     logActivity('login', 'user', userInfo.userId || '', { method: 'apple' });
                     notification.success({
