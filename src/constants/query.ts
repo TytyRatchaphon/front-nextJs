@@ -10,6 +10,7 @@
 export const queryKeys = {
   story: {
     bar: () => ["storyBar"] as const,
+    manageRoot: () => ["story-manage"] as const,
     groupItems: (
       groupType: string,
       groupId: string,

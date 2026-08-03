@@ -21,59 +21,21 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { App, Image as AntImage } from "antd";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 
-import { useSocket } from "@/providers/SocketProvider";
-import {
-  answerLiveChatIntake,
-  completeLiveChatIntake,
-  createNewLiveChatThread,
-  fetchActiveLiveChatThread,
-  fetchLiveChatFeedbackTags,
-  fetchLiveChatHelpTopics,
-  fetchLiveChatIntake,
-  fetchLiveChatMessages,
-  fetchLiveChatThreads,
-  goBackLiveChatIntake,
-  markLiveChatRead,
-  saveLiveChatFeedback,
-  sendLiveChatImage,
-  sendLiveChatText,
-  startLiveChatIntake,
-  normalizeLiveChatError,
-} from "@/services/api/liveChatApi";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
 
-import {
-  getLiveChatErrorMessage,
-  mergeMessages,
-  validateFeedback,
-  validateGif,
-  validateImage,
-  validateMessageBody,
-} from "./liveChatModel";
+import { getLiveChatErrorMessage } from "./liveChatModel";
 import LiveChatGifPicker from "./LiveChatGifPicker";
 import { downloadGif } from "./gifPickerApi";
 import type { GifPickerItem } from "./gifPickerModel";
-import type {
-  LiveChatError,
-  LiveChatHelpTopic,
-  LiveChatIntake,
-  LiveChatMessage,
-  LiveChatThread,
-} from "./types";
+import type { LiveChatMessage, LiveChatThread } from "./types";
+import { useLiveChatSession } from "./hooks/useLiveChatSession";
 
 type WorkspaceView = "topics" | "chat" | "history";
 type MediaUploadKind = "image" | "gif";
-
-const liveChatQueryKeys = {
-  thread: ["live-chat", "thread"] as const,
-  threads: ["live-chat", "threads"] as const,
-  helpTopics: ["live-chat", "help-topics"] as const,
-  feedbackTags: ["live-chat", "feedback-tags"] as const,
-};
 
 const formatDateTime = (value: string | null) => {
   if (!value) return "ยังไม่มีข้อความ";
@@ -158,33 +120,33 @@ function MessageBubble({
 }
 
 export default function LiveChatContactPage() {
-  const queryClient = useQueryClient();
   const { notification } = App.useApp();
-  const { socket, isConnected } = useSocket();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const hasMounted = useAuthStore((state) => state.hasMounted);
   const openLoginModal = useUIStore((state) => state.openLoginModal);
+  const { session, state, isConnected } = useLiveChatSession(hasMounted && isLoggedIn);
+  const {
+    selectedThread,
+    messages,
+    intake,
+    error,
+    beforeMessageId,
+    hasOlderMessages,
+    historyThreads,
+    hasMoreHistory,
+    topics,
+  } = state;
 
   const [view, setView] = useState<WorkspaceView>("topics");
-  const [selectedThread, setSelectedThread] = useState<LiveChatThread | null>(null);
-  const [messages, setMessages] = useState<LiveChatMessage[]>([]);
-  const [intake, setIntake] = useState<LiveChatIntake | null>(null);
   const [messageBody, setMessageBody] = useState("");
-  const [error, setError] = useState<LiveChatError | null>(null);
-  const [beforeMessageId, setBeforeMessageId] = useState<number | null>(null);
-  const [hasOlderMessages, setHasOlderMessages] = useState(false);
   const [rating, setRating] = useState(0);
   const [feedbackComment, setFeedbackComment] = useState("");
   const [feedbackTags, setFeedbackTags] = useState<string[]>([]);
-  const [failedImage, setFailedImage] = useState<File | null>(null);
   const [mediaUploadKind, setMediaUploadKind] = useState<MediaUploadKind>("image");
   const [isPreparingGif, setIsPreparingGif] = useState(false);
-  const [historyThreads, setHistoryThreads] = useState<LiveChatThread[]>([]);
-  const [historyCursor, setHistoryCursor] = useState<number | null>(null);
-  const [hasMoreHistory, setHasMoreHistory] = useState(false);
   const messageListRef = useRef<HTMLDivElement>(null);
   const shouldJumpToLatestRef = useRef(false);
-  const shouldCreateNewThreadRef = useRef(false);
+  const openedActiveThreadRef = useRef<number | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const jumpToLatestMessage = useCallback(() => {
@@ -192,80 +154,6 @@ export default function LiveChatContactPage() {
     if (!container) return;
     container.scrollTop = container.scrollHeight;
   }, []);
-
-  const activeThreadQuery = useQuery({
-    queryKey: liveChatQueryKeys.thread,
-    queryFn: fetchActiveLiveChatThread,
-    enabled: hasMounted && isLoggedIn,
-    retry: 1,
-  });
-  const topicsQuery = useQuery({
-    queryKey: liveChatQueryKeys.helpTopics,
-    queryFn: fetchLiveChatHelpTopics,
-    enabled: hasMounted && isLoggedIn,
-    staleTime: 60_000,
-  });
-  const historyQuery = useQuery({
-    queryKey: liveChatQueryKeys.threads,
-    queryFn: () => fetchLiveChatThreads(),
-    enabled: hasMounted && isLoggedIn,
-  });
-  const feedbackTagsQuery = useQuery({
-    queryKey: liveChatQueryKeys.feedbackTags,
-    queryFn: fetchLiveChatFeedbackTags,
-    enabled: hasMounted && isLoggedIn,
-    staleTime: 300_000,
-  });
-
-  const handleError = useCallback((caught: unknown) => {
-    const normalized = (
-      caught
-      && typeof caught === "object"
-      && ("error_code" in caught || "httpStatus" in caught || "request_id" in caught)
-    )
-      ? caught as LiveChatError
-      : normalizeLiveChatError(caught);
-    setError(normalized);
-  }, []);
-
-  const recoverIntakeError = useCallback(async (caught: unknown) => {
-    const normalized = (
-      caught
-      && typeof caught === "object"
-      && ("error_code" in caught || "httpStatus" in caught)
-    )
-      ? caught as LiveChatError
-      : normalizeLiveChatError(caught);
-    setError(normalized);
-    if (normalized.error_code === "intake_expired") {
-      setIntake(null);
-      return;
-    }
-    if (normalized.error_code === "intake_state_conflict" && intake) {
-      try {
-        const result = await fetchLiveChatIntake(intake.intake_id);
-        setIntake(result.intake);
-      } catch (reloadError) {
-        handleError(reloadError);
-      }
-    }
-  }, [handleError, intake]);
-
-  const loadMessages = useCallback(async (thread?: LiveChatThread | null) => {
-    try {
-      const result = await fetchLiveChatMessages({
-        threadId: thread && thread.status !== "active" ? thread.thread_id : undefined,
-      });
-      setMessages(result.messages);
-      setBeforeMessageId(result.next_before_message_id);
-      setHasOlderMessages(result.has_more);
-      if (result.thread) setSelectedThread(result.thread);
-      setError(null);
-      shouldJumpToLatestRef.current = true;
-    } catch (caught) {
-      handleError(caught);
-    }
-  }, [handleError]);
 
   useEffect(() => {
     if (view !== "chat" || !shouldJumpToLatestRef.current) return;
@@ -281,85 +169,18 @@ export default function LiveChatContactPage() {
   }, [jumpToLatestMessage, messages, view]);
 
   useEffect(() => {
-    const thread = activeThreadQuery.data?.thread;
-    if (!thread) return;
-    setSelectedThread(thread);
+    const activeThreadId = state.activeThread?.thread_id ?? null;
+    if (!activeThreadId || openedActiveThreadRef.current === activeThreadId) return;
+    openedActiveThreadRef.current = activeThreadId;
     setView("chat");
-    setIntake(thread.intake_summary);
-    setRating(thread.feedback_summary?.rating ?? 0);
-    setFeedbackComment(thread.feedback_summary?.comment ?? "");
-    setFeedbackTags(thread.feedback_summary?.tags ?? []);
-    void loadMessages(thread);
-  }, [activeThreadQuery.data?.thread, loadMessages]);
+    shouldJumpToLatestRef.current = true;
+  }, [state.activeThread?.thread_id]);
 
   useEffect(() => {
-    const result = historyQuery.data;
-    if (!result) return;
-    setHistoryThreads(result.threads);
-    setHistoryCursor(result.next_before_thread_id);
-    setHasMoreHistory(result.has_more);
-  }, [historyQuery.data]);
-
-  useEffect(() => {
-    if (!selectedThread || selectedThread.status === "active") return;
-    const latest = historyThreads.find((thread) => thread.thread_id === selectedThread.thread_id);
-    if (latest) setSelectedThread(latest);
-  }, [historyThreads, selectedThread]);
-
-  const syncNewMessages = useCallback(async () => {
-    const thread = selectedThread;
-    if (!thread || thread.status !== "active") return;
-    const maxId = messages.at(-1)?.message_id;
-    try {
-      const result = await fetchLiveChatMessages({
-        afterMessageId: maxId,
-        limit: 100,
-      });
-      setMessages((current) => mergeMessages(current, result.messages));
-      if (result.thread) setSelectedThread(result.thread);
-    } catch {
-      // Realtime catch-up is best effort; the next reconnect or manual retry can recover.
-    }
-  }, [messages, selectedThread]);
-
-  useEffect(() => {
-    if (!socket || !isLoggedIn) return;
-    const handleMessage = () => void syncNewMessages();
-    const handleResolved = () => {
-      setSelectedThread((thread) => thread ? {
-        ...thread,
-        status: "resolved",
-        can_send: false,
-      } : thread);
-      void queryClient.invalidateQueries({ queryKey: liveChatQueryKeys.thread });
-      void queryClient.invalidateQueries({ queryKey: liveChatQueryKeys.threads });
-    };
-    socket.on("live_chat:message", handleMessage);
-    socket.on("thread_resolved", handleResolved);
-    socket.io.on("reconnect", handleMessage);
-    return () => {
-      socket.off("live_chat:message", handleMessage);
-      socket.off("thread_resolved", handleResolved);
-      socket.io.off("reconnect", handleMessage);
-    };
-  }, [isLoggedIn, queryClient, socket, syncNewMessages]);
-
-  useEffect(() => {
-    const handleRecovery = () => {
-      if (document.visibilityState === "visible" && navigator.onLine) void syncNewMessages();
-    };
-    window.addEventListener("online", handleRecovery);
-    document.addEventListener("visibilitychange", handleRecovery);
-    return () => {
-      window.removeEventListener("online", handleRecovery);
-      document.removeEventListener("visibilitychange", handleRecovery);
-    };
-  }, [syncNewMessages]);
-
-  useEffect(() => {
-    const latestAdminMessage = [...messages].reverse().find((item) => item.sender_type === "admin");
-    if (latestAdminMessage) void markLiveChatRead(latestAdminMessage.message_id).catch(() => undefined);
-  }, [messages]);
+    setRating(selectedThread?.feedback_summary?.rating ?? 0);
+    setFeedbackComment(selectedThread?.feedback_summary?.comment ?? "");
+    setFeedbackTags(selectedThread?.feedback_summary?.tags ?? []);
+  }, [selectedThread?.feedback_summary, selectedThread?.thread_id]);
 
   useEffect(() => {
     const container = messageListRef.current;
@@ -370,128 +191,74 @@ export default function LiveChatContactPage() {
     }
   }, [messages, view]);
 
-  const sendTextMutation = useMutation({
-    mutationFn: sendLiveChatText,
-    onSuccess: (result) => {
-      setSelectedThread(result.thread);
-      setMessages((current) => mergeMessages(current, [result.message]));
-      setMessageBody("");
-      setError(null);
+  const sendTextMutation = {
+    isPending: state.pendingSend === "text",
+    mutate: (body: string) => void session.sendText(body).then((sent) => {
+      if (sent) setMessageBody("");
+    }),
+  };
+  const sendImageMutation = {
+    isPending: state.pendingSend === "image",
+    mutate: (file: File) => void session.sendImage(file, mediaUploadKind),
+  };
+  const intakeMutation = {
+    isPending: state.isIntakeBusy,
+    mutate: (topic?: (typeof topics)[number]) => void session.startIntake(topic),
+  };
+  const answerMutation = {
+    isPending: state.isIntakeBusy,
+    mutate: ({ nodeId, choiceId }: { nodeId: number; choiceId: number }) =>
+      void session.answerIntake(nodeId, choiceId),
+  };
+  const completeMutation = {
+    isPending: state.isIntakeBusy,
+    mutate: (outcome: "skip" | "self_resolved" | "escalated") => {
+      void session.completeIntake(outcome).then((completed) => {
+        if (completed) setView(outcome === "escalated" ? "chat" : "topics");
+      });
     },
-    onError: handleError,
-  });
-  const sendImageMutation = useMutation({
-    mutationFn: sendLiveChatImage,
-    onSuccess: (result) => {
-      setSelectedThread(result.thread);
-      setMessages((current) => mergeMessages(current, [result.message]));
-      setError(null);
-      setFailedImage(null);
-      setMediaUploadKind("image");
-    },
-    onError: handleError,
-  });
-  const intakeMutation = useMutation({
-    mutationFn: (topic?: LiveChatHelpTopic) => startLiveChatIntake(topic),
-    onSuccess: ({ intake: nextIntake }) => {
-      setIntake(nextIntake);
-      setView("topics");
-      setError(null);
-    },
-    onError: recoverIntakeError,
-  });
-  const answerMutation = useMutation({
-    mutationFn: ({ nodeId, choiceId }: { nodeId: number; choiceId: number }) =>
-      answerLiveChatIntake(intake!.intake_id, nodeId, choiceId),
-    onSuccess: ({ intake: nextIntake }) => setIntake(nextIntake),
-    onError: recoverIntakeError,
-  });
-  const completeMutation = useMutation({
-    mutationFn: async (outcome: "skip" | "self_resolved" | "escalated") => {
-      if (outcome === "escalated" && shouldCreateNewThreadRef.current) {
-        await createNewLiveChatThread();
-        shouldCreateNewThreadRef.current = false;
-      }
-      return completeLiveChatIntake(intake!.intake_id, outcome);
-    },
-    onSuccess: ({ intake: nextIntake, thread }) => {
-      shouldCreateNewThreadRef.current = false;
-      setIntake(nextIntake);
-      if (thread) {
-        setSelectedThread(thread);
-        setView("chat");
-        void loadMessages(thread);
-      } else {
-        setIntake(null);
-        setView("topics");
-      }
-      void queryClient.invalidateQueries({ queryKey: liveChatQueryKeys.thread });
-    },
-    onError: recoverIntakeError,
-  });
+  };
   const handleStartNewCase = () => {
-    shouldCreateNewThreadRef.current = true;
-    intakeMutation.reset();
-    answerMutation.reset();
-    completeMutation.reset();
-    setIntake(null);
-    setError(null);
+    session.prepareNewCase();
     setView("topics");
   };
   const feedbackMutation = useMutation({
-    mutationFn: () => saveLiveChatFeedback(selectedThread!.thread_id, {
+    mutationFn: () => session.saveFeedback({
       rating,
-      comment: feedbackComment.trim() || null,
+      comment: feedbackComment,
       tags: feedbackTags,
     }),
-    onSuccess: ({ feedback }) => {
-      setSelectedThread((thread) => thread ? { ...thread, feedback_summary: feedback } : thread);
-      setError(null);
+    onSuccess: (saved) => {
+      if (!saved) return;
       notification.success({
         message: "ส่งแบบประเมินเรียบร้อยแล้ว",
         description: "ขอบคุณสำหรับความคิดเห็นของคุณ",
         placement: "topRight",
       });
     },
-    onError: handleError,
   });
 
-  const isBusy = intakeMutation.isPending || answerMutation.isPending || completeMutation.isPending;
-  const topics = useMemo(
-    () => [...(topicsQuery.data?.topics ?? [])].sort((a, b) => a.sort_order - b.sort_order),
-    [topicsQuery.data?.topics],
-  );
+  const isBusy = state.isIntakeBusy;
 
   const handleSendText = () => {
     if (sendTextMutation.isPending) return;
-    const validationMessage = validateMessageBody(messageBody);
-    if (validationMessage) {
-      setError({ message: validationMessage });
-      return;
-    }
     sendTextMutation.mutate(messageBody);
   };
 
   const handleMediaSelection = (file: File | undefined, kind: MediaUploadKind) => {
     if (!file) return;
-    const validationMessage = kind === "gif" ? validateGif(file) : validateImage(file);
-    if (validationMessage) {
-      setError({ message: validationMessage });
-      return;
-    }
     setMediaUploadKind(kind);
-    setFailedImage(file);
-    sendImageMutation.mutate(file);
+    void session.sendImage(file, kind);
   };
 
   const handleGifSelection = async (item: GifPickerItem) => {
     setMediaUploadKind("gif");
     setIsPreparingGif(true);
-    setError(null);
+    session.clearError();
     try {
       handleMediaSelection(await downloadGif(item), "gif");
     } catch (caught) {
-      setError({
+      session.reportError({
         message: caught instanceof Error ? caught.message : "ดาวน์โหลด GIF ไม่สำเร็จ",
       });
     } finally {
@@ -504,49 +271,23 @@ export default function LiveChatContactPage() {
     shouldJumpToLatestRef.current = false;
     const container = messageListRef.current;
     const previousHeight = container?.scrollHeight ?? 0;
-    try {
-      const result = await fetchLiveChatMessages({
-        threadId: selectedThread.status !== "active" ? selectedThread.thread_id : undefined,
-        beforeMessageId,
-      });
-      setMessages((current) => mergeMessages(result.messages, current));
-      setBeforeMessageId(result.next_before_message_id);
-      setHasOlderMessages(result.has_more);
-      window.requestAnimationFrame(() => {
-        if (container) container.scrollTop = container.scrollHeight - previousHeight;
-      });
-    } catch (caught) {
-      handleError(caught);
-    }
+    await session.loadOlderMessages();
+    window.requestAnimationFrame(() => {
+      if (container) container.scrollTop = container.scrollHeight - previousHeight;
+    });
   };
 
   const handleLoadMoreHistory = async () => {
-    if (!historyCursor) return;
-    try {
-      const result = await fetchLiveChatThreads(historyCursor);
-      setHistoryThreads((current) => {
-        const byId = new Map(current.map((thread) => [thread.thread_id, thread]));
-        result.threads.forEach((thread) => byId.set(thread.thread_id, thread));
-        return [...byId.values()].sort((left, right) => right.thread_id - left.thread_id);
-      });
-      setHistoryCursor(result.next_before_thread_id);
-      setHasMoreHistory(result.has_more);
-    } catch (caught) {
-      handleError(caught);
-    }
+    await session.loadMoreHistory();
   };
 
-  const handleOpenHistoryThread = (thread: LiveChatThread) => {
-    setSelectedThread(thread);
-    setIntake(thread.intake_summary);
-    setRating(thread.feedback_summary?.rating ?? 0);
-    setFeedbackComment(thread.feedback_summary?.comment ?? "");
-    setFeedbackTags(thread.feedback_summary?.tags ?? []);
+  const handleOpenHistoryThread = async (thread: LiveChatThread) => {
+    await session.selectHistoryThread(thread);
     setView("chat");
-    void loadMessages(thread);
+    shouldJumpToLatestRef.current = true;
   };
 
-  if (!hasMounted || activeThreadQuery.isLoading) {
+  if (!hasMounted || (isLoggedIn && state.status === "loading")) {
     return (
       <main className="grid min-h-[calc(100svh-60px)] place-items-center bg-white lg:min-h-[calc(100svh-80px)]">
         <LoaderCircle className="size-8 animate-spin text-[#dc2626]" aria-label="กำลังโหลด Live Chat" />
@@ -604,7 +345,10 @@ export default function LiveChatContactPage() {
               <button
                 key={nextView}
                 type="button"
-                onClick={() => setView(nextView)}
+                onClick={() => {
+                  if (nextView === "chat") session.selectActiveThread();
+                  setView(nextView);
+                }}
                 className={`flex min-h-14 items-center justify-center gap-2 border-stone-200 px-3 text-sm font-semibold transition lg:justify-start lg:border-b lg:px-8 ${
                   view === nextView
                     ? "bg-red-50 text-[#dc2626]"
@@ -642,17 +386,39 @@ export default function LiveChatContactPage() {
                   : getLiveChatErrorMessage(error)}
               </span>
               <span className="flex shrink-0 items-center gap-3">
-                {failedImage && error.error_code === "image_upload_failed" && (
+                {state.failedMedia && error.error_code === "image_upload_failed" && (
                   <button
                     type="button"
-                    onClick={() => sendImageMutation.mutate(failedImage)}
+                    onClick={() => void session.retryFailedMedia()}
                     disabled={sendImageMutation.isPending}
                     className="font-bold underline underline-offset-2"
                   >
                     ลองอัปโหลดอีกครั้ง
                   </button>
                 )}
-                <button type="button" onClick={() => setError(null)} aria-label="ปิดข้อความแจ้งเตือน">
+                {state.failedText && (
+                  <button
+                    type="button"
+                    onClick={() => void session.retryFailedText()}
+                    disabled={state.pendingSend === "text"}
+                    className="font-bold underline underline-offset-2"
+                  >
+                    ลองส่งข้อความอีกครั้ง
+                  </button>
+                )}
+                {state.canRetryIntake && (
+                  <button
+                    type="button"
+                    onClick={() => void (error.error_code === "intake_expired"
+                      ? session.restartIntake()
+                      : session.retryIntake())}
+                    disabled={state.isIntakeBusy}
+                    className="font-bold underline underline-offset-2"
+                  >
+                    ลองขั้นตอนช่วยเหลืออีกครั้ง
+                  </button>
+                )}
+                <button type="button" onClick={session.clearError} aria-label="ปิดข้อความแจ้งเตือน">
                   <X className="size-4" />
                 </button>
               </span>
@@ -681,7 +447,7 @@ export default function LiveChatContactPage() {
                           หมดอายุ {formatDateTime(intake.expires_at)}
                         </p>
                       </div>
-                      <button type="button" onClick={() => setIntake(null)} className="text-sm font-semibold text-stone-500 hover:text-stone-950">
+                      <button type="button" onClick={session.clearIntake} className="text-sm font-semibold text-stone-500 hover:text-stone-950">
                         เลือกหัวข้อใหม่
                       </button>
                     </div>
@@ -712,10 +478,7 @@ export default function LiveChatContactPage() {
                           <button
                             type="button"
                             disabled={isBusy}
-                            onClick={() => goBackLiveChatIntake(
-                              intake.intake_id,
-                              intake.path.at(-1)!.node_id,
-                          ).then(({ intake: previous }) => setIntake(previous)).catch(recoverIntakeError)}
+                            onClick={() => void session.goBackIntake(intake.path.at(-1)!.node_id)}
                             className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-stone-500 hover:text-stone-950"
                           >
                             <ChevronLeft className="size-4" /> ย้อนกลับ
@@ -787,7 +550,7 @@ export default function LiveChatContactPage() {
                 ) : (
                   <>
                     <div className="mt-10 divide-y divide-stone-300 border-y border-stone-300">
-                      {topicsQuery.isLoading ? (
+                      {state.status === "loading" ? (
                         <div className="flex min-h-40 items-center justify-center">
                           <LoaderCircle className="size-6 animate-spin text-[#dc2626]" />
                         </div>
@@ -860,7 +623,7 @@ export default function LiveChatContactPage() {
                       <ChevronRight className="size-5 text-stone-400 transition group-hover:translate-x-1" />
                     </button>
                   ))}
-                  {!historyQuery.isLoading && !(historyQuery.data?.threads.length) && (
+                  {state.status !== "loading" && historyThreads.length === 0 && (
                     <div className="py-16 text-center">
                       <Clock3 className="mx-auto size-8 text-stone-300" />
                       <p className="mt-4 font-semibold">ยังไม่มีประวัติเคส</p>
@@ -955,7 +718,7 @@ export default function LiveChatContactPage() {
                         ))}
                       </div>
                       <div className="mt-5 flex flex-wrap gap-2">
-                        {(feedbackTagsQuery.data?.tags ?? []).map((tag) => {
+                        {state.feedbackTags.map((tag) => {
                           const selected = feedbackTags.includes(tag.key);
                           return (
                             <button
@@ -982,11 +745,7 @@ export default function LiveChatContactPage() {
                       <button
                         type="button"
                         disabled={feedbackMutation.isPending}
-                        onClick={() => {
-                          const validationMessage = validateFeedback({ rating, comment: feedbackComment, tags: feedbackTags });
-                          if (validationMessage) setError({ message: validationMessage });
-                          else feedbackMutation.mutate();
-                        }}
+                        onClick={() => feedbackMutation.mutate()}
                         className="mt-4 min-h-11 rounded-full bg-[#dc2626] px-6 text-sm font-bold !text-white hover:bg-[#b91c1c] disabled:opacity-50"
                       >
                         {selectedThread.feedback_summary ? "อัปเดตแบบประเมิน" : "ส่งแบบประเมิน"}

@@ -1,135 +1,125 @@
-import { useState } from 'react';
-import { storyApi } from '../services/storyApi';
-import { useStoryStore } from '../stores/storyStore';
-import { App } from 'antd';
-import { useQuery } from '@tanstack/react-query';
+import { App } from "antd";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+
+import { useSocket } from "@/providers/SocketProvider";
+import { queryKeys } from "@/constants/query";
+import { useRecoverWhenAvailable } from "@/hooks/useRecoverWhenAvailable";
+
+import {
+  createStoryUploadLifecycle,
+  type StoryUploadGateway,
+  type StoryUploadSocket,
+} from "../storyUploadLifecycle";
+import { storyApi } from "../services/storyApi";
+import { useStoryStore } from "../stores/storyStore";
+
+const readVideoDuration = (file: File) => new Promise<number>((resolve, reject) => {
+  const objectUrl = URL.createObjectURL(file);
+  const video = document.createElement("video");
+  const release = () => URL.revokeObjectURL(objectUrl);
+  video.preload = "metadata";
+  video.onloadedmetadata = () => {
+    const duration = video.duration;
+    release();
+    resolve(duration);
+  };
+  video.onerror = () => {
+    release();
+    reject(new Error("VIDEO_METADATA_UNREADABLE"));
+  };
+  video.src = objectUrl;
+});
 
 export const useStoryUpload = () => {
+  const { message } = App.useApp();
+  const queryClient = useQueryClient();
+  const { socket } = useSocket();
   const setUploadState = useStoryStore((state) => state.setUploadState);
   const setActiveUploadId = useStoryStore((state) => state.setActiveUploadId);
-  const resetUpload = useStoryStore((state) => state.resetUpload);
-  const { message } = App.useApp();
-  const [isUploading, setIsUploading] = useState(false);
+  const resetStoreUpload = useStoryStore((state) => state.resetUpload);
+  const lastErrorRef = useRef<string | null>(null);
 
-  // Fetch config for validation
-  const { data: config } = useQuery({
-    queryKey: ['storyConfig'],
-    queryFn: storyApi.fetchStoryConfig,
-    staleTime: 1000 * 60 * 60, // 1 hour
-  });
-
-  const validateFile = async (file: File): Promise<string | null> => {
-    if (!config) return "ยังไม่สามารถอัปโหลดได้ โปรดลองอีกครั้ง";
-
-    if (file.size > config.maxUploadBytes) {
-      return `ไฟล์ใหญ่เกินไป (จำกัด ${Math.floor(config.maxUploadBytes / (1024 * 1024))}MB)`;
-    }
-
-    const rawExt = (file.name.split('.').pop() || '').toLowerCase();
-    const allowedExts = config.allowedExtensions || ['mp4', 'mov', 'webm'];
-    const isExtensionAllowed = allowedExts.some((ext) => {
-      const clean = ext.replace(/^\./, '').toLowerCase();
-      return clean === rawExt;
+  const lifecycle = useMemo(() => {
+    const gateway: StoryUploadGateway = {
+      fetchConfig: storyApi.fetchStoryConfig,
+      readDuration: readVideoDuration,
+      upload: (intent, idempotencyKey) => storyApi.uploadStory(
+        intent.file,
+        idempotencyKey,
+        intent.sourceType,
+        intent.startDate,
+        intent.endDate,
+        intent.links,
+      ),
+      fetchStatus: storyApi.fetchStoryStatus,
+    };
+    return createStoryUploadLifecycle({
+      gateway,
+      onCompleted: () => {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.story.bar() });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.story.manageRoot() });
+        message.success("อัปโหลดเสร็จสมบูรณ์");
+      },
     });
+  }, [message, queryClient]);
 
-    const fileMime = (file.type || '').toLowerCase();
-    const allowedMimes = config.allowedMimeTypes || [];
-    const isMimeAllowed =
-      !fileMime ||
-      allowedMimes.length === 0 ||
-      allowedMimes.map((m) => m.toLowerCase()).includes(fileMime) ||
-      fileMime.startsWith('video/');
+  const state = useSyncExternalStore(
+    lifecycle.subscribe,
+    lifecycle.getState,
+    lifecycle.getState,
+  );
 
-    if (!isExtensionAllowed || !isMimeAllowed) {
-      return `รองรับเฉพาะไฟล์ ${allowedExts.join(', ')}`;
+  useEffect(() => {
+    void lifecycle.loadConfig();
+    return () => lifecycle.close();
+  }, [lifecycle]);
+
+  useEffect(() => {
+    lifecycle.setSocket(socket as StoryUploadSocket | null);
+    return () => lifecycle.setSocket(null);
+  }, [lifecycle, socket]);
+
+  useRecoverWhenAvailable(lifecycle.recover);
+
+  useEffect(() => {
+    if (state.status === "deleted" || state.status === "idle") {
+      resetStoreUpload();
+      return;
     }
+    setUploadState(state.status, state.progress, state.error ?? state.stage);
+    setActiveUploadId(state.activeUploadId);
+  }, [resetStoreUpload, setActiveUploadId, setUploadState, state]);
 
-    const objectUrl = URL.createObjectURL(file);
-    try {
-      const duration = await new Promise<number>((resolve, reject) => {
-        const video = document.createElement('video');
-        video.preload = 'metadata';
-        video.onloadedmetadata = () => resolve(video.duration);
-        video.onerror = () => reject(new Error('VIDEO_METADATA_UNREADABLE'));
-        video.src = objectUrl;
-      });
+  useEffect(() => {
+    if (!state.error || state.error === lastErrorRef.current) return;
+    lastErrorRef.current = state.error;
+    message.error(state.error);
+  }, [message, state.error]);
 
-      if (!Number.isFinite(duration)) {
-        return 'ไม่สามารถอ่านความยาววิดีโอได้ กรุณาเลือกไฟล์ใหม่';
-      }
-
-      if (duration > config.maxDurationSeconds) {
-        return `วิดีโอยาวเกินกำหนด (สูงสุด ${config.maxDurationSeconds} วินาที)`;
-      }
-    } catch {
-      return 'ไม่สามารถอ่านข้อมูลวิดีโอได้ กรุณาเลือกไฟล์ใหม่';
-    } finally {
-      URL.revokeObjectURL(objectUrl);
-    }
-
-    return null;
-  };
-
-  const uploadStory = async (
+  const uploadStory = (
     file: File,
-    sourceType: 'user' | 'admin' = 'user',
+    sourceType: "user" | "admin" = "user",
     startDate?: string,
     endDate?: string,
-    links?: { label: string; url: string; orderBy?: number }[]
-  ) => {
-    try {
-      setUploadState('validating', 0, 'กำลังตรวจสอบไฟล์...');
-      const error = await validateFile(file);
-      if (error) {
-        message.error(error);
-        resetUpload();
-        return false;
-      }
+    links: Array<{ label: string; url: string; orderBy?: number }> = [],
+  ) => lifecycle.submit({ file, sourceType, startDate, endDate, links });
 
-      setIsUploading(true);
-      setUploadState('uploading', 0, 'กำลังอัปโหลดไฟล์...');
-
-      const idempotencyKey = typeof crypto !== 'undefined' && crypto.randomUUID
-        ? crypto.randomUUID()
-        : Date.now().toString(36) + Math.random().toString(36).substring(2);
-
-      const response = await storyApi.uploadStory(file, idempotencyKey, sourceType, startDate, endDate, links);
-
-      setUploadState('queued', 100, 'อัปโหลดสำเร็จ รอการประมวลผล...');
-
-      // Fallback for different possible backend ID field names
-      const activeId = typeof response === 'number'
-        ? response
-        : (response?.storyItem?.id || response?.id || response?.storyItemId || response?.story_item_id);
-
-      if (!activeId) {
-        throw new Error(`ไม่พบ ID ของวิดีโอจากเซิร์ฟเวอร์: ${JSON.stringify(response).substring(0, 150)}`);
-      }
-
-      setActiveUploadId(activeId);
-
-      message.success('อัปโหลดสำเร็จ กำลังประมวลผลวิดีโอ');
-      return true;
-    } catch (err: any) {
-      console.error("Upload error", err);
-      // Handle the specific date range invalid error
-      const errorCode = err.response?.data?.code;
-      const errorMessage = errorCode === 'VIDEO_STORY_DATE_RANGE_INVALID'
-        ? 'ช่วงเวลาที่ตั้งค่าไม่ถูกต้อง โปรดตรวจสอบ Start Date และ End Date อีกครั้ง'
-        : (err.response?.data?.message || err.message || 'เกิดข้อผิดพลาดในการอัปโหลด');
-
-      message.error(errorMessage);
-      setUploadState('failed', 0, errorMessage);
-      return false;
-    } finally {
-      setIsUploading(false);
-    }
-  };
+  const replaceUpload = (
+    file: File,
+    sourceType: "user" | "admin" = "user",
+    startDate?: string,
+    endDate?: string,
+    links: Array<{ label: string; url: string; orderBy?: number }> = [],
+  ) => lifecycle.replace({ file, sourceType, startDate, endDate, links });
 
   return {
     uploadStory,
-    isUploading,
-    config,
-    resetUpload,
+    replaceUpload,
+    retryUpload: lifecycle.retry,
+    isUploading: ["validating", "uploading", "queued", "processing"].includes(state.status),
+    config: state.config,
+    resetUpload: lifecycle.reset,
+    state,
   };
 };
