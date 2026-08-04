@@ -1,6 +1,6 @@
 import axios from "axios";
+import Cookies from "js-cookie";
 import { parseJwtToken } from "@/utils/jwtParser";
-import { useAuthStore } from "@/stores/authStore";
 
 const secureProxyClient = axios.create({
   baseURL: "/api/secure",
@@ -12,7 +12,7 @@ secureProxyClient.interceptors.request.use((config) => {
     return config;
   }
 
-  const token = parseJwtToken(useAuthStore.getState().token);
+  const token = parseJwtToken(Cookies.get("token"));
   if (!token) {
     return config;
   }

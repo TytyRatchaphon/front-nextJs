@@ -4,7 +4,7 @@ import { notification } from "antd";
 import { CheckCircleOutlined } from "@ant-design/icons";
 import type { QuestGroup, QuestItem } from "@/services/api/userApi";
 import { claimQuest } from "@/services/api/userApi";
-import { useAuthStore } from "@/stores/authStore";
+import Cookies from "js-cookie";
 
 interface QuestSectionProps {
     questGroups: QuestGroup[];
@@ -35,7 +35,6 @@ function getTimeRemaining(endDate: string): string {
 }
 
 export default function QuestSection({ questGroups, onRefresh }: QuestSectionProps) {
-    const token = useAuthStore((state) => state.token);
     // Flatten all quests into a map by group key
     const questsByGroup = useMemo(() => {
         const map: Record<string, QuestItem[]> = {};
@@ -62,6 +61,9 @@ export default function QuestSection({ questGroups, onRefresh }: QuestSectionPro
     const handleClaim = useCallback(async (questId: number) => {
         setClaimingId(questId);
         try {
+            const rawToken = Cookies.get("token");
+            const token = rawToken ? rawToken.replace(/^['"]+|['"]+$/g, "") : "";
+
             await claimQuest(questId, token || undefined);
             notification.success({
                 message: "รับรางวัลสำเร็จ!",
@@ -79,7 +81,7 @@ export default function QuestSection({ questGroups, onRefresh }: QuestSectionPro
         } finally {
             setClaimingId(null);
         }
-    }, [onRefresh, token]);
+    }, [onRefresh]);
 
     if (availableTabs.length === 0) return null;
 

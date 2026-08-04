@@ -4,11 +4,9 @@ type SetupOptions = {
   browser?: boolean
   stateToken?: string | null
   cookieToken?: string | undefined
-  sessionToken?: string | null
   parsedToken?: string | null
   deviceId?: string | null
   deviceIdReject?: boolean
-  authStatus?: 'guest' | 'logging_out'
 }
 
 const DUPLICATE_LOGIN_MESSAGE = 'มีการเข้าสู่ระบบจากอุปกรณ์อื่น'
@@ -20,11 +18,9 @@ const setupApiClientModule = async (options: SetupOptions = {}) => {
     browser = false,
     stateToken = null,
     cookieToken = undefined,
-    sessionToken = null,
     parsedToken = null,
     deviceId = 'device-1',
     deviceIdReject = false,
-    authStatus = 'guest',
   } = options
 
   const requestUse = vi.fn()
@@ -41,11 +37,8 @@ const setupApiClientModule = async (options: SetupOptions = {}) => {
     ? vi.fn().mockRejectedValue(new Error('device error'))
     : vi.fn().mockResolvedValue(deviceId)
   const cookieGetMock = vi.fn(() => cookieToken)
-  const parseJwtTokenMock = vi.fn((rawToken: string | null | undefined) => rawToken ? parsedToken : null)
-  const authGetStateMock = vi.fn(() => ({ token: stateToken, status: authStatus }))
-  const getAuthSessionMock = vi.fn().mockResolvedValue(
-    sessionToken ? { authenticated: true, token: sessionToken } : null,
-  )
+  const parseJwtTokenMock = vi.fn(() => parsedToken)
+  const authGetStateMock = vi.fn(() => ({ token: stateToken }))
 
   vi.doMock('axios', () => ({
     default: {
@@ -77,10 +70,6 @@ const setupApiClientModule = async (options: SetupOptions = {}) => {
     parseJwtToken: parseJwtTokenMock,
   }))
 
-  vi.doMock('@/services/authPersistence', () => ({
-    getAuthSession: getAuthSessionMock,
-  }))
-
   if (browser) {
     ;(globalThis as any).window = {}
   } else {
@@ -104,7 +93,6 @@ const setupApiClientModule = async (options: SetupOptions = {}) => {
       cookieGetMock,
       parseJwtTokenMock,
       authGetStateMock,
-      getAuthSessionMock,
     },
     handlers: {
       requestSuccess,
@@ -189,19 +177,20 @@ describe('apiClient', () => {
     expect(mocks.getDeviceIdMock).toHaveBeenCalledTimes(1)
   })
 
-  it('does not recover browser credentials outside lifecycle hydration', async () => {
+  it('falls back to cookie token when state token is missing', async () => {
     const { handlers, mocks } = await setupApiClientModule({
       browser: true,
       stateToken: null,
-      sessionToken: 'server-session-token',
-      parsedToken: 'jwt-from-session',
+      cookieToken: 'cookie-token',
+      parsedToken: 'jwt-from-cookie',
     })
     const config = { headers: {} as Record<string, string> }
 
     const result = await handlers.requestSuccess(config)
 
-    expect(mocks.getAuthSessionMock).not.toHaveBeenCalled()
-    expect(result.headers.Authorization).toBeUndefined()
+    expect(mocks.cookieGetMock).toHaveBeenCalledWith('token')
+    expect(mocks.parseJwtTokenMock).toHaveBeenCalledWith('cookie-token')
+    expect(result.headers.Authorization).toBe('jwt-from-cookie')
   })
 
   it('skips auth header when x-skip-auth is set', async () => {
@@ -249,6 +238,7 @@ describe('apiClient', () => {
   })
 
   it('returns response as-is in success interceptor', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
     const { handlers } = await setupApiClientModule()
     const response = {
       config: {
@@ -262,19 +252,7 @@ describe('apiClient', () => {
     const result = handlers.responseSuccess(response)
 
     expect(result).toBe(response)
-  })
-
-  it('does not recover a server credential while logout is in progress', async () => {
-    const { handlers, mocks } = await setupApiClientModule({
-      browser: true,
-      authStatus: 'logging_out',
-      sessionToken: 'stale-server-token',
-    })
-
-    const result = await handlers.requestSuccess({ headers: {} as Record<string, string> })
-
-    expect(mocks.getAuthSessionMock).not.toHaveBeenCalled()
-    expect(result.headers.Authorization).toBeUndefined()
+    expect(logSpy).toHaveBeenCalled()
   })
 
   it('emits duplicate-login event and rejects the original error', async () => {

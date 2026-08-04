@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { decodeJwtClaims, validateJwtToken } from "@/utils/jwtParser";
+import { parseJwtToken } from "@/utils/jwtParser";
 
 const TOKEN_COOKIE_NAME = "token";
 const LEGACY_TOKEN_COOKIE_NAME = "tk";
@@ -11,18 +11,10 @@ const noStoreHeaders = {
   "Surrogate-Control": "no-store",
 };
 
-const getConfiguredTokenCookieMaxAge = () => {
+const getTokenCookieMaxAge = () => {
   const raw = Number(process.env.TOKEN_COOKIE_DAYS || process.env.NEXT_PUBLIC_TOKEN_COOKIE_DAYS);
   const days = Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_TOKEN_COOKIE_DAYS;
   return Math.floor(days * 24 * 60 * 60);
-};
-
-const getTokenCookieMaxAge = (token: string) => {
-  const expiresAt = decodeJwtClaims(token)?.exp;
-  const remainingLifetime = typeof expiresAt === 'number'
-    ? Math.max(0, expiresAt - Math.floor(Date.now() / 1_000))
-    : 0;
-  return Math.min(getConfiguredTokenCookieMaxAge(), remainingLifetime);
 };
 
 const getTokenCookieDomain = () => {
@@ -60,26 +52,24 @@ const clearAuthCookies = (response: NextResponse) => {
 };
 
 export async function GET(request: NextRequest) {
-  const token = validateJwtToken(request.cookies.get(TOKEN_COOKIE_NAME)?.value);
+  const token = parseJwtToken(request.cookies.get(TOKEN_COOKIE_NAME)?.value);
 
-  const response = NextResponse.json(
+  return NextResponse.json(
     {
       authenticated: Boolean(token),
       token: token || null,
     },
     { headers: noStoreHeaders },
   );
-  if (!token) clearAuthCookies(response);
-  return response;
 }
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
-  const token = validateJwtToken(body?.token);
+  const token = parseJwtToken(body?.token);
 
   if (!token) {
     return NextResponse.json(
-      { success: false, message: "Invalid or expired token" },
+      { success: false, message: "Missing token" },
       { status: 400, headers: noStoreHeaders },
     );
   }
@@ -97,7 +87,7 @@ export async function POST(request: NextRequest) {
     sameSite: "lax",
     secure: shouldUseSecureCookie(request),
     path: "/",
-    maxAge: getTokenCookieMaxAge(token),
+    maxAge: getTokenCookieMaxAge(),
     ...(getTokenCookieDomain() ? { domain: getTokenCookieDomain() } : {}),
   });
 

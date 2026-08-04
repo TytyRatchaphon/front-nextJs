@@ -1,8 +1,10 @@
 import axios from "axios";
 import { getDeviceId } from "@/utils/deviceUtils";
+import Cookies from "js-cookie";
 import { useAuthStore } from "@/stores/authStore";
 import { parseJwtToken } from "@/utils/jwtParser";
 import { emitApiClientEvent } from "@/services/apiEvents";
+import { getAuthSession } from "@/services/authPersistence";
 
 let cachedDeviceId: string | null = null;
 let deviceIdRequest: Promise<string | null> | null = null;
@@ -60,8 +62,11 @@ apiClient.interceptors.request.use(
             }
 
             if (!skipAuth) {
-                const authState = useAuthStore.getState();
-                const tokenValue: string | null | undefined = parseJwtToken(authState.token);
+                const stateToken = useAuthStore.getState().token;
+                let tokenValue: string | null | undefined = parseJwtToken(stateToken || Cookies.get('token'));
+                if (!tokenValue) {
+                    tokenValue = (await getAuthSession())?.token || undefined;
+                }
                 if (tokenValue) {
                     config.headers.Authorization = authScheme === 'bearer'
                         ? `Bearer ${tokenValue}`

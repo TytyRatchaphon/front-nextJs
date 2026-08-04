@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import axios from 'axios';
-import { completeProviderSession } from '@/features/auth/providerSession';
 
 declare global {
   interface Window {
@@ -155,7 +154,7 @@ const waitForLiffReady = async () => {
 };
 
 export const useLineLogin = () => {
-  const { login, isLoggedIn } = useAuthStore();
+  const { login, updateToken, isLoggedIn } = useAuthStore();
   const [loading, setLoading] = useState(false);
 
   const handleBackendLogin = async () => {
@@ -222,7 +221,8 @@ export const useLineLogin = () => {
             // Set non-auth cookies only (auth token is managed centrally in authStore)
             setCookie('closePopupPolicy', '', 365);
 
-            await completeProviderSession(login, userInfo, token, 'LINE');
+            login(userInfo, token);
+            updateToken(token);
 
             // Clear LINE login flags before navigation to avoid stale "processing" state
             // if the browser interrupts finally during page transition.

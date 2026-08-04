@@ -9,51 +9,6 @@ export const parseJwtToken = (newToken: string | undefined | null): string | und
   return s || undefined;
 };
 
-export interface JwtClaims {
-  exp: number;
-  userId?: string | number;
-  user_id?: string | number;
-  id?: string | number;
-  sub?: string | number;
-  [key: string]: unknown;
-}
-
-export const decodeJwtClaims = (rawToken: string | undefined | null): JwtClaims | null => {
-  try {
-    const token = parseJwtToken(rawToken);
-    if (!token) return null;
-    const parts = token.split(".");
-    if (parts.length !== 3 || parts.some((part) => !part)) return null;
-    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
-    const jsonPayload = decodeURIComponent(atob(padded).split("").map((character) =>
-      `%${character.charCodeAt(0).toString(16).padStart(2, "0")}`).join(""));
-    const claims = JSON.parse(jsonPayload) as Partial<JwtClaims>;
-    return typeof claims === "object" && claims !== null ? claims as JwtClaims : null;
-  } catch {
-    return null;
-  }
-};
-
-export const getJwtIdentity = (rawToken: string | undefined | null): string | null => {
-  const claims = decodeJwtClaims(rawToken);
-  const identity = claims?.userId ?? claims?.user_id ?? claims?.id ?? claims?.sub;
-  return identity === undefined || identity === null || String(identity).trim() === ""
-    ? null
-    : String(identity);
-};
-
-export const validateJwtToken = (
-  rawToken: string | undefined | null,
-  nowMs = Date.now(),
-): string | null => {
-  const token = parseJwtToken(rawToken);
-  const claims = decodeJwtClaims(token);
-  if (!token || !claims || !getJwtIdentity(token)) return null;
-  if (!Number.isFinite(claims.exp) || claims.exp <= Math.floor(nowMs / 1_000)) return null;
-  return token;
-};
-
 export const decodeAndMapUserFromToken = (token: string, baseUser: UserData): UserData | null => {
   try {
     const base64Url = token.split('.')[1];

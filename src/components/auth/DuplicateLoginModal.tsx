@@ -4,14 +4,23 @@ import { Modal, Button } from 'antd';
 import { useUIStore } from '@/stores/uiStore';
 import { useAuthStore } from '@/stores/authStore';
 import { WarningOutlined } from '@ant-design/icons';
+import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import 'next/image';
 
 export default function DuplicateLoginModal() {
     const { isDuplicateLoginModalOpen, closeDuplicateLoginModal } = useUIStore();
     const logout = useAuthStore((state) => state.logout);
+    const router = useRouter();
+    const queryClient = useQueryClient();
+
+
+
     const handleOk = () => {
         closeDuplicateLoginModal();
-        void logout();
+        logout();
+        queryClient.clear();
+        router.push('/');
     };
 
     return (

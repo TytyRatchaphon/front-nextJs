@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { navigateSafely } from "@/utils/navigationUtils";
 import { useAuthStore } from "@/stores/authStore";
 import { parseJwtToken } from "@/utils/jwtParser";
+import Cookies from "js-cookie";
 
 import "swiper/css";
 import "swiper/css/pagination";
@@ -100,7 +101,7 @@ const DailyPromoPopup: React.FC = () => {
     const raw = typeof rawUrl === "string" ? rawUrl.trim() : "";
     if (!raw || raw === "#") return rawUrl;
 
-    const authToken = parseJwtToken(token);
+    const authToken = parseJwtToken(token) || parseJwtToken(Cookies.get("token"));
     if (!authToken) return rawUrl;
 
     if (!(raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("//"))) {

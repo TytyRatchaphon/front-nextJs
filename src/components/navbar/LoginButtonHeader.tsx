@@ -9,7 +9,6 @@ import type { FormProps } from 'antd';
 import Image from 'next/image';
 import { useMutation } from '@tanstack/react-query';
 import apiClient from '@/services/apiClient';
-import { completeProviderSession, PUBLIC_AUTH_REQUEST_CONFIG } from '@/features/auth/providerSession';
 import type { ApiResponse } from '@/types/api';
 import { useAuthStore, UserData } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
@@ -20,6 +19,8 @@ import LoginFacebook from '../social/LoginFacebook';
 import LoginGoogle from '../social/LoginGoogle';
 import LoginLine from '../social/LoginLine';
 import LoginApple from '../social/LoginApple';
+import DuplicateLoginModal from '@/components/auth/DuplicateLoginModal';
+import BlockedUserModal from '@/components/auth/BlockedUserModal';
 import PolicyModal from '@/components/modal/PolicyModal';
 
 type LoginFieldType = {
@@ -131,9 +132,7 @@ const LoginButtonHeader: React.FC = () => {
       password: credentials.password
     };
     // Debug log
-    const response = await apiClient.post<ApiResponse<LoginResponse>>(
-      '/login', apiPayload, PUBLIC_AUTH_REQUEST_CONFIG,
-    );
+    const response = await apiClient.post<ApiResponse<LoginResponse>>('/login', apiPayload);
     return response.data;
   };
 
@@ -143,9 +142,7 @@ const LoginButtonHeader: React.FC = () => {
       email: userData.email,
       password: userData.password  // ใช้ password ตรงๆ ตามที่ API ต้องการ
     };
-    const response = await apiClient.post<ApiResponse<RegisterResponse>>(
-      '/signup', apiPayload, PUBLIC_AUTH_REQUEST_CONFIG,
-    );
+    const response = await apiClient.post<ApiResponse<RegisterResponse>>('/signup', apiPayload);
     return response.data;
   };
 
@@ -153,15 +150,24 @@ const LoginButtonHeader: React.FC = () => {
     const apiPayload = {
       email: data.email
     };
-    const response = await apiClient.post<ApiResponse<any>>(
-      '/forgotpassword', apiPayload, PUBLIC_AUTH_REQUEST_CONFIG,
-    );
+    const response = await apiClient.post<ApiResponse<any>>('/forgotpassword', apiPayload);
     return response.data;
   };
 
   const loginMutation = useMutation({
     mutationFn: loginUser,
-    onSuccess: async (responseData, variables) => {
+    onSuccess: (responseData, variables) => {
+
+      // ---------------------------------------------------------
+      // 🟢 แก้ไข: เปลี่ยนจาก message เป็น notification พร้อมไอคอน
+      // ---------------------------------------------------------
+      api.success({
+        message: 'เข้าสู่ระบบสำเร็จ!',
+        placement: 'topRight',
+        duration: 3,
+        // สีเขียว Success
+      });
+      // ---------------------------------------------------------
 
       // API ส่ง token มาเป็น string ใน data field โดยตรง
       if (responseData.data) {
@@ -216,18 +222,11 @@ const LoginButtonHeader: React.FC = () => {
               freecoin: decoded.freecoin
             };
 
-            await completeProviderSession(login, userData, token, 'EMAIL');
+            login(userData, token);
 
             logActivity('login', 'user', '', { method: 'email', email: userData.email });
 
-            api.success({
-              message: 'เข้าสู่ระบบสำเร็จ!',
-              placement: 'topRight',
-              duration: 3,
-            });
-
             setLoginFormData(null);
-            handleCancel();
           } catch {
             api.error({
               message: 'ไม่สามารถอ่านข้อมูลจาก Token ได้',
@@ -240,6 +239,8 @@ const LoginButtonHeader: React.FC = () => {
         }
       } else {
       }
+
+      handleCancel();
     },
     onError: (error: any) => {
       const errorMessage = error.response?.data?.message || error.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
@@ -255,7 +256,7 @@ const LoginButtonHeader: React.FC = () => {
 
   const registerMutation = useMutation({
     mutationFn: registerUser,
-    onSuccess: async (responseData) => {
+    onSuccess: (responseData) => {
       api.success({
         message: 'สมัครสมาชิกสำเร็จ!',
         description: 'สมัครสมาชิกเรียบร้อยแล้ว',
@@ -313,7 +314,7 @@ const LoginButtonHeader: React.FC = () => {
               freecoin: decoded.freecoin
             };
 
-            await completeProviderSession(login, userData, token, 'REGISTER');
+            login(userData, token);
 
             logActivity('register', 'user', '', { method: 'email', email: userData.email });
 
@@ -733,6 +734,8 @@ const LoginButtonHeader: React.FC = () => {
           )}
         </div>
       </Modal>
+      <DuplicateLoginModal />
+      <BlockedUserModal />
       <PolicyModal 
         open={policyModalOpen} 
         onCancel={() => setPolicyModalOpen(false)} 

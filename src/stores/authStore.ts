@@ -1,16 +1,26 @@
 import { create } from 'zustand'
-import { decodeAndMapUserFromToken } from '@/utils/jwtParser';
+import { parseJwtToken, decodeAndMapUserFromToken } from '@/utils/jwtParser';
 import {
   clearAuthTokenCookies,
   clearLegacyLocalAuthStorage,
   getAuthSession,
+  getAuthTokenCookie,
   setAuthTokenCookie,
 } from '@/services/authPersistence';
-import {
-  createAuthSessionLifecycle,
-  type AuthSessionErrorCode,
-  type AuthSessionStatus,
-} from '@/features/auth/authSessionLifecycle';
+
+const LOGOUT_FLAG = 'auth_logout_pending';
+
+const setLogoutFlag = () => {
+  try { sessionStorage.setItem(LOGOUT_FLAG, '1'); } catch {}
+};
+
+const clearLogoutFlag = () => {
+  try { sessionStorage.removeItem(LOGOUT_FLAG); } catch {}
+};
+
+const hasLogoutFlag = () => {
+  try { return sessionStorage.getItem(LOGOUT_FLAG) === '1'; } catch { return false; }
+};
 
 // ✅ อัปเดต Interface ให้ครบถ้วนตามที่ใช้จริงใน Sprofile และ Token
 export interface UserData {
@@ -68,76 +78,37 @@ export interface AuthState {
   token: string | null;
   isLoggedIn: boolean;
   hasMounted: boolean;
-  status: AuthSessionStatus;
-  error: AuthSessionErrorCode | null;
 
   // Actions
-  login: (userData: UserData, token: string) => Promise<boolean>;
-  logout: (options?: { navigate?: boolean }) => Promise<void>;
+  login: (userData: UserData, token: string) => void;
+  logout: () => Promise<void>;
   setMounted: () => Promise<void>;
-  updateToken: (newToken: string) => Promise<boolean>;
-  refreshSession: (loadToken: (currentToken: string) => Promise<string | null>) => Promise<boolean>;
+  updateToken: (newToken: string) => Promise<void>;
   updateUserBalance: (updates: Partial<UserData>) => void;
 }
 
-export const createAuthStore = () => create<AuthState>()(
-    (set, get) => {
-      const lifecycle = createAuthSessionLifecycle<UserData>({
-        persistence: {
-          read: async () => (await getAuthSession())?.token ?? null,
-          write: setAuthTokenCookie,
-          clear: clearAuthTokenCookies,
-        },
-        mapUser: (token, fallback) => decodeAndMapUserFromToken(token, fallback ?? {
-          fullname: '',
-          email: '',
-          role: 'user',
-        }),
-      });
-      let logoutNavigationPromise: Promise<void> | null = null;
-
-      lifecycle.subscribe((session) => {
-        set({
-          user: session.user,
-          token: session.token,
-          isLoggedIn: session.status === 'authenticated' || session.status === 'refreshing',
-          hasMounted: session.hasHydrated,
-          status: session.status,
-          error: session.error,
-        });
-      });
-
-      return {
+export const useAuthStore = create<AuthState>()(
+    (set, get) => ({
       user: null,
       token: null,
       isLoggedIn: false,
       hasMounted: false,
-      status: 'guest',
-      error: null,
 
       // Actions
-      login: async (userData: UserData, token: string) => {
+      login: (userData: UserData, token: string) => {
         clearLegacyLocalAuthStorage();
-        return lifecycle.completeLogin(userData, token);
+        set({ user: userData, token: token, isLoggedIn: true });
+
+        // Immediately refine data from token to ensure user_id is correct
+        get().updateToken(token);
       },
 
-      logout: async (options) => {
-        const shouldNavigate = options?.navigate ?? true;
-        if (logoutNavigationPromise) {
-          await logoutNavigationPromise;
-          if (shouldNavigate && typeof window !== 'undefined') window.location.href = '/';
-          return;
-        }
-        if (lifecycle.getState().status === 'guest' && lifecycle.getState().hasHydrated) {
-          if (shouldNavigate && typeof window !== 'undefined') window.location.href = '/';
-          return;
-        }
+      logout: async () => {
+        setLogoutFlag();
         clearLegacyLocalAuthStorage();
-        logoutNavigationPromise = lifecycle.logout().finally(() => {
-          logoutNavigationPromise = null;
-        });
-        await logoutNavigationPromise;
-        if (shouldNavigate && typeof window !== 'undefined') window.location.href = '/';
+        await clearAuthTokenCookies();
+        set({ user: null, token: null, isLoggedIn: false });
+        window.location.href = '/';
       },
 
       updateUserBalance: (updates: Partial<UserData>) => {
@@ -149,22 +120,77 @@ export const createAuthStore = () => create<AuthState>()(
       },
 
       updateToken: async (newToken: string) => {
-        clearLegacyLocalAuthStorage();
-        return lifecycle.applyCredential(newToken);
-      },
+        const cleaned = parseJwtToken(newToken);
+        if (!cleaned) return;
 
-      refreshSession: (loadToken) => {
         clearLegacyLocalAuthStorage();
-        return lifecycle.refresh(loadToken);
+        set({ token: cleaned, isLoggedIn: true });
+        const cookieWrite = setAuthTokenCookie(cleaned);
+
+        try {
+          const currentUser = get().user;
+          // If no current user, initialize a fresh one
+          const baseUser = currentUser || {
+             fullname: '',
+             email: '',
+             role: 'user', 
+          } as UserData;
+
+          const updatedUser = decodeAndMapUserFromToken(cleaned, baseUser);
+          if (updatedUser) {
+             set({ user: updatedUser });
+          }
+        } catch (error) {
+          console.error("Token update logic failed", error);
+        }
+
+        await cookieWrite;
       },
 
       setMounted: async () => {
         clearLegacyLocalAuthStorage();
 
-        await lifecycle.hydrate();
-      },
-      };
-    }
-);
+        // If logout was just performed, skip auto-recovery from cookies/session.
+        if (hasLogoutFlag()) {
+          clearLogoutFlag();
+          set({ hasMounted: true });
+          return;
+        }
 
-export const useAuthStore = createAuthStore();
+        const state = get();
+
+        if (state.user || state.token || state.isLoggedIn) {
+          set({ hasMounted: true });
+          return;
+        }
+
+        // 1) Try client-readable cookie first (fast, synchronous read)
+        const cookieToken = getAuthTokenCookie();
+        if (cookieToken) {
+          try {
+            await get().updateToken(cookieToken);
+          } catch (error) {
+            console.error('[authStore] setMounted: cookie token update failed', error);
+          } finally {
+            set({ hasMounted: true });
+          }
+          return;
+        }
+
+        // 2) Fall back to httpOnly session cookie via API
+        try {
+          const session = await getAuthSession();
+          if (session?.authenticated && session.token) {
+            const latestState = get();
+            if (!latestState.user && !latestState.token && !latestState.isLoggedIn) {
+              await get().updateToken(session.token);
+            }
+          }
+        } catch (error) {
+          console.error('[authStore] setMounted: session check failed', error);
+        } finally {
+          set({ hasMounted: true });
+        }
+      }
+    })
+)

@@ -6,7 +6,6 @@ import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import apiClient from '@/services/apiClient';
 import { useLogger } from '@/hooks/useLogger';
-import { completeProviderSession, PUBLIC_AUTH_REQUEST_CONFIG } from '@/features/auth/providerSession';
 
 interface UserData {
   fullname?: string;
@@ -22,7 +21,7 @@ interface UserData {
 const FacebookCallbackContent = () => {
   const router = useRouter();
   const { notification } = App.useApp();
-  const { login } = useAuthStore();
+  const { login, updateToken } = useAuthStore();
   const { closeLoginModal } = useUIStore();
   const { log: logActivity } = useLogger();
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
@@ -50,9 +49,6 @@ const FacebookCallbackContent = () => {
         
         const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
         const errorParam = hashParams.get('error') || searchParams.get('error');
-        if (accessToken || errorParam) {
-          window.history.replaceState(null, '', window.location.pathname);
-        }
 
         if (errorParam) {
           setStatus('error');
@@ -80,7 +76,7 @@ const FacebookCallbackContent = () => {
         // ทำ login ใน callback page เลย
         await processLogin(accessToken);
       } catch (error: any) {
-        console.error('[FACEBOOK_CALLBACK] Login failed');
+        console.error('[FACEBOOK_CALLBACK] Login failed:', error);
         setStatus('error');
         notification.error({
           message: 'เข้าสู่ระบบไม่สำเร็จ',
@@ -94,7 +90,7 @@ const FacebookCallbackContent = () => {
     const processLogin = async (accessToken: string) => {
       const response = await apiClient.post(`${API_BASE_URL}/login/facebook`, {
         accessToken,
-      }, PUBLIC_AUTH_REQUEST_CONFIG);
+      });
 
       if (response.data && response.data.data) {
         const userData = response.data.data as UserData | string;
@@ -126,7 +122,8 @@ const FacebookCallbackContent = () => {
 
         if (token) {
           setCookie('closePopupPolicy', '', 365);
-          await completeProviderSession(login, userInfo, token, 'FACEBOOK');
+          login(userInfo, token);
+          await updateToken(token);
           logActivity('login', 'user', userInfo.userId || '', { method: 'facebook' });
 
           setStatus('success');
@@ -146,7 +143,7 @@ const FacebookCallbackContent = () => {
     };
 
     handleCallback();
-  }, [API_BASE_URL, closeLoginModal, logActivity, login, notification, router]);
+  }, [API_BASE_URL, closeLoginModal, logActivity, login, notification, router, updateToken]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white">

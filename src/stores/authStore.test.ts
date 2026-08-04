@@ -19,8 +19,6 @@ vi.mock('js-cookie', () => ({
 
 vi.mock('@/utils/jwtParser', () => ({
   parseJwtToken: vi.fn((t: string) => t || undefined),
-  validateJwtToken: vi.fn((t: string) => t || null),
-  getJwtIdentity: vi.fn(() => '42'),
   decodeAndMapUserFromToken: vi.fn((_token: string, base: any) => ({
     ...base,
     user_id: 42,
@@ -62,14 +60,7 @@ Object.defineProperty(globalThis, 'fetch', {
   writable: true,
 })
 
-const sessionStorageMock = {
-  getItem: vi.fn(() => null),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-}
-Object.defineProperty(globalThis, 'sessionStorage', { value: sessionStorageMock })
-
-import { createAuthStore } from '@/stores/authStore'
+import { useAuthStore } from '@/stores/authStore'
 import type { UserData } from '@/stores/authStore'
 
 const makeUser = (overrides: Partial<UserData> = {}): UserData => ({
@@ -81,11 +72,14 @@ const makeUser = (overrides: Partial<UserData> = {}): UserData => ({
 })
 
 describe('authStore', () => {
-  let authStore: ReturnType<typeof createAuthStore>
-
   beforeEach(() => {
-    authStore = createAuthStore()
-    window.location.href = ''
+    // Reset store to initial state
+    useAuthStore.setState({
+      user: null,
+      token: null,
+      isLoggedIn: false,
+      hasMounted: false,
+    })
     localStorageMock.clear()
     vi.clearAllMocks()
     mockFetch.mockResolvedValue({
@@ -98,7 +92,7 @@ describe('authStore', () => {
   // Initial state
   // -------------------------------------------------------------------
   it('has correct initial state', () => {
-    const state = authStore.getState()
+    const state = useAuthStore.getState()
 
     expect(state.user).toBeNull()
     expect(state.token).toBeNull()
@@ -108,20 +102,20 @@ describe('authStore', () => {
   // -------------------------------------------------------------------
   // login
   // -------------------------------------------------------------------
-  it('login sets user, token, and isLoggedIn after persistence succeeds', async () => {
+  it('login sets user, token, and isLoggedIn', () => {
     const user = makeUser()
-    await authStore.getState().login(user, 'test-token')
+    useAuthStore.getState().login(user, 'test-token')
 
-    const state = authStore.getState()
+    const state = useAuthStore.getState()
     expect(state.isLoggedIn).toBe(true)
     expect(state.token).toBeTruthy()
     // user should be set (updateToken may decode and overwrite)
     expect(state.user).toBeTruthy()
   })
 
-  it('login clears legacy localStorage and stores token through the server session route once', async () => {
+  it('login clears legacy localStorage and stores token through the server session route', () => {
     const user = makeUser()
-    await authStore.getState().login(user, 'persist-token')
+    useAuthStore.getState().login(user, 'persist-token')
 
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('authToken')
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('userData')
@@ -135,19 +129,6 @@ describe('authStore', () => {
         body: JSON.stringify({ token: 'persist-token' }),
       }),
     )
-    expect(mockFetch).toHaveBeenCalledTimes(1)
-  })
-
-  it('keeps the user unauthenticated when the browser session rejects the credential', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false })
-
-    await expect(authStore.getState().login(makeUser(), 'rejected-token')).resolves.toBe(false)
-    expect(authStore.getState()).toMatchObject({
-      status: 'guest',
-      isLoggedIn: false,
-      user: null,
-      token: null,
-    })
   })
 
   // -------------------------------------------------------------------
@@ -155,18 +136,18 @@ describe('authStore', () => {
   // -------------------------------------------------------------------
   it('logout clears user, token, and isLoggedIn', async () => {
     const user = makeUser()
-    await authStore.getState().login(user, 'token')
-    await authStore.getState().logout()
+    useAuthStore.getState().login(user, 'token')
+    await useAuthStore.getState().logout()
 
-    const state = authStore.getState()
+    const state = useAuthStore.getState()
     expect(state.user).toBeNull()
     expect(state.token).toBeNull()
     expect(state.isLoggedIn).toBe(false)
   })
 
   it('logout removes from localStorage and cookies', async () => {
-    await authStore.getState().login(makeUser(), 'token')
-    await authStore.getState().logout()
+    useAuthStore.getState().login(makeUser(), 'token')
+    await useAuthStore.getState().logout()
 
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('authToken')
     expect(localStorageMock.removeItem).toHaveBeenCalledWith('userData')
@@ -181,65 +162,65 @@ describe('authStore', () => {
     )
   })
 
-  it('forced logout clears private state immediately without competing navigation', async () => {
-    await authStore.getState().login(makeUser(), 'token')
-    const logout = authStore.getState().logout({ navigate: false })
-
-    expect(authStore.getState()).toMatchObject({
-      status: 'logging_out',
-      isLoggedIn: false,
-      user: null,
-      token: null,
-    })
-    await logout
-    expect(window.location.href).toBe('')
-  })
-
   // -------------------------------------------------------------------
   // updateUserBalance
   // -------------------------------------------------------------------
   it('updateUserBalance merges partial updates', () => {
-    authStore.setState({ user: makeUser({ coin: 100 }), isLoggedIn: true })
-    authStore.getState().updateUserBalance({ coin: 200, freecoin: 50 })
+    useAuthStore.setState({ user: makeUser({ coin: 100 }), isLoggedIn: true })
+    useAuthStore.getState().updateUserBalance({ coin: 200, freecoin: 50 })
 
-    const user = authStore.getState().user!
+    const user = useAuthStore.getState().user!
     expect(user.coin).toBe(200)
     expect(user.freecoin).toBe(50)
     expect(user.fullname).toBe('Test User') // unchanged field preserved
   })
 
   it('updateUserBalance does nothing when not logged in', () => {
-    authStore.getState().updateUserBalance({ coin: 999 })
+    useAuthStore.getState().updateUserBalance({ coin: 999 })
 
-    expect(authStore.getState().user).toBeNull()
+    expect(useAuthStore.getState().user).toBeNull()
   })
 
   // -------------------------------------------------------------------
   // updateToken
   // -------------------------------------------------------------------
-  it('updateToken sets a same-identity replacement token and decodes user', async () => {
-    await authStore.getState().login(makeUser(), 'old-jwt-token')
-    await authStore.getState().updateToken('new-jwt-token')
+  it('updateToken sets new token and decodes user', () => {
+    useAuthStore.setState({ user: makeUser(), isLoggedIn: true })
+    useAuthStore.getState().updateToken('new-jwt-token')
 
-    const state = authStore.getState()
+    const state = useAuthStore.getState()
     expect(state.token).toBe('new-jwt-token')
     expect(state.isLoggedIn).toBe(true)
   })
 
-  it('updateToken does nothing for empty token', async () => {
-    await authStore.getState().login(makeUser(), 'old')
-    await authStore.getState().updateToken('')
+  it('updateToken does nothing for empty token', () => {
+    useAuthStore.setState({ user: makeUser(), token: 'old', isLoggedIn: true })
+    useAuthStore.getState().updateToken('')
 
-    expect(authStore.getState().token).toBe('old')
+    expect(useAuthStore.getState().token).toBe('old')
   })
 
   // -------------------------------------------------------------------
   // setMounted
   // -------------------------------------------------------------------
   it('setMounted sets hasMounted to true', async () => {
-    await authStore.getState().setMounted()
+    useAuthStore.getState().setMounted()
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
-    expect(authStore.getState().hasMounted).toBe(true)
+    expect(useAuthStore.getState().hasMounted).toBe(true)
+  })
+
+  it('setMounted recovers from token cookie when state is empty', async () => {
+    mockCookieGet.mockImplementation((key: string) => (key === 'token' ? 'backup-token' : undefined))
+
+    useAuthStore.setState({ user: null, token: null, isLoggedIn: false })
+    await useAuthStore.getState().setMounted()
+
+    const state = useAuthStore.getState()
+    expect(state.hasMounted).toBe(true)
+    expect(state.isLoggedIn).toBe(true)
+    expect(state.token).toBe('backup-token')
+    expect(state.user?.fullname).toBe('Decoded User')
   })
 
   it('setMounted recovers from httpOnly server session when legacy cookie is unavailable', async () => {
@@ -249,9 +230,11 @@ describe('authStore', () => {
       json: async () => ({ authenticated: true, token: 'server-session-token' }),
     })
 
-    await authStore.getState().setMounted()
+    useAuthStore.setState({ user: null, token: null, isLoggedIn: false, hasMounted: false })
+    useAuthStore.getState().setMounted()
+    await new Promise((resolve) => setTimeout(resolve, 0))
 
-    const state = authStore.getState()
+    const state = useAuthStore.getState()
     expect(mockFetch).toHaveBeenCalledWith(
       '/api/auth/session',
       expect.objectContaining({ method: 'GET', credentials: 'same-origin' }),

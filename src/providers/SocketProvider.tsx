@@ -3,6 +3,8 @@ import * as React from "react";
 import { createContext, useContext, useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '@/stores/authStore';
+import Cookies from 'js-cookie';
+import { parseJwtToken } from '@/utils/jwtParser';
 
 const isSessionIdUnknownError = (message: string | undefined) =>
   typeof message === 'string' && message.toLowerCase().includes('session id unknown');
@@ -89,9 +91,13 @@ export default function SocketProvider({
       return;
     }
 
-    // The lifecycle store is the only runtime credential source.
+    // Retrieve token from store or cookie fallback
     let token = authToken;
     let currentUser = user;
+
+    if (!token && typeof window !== 'undefined') {
+      token = parseJwtToken(Cookies.get('token')) || null;
+    }
     if (token) {
          token = token.replace(/^Bearer\s+/i, '').trim();
     } 
@@ -127,6 +133,9 @@ export default function SocketProvider({
       auth: (cb) => {
         // ⚡ Dynamic Auth: Fetch latest token on every connection/reconnection attempt
         let latestToken = useAuthStore.getState().token;
+        if (!latestToken) {
+            latestToken = parseJwtToken(Cookies.get('token')) || null;
+        }
         if (latestToken) {
           latestToken = latestToken.replace(/^Bearer\s+/i, '').trim();
         }
@@ -242,12 +251,19 @@ export default function SocketProvider({
     const handleForceRefresh = async () => {
         // console.log("📢 Received force_refresh:", data);
         try {
-            const refreshToken = (await import('@/services/apiServices')).refreshToken;
-            await useAuthStore.getState().refreshSession(async (currentToken) => {
-              const result = await refreshToken(currentToken);
-              const nextToken = result?.data?.token || result?.token || result?.data;
-              return typeof nextToken === 'string' ? nextToken : null;
-            });
+            let currentToken = useAuthStore.getState().token;
+            if (!currentToken) currentToken = parseJwtToken(Cookies.get('token')) || null;
+
+            if (currentToken) {
+                 const refreshToken = (await import('@/services/apiServices')).refreshToken;
+                 const newTokenResult = await refreshToken(currentToken);
+                 const newToken = newTokenResult?.data?.token || newTokenResult?.token || newTokenResult?.data;
+
+                 if (typeof newToken === 'string') {
+                     useAuthStore.getState().updateToken(newToken);
+                     // console.log("✅ Token refreshed successfully via socket event");
+                 }
+            }
         } catch (error) {
             console.error("❌ Failed to refresh token via socket:", error);
         }
@@ -337,7 +353,7 @@ export default function SocketProvider({
         if (socket.connected) return;
 
         const latestUser = useAuthStore.getState().user as any;
-        const latestToken = useAuthStore.getState().token;
+        const latestToken = useAuthStore.getState().token || parseJwtToken(Cookies.get('token')) || null;
         const latestUserId = latestUser?.user_id || latestUser?.id || latestUser?.userId;
         if (!latestToken || !latestUserId) return;
 

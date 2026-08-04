@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockAuthGetState } = vi.hoisted(() => ({
-  mockAuthGetState: vi.fn<() => { token: string | null }>(() => ({ token: null })),
+const { mockCookieGet } = vi.hoisted(() => ({
+  mockCookieGet: vi.fn(),
 }));
 
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: { getState: mockAuthGetState },
+vi.mock('js-cookie', () => ({
+  default: {
+    get: mockCookieGet,
+  },
 }));
 
 import secureProxyClient from './secureProxyClient';
@@ -39,7 +41,7 @@ describe('secureProxyClient request interceptor', () => {
 
   it('injects normalized token into Authorization header', () => {
     (globalThis as any).window = { location: { protocol: 'https:' } };
-    mockAuthGetState.mockReturnValue({ token: `Bearer "abc123"` });
+    mockCookieGet.mockReturnValue(`Bearer "abc123"`);
 
     const interceptor = getRequestInterceptor();
     const config = { headers: {} as Record<string, string> };
@@ -50,7 +52,7 @@ describe('secureProxyClient request interceptor', () => {
 
   it('does not override existing Authorization header', () => {
     (globalThis as any).window = { location: { protocol: 'https:' } };
-    mockAuthGetState.mockReturnValue({ token: 'Bearer new-token' });
+    mockCookieGet.mockReturnValue('Bearer new-token');
 
     const interceptor = getRequestInterceptor();
     const config = { headers: { Authorization: 'existing-token' } as Record<string, string> };
@@ -59,9 +61,9 @@ describe('secureProxyClient request interceptor', () => {
     expect(result.headers.Authorization).toBe('existing-token');
   });
 
-  it('keeps config unchanged when lifecycle token is empty', () => {
+  it('keeps config unchanged when cookie token is empty', () => {
     (globalThis as any).window = { location: { protocol: 'https:' } };
-    mockAuthGetState.mockReturnValue({ token: null });
+    mockCookieGet.mockReturnValue(undefined);
 
     const interceptor = getRequestInterceptor();
     const config = { headers: {} as Record<string, string> };
