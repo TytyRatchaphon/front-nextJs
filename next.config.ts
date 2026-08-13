@@ -7,6 +7,7 @@ const noStoreHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   output: 'standalone',
   poweredByHeader: false,
   allowedDevOrigins: ['192.168.220.172', '192.168.220.172:4005', '192.168.220.172:3009', '*', '192.168.250.73:4005'],

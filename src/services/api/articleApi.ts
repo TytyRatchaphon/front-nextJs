@@ -1,6 +1,8 @@
 
-import apiClient from "../apiClient";
 import type { ArticleResponse } from "@/types/api";
+import { logApiError } from "@/utils/apiErrorLogger";
+
+import apiClient from "../apiClient";
 import { articleSchemas } from "./apiResponseSchemas";
 import { validateApiPayload } from "./apiResponseValidation";
 
@@ -51,12 +53,20 @@ export interface LatestArticlesResponse {
   };
 }
 
+export const fetchLatestArticlesPage = async (
+  page: number = 1,
+  limit: number = 8,
+): Promise<{ list: LatestArticle[]; pagination: ArticlePagination }> => {
+  const response = await apiClient.get<LatestArticlesResponse>(`/articles?limit=${limit}&page=${page}`);
+  const payload = validateApiPayload(articleSchemas.latest, response.data, "/articles");
+  return payload.data as unknown as { list: LatestArticle[]; pagination: ArticlePagination };
+};
+
 export const fetchLatestArticles = async (page: number = 1, limit: number = 8): Promise<{ list: LatestArticle[]; pagination: ArticlePagination }> => {
   try {
-    const response = await apiClient.get<LatestArticlesResponse>(`/articles?limit=${limit}&page=${page}`);
-    const payload = validateApiPayload(articleSchemas.latest, response.data, "/articles");
-    return payload.data as unknown as { list: LatestArticle[]; pagination: ArticlePagination };
-  } catch {
+    return await fetchLatestArticlesPage(page, limit);
+  } catch (error) {
+    logApiError(`fetchLatestArticles(page=${page}, limit=${limit})`, error);
     return { list: [], pagination: { page: 1, limit, total: 0, totalPages: 0, nextPage: null, prevPage: null } };
   }
 };

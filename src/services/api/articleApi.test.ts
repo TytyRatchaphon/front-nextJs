@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { logApiError } from "@/utils/apiErrorLogger";
+
 import apiClient from "../apiClient";
 import {
   fetchArticleDetail,
   fetchLatestArticles,
+  fetchLatestArticlesPage,
   fetchPopularArticles,
 } from "./articleApi";
 
@@ -11,6 +14,10 @@ vi.mock("../apiClient", () => ({
   default: {
     get: vi.fn(),
   },
+}));
+
+vi.mock("@/utils/apiErrorLogger", () => ({
+  logApiError: vi.fn(),
 }));
 
 const mockedApiClient = apiClient as unknown as {
@@ -41,6 +48,14 @@ describe("articleApi", () => {
   });
 
   describe("fetchLatestArticles", () => {
+    it("exposes a strict page fetcher for complete inventory consumers", async () => {
+      const error = new Error("page unavailable");
+      mockedApiClient.get.mockRejectedValueOnce(error);
+
+      await expect(fetchLatestArticlesPage(2, 100)).rejects.toBe(error);
+      expect(logApiError).not.toHaveBeenCalled();
+    });
+
     it("maps payload and fallback shape correctly", async () => {
       mockedApiClient.get.mockResolvedValueOnce({
         data: {
@@ -85,7 +100,8 @@ describe("articleApi", () => {
     });
 
     it("returns fallback shape when request throws", async () => {
-      mockedApiClient.get.mockRejectedValueOnce(new Error("network"));
+      const error = new Error("network");
+      mockedApiClient.get.mockRejectedValueOnce(error);
       await expect(fetchLatestArticles(4, 9)).resolves.toEqual({
         list: [],
         pagination: {
@@ -97,6 +113,10 @@ describe("articleApi", () => {
           prevPage: null,
         },
       });
+      expect(logApiError).toHaveBeenCalledWith(
+        "fetchLatestArticles(page=4, limit=9)",
+        error,
+      );
     });
   });
 
