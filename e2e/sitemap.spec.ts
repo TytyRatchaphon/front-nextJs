@@ -12,6 +12,17 @@ const setDynamicFailure = async (
   expect(response.status()).toBe(200);
 };
 
+const setFailedBookPage = async (
+  request: APIRequestContext,
+  page?: number,
+) => {
+  const apiPort = process.env.SITEMAP_API_PORT || "3101";
+  const response = await request.post(
+    `http://127.0.0.1:${apiPort}/__control/book-page-failure?page=${page ?? 0}`,
+  );
+  expect(response.status()).toBe(200);
+};
+
 const parseSitemap = (page: Page, xml: string) => page.evaluate((source) => {
   const document = new DOMParser().parseFromString(source, "application/xml");
   if (document.querySelector("parsererror")) {
@@ -19,7 +30,10 @@ const parseSitemap = (page: Page, xml: string) => page.evaluate((source) => {
   }
 
   return {
-    locations: [...document.querySelectorAll("url > loc")].map((node) => node.textContent || ""),
+    entries: [...document.querySelectorAll("url")].map((node) => ({
+      location: node.querySelector("loc")?.textContent || "",
+      lastModified: node.querySelector("lastmod")?.textContent,
+    })),
     lastModified: [...document.querySelectorAll("url > lastmod")].map((node) => node.textContent || ""),
     hasPriority: document.querySelector("priority") !== null,
     hasChangeFrequency: document.querySelector("changefreq") !== null,
@@ -35,13 +49,16 @@ test("sitemap remains valid with static URLs during a cold dynamic-source failur
   expect(response.status()).toBe(200);
   expect(response.headers()["content-type"]).toContain("application/xml");
 
-  const { locations } = await parseSitemap(page, await response.text());
+  const { entries } = await parseSitemap(page, await response.text());
+  const locations = entries.map((entry) => entry.location);
   expect(locations).toEqual(expect.arrayContaining([
     "https://enjoybook.co",
     "https://enjoybook.co/faq",
   ]));
   expect(locations).not.toContain("https://enjoybook.co/article/101");
   expect(locations).not.toContain("https://enjoybook.co/cat/7");
+  expect(locations).not.toContain("https://enjoybook.co/book/201");
+  expect(locations).not.toContain("https://enjoybook.co/wprofile/31");
 
   const diagnostic = (await readFile(diagnosticFile, "utf8")).slice(existingDiagnostic.length);
   expect(diagnostic).toContain(
@@ -50,10 +67,35 @@ test("sitemap remains valid with static URLs during a cold dynamic-source failur
   expect(diagnostic).toContain(
     "[sitemap] Category inventory unavailable; serving static URLs only: Category inventory returned no URLs",
   );
+  expect(diagnostic).toContain(
+    "[sitemap] Published-book inventory unavailable; serving static URLs only: Request failed with status code 503",
+  );
+});
+
+test("a later published-book page failure cannot expose or cache a partial catalog", async ({ request, page }) => {
+  const diagnosticFile = process.env.SITEMAP_DIAGNOSTIC_FILE!;
+  const existingDiagnostic = await readFile(diagnosticFile, "utf8").catch(() => "");
+  await setDynamicFailure(request, false);
+  await setFailedBookPage(request, 2);
+
+  const response = await request.get("/sitemap.xml?book-page-2-failure=true");
+  expect(response.status()).toBe(200);
+
+  const { entries } = await parseSitemap(page, await response.text());
+  const locations = entries.map((entry) => entry.location);
+  expect(locations).toContain("https://enjoybook.co/article/101");
+  expect(locations).not.toContain("https://enjoybook.co/book/201");
+  expect(locations).not.toContain("https://enjoybook.co/wprofile/31");
+
+  const diagnostic = (await readFile(diagnosticFile, "utf8")).slice(existingDiagnostic.length);
+  expect(diagnostic).toContain(
+    "[sitemap] Published-book inventory unavailable; serving static URLs only: Request failed with status code 503",
+  );
 });
 
 test("robots leads to the complete canonical root sitemap", async ({ request, page }) => {
   await setDynamicFailure(request, false);
+  await setFailedBookPage(request);
 
   const robotsResponse = await request.get("/robots.txt");
   expect(robotsResponse.status()).toBe(200);
@@ -67,7 +109,7 @@ test("robots leads to the complete canonical root sitemap", async ({ request, pa
   expect(sitemapResponse.headers()["content-type"]).toContain("application/xml");
 
   const sitemap = await parseSitemap(page, await sitemapResponse.text());
-  const { locations } = sitemap;
+  const locations = sitemap.entries.map((entry) => entry.location);
 
   expect(locations).toEqual(expect.arrayContaining([
     "https://enjoybook.co",
@@ -77,16 +119,34 @@ test("robots leads to the complete canonical root sitemap", async ({ request, pa
     "https://enjoybook.co/article/102",
     "https://enjoybook.co/cat/7",
     "https://enjoybook.co/cat/8",
+    "https://enjoybook.co/book/201",
+    "https://enjoybook.co/book/202",
+    "https://enjoybook.co/book/205",
+    "https://enjoybook.co/wprofile/31",
+    "https://enjoybook.co/wprofile/32",
   ]));
   expect(locations).not.toContain("https://enjoybook.co/search");
   expect(new Set(locations).size).toBe(locations.length);
   expect(locations.every((location) => location.startsWith("https://enjoybook.co"))).toBe(true);
   expect(locations.length).toBeLessThan(50_000);
+  expect(locations).not.toEqual(expect.arrayContaining([
+    "https://enjoybook.co/book/203",
+    "https://enjoybook.co/book/204",
+    "https://enjoybook.co/book/bad",
+    "https://enjoybook.co/wprofile/33",
+  ]));
 
   expect(sitemap.hasPriority).toBe(false);
   expect(sitemap.hasChangeFrequency).toBe(false);
   expect(sitemap.lastModified).toEqual(expect.arrayContaining([
     "2026-08-01T00:00:00.000Z",
     "2026-08-02T00:00:00.000Z",
+    "2026-07-01T00:00:00.000Z",
   ]));
+  expect(sitemap.entries.find((entry) => entry.location === "https://enjoybook.co/book/201")?.lastModified)
+    .toBe("2026-07-01T00:00:00.000Z");
+  expect(sitemap.entries.find((entry) => entry.location === "https://enjoybook.co/book/202")?.lastModified)
+    .toBeUndefined();
+  expect(locations.filter((location) => location === "https://enjoybook.co/wprofile/31"))
+    .toHaveLength(1);
 });

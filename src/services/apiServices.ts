@@ -36,6 +36,7 @@ export * from './api/rankingApi';
 export * from './api/categoryApi';
 export * from './api/notificationApi';
 export * from './api/searchApi';
+export * from './api/sitemapBookApi';
 export * from './api/faqApi';
 export * from './api/activityApi';
 export * from './api/readingProgressApi';

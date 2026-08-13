@@ -34,6 +34,12 @@ describe('apiServices barrel re-export', () => {
     expect(api.fetchBookPromotions).toBeTypeOf('function')
   })
 
+  // --- sitemapBookApi ---
+  it('exports sitemap book inventory functions', () => {
+    expect(api.fetchPublishedBookInventoryPage).toBeTypeOf('function')
+    expect(api.fetchAllPublishedBookInventory).toBeTypeOf('function')
+  })
+
   // --- bookManageApi ---
   it('exports bookManageApi functions', () => {
     expect(api.fetchBookStats).toBeTypeOf('function')

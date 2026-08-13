@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 
 const PORT = Number(process.env.SITEMAP_API_PORT || 3101);
 let dynamicSourcesFail = false;
+let failedBookPage = null;
 
 const json = (response, payload, status = 200) => {
   response.writeHead(status, { "content-type": "application/json" });
@@ -23,6 +24,20 @@ const articlesByPage = {
   ],
 };
 
+const booksByPage = {
+  1: [
+    { book_id: 201, user_id: 31, status: "publish", update_at: "2026-07-01T00:00:00.000Z" },
+    { book_id: 202, user_id: 31, status: "publish", update_at: "not-a-date" },
+  ],
+  2: [
+    { book_id: 201, user_id: 31, status: "publish", update_at: "2026-07-01T00:00:00.000Z" },
+    { book_id: 203, user_id: 32, status: "private", update_at: "2026-07-03T00:00:00.000Z" },
+    { book_id: "bad", user_id: 33, status: "publish" },
+    { book_id: 204, user_id: 32, status: "publish", is_indexable: false },
+    { book_id: 205, user_id: 32, status: "publish" },
+  ],
+};
+
 const server = createServer((request, response) => {
   const url = new URL(request.url || "/", `http://127.0.0.1:${PORT}`);
 
@@ -34,6 +49,13 @@ const server = createServer((request, response) => {
   if (url.pathname === "/__control/dynamic-failure" && request.method === "POST") {
     dynamicSourcesFail = url.searchParams.get("enabled") === "true";
     json(response, { dynamicSourcesFail });
+    return;
+  }
+
+  if (url.pathname === "/__control/book-page-failure" && request.method === "POST") {
+    const page = Number(url.searchParams.get("page"));
+    failedBookPage = Number.isInteger(page) && page > 0 ? page : null;
+    json(response, { failedBookPage });
     return;
   }
 
@@ -76,6 +98,34 @@ const server = createServer((request, response) => {
         { id: 7, name: "Fantasy", description: "", color: [], img_bg: "", order_by: 1 },
         { id: 8, name: "Romance", description: "", color: [], img_bg: "", order_by: 2 },
       ],
+    });
+    return;
+  }
+
+  if (url.pathname === "/books/new") {
+    if (rejectUnavailableDynamicSource(response)) return;
+
+    const page = Number(url.searchParams.get("page") || 1);
+    const limit = Number(url.searchParams.get("limit") || 100);
+    if (page === failedBookPage) {
+      json(response, { code: 503, status: "unavailable", data: null }, 503);
+      return;
+    }
+    json(response, {
+      code: 200,
+      status: "success",
+      message: "",
+      data: {
+        books: booksByPage[page] || [],
+        pagination: {
+          page,
+          limit,
+          total: 7,
+          totalPages: 2,
+          nextPage: page < 2 ? page + 1 : null,
+          prevPage: page > 1 ? page - 1 : null,
+        },
+      },
     });
     return;
   }
