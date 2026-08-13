@@ -72,3 +72,13 @@ Typical restore order:
 2. Restore `.next/cache`
 3. Run `npm ci`
 4. Run `npm run build`
+
+## Sitemap release verification
+
+Run the public HTTP contract audit before a release against a local/test deployment, and again after deployment against production:
+
+```bash
+npm run audit:sitemap -- --base-url=https://enjoybook.co --full
+```
+
+Replace `--base-url` without changing source code (for example, `http://localhost:3000` or the test deployment URL). Omit `--full` to check the first 25 sitemap entries, or pass `--sample-size=100`. The command exits non-zero for both degraded dynamic coverage and hard sitemap protocol failures, so it can be used as a CI/CD release guard. `SITEMAP_AUDIT_BASE_URL` may be used instead of `--base-url`.
