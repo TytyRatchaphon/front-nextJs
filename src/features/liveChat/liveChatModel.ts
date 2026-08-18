@@ -1,8 +1,36 @@
-import type { LiveChatError, LiveChatMessage } from "./types";
+import type {
+  LiveChatConfig,
+  LiveChatError,
+  LiveChatMediaConfigSpec,
+  LiveChatMessage,
+} from "./types";
 
 const MAX_MESSAGE_LENGTH = 5_000;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const SUPPORTED_IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "gif"]);
+
+export const DEFAULT_LIVE_CHAT_CONFIG: LiveChatConfig = {
+  image: {
+    maxBytes: 10_485_760,
+    allowedMimeTypes: [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+    ],
+    allowedExtensions: ["jpg", "jpeg", "png", "gif", "webp"],
+  },
+  video: {
+    maxBytes: 104_857_600,
+    allowedMimeTypes: [
+      "video/mp4",
+      "video/quicktime",
+      "video/x-m4v",
+      "video/webm",
+    ],
+    allowedExtensions: ["mp4", "mov", "m4v", "webm"],
+  },
+};
 
 export function mergeMessages(
   current: LiveChatMessage[],
@@ -35,6 +63,56 @@ export function validateGif(file: Pick<File, "name" | "size">): string | null {
   const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
   if (extension !== "gif") return "กรุณาเลือกไฟล์ GIF เท่านั้น";
   return validateImage(file);
+}
+
+export function validateLiveChatImage(
+  file: Pick<File, "name" | "size"> & { type?: string },
+  config: LiveChatMediaConfigSpec = DEFAULT_LIVE_CHAT_CONFIG.image,
+): string | null {
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+  const isExtensionAllowed = config.allowedExtensions
+    .map((e) => e.toLowerCase())
+    .includes(extension);
+  const isMimeAllowed =
+    !file.type ||
+    config.allowedMimeTypes
+      .map((m) => m.toLowerCase())
+      .includes(file.type.toLowerCase());
+
+  if (!isExtensionAllowed || !isMimeAllowed) {
+    return `รองรับเฉพาะไฟล์รูปภาพประเภท ${config.allowedExtensions.map((e) => e.toUpperCase()).join(", ")}`;
+  }
+  if (file.size <= 0) return "ไฟล์รูปภาพไม่ถูกต้อง";
+  if (file.size > config.maxBytes) {
+    const maxMb = Math.round(config.maxBytes / (1024 * 1024));
+    return `รูปภาพต้องมีขนาดไม่เกิน ${maxMb} MB`;
+  }
+  return null;
+}
+
+export function validateLiveChatVideo(
+  file: Pick<File, "name" | "size"> & { type?: string },
+  config: LiveChatMediaConfigSpec = DEFAULT_LIVE_CHAT_CONFIG.video,
+): string | null {
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+  const isExtensionAllowed = config.allowedExtensions
+    .map((e) => e.toLowerCase())
+    .includes(extension);
+  const isMimeAllowed =
+    !file.type ||
+    config.allowedMimeTypes
+      .map((m) => m.toLowerCase())
+      .includes(file.type.toLowerCase());
+
+  if (!isExtensionAllowed || !isMimeAllowed) {
+    return `รองรับเฉพาะไฟล์วิดีโอประเภท ${config.allowedExtensions.map((e) => e.toUpperCase()).join(", ")}`;
+  }
+  if (file.size <= 0) return "ไฟล์วิดีโอไม่ถูกต้อง";
+  if (file.size > config.maxBytes) {
+    const maxMb = Math.round(config.maxBytes / (1024 * 1024));
+    return `วิดีโอต้องมีขนาดไม่เกิน ${maxMb} MB`;
+  }
+  return null;
 }
 
 export function validateFeedback(input: {
@@ -78,4 +156,39 @@ export function getLiveChatErrorMessage(error: LiveChatError | null | undefined)
     return `ระบบขัดข้องชั่วคราว กรุณาลองใหม่ (รหัสอ้างอิง: ${error.request_id})`;
   }
   return "ระบบขัดข้องชั่วคราว กรุณาลองใหม่";
+}
+
+export function resolveLiveChatMediaUrl(src: string | undefined | null): string {
+  if (!src) return "";
+  let raw = src.trim();
+  if (!raw) return "";
+
+  if (raw.startsWith("blob:") || raw.startsWith("data:")) return raw;
+
+  // Strip internal LAN IPs or localhost from backend responses
+  if (raw.includes("192.168.") || raw.includes("localhost")) {
+    try {
+      const parsed = new URL(raw.startsWith("http") ? raw : `http://${raw}`);
+      raw = parsed.pathname + parsed.search;
+    } catch {
+      // Keep raw if URL parsing fails
+    }
+  }
+
+  if (raw.startsWith("//")) return `https:${raw}`;
+
+  if (raw.startsWith("http://")) {
+    raw = raw.replace("http://", "https://");
+  }
+
+  if (raw.startsWith("https://")) return raw;
+
+  const baseUrl =
+    process.env.NEXT_PUBLIC_VIDEO_API_BASE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_API_BASE_URL?.trim() ||
+    "https://apiweb.enjoybook.co";
+
+  const cleanBase = baseUrl.replace(/\/+$/, "");
+  const cleanPath = raw.replace(/^\/+/, "");
+  return `${cleanBase}/${cleanPath}`;
 }

@@ -1,6 +1,28 @@
 import { readFile } from "node:fs/promises";
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 
+const writerProfileLocations = [
+  46404, 71792, 68444, 55, 17578, 61815, 46403, 8321, 28094,
+  23208, 23031, 23207, 24208, 17966, 53, 16113, 23206,
+].map((writerId) => `https://enjoybook.co/wprofile/${writerId}`);
+
+const staticLocations = [
+  "https://enjoybook.co",
+  "https://enjoybook.co/faq",
+  "https://enjoybook.co/about-us",
+  "https://enjoybook.co/article",
+  "https://enjoybook.co/campaign",
+  "https://enjoybook.co/ranking",
+  "https://enjoybook.co/how-payment",
+  "https://enjoybook.co/writer-nc-policy",
+  "https://enjoybook.co/events",
+  "https://enjoybook.co/news",
+  "https://enjoybook.co/novel-pack",
+  "https://enjoybook.co/fiction-novel",
+  "https://enjoybook.co/translated-novel",
+  "https://enjoybook.co/book-updates",
+];
+
 const setDynamicFailure = async (
   request: APIRequestContext,
   enabled: boolean,
@@ -51,13 +73,11 @@ test("sitemap remains valid with static URLs during a cold dynamic-source failur
 
   const { entries } = await parseSitemap(page, await response.text());
   const locations = entries.map((entry) => entry.location);
-  expect(locations).toEqual(expect.arrayContaining([
-    "https://enjoybook.co",
-    "https://enjoybook.co/faq",
-  ]));
+  expect(locations.slice(0, staticLocations.length)).toEqual(staticLocations);
   expect(locations).not.toContain("https://enjoybook.co/article/101");
   expect(locations).not.toContain("https://enjoybook.co/cat/7");
   expect(locations).not.toContain("https://enjoybook.co/book/201");
+  expect(locations).toEqual(expect.arrayContaining(writerProfileLocations));
   expect(locations).not.toContain("https://enjoybook.co/wprofile/31");
 
   const diagnostic = (await readFile(diagnosticFile, "utf8")).slice(existingDiagnostic.length);
@@ -85,6 +105,7 @@ test("a later published-book page failure cannot expose or cache a partial catal
   const locations = entries.map((entry) => entry.location);
   expect(locations).toContain("https://enjoybook.co/article/101");
   expect(locations).not.toContain("https://enjoybook.co/book/201");
+  expect(locations).toEqual(expect.arrayContaining(writerProfileLocations));
   expect(locations).not.toContain("https://enjoybook.co/wprofile/31");
 
   const diagnostic = (await readFile(diagnosticFile, "utf8")).slice(existingDiagnostic.length);
@@ -111,10 +132,8 @@ test("robots leads to the complete canonical root sitemap", async ({ request, pa
   const sitemap = await parseSitemap(page, await sitemapResponse.text());
   const locations = sitemap.entries.map((entry) => entry.location);
 
+  expect(locations.slice(0, staticLocations.length)).toEqual(staticLocations);
   expect(locations).toEqual(expect.arrayContaining([
-    "https://enjoybook.co",
-    "https://enjoybook.co/faq",
-    "https://enjoybook.co/about-us",
     "https://enjoybook.co/article/101",
     "https://enjoybook.co/article/102",
     "https://enjoybook.co/cat/7",
@@ -122,10 +141,21 @@ test("robots leads to the complete canonical root sitemap", async ({ request, pa
     "https://enjoybook.co/book/201",
     "https://enjoybook.co/book/202",
     "https://enjoybook.co/book/205",
-    "https://enjoybook.co/wprofile/31",
-    "https://enjoybook.co/wprofile/32",
+    ...writerProfileLocations,
   ]));
-  expect(locations).not.toContain("https://enjoybook.co/search");
+  expect(locations).not.toEqual(expect.arrayContaining([
+    "https://enjoybook.co/search",
+    "https://enjoybook.co/policy-conditions",
+    "https://enjoybook.co/policy-privacy",
+    "https://enjoybook.co/other-policy",
+    "https://enjoybook.co/contact",
+    "https://enjoybook.co/store",
+    "https://enjoybook.co/howto/regis",
+    "https://enjoybook.co/howto/howincome",
+    "https://enjoybook.co/howto/howwithdraw",
+    "https://enjoybook.co/howto/novelevent",
+    "https://enjoybook.co/campaign-discount",
+  ]));
   expect(new Set(locations).size).toBe(locations.length);
   expect(locations.every((location) => location.startsWith("https://enjoybook.co"))).toBe(true);
   expect(locations.length).toBeLessThan(50_000);
@@ -147,6 +177,6 @@ test("robots leads to the complete canonical root sitemap", async ({ request, pa
     .toBe("2026-07-01T00:00:00.000Z");
   expect(sitemap.entries.find((entry) => entry.location === "https://enjoybook.co/book/202")?.lastModified)
     .toBeUndefined();
-  expect(locations.filter((location) => location === "https://enjoybook.co/wprofile/31"))
-    .toHaveLength(1);
+  expect(locations.filter((location) => location.startsWith("https://enjoybook.co/wprofile/")))
+    .toEqual(writerProfileLocations);
 });

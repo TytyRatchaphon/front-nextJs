@@ -16,7 +16,7 @@ vi.mock('@/services/apiClient', () => ({
   },
 }));
 
-const mockedApiClient = vi.mocked(apiClient);
+const mockedApiClient = vi.mocked(apiClient, true);
 
 describe('resolveVideoApiUrl', () => {
   afterEach(() => {
@@ -142,7 +142,7 @@ describe('resolveVideoApiUrl', () => {
       type: 'book_video_trailer',
       ref_id: 9,
       preset_id: 2,
-    })).rejects.toMatchObject<Partial<VideoReportApiError>>({
+    })).rejects.toMatchObject({
       code: 401,
       message: 'TOKEN_EXPIRED',
     });

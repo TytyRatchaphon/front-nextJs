@@ -7,7 +7,7 @@ import { generateBreadcrumbSchema, type BreadcrumbItem } from '@/utils/schema';
  * Usage:
  *   <BreadcrumbJsonLd items={[
  *     { name: 'หน้าหลัก', url: 'https://enjoybook.co' },
- *     { name: 'นิยาย', url: 'https://enjoybook.co/allnovel' },
+ *     { name: 'นิยาย', url: 'https://enjoybook.co/fiction-novel' },
  *     { name: bookName, url: `https://enjoybook.co/book/${id}` },
  *   ]} />
  */

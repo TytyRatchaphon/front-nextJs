@@ -3,9 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
   getLiveChatErrorMessage,
   mergeMessages,
+  resolveLiveChatMediaUrl,
   validateFeedback,
   validateGif,
   validateImage,
+  validateLiveChatImage,
+  validateLiveChatVideo,
   validateMessageBody,
 } from "./liveChatModel";
 import type { LiveChatMessage } from "./types";
@@ -53,5 +56,28 @@ describe("liveChatModel", () => {
       .toBe("ส่งคำขอบ่อยเกินไป กรุณาลองใหม่ใน 30 วินาที");
     expect(getLiveChatErrorMessage({ request_id: "req-123" }))
       .toBe("ระบบขัดข้องชั่วคราว กรุณาลองใหม่ (รหัสอ้างอิง: req-123)");
+  });
+
+  it("validates images and videos against live chat media config", () => {
+    expect(validateLiveChatImage({ name: "doc.txt", size: 10, type: "text/plain" }))
+      .toBe("รองรับเฉพาะไฟล์รูปภาพประเภท JPG, JPEG, PNG, GIF, WEBP");
+    expect(validateLiveChatImage({ name: "photo.jpg", size: 10_485_761, type: "image/jpeg" }))
+      .toBe("รูปภาพต้องมีขนาดไม่เกิน 10 MB");
+    expect(validateLiveChatImage({ name: "photo.webp", size: 500_000, type: "image/webp" })).toBeNull();
+
+    expect(validateLiveChatVideo({ name: "clip.avi", size: 10, type: "video/x-msvideo" }))
+      .toBe("รองรับเฉพาะไฟล์วิดีโอประเภท MP4, MOV, M4V, WEBM");
+    expect(validateLiveChatVideo({ name: "clip.mp4", size: 104_857_601, type: "video/mp4" }))
+      .toBe("วิดีโอต้องมีขนาดไม่เกิน 100 MB");
+    expect(validateLiveChatVideo({ name: "clip.mp4", size: 5_000_000, type: "video/mp4" })).toBeNull();
+  });
+
+  it("resolves live chat media URLs and strips internal LAN IPs", () => {
+    expect(resolveLiveChatMediaUrl("http://192.168.220.214:4005/live-chat/video/1.mp4"))
+      .toBe("https://apiweb.enjoybook.co/live-chat/video/1.mp4");
+    expect(resolveLiveChatMediaUrl("https://img.enjoybook.co/sample.png"))
+      .toBe("https://img.enjoybook.co/sample.png");
+    expect(resolveLiveChatMediaUrl("/storage/video/2.mp4"))
+      .toBe("https://apiweb.enjoybook.co/storage/video/2.mp4");
   });
 });

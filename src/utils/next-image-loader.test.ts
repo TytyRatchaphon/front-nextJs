@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from 'vitest'
 
-const imageLoaderMock = vi.fn(() => 'resolved-loader-url')
+const imageLoaderMock = vi.fn((_params?: any) => 'resolved-loader-url')
 
 vi.mock('@/utils/imageUtils', () => ({
-  imageLoader: (...args: any[]) => imageLoaderMock(...args),
+  imageLoader: (param: any) => imageLoaderMock(param),
 }))
 
 import nextImageLoader from '@/utils/next-image-loader'

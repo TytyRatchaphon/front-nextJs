@@ -31,7 +31,7 @@ export function useReaderParagraphTracking({
   const [selectedParagraphIndex, setSelectedParagraphIndex] = useState<number | null>(null);
   const [trackedParagraphIndex, setTrackedParagraphIndex] = useState<number | null>(null);
   const [showTrackedParagraphLabel, setShowTrackedParagraphLabel] = useState(true);
-  const [showTrackedParagraphArrow, setShowTrackedParagraphArrow] = useState(true);
+  const [showTrackedParagraphArrow, setShowTrackedParagraphArrow] = useState(false);
 
   const bookmarkedParagraphIndexes = useMemo(
     () => new Set(bookmarks.map((b) => b.paragraph_index).filter((n) => Number.isFinite(n) && n > 0)),

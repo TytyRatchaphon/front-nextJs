@@ -140,7 +140,7 @@ describe("useContentProtection", () => {
   });
 
   afterEach(() => {
-    process.env.NODE_ENV = originalNodeEnv;
+    (process.env as any).NODE_ENV = originalNodeEnv;
   });
 
   it("applies protections, blocks devtools-style keys, and restores on cleanup", () => {
@@ -248,7 +248,7 @@ describe("useContentProtection", () => {
   });
 
   it("keeps console methods unchanged in development mode", () => {
-    process.env.NODE_ENV = "development";
+    (process.env as any).NODE_ENV = "development";
     const originalLog = (globalThis as any).window.console.log;
 
     useContentProtection({ ep: 5 });

@@ -404,7 +404,7 @@ describe("commentApi", () => {
       },
     ] as const;
 
-    it.each(postCases)(
+    it.each(postCases as readonly any[])(
       "POST $name calls expected endpoint and returns response data",
       async ({ call, path, expectedArgs }) => {
         mockedApiClient.post.mockResolvedValueOnce({ data: { ok: true } });

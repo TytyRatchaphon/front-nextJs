@@ -24,9 +24,18 @@ const EMPTY_CHECKOUT_SUMMARY: CheckoutSummaryResponse = {
 };
 
 // 1. Get items in cart (grouped by store)
-export const fetchCartItems = async (): Promise<CartStore[]> => {
+export const fetchCartItems = async (
+  input?: any,
+): Promise<CartStore[]> => {
   try {
-    const response = await apiClient.get('/user/store/cart');
+    let params: Record<string, unknown> | undefined;
+    if (Array.isArray(input)) {
+      params = { selected_store_pack_list_ids: input };
+    } else if (input && typeof input === 'object' && 'queryKey' in input && Array.isArray((input as any).queryKey?.[1])) {
+      params = { selected_store_pack_list_ids: (input as any).queryKey[1] };
+    }
+
+    const response = await apiClient.get('/user/store/cart', params ? { params } : undefined);
     const stores = response.data?.data?.stores || [];
     
     if (Array.isArray(stores)) {

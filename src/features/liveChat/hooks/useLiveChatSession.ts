@@ -9,6 +9,7 @@ import {
   completeLiveChatIntake,
   createNewLiveChatThread,
   fetchActiveLiveChatThread,
+  fetchLiveChatConfig,
   fetchLiveChatFeedbackTags,
   fetchLiveChatHelpTopics,
   fetchLiveChatIntake,
@@ -18,6 +19,7 @@ import {
   markLiveChatRead,
   saveLiveChatFeedback,
   sendLiveChatImage,
+  sendLiveChatVideo,
   sendLiveChatText,
   startLiveChatIntake,
 } from "@/services/api/liveChatApi";
@@ -34,6 +36,7 @@ const gateway: LiveChatSessionGateway = {
   fetchMessages: fetchLiveChatMessages,
   sendText: sendLiveChatText,
   sendImage: sendLiveChatImage,
+  sendVideo: sendLiveChatVideo,
   markRead: markLiveChatRead,
   fetchHelpTopics: fetchLiveChatHelpTopics,
   startIntake: startLiveChatIntake,
@@ -44,6 +47,7 @@ const gateway: LiveChatSessionGateway = {
   createNewThread: createNewLiveChatThread,
   fetchFeedbackTags: fetchLiveChatFeedbackTags,
   saveFeedback: saveLiveChatFeedback,
+  fetchConfig: fetchLiveChatConfig,
 };
 
 export const useLiveChatSession = (enabled: boolean) => {

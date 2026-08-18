@@ -1,0 +1,65 @@
+{
+  "runs": 3,
+  "url": "https://test-ejbwebfont.enjoybook.co/",
+  "lighthouseVersion": "13.3.0",
+  "capturedAt": [
+    "2026-07-29T06:34:41.536Z",
+    "2026-07-29T06:35:26.621Z",
+    "2026-07-29T06:36:10.831Z"
+  ],
+  "metrics": [
+    {
+      "performance": 26,
+      "fcpMs": 5267.475499999999,
+      "lcpMs": 20237.087,
+      "speedIndexMs": 8907.12203284615,
+      "tbtMs": 4343.4045000000115,
+      "cls": 0.0899149453219927,
+      "mainThreadMs": 19401.743999999686,
+      "requests": 260,
+      "transferBytes": 12994344
+    },
+    {
+      "performance": 26,
+      "fcpMs": 5315.5212,
+      "lcpMs": 20116.48012,
+      "speedIndexMs": 8627.418239768675,
+      "tbtMs": 4040.378280000005,
+      "cls": 0.0899149453219927,
+      "mainThreadMs": 20419.268000000124,
+      "requests": 270,
+      "transferBytes": 13258643
+    },
+    {
+      "performance": 27,
+      "fcpMs": 4957.64254,
+      "lcpMs": 22395.503829999998,
+      "speedIndexMs": 7816.88021928831,
+      "tbtMs": 3758.9962399999995,
+      "cls": 0.0899149453219927,
+      "mainThreadMs": 18882.15999999985,
+      "requests": 266,
+      "transferBytes": 13249864
+    }
+  ],
+  "median": {
+    "performance": 26,
+    "fcpMs": 5267.475499999999,
+    "lcpMs": 20237.087,
+    "speedIndexMs": 8627.418239768675,
+    "tbtMs": 4040.378280000005,
+    "cls": 0.0899149453219927,
+    "mainThreadMs": 19401.743999999686,
+    "requests": 266,
+    "transferBytes": 13249864
+  },
+  "budget": {
+    "passed": false,
+    "checks": {
+      "performance": false,
+      "lcp": false,
+      "tbt": false,
+      "cls": true
+    }
+  }
+}

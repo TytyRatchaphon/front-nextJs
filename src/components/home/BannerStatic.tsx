@@ -1,6 +1,7 @@
 "use client";
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination, Navigation } from 'swiper/modules';
 import 'swiper/css';
@@ -13,6 +14,7 @@ interface BannerProps {
 }
 
 function Banner({ slides = [] }: BannerProps) {
+  const router = useRouter();
   return (
       <div className="w-full flex justify-center bg-white">
         <div className="max-w-[1440px] w-full flex flex-col relative">
@@ -41,7 +43,7 @@ function Banner({ slides = [] }: BannerProps) {
                     return (
                     <SwiperSlide key={slide.banner_id}>
                       <div className="relative w-full h-full cursor-pointer" onClick={() => {
-                           window.location.href = `/book/${slide.ref_id}`;
+                           router.push(`/book/${slide.ref_id}`);
                       }}>
                         <Image
                           src={imageUrl}

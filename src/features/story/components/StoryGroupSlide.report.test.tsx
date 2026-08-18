@@ -100,7 +100,7 @@ describe('StoryGroupSlide video report action', () => {
   let root: Root;
 
   beforeEach(() => {
-    globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     useAuthStore.setState({
       isLoggedIn: true,
       hasMounted: true,

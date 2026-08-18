@@ -76,7 +76,7 @@ export default async function Page({ params }: Props) {
       <JsonLd data={collectionSchema} />
       <BreadcrumbJsonLd items={[
         { name: 'หน้าหลัก', url: baseUrl },
-        { name: 'หมวดหมู่', url: `${baseUrl}/allnovel` },
+        { name: 'หมวดหมู่', url: `${baseUrl}/fiction-novel` },
         { name: categoryName, url: `${baseUrl}/cat/${id}` },
       ]} />
       <Category />

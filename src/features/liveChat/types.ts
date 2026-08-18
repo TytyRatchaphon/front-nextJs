@@ -1,6 +1,19 @@
 export type LiveChatThreadStatus = "active" | "resolved" | "archived";
 export type LiveChatSenderType = "user" | "admin" | "system";
-export type LiveChatMessageType = "text" | "image";
+export type LiveChatMessageType = "text" | "image" | "video";
+
+export interface LiveChatMessage {
+  message_id: number;
+  thread_id: number;
+  sender_type: LiveChatSenderType;
+  sender_user_id: number | null;
+  sender_admin_id: number | null;
+  message_type: LiveChatMessageType;
+  body: string;
+  image_url?: string;
+  video_url?: string;
+  created_at: string;
+}
 
 export interface LiveChatFeedback {
   rating: number;
@@ -104,4 +117,15 @@ export interface LiveChatError {
   request_id?: string | null;
   retryAfter?: number;
   issues?: Array<{ path: string; message: string }>;
+}
+
+export interface LiveChatMediaConfigSpec {
+  maxBytes: number;
+  allowedMimeTypes: string[];
+  allowedExtensions: string[];
+}
+
+export interface LiveChatConfig {
+  image: LiveChatMediaConfigSpec;
+  video: LiveChatMediaConfigSpec;
 }

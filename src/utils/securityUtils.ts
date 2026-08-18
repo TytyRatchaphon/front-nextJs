@@ -10,6 +10,7 @@ export const detectExtension = (onDetect?: () => void) => {
           removedNode.nodeName === "NEXT-ROUTE-ANNOUNCER"
         ) {
           if (onDetect) onDetect();
+          // eslint-disable-next-line @next/next/no-location-assign-relative-destination
           window.location.href = "/";
         }
       }

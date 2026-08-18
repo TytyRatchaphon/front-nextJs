@@ -12,6 +12,7 @@ type EarlyAccessMethod = {
 type PurchaseEpisode = {
   coin?: number | null;
   freecoin?: number | null;
+  publish_datetime?: string | null;
   coin_discount?: number | null;
   discount_price?: number | null;
   discount_end_date?: string | null;

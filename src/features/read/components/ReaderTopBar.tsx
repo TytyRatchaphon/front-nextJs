@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Popover } from "antd";
 
 import { ReadEpisodeListContent } from "./ReadEpisodeListContent";
-import { ReaderBookmarkPopover } from "./ReaderBookmarkPopover";
 import { ReaderSettingsPopover, getReaderMenuTheme } from "./ReaderSettingsPopover";
 import type { EpisodeBookmark, ReadEpisodeListGroup } from "../readerContentUtils";
 
@@ -107,7 +106,7 @@ export function ReaderTopBar({
 
   return (
     <div
-      className={`transition-all duration-300 w-full sticky top-0 z-[120] ${currentBg?.paper || currentBg?.bg}`}
+      className={`transition-colors duration-300 w-full sticky top-0 z-[120] ${currentBg?.paper || currentBg?.bg}`}
       data-reader-ignore-toggle="true"
       style={{
         position: "sticky",
@@ -134,6 +133,7 @@ export function ReaderTopBar({
           <Popover
             placement="bottomLeft"
             zIndex={zIndex}
+            getPopupContainer={(triggerNode) => (triggerNode ? (triggerNode.parentElement as HTMLElement) : document.body)}
             overlayClassName="reader-episode-popover"
             title={<div className="text-sm font-semibold">สารบัญ</div>}
             content={
@@ -194,19 +194,6 @@ export function ReaderTopBar({
           setShowTrackedParagraphLabel={setShowTrackedParagraphLabel}
           showTrackedParagraphArrow={showTrackedParagraphArrow}
           setShowTrackedParagraphArrow={setShowTrackedParagraphArrow}
-        />
-
-        <ReaderBookmarkPopover
-          zIndex={zIndex}
-          currentBg={currentBg}
-          open={isBookmarkPopoverOpen}
-          onOpenChange={onBookmarkPopoverOpenChange}
-          bookmarks={bookmarks}
-          isFetchingBookmarks={isFetchingBookmarks}
-          onCreateBookmark={onCreateBookmark}
-          onEditBookmark={onEditBookmark}
-          onDeleteBookmark={onDeleteBookmark}
-          onScrollToParagraph={onScrollToParagraph}
         />
       </div>
     </div>

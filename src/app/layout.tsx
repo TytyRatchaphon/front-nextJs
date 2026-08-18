@@ -47,6 +47,9 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description: settings?.seo_description || 'Enjoybook แหล่งรวมนิยาย อ่านนิยายออนไลน์ นิยายแปล นิยายจีน แฟนตาซี กำลังภายใน โรแมนติก อ่านฟรี',
     keywords: settings?.seo_keyword || 'นิยาย, อ่านนิยาย, นิยายแปล, นิยายจีน, นิยายออนไลน์, อ่านนิยายฟรี, Enjoybook',
+    verification: {
+      google: '3cZ1p-OXqtrJVzsf74AEtSBGLIgZpJqod27KFJdomNk',
+    },
     openGraph: {
       type: 'website',
       siteName: 'Enjoybook',
@@ -91,6 +94,17 @@ export default async function RootLayout({
     <html lang="th" className={`${baiJamjuree.variable} font-bai-jamjuree font-medium`}>
       <Script src="https://t.contentsquare.net/uxa/c765809e7d7ef.js" strategy="lazyOnload" />
       
+      {/* Microsoft Clarity */}
+      <Script id="microsoft-clarity" strategy="afterInteractive">
+        {`
+          (function(c,l,a,r,i,t,y){
+              c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+              t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+              y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+          })(window, document, "clarity", "script", "xxk401pbri");
+        `}
+      </Script>
+
       {/* Google Ads Tag */}
       <Script
         src="https://www.googletagmanager.com/gtag/js?id=AW-16724162319"

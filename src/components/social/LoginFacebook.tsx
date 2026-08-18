@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { App } from 'antd';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
@@ -29,6 +30,7 @@ const isMobileBrowser = (): boolean => {
 };
 
 const LoginFacebook = () => {
+  const router = useRouter();
   const { notification } = App.useApp();
   const [loading, setLoading] = useState(false);
   // เพิ่ม state เพื่อเช็คว่า SDK พร้อมใช้งานหรือยัง
@@ -255,7 +257,7 @@ const LoginFacebook = () => {
           // Check logical flow (replaces legacy checkBeforeLogin)
           const navi = checkBeforeLogin(token);
           if (navi) {
-            window.location.href = '/';
+            router.push('/');
           } else {
             window.location.reload();
           }

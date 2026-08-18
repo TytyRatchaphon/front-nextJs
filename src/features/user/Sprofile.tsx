@@ -12,6 +12,12 @@ import { useRouter } from 'next/navigation';
 import GifLoader from '@/components/utility/GifLoader';
 import { SprofileUserInfoTab } from './components/SprofileUserInfoTab';
 import { SprofileChangePassword } from './components/SprofileChangePassword';
+import { SprofileDeleteAccountTab } from './components/SprofileDeleteAccountTab';
+import {
+  getSprofileTabHref,
+  SPROFILE_TAB_KEYS,
+  type SprofileTabKey,
+} from './sprofileTabs';
 
 const items: TabsProps['items'] = [
   {
@@ -24,12 +30,26 @@ const items: TabsProps['items'] = [
     label: <span className='font-primary font-medium text-black text-lg'>เปลี่ยนรหัสผ่านและอีเมล</span>,
     children: <SprofileChangePassword />,
   },
+  {
+    key: '3',
+    label: <span className='font-primary font-bold text-red-600 text-lg'>ลบบัญชีผู้ใช้</span>,
+    children: <SprofileDeleteAccountTab />,
+  },
 ];
 
-function Page() {
+interface SprofilePageProps {
+  initialTabKey?: SprofileTabKey;
+}
+
+function Page({ initialTabKey = SPROFILE_TAB_KEYS.profile }: SprofilePageProps) {
   const { notification } = App.useApp();
   const { user, isLoggedIn, hasMounted, setMounted } = useAuthStore();
   const router = useRouter();
+  const [activeTabKey, setActiveTabKey] = React.useState<SprofileTabKey>(initialTabKey);
+
+  useEffect(() => {
+    setActiveTabKey(initialTabKey);
+  }, [initialTabKey]);
 
   useEffect(() => {
     setMounted();
@@ -52,6 +72,12 @@ function Page() {
     );
   }
 
+  const handleTabChange = (key: string) => {
+    const nextKey = key as SprofileTabKey;
+    setActiveTabKey(nextKey);
+    router.replace(getSprofileTabHref(nextKey), { scroll: false });
+  };
+
   return (
     <div className='bg-white' style={{ overflowX: 'hidden' }}>
       <div className='relative w-[100vw] items-center flex flex-col'>
@@ -65,7 +91,8 @@ function Page() {
               </div>
               <div className=''>
                 <Tabs
-                  defaultActiveKey="1"
+                  activeKey={activeTabKey}
+                  onChange={handleTabChange}
                   items={items}
                   className="my-red-tabs"
                 />

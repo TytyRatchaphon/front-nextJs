@@ -50,6 +50,9 @@ if (-not $Pm2AppName) {
 }
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
+$deployDistDirName = ".next-deploy"
+$deployDistDir = Join-Path $repoRoot $deployDistDirName
+$deployTsConfig = "tsconfig.deploy.json"
 $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $releaseId = if ($ReleaseName) { $ReleaseName } else { $timestamp }
 $tempBase = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
@@ -160,6 +163,7 @@ ln -sfn "$previous_target" '__ROOT__/current.next'
 mv -Tf '__ROOT__/current.next' '__CURRENT__'
 cd '__CURRENT__'
 APP_CURRENT_PATH='__CURRENT__' PORT='__PORT__' PM2_APP_NAME='__APP__' pm2 startOrReload ecosystem.config.js --update-env
+pm2 save
 '@
   $rollbackCommand = $rollbackCommand.
     Replace("__PREVIOUS__", $remotePrevious).
@@ -184,18 +188,28 @@ if (-not $PackageOnly) {
 Push-Location $repoRoot
 try {
   if (-not $SkipBuild) {
-    if (Get-Command "bun" -ErrorAction SilentlyContinue) {
-      Write-Host "Building application with Bun..."
-      Invoke-External -Command "bun" -Arguments @("run", "build")
-    } else {
-      Write-Host "Bun is not installed locally; running the equivalent npm/Next build steps..."
-      Invoke-External -Command "npm.cmd" -Arguments @("run", "lint")
-      Invoke-External -Command (Join-Path $repoRoot "node_modules\.bin\next.cmd") -Arguments @("build", "--turbopack")
+    $previousDistDir = $env:NEXT_DIST_DIR
+    $previousTsConfig = $env:NEXT_TSCONFIG
+    try {
+      $env:NEXT_DIST_DIR = $deployDistDirName
+      $env:NEXT_TSCONFIG = $deployTsConfig
+
+      if (Get-Command "bun" -ErrorAction SilentlyContinue) {
+        Write-Host "Building application with Bun in isolated directory $deployDistDirName..."
+        Invoke-External -Command "bun" -Arguments @("run", "build")
+      } else {
+        Write-Host "Bun is not installed locally; running the equivalent npm/Next build steps..."
+        Invoke-External -Command "npm.cmd" -Arguments @("run", "lint")
+        Invoke-External -Command (Join-Path $repoRoot "node_modules\.bin\next.cmd") -Arguments @("build", "--turbopack")
+      }
+    } finally {
+      $env:NEXT_DIST_DIR = $previousDistDir
+      $env:NEXT_TSCONFIG = $previousTsConfig
     }
   }
 
-  $standaloneSource = Join-Path $repoRoot ".next\standalone"
-  $staticSource = Join-Path $repoRoot ".next\static"
+  $standaloneSource = Join-Path $deployDistDir "standalone"
+  $staticSource = Join-Path $deployDistDir "static"
   foreach ($path in @($standaloneSource, $staticSource)) {
     if (-not (Test-Path -LiteralPath $path)) {
       throw "Build artifact not found: $path. Run the build before deploying."
@@ -206,7 +220,7 @@ try {
   Get-ChildItem -LiteralPath $standaloneSource -Force |
     Copy-Item -Destination $tempRoot -Recurse -Force
 
-  $stagedNextPath = Join-Path $tempRoot ".next"
+  $stagedNextPath = Join-Path $tempRoot $deployDistDirName
   New-Item -Path $stagedNextPath -ItemType Directory -Force | Out-Null
   Copy-Item -LiteralPath $staticSource -Destination (Join-Path $stagedNextPath "static") -Recurse -Force
 
@@ -260,7 +274,7 @@ mkdir -p '__RELEASE__'
 tar -xzf '__ARCHIVE__' -C '__RELEASE__'
 rm -f '__ARCHIVE__'
 test -f '__RELEASE__/server.js'
-test -d '__RELEASE__/.next/static'
+test -d '__RELEASE__/__DIST_DIR__/static'
 if [ -L '__CURRENT__' ]; then
   ln -sfn "$(readlink -f '__CURRENT__')" '__PREVIOUS__'
 elif [ -f '__ROOT__/server.js' ]; then
@@ -273,6 +287,7 @@ if [ '__RESET_PROCESS__' = '1' ]; then
   pm2 delete '__APP__' >/dev/null 2>&1 || true
 fi
 APP_CURRENT_PATH='__CURRENT__' PORT='__PORT__' PM2_APP_NAME='__APP__' pm2 startOrReload ecosystem.config.js --update-env
+pm2 save
 '@
   $remoteDeployCommand = $remoteDeployCommand.
     Replace("__RELEASE__", $remoteRelease).
@@ -282,6 +297,7 @@ APP_CURRENT_PATH='__CURRENT__' PORT='__PORT__' PM2_APP_NAME='__APP__' pm2 startO
     Replace("__ROOT__", $RemoteRoot).
     Replace("__PORT__", [string]$AppPort).
     Replace("__APP__", $Pm2AppName).
+    Replace("__DIST_DIR__", $deployDistDirName).
     Replace("__RESET_PROCESS__", $(if ($ResetProcess) { "1" } else { "0" }))
   $remoteDeployCommand = ConvertTo-RemoteShellScript -Script $remoteDeployCommand
 

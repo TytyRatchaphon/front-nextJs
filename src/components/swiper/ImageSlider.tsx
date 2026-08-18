@@ -1,8 +1,7 @@
 "use client";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { FreeMode, Scrollbar, Mousewheel } from 'swiper/modules';
-import 'next/image';
-import 'next/link';  
+import { useRouter } from 'next/navigation';
 
 import 'swiper/css';
 import 'swiper/css/free-mode';
@@ -11,11 +10,13 @@ import 'swiper/css/scrollbar';
 
 
 export function TagSwiper({ tags, classImport = 'inline-block bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm' }: { tags: string[]; classImport?: string }) {
+    const router = useRouter();
+
     if (!tags || tags.length === 0) return null;
 
     const handleClick = (item: string) => {
         const q = item.replace('#', '');
-        window.location.href = `/search?q=${encodeURIComponent(q)}`;
+        router.push(`/search?q=${encodeURIComponent(q)}`);
     }
 
     return (

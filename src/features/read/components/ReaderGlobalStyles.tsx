@@ -80,6 +80,11 @@ export function ReaderGlobalStyles() {
         border-radius: 6px;
         padding-left: 10px;
       }
+      .reader-settings-panel,
+      .reader-font-select-dropdown,
+      .reader-font-select-dropdown .rc-virtual-list-holder {
+        overscroll-behavior: contain !important;
+      }
     `}</style>
   );
 }

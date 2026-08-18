@@ -24,6 +24,13 @@ export default function robots(): MetadataRoute.Robots {
         '/all-quest',
         '/royale-pass',
         '/wheel',
+        // Deprecated/legacy redirect routes
+        '/cr',
+        '/category',
+        '/topic',
+        '/rank',
+        '/campaignid',
+        '/event',
       ],
     },
     sitemap: `${baseUrl}/sitemap.xml`,

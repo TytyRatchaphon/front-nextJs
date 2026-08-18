@@ -2,6 +2,7 @@ import type { AxiosError } from "axios";
 
 import apiClient from "../apiClient";
 import type {
+  LiveChatConfig,
   LiveChatError,
   LiveChatFeedback,
   LiveChatFeedbackTag,
@@ -120,6 +121,30 @@ export const sendLiveChatImage = (file: File) => {
   );
 };
 
+export const sendLiveChatVideo = (
+  file: File,
+  onUploadProgress?: (percent: number) => void
+) => {
+  const formData = new FormData();
+  formData.append("video", file);
+  formData.append("file", file);
+  return request<{ thread: LiveChatThread; message: LiveChatMessage }>(
+    () =>
+      apiClient.post("/live-chat/messages/video", formData, {
+        headers: { "Content-Type": undefined },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total && onUploadProgress) {
+            const percent = Math.min(
+              100,
+              Math.max(0, Math.round((progressEvent.loaded * 100) / progressEvent.total))
+            );
+            onUploadProgress(percent);
+          }
+        },
+      }),
+  );
+};
+
 export const markLiveChatRead = (messageId: number) =>
   request<unknown>(() => apiClient.put("/live-chat/read", { message_id: messageId }));
 
@@ -169,3 +194,6 @@ export const saveLiveChatFeedback = (
   request<{ feedback: LiveChatFeedback }>(
     () => apiClient.put(`/live-chat/threads/${threadId}/feedback`, payload),
   );
+
+export const fetchLiveChatConfig = () =>
+  request<LiveChatConfig>(() => apiClient.get("/live-chat/config"));

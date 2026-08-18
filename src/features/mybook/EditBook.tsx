@@ -12,6 +12,7 @@ import TextEditorTiny from "@/components/editor/TextEditorTiny";
 import UploadCropBook from "@/components/upload/UploadBook";
 import UploadCropBookBanner from "@/components/upload/UploadCropBookBanner";
 import TrailerUploader from "./TrailerUploader";
+import BookVideoManager from "@/features/video/components/writer/BookVideoManager";
 import secureProxyClient from "@/services/secureProxyClient";
 import GifLoader from '@/components/utility/GifLoader';
 import { useWebsiteSettings } from '@/hooks/useWebsiteSettings';
@@ -712,6 +713,10 @@ const EditBook: React.FC<EditBookProps> = ({ bookId }) => {
                                         autoStart={true}
                                         mode="normal"
                                     />
+                                </div>
+
+                                <div className="mt-6 pt-6 border-t border-gray-200">
+                                    <BookVideoManager bookId={Number(finalBookId)} />
                                 </div>
 
                                 <div className='grid gap-4'>

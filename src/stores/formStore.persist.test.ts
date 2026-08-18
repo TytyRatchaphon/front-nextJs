@@ -33,7 +33,7 @@ describe("formStore persist options", () => {
     expect(options?.migrate).toBeTypeOf("function");
 
     const { initialUserProfile } = await import("./formStore");
-    const migrated = options?.migrate?.(undefined) as { userProfileForm: typeof initialUserProfile };
+    const migrated = options?.migrate?.(undefined) as unknown as { userProfileForm: typeof initialUserProfile };
 
     expect(migrated.userProfileForm).toEqual(initialUserProfile);
   });
@@ -57,7 +57,7 @@ describe("formStore persist options", () => {
         frame_id: 7,
         aka_id: 8,
       },
-    }) as { userProfileForm: typeof initialUserProfile };
+    }) as unknown as { userProfileForm: typeof initialUserProfile };
 
     expect(migrated.userProfileForm).toEqual({
       ...initialUserProfile,

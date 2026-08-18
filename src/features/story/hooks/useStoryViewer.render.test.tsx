@@ -74,7 +74,7 @@ describe('useStoryViewer rendered integration', () => {
   let root: Root;
 
   beforeEach(() => {
-    globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     latestViewer = null;
     container = document.createElement('div');
     document.body.appendChild(container);

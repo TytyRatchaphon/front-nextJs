@@ -34,7 +34,8 @@ describe("campaignApi", () => {
   describe("fetchCampaigns", () => {
     it("parses successful fetch response", async () => {
       vi.stubEnv("NEXT_PUBLIC_API_BASE_URL", "https://api.example.com");
-      const fetchSpy = vi.spyOn(globalThis, "fetch" as never).mockResolvedValueOnce({
+      const fetchSpy = vi.spyOn(globalThis, "fetch" as any) as any;
+      fetchSpy.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ code: 200, data: [{ cp_id: 10 }] }),
       } as never);
@@ -47,7 +48,7 @@ describe("campaignApi", () => {
 
     it("throws when fetch is not ok or payload invalid", async () => {
       vi.stubEnv("NEXT_PUBLIC_API_BASE_URL", "https://api.example.com");
-      const fetchSpy = vi.spyOn(globalThis, "fetch" as never);
+      const fetchSpy = vi.spyOn(globalThis, "fetch" as any) as any;
 
       fetchSpy.mockResolvedValueOnce({
         ok: false,

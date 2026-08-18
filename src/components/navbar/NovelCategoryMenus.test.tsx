@@ -17,7 +17,7 @@ describe("DesktopNovelDropdown", () => {
   let root: Root;
 
   beforeEach(() => {
-    globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
     container = document.createElement("div");
     container.id = "Navbar";
     document.body.appendChild(container);

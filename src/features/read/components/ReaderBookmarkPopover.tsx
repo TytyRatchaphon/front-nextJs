@@ -37,6 +37,7 @@ export function ReaderBookmarkPopover({
     <Popover
       placement="bottomRight"
       zIndex={zIndex}
+      getPopupContainer={(triggerNode) => (triggerNode ? (triggerNode.parentElement as HTMLElement) : document.body)}
       classNames={{ root: "reader-bookmark-popover" }}
       styles={{ body: { padding: 0 } }}
       trigger="click"

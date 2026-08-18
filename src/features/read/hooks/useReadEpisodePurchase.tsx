@@ -257,26 +257,20 @@ export function useReadEpisodePurchase({
           name: ep?.name || displayTitle || "",
         });
 
-        if (res.data?.data?.rp_earned && res.data.data.rp_earned > 0) {
-          notification.success({
-            message: "ยินดีด้วย!",
-            description: (
-              <div className="flex items-center gap-1">
-                <span>คุณได้รับ {res.data.data.rp_earned}</span>
-                {rpImageUrl ? (
-                  <Image src={rpImageUrl} alt="RP" width={16} height={16} unoptimized className="object-contain" />
-                ) : (
-                  <span>RP</span>
-                )}
-              </div>
-            ),
-            placement: "topRight",
-          });
-        }
+        const rpEarned = Number(res.data?.data?.rp_earned || 0);
 
         notification.success({
           message: respMsg,
-          description: respMsg,
+          description: rpEarned > 0 ? (
+            <div className="flex items-center gap-1">
+              <span>คุณได้รับ {rpEarned}</span>
+              {rpImageUrl ? (
+                <Image src={rpImageUrl} alt="RP" width={16} height={16} unoptimized className="object-contain" />
+              ) : (
+                <span>RP</span>
+              )}
+            </div>
+          ) : undefined,
           placement: "topRight",
         });
 

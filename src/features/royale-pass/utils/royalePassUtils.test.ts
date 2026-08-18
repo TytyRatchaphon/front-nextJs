@@ -17,7 +17,7 @@ describe("royalePassUtils", () => {
         { level: 2, track: "free", reward_type: "coin", amount: 10, is_claimable: true, is_claimed: false },
         { level: 2, track: "premium", reward_type: "user_coupon", amount: 1, is_claimable: false, is_claimed: false },
       ],
-    } as RoyalePassDetail;
+    } as unknown as RoyalePassDetail;
 
     const levels = buildRewardLevels(detail);
 

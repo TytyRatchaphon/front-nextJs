@@ -19,6 +19,10 @@ const BASE_ORIGIN = configuredBaseUrl.origin;
 const SITEMAP_CACHE_KEY = process.env.SITEMAP_CACHE_KEY || 'v1';
 const ARTICLE_PAGE_SIZE = 100;
 const BOOK_PAGE_SIZE = 100;
+const WRITER_PROFILE_IDS = [
+  46404, 71792, 68444, 55, 17578, 61815, 46403, 8321, 28094,
+  23208, 23031, 23207, 24208, 17966, 53, 16113, 23206,
+] as const;
 
 const STATIC_PATHS = [
   '',
@@ -28,23 +32,13 @@ const STATIC_PATHS = [
   '/campaign',
   '/ranking',
   '/how-payment',
-  '/policy-conditions',
-  '/policy-privacy',
   '/writer-nc-policy',
-  '/contact',
   '/events',
   '/news',
   '/novel-pack',
   '/fiction-novel',
   '/translated-novel',
   '/book-updates',
-  '/store',
-  '/other-policy',
-  '/howto/regis',
-  '/howto/howincome',
-  '/howto/howwithdraw',
-  '/howto/novelevent',
-  '/campaign-discount',
 ] as const;
 
 export const revalidate = 3600;
@@ -78,26 +72,19 @@ const fetchAllArticleRoutes = async (): Promise<MetadataRoute.Sitemap> => {
   return routes;
 };
 
-const fetchAllBookAndWriterRoutes = async (): Promise<MetadataRoute.Sitemap> => {
+const fetchAllBookRoutes = async (): Promise<MetadataRoute.Sitemap> => {
   const books = await fetchAllPublishedBookInventory(BOOK_PAGE_SIZE);
   const bookRoutes: MetadataRoute.Sitemap = [];
-  const writerIds = new Set<number>();
 
   for (const book of books) {
     bookRoutes.push({
       url: toSitemapUrl(`/book/${book.bookId}`),
       lastModified: book.lastModified ? toValidDate(book.lastModified) : undefined,
     });
-    writerIds.add(book.writerId);
-    assertBelowSitemapUrlLimit(bookRoutes.length + writerIds.size);
+    assertBelowSitemapUrlLimit(bookRoutes.length);
   }
 
-  return [
-    ...bookRoutes,
-    ...[...writerIds].map((writerId) => ({
-      url: toSitemapUrl(`/wprofile/${writerId}`),
-    })),
-  ];
+  return bookRoutes;
 };
 
 const deduplicateRoutes = (routes: MetadataRoute.Sitemap): MetadataRoute.Sitemap => {
@@ -127,8 +114,8 @@ const fetchHealthyCategories = async () => {
   return categories;
 };
 
-const fetchHealthyBookAndWriterRoutes = async (): Promise<MetadataRoute.Sitemap> => {
-  const routes = await fetchAllBookAndWriterRoutes();
+const fetchHealthyBookRoutes = async (): Promise<MetadataRoute.Sitemap> => {
+  const routes = await fetchAllBookRoutes();
   if (routes.length === 0) {
     throw new Error('Published-book inventory returned no URLs');
   }
@@ -147,17 +134,17 @@ const getCachedCategories = unstable_cache(
   { revalidate: 3600 },
 );
 
-const getCachedBookAndWriterRoutes = unstable_cache(
-  fetchHealthyBookAndWriterRoutes,
-  ['sitemap-book-writer-routes', SITEMAP_CACHE_KEY],
+const getCachedBookRoutes = unstable_cache(
+  fetchHealthyBookRoutes,
+  ['sitemap-book-routes', SITEMAP_CACHE_KEY],
   { revalidate: 3600 },
 );
 
 const loadArticleRoutes = createResilientInventoryLoader('Article', getCachedArticleRoutes, () => []);
 const loadCategories = createResilientInventoryLoader('Category', getCachedCategories, () => []);
-const loadBookAndWriterRoutes = createResilientInventoryLoader(
+const loadBookRoutes = createResilientInventoryLoader(
   'Published-book',
-  getCachedBookAndWriterRoutes,
+  getCachedBookRoutes,
   () => [],
 );
 
@@ -165,11 +152,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = STATIC_PATHS.map((path) => ({
     url: toSitemapUrl(path),
   }));
+  const writerProfileRoutes: MetadataRoute.Sitemap = WRITER_PROFILE_IDS.map((writerId) => ({
+    url: toSitemapUrl(`/wprofile/${writerId}`),
+  }));
 
-  const [articleRoutes, categories, bookAndWriterRoutes] = await Promise.all([
+  const [articleRoutes, categories, bookRoutes] = await Promise.all([
     loadArticleRoutes(),
     loadCategories(),
-    loadBookAndWriterRoutes(),
+    loadBookRoutes(),
   ]);
 
   const categoryRoutes: MetadataRoute.Sitemap = categories.map((category) => ({
@@ -178,9 +168,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const routes = deduplicateRoutes([
     ...staticRoutes,
+    ...writerProfileRoutes,
     ...articleRoutes,
     ...categoryRoutes,
-    ...bookAndWriterRoutes,
+    ...bookRoutes,
   ]);
   assertBelowSitemapUrlLimit(routes.length);
 

@@ -49,7 +49,7 @@ describe('detectExtension', () => {
 
   it('observes body mutations and redirects when root node is removed', () => {
     const onDetect = vi.fn();
-    const observer = detectExtension(onDetect) as MockMutationObserver;
+    const observer = detectExtension(onDetect) as unknown as MockMutationObserver;
 
     expect(observer).toBeInstanceOf(MockMutationObserver);
     expect(observer.observe).toHaveBeenCalledWith((globalThis as any).document.body, {
@@ -71,7 +71,7 @@ describe('detectExtension', () => {
 
   it('does not redirect for unrelated removed node', () => {
     const onDetect = vi.fn();
-    const observer = detectExtension(onDetect) as MockMutationObserver;
+    const observer = detectExtension(onDetect) as unknown as MockMutationObserver;
 
     observer.callback([
       {

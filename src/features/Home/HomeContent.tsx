@@ -2,6 +2,7 @@
 import * as React from "react";
 import { App } from "antd";
 import { CloseCircleOutlined } from "@ant-design/icons";
+import Link from "next/link";
 import Banner from "@/components/home/Banner";
 import BannerButtons from "@/components/home/BannerButtons";
 import DailyCheckinModal from "@/components/home/DailyCheckinModal";
@@ -328,7 +329,15 @@ export default function HomeContent({
           </div>
 
           <div className="mb-4 mt-4 w-full">
-            <h2 className="mb-4 text-2xl font-bold text-black">นิยายอัปเดตล่าสุด</h2>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-2xl font-bold text-black">นิยายอัปเดตล่าสุด</h2>
+              <Link
+                href="/book-updates"
+                className="text-sm font-semibold text-red-600 transition-colors hover:text-red-700"
+              >
+                ดูตารางอัปเดตนิยาย
+              </Link>
+            </div>
             <div className="mb-6 h-[1px] w-full bg-gray-200" />
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {isBookUpdatesLoading ? (

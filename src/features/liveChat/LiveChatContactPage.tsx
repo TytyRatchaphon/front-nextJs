@@ -17,17 +17,27 @@ import {
   SignalZero,
   Sparkles,
   Star,
+  Video,
   X,
 } from "lucide-react";
 import Image from "next/image";
-import { App, Image as AntImage } from "antd";
+import { App, Image as AntImage, Progress } from "antd";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { sendLiveChatVideo } from "@/services/api/liveChatApi";
 
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
 
-import { getLiveChatErrorMessage } from "./liveChatModel";
+import {
+  getLiveChatErrorMessage,
+  resolveLiveChatMediaUrl,
+  validateGif,
+  validateImage,
+  validateLiveChatImage,
+  validateLiveChatVideo,
+} from "./liveChatModel";
+import { LiveChatVideoPlayer } from "./LiveChatVideoPlayer";
 import LiveChatGifPicker from "./LiveChatGifPicker";
 import { downloadGif } from "./gifPickerApi";
 import type { GifPickerItem } from "./gifPickerModel";
@@ -90,7 +100,7 @@ function MessageBubble({
         >
           {message.message_type === "image" ? (
             <AntImage
-              src={message.image_url || message.body}
+              src={resolveLiveChatMediaUrl(message.image_url || message.body)}
               alt="รูปภาพในบทสนทนา"
               onLoad={onMediaLoad}
               className="block object-contain"
@@ -105,6 +115,13 @@ function MessageBubble({
                 maskClassName: "rounded-2xl",
               }}
             />
+          ) : message.message_type === "video" ? (
+            <div className="p-1">
+              <LiveChatVideoPlayer
+                src={message.video_url || message.body}
+                onMediaLoad={onMediaLoad}
+              />
+            </div>
           ) : (
             <p className="whitespace-pre-wrap break-words px-4 py-3 text-sm leading-6 sm:text-base">
               {message.body}
@@ -144,10 +161,13 @@ export default function LiveChatContactPage() {
   const [feedbackTags, setFeedbackTags] = useState<string[]>([]);
   const [mediaUploadKind, setMediaUploadKind] = useState<MediaUploadKind>("image");
   const [isPreparingGif, setIsPreparingGif] = useState(false);
+  const [videoUploadPercent, setVideoUploadPercent] = useState<number | null>(null);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
   const messageListRef = useRef<HTMLDivElement>(null);
   const shouldJumpToLatestRef = useRef(false);
   const openedActiveThreadRef = useRef<number | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   const jumpToLatestMessage = useCallback(() => {
     const container = messageListRef.current;
@@ -247,8 +267,50 @@ export default function LiveChatContactPage() {
 
   const handleMediaSelection = (file: File | undefined, kind: MediaUploadKind) => {
     if (!file) return;
+    const validationError = state.config
+      ? validateLiveChatImage(file, state.config.image)
+      : (kind === "gif" ? validateGif(file) : validateImage(file));
+    if (validationError) {
+      notification.error({
+        message: "ไฟล์รูปภาพไม่ถูกต้อง",
+        description: validationError,
+        placement: "topRight",
+      });
+      return;
+    }
     setMediaUploadKind(kind);
     void session.sendImage(file, kind);
+  };
+
+  const handleVideoSelection = async (file: File | undefined) => {
+    if (!file || !selectedThread) return;
+
+    const validationError = validateLiveChatVideo(file, state.config?.video);
+    if (validationError) {
+      notification.error({
+        message: "ไฟล์วิดีโอไม่ถูกต้อง",
+        description: validationError,
+        placement: "topRight",
+      });
+      return;
+    }
+
+    setIsUploadingVideo(true);
+    setVideoUploadPercent(0);
+    try {
+      await sendLiveChatVideo(file, setVideoUploadPercent);
+      void session.recover();
+      jumpToLatestMessage();
+    } catch (err: any) {
+      notification.error({
+        message: "อัปโหลดวิดีโอไม่สำเร็จ",
+        description: err?.message || "เกิดข้อผิดพลาดในการอัปโหลดวิดีโอ",
+        placement: "topRight",
+      });
+    } finally {
+      setIsUploadingVideo(false);
+      setVideoUploadPercent(null);
+    }
   };
 
   const handleGifSelection = async (item: GifPickerItem) => {
@@ -687,6 +749,23 @@ export default function LiveChatContactPage() {
                       }}
                     />
                   ))}
+                  {isUploadingVideo && videoUploadPercent !== null && (
+                    <article className="flex justify-end">
+                      <div className="max-w-[86%] sm:max-w-[72%] items-end flex flex-col gap-1.5">
+                        <div className="overflow-hidden rounded-2xl rounded-br-md bg-[#dc2626] text-white p-4 min-w-[220px]">
+                          <div className="text-xs font-semibold mb-2">กำลังอัปโหลดวิดีโอ... {videoUploadPercent}%</div>
+                          <Progress
+                            percent={videoUploadPercent}
+                            status="active"
+                            strokeColor="#ffffff"
+                            trailColor="rgba(255,255,255,0.3)"
+                            size="small"
+                            showInfo={false}
+                          />
+                        </div>
+                      </div>
+                    </article>
+                  )}
                   {messages.length === 0 && (
                     <div className="mx-auto max-w-md py-16 text-center">
                       <div className="mx-auto grid size-16 place-items-center rounded-full bg-white text-[#dc2626] shadow-sm">
@@ -767,19 +846,42 @@ export default function LiveChatContactPage() {
                       event.currentTarget.value = "";
                     }}
                   />
+                  <input
+                    ref={videoInputRef}
+                    type="file"
+                    accept=".mp4,.mov,.webm,.m4v,video/mp4,video/quicktime,video/webm,video/x-m4v"
+                    className="sr-only"
+                    onChange={(event) => {
+                      void handleVideoSelection(event.target.files?.[0]);
+                      event.currentTarget.value = "";
+                    }}
+                  />
                   <button
                     type="button"
                     onClick={() => imageInputRef.current?.click()}
-                    disabled={selectedThread?.can_send === false || sendImageMutation.isPending || isPreparingGif}
+                    disabled={selectedThread?.can_send === false || sendImageMutation.isPending || isUploadingVideo || isPreparingGif}
                     className="grid size-11 shrink-0 place-items-center rounded-full text-stone-500 hover:bg-stone-100 hover:text-[#dc2626] disabled:opacity-40"
                     aria-label="แนบรูปภาพ"
+                    title="แนบรูปภาพ"
                   >
                     {sendImageMutation.isPending && mediaUploadKind === "image"
                       ? <LoaderCircle className="size-5 animate-spin" />
                       : <ImagePlus className="size-5" />}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => videoInputRef.current?.click()}
+                    disabled={selectedThread?.can_send === false || sendImageMutation.isPending || isUploadingVideo || isPreparingGif}
+                    className="grid size-11 shrink-0 place-items-center rounded-full text-stone-500 hover:bg-stone-100 hover:text-[#dc2626] disabled:opacity-40"
+                    aria-label="แนบวิดีโอ"
+                    title="แนบวิดีโอ"
+                  >
+                    {isUploadingVideo
+                      ? <LoaderCircle className="size-5 animate-spin" />
+                      : <Video className="size-5" />}
+                  </button>
                   <LiveChatGifPicker
-                    disabled={selectedThread?.can_send === false || sendImageMutation.isPending || isPreparingGif}
+                    disabled={selectedThread?.can_send === false || sendImageMutation.isPending || isUploadingVideo || isPreparingGif}
                     isSending={isPreparingGif || (sendImageMutation.isPending && mediaUploadKind === "gif")}
                     onSelect={handleGifSelection}
                   />
@@ -808,7 +910,7 @@ export default function LiveChatContactPage() {
                   </button>
                 </div>
                 <p className="mx-auto mt-2 max-w-4xl px-14 text-[11px] text-stone-400">
-                  Enter เพื่อส่ง · Shift + Enter เพื่อขึ้นบรรทัดใหม่ · รูปและ GIF ไม่เกิน 5 MB
+                  Enter เพื่อส่ง · Shift + Enter เพื่อขึ้นบรรทัดใหม่ · รูปภาพไม่เกิน {Math.round((state.config?.image.maxBytes ?? 10485760) / (1024 * 1024))} MB · วิดีโอไม่เกิน {Math.round((state.config?.video.maxBytes ?? 104857600) / (1024 * 1024))} MB
                 </p>
               </footer>
             </div>

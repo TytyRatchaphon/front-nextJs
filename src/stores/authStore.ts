@@ -108,6 +108,7 @@ export const useAuthStore = create<AuthState>()(
         clearLegacyLocalAuthStorage();
         await clearAuthTokenCookies();
         set({ user: null, token: null, isLoggedIn: false });
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
         window.location.href = '/';
       },
 

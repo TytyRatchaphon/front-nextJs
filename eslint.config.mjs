@@ -8,6 +8,8 @@ const eslintConfig = [
     ignores: [
       "node_modules/**",
       ".next/**",
+      ".next-deploy/**",
+      ".next-sitemap-e2e/**",
       "out/**",
       "build/**",
       "coverage/**",

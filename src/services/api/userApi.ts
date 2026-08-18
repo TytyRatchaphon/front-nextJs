@@ -677,3 +677,16 @@ export const claimQuest = async (questId: number, token?: string | null) => {
     throw error;
   }
 };
+
+// --- Delete Account ---
+
+export const deleteUserAccount = async (password: string) => {
+  try {
+    const response = await apiClient.post('/delete-account', {
+      password,
+    });
+    return response.data;
+  } catch (error: any) {
+    throw error;
+  }
+};

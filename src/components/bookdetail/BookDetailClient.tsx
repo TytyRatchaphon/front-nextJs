@@ -22,6 +22,7 @@ import { useLogger } from "@/hooks/useLogger";
 import RecommendedBooks from "@/components/bookdetail/RecommendedBooks";
 import EpPurchaseRewardCollapse from "@/components/bookdetail/EpPurchaseRewardCollapse";
 import BookQuestSection from "@/components/bookdetail/BookQuestSection";
+import BookVideoPlaylistSection from "@/features/video/components/public/BookVideoPlaylistSection";
 
 const collapseTabs = ["รายละเอียดเรื่อง", "สารบัญ"] as const;
 const segmentedTabs = ["ความคิดเห็นทั้งหมด", "รีวิวทั้งหมด"] as const;
@@ -251,6 +252,12 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
     );
   }
 
+  const isOwner = Boolean(
+    user &&
+    book?.writer?.user_id &&
+    (Number(user.user_id || user.id) === Number(book.writer.user_id))
+  );
+
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Full-width Header Container - Responsive */}
@@ -272,6 +279,7 @@ export default function BookDetailClient({ bookId }: { bookId: string }) {
           <div className="flex-1 w-full lg:max-w-[calc(100%-320px-1.5rem)]">
             <div className="space-y-4">
               {hasReadingModeSelector && renderReadingModeSelector()}
+              <BookVideoPlaylistSection bookId={bookId} isOwner={isOwner} />
               <BookQuestSection bookId={bookId} isLoggedIn={Boolean(isLoggedIn)} />
               <EpPurchaseRewardCollapse data={book.ep_purchase_reward} />
               <Collapse

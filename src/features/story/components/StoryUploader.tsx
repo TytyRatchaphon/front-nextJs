@@ -2,13 +2,14 @@ import React, { useRef, useState } from 'react';
 import { useStoryUpload } from '../hooks/useStoryUpload';
 import { PlusOutlined } from '@ant-design/icons';
 import StoryUploadModal from './StoryUploadModal';
+import { useAuthStore } from '@/stores/authStore';
 
 interface StoryUploaderProps {
   sourceType?: 'user' | 'admin';
   children?: React.ReactNode;
 }
 
-const StoryUploader: React.FC<StoryUploaderProps> = ({ sourceType = 'user', children }) => {
+const AuthenticatedStoryUploader: React.FC<StoryUploaderProps> = ({ sourceType = 'user', children }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadStory, isUploading, config } = useStoryUpload();
 
@@ -78,6 +79,15 @@ const StoryUploader: React.FC<StoryUploaderProps> = ({ sourceType = 'user', chil
       />
     </>
   );
+};
+
+const StoryUploader: React.FC<StoryUploaderProps> = (props) => {
+  const hasMounted = useAuthStore((state) => state.hasMounted);
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+
+  if (!hasMounted || !isLoggedIn) return null;
+
+  return <AuthenticatedStoryUploader {...props} />;
 };
 
 export default StoryUploader;

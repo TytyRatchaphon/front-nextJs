@@ -77,6 +77,7 @@ export default function CookieConsentBanner() {
     <>
       {/* Centered Wide Floating Consent Card - White and Red Theme */}
       <div 
+        data-nosnippet
         className={`fixed z-[2000] left-1/2 bottom-4 -translate-x-1/2
           w-[calc(100%-2rem)] md:w-[760px] lg:w-[860px] max-w-6xl
           bg-white border border-stone-200 

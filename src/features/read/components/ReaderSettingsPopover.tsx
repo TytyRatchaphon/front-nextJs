@@ -154,12 +154,14 @@ export function ReaderSettingsPopover({
     <Popover
       placement="bottomRight"
       zIndex={zIndex}
+      getPopupContainer={(triggerNode) => (triggerNode ? (triggerNode.parentElement as HTMLElement) : document.body)}
       classNames={{ root: "reader-settings-popover" }}
       styles={{ body: { padding: 0 } }}
       content={
         <div
           className="reader-settings-panel w-72 flex flex-col gap-4 p-1"
-          style={{ backgroundColor: readerMenuTheme.panelBg, color: readerMenuTheme.text }}
+          style={{ backgroundColor: readerMenuTheme.panelBg, color: readerMenuTheme.text, overscrollBehavior: "contain" }}
+          onWheel={(e) => e.stopPropagation()}
         >
           <div
             className="reader-settings-title flex items-center justify-between border-b px-3 pt-3 pb-2"
@@ -236,6 +238,8 @@ export function ReaderSettingsPopover({
               style={{ width: "100%" }}
               options={fontFamilyOptions}
               className="reader-settings-select h-10"
+              popupClassName="reader-font-select-dropdown"
+              getPopupContainer={(triggerNode) => (triggerNode ? (triggerNode.parentElement as HTMLElement) : document.body)}
             />
           </div>
 

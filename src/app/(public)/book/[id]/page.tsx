@@ -126,7 +126,7 @@ export default async function BookDetailPage({ params }: Props) {
       {bookSchema && <JsonLd data={bookSchema} />}
       <BreadcrumbJsonLd items={[
         { name: 'หน้าหลัก', url: baseUrl },
-        { name: 'นิยาย', url: `${baseUrl}/allnovel` },
+        { name: 'นิยาย', url: `${baseUrl}/fiction-novel` },
         { name: bookSchema ? (bookSchema.name as string) : 'รายละเอียดนิยาย', url: `${baseUrl}/book/${bookId}` },
       ]} />
       <HydrationBoundary state={dehydrate(queryClient)}>

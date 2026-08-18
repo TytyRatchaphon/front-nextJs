@@ -6,6 +6,7 @@ import {
   validateMessageBody,
 } from "./liveChatModel";
 import type {
+  LiveChatConfig,
   LiveChatError,
   LiveChatFeedback,
   LiveChatFeedbackTag,
@@ -38,6 +39,10 @@ export interface LiveChatSessionGateway {
   }) => Promise<MessagePage>;
   sendText: (body: string) => Promise<{ thread: LiveChatThread; message: LiveChatMessage }>;
   sendImage: (file: File) => Promise<{ thread: LiveChatThread; message: LiveChatMessage }>;
+  sendVideo?: (
+    file: File,
+    onUploadProgress?: (percent: number) => void,
+  ) => Promise<{ thread: LiveChatThread; message: LiveChatMessage }>;
   markRead: (messageId: number) => Promise<unknown>;
   fetchHelpTopics: () => Promise<{ topics: LiveChatHelpTopic[] }>;
   startIntake: (topic?: LiveChatHelpTopic) => Promise<{ intake: LiveChatIntake; created: boolean }>;
@@ -62,6 +67,7 @@ export interface LiveChatSessionGateway {
     threadId: number,
     payload: { rating: number; comment: string | null; tags: string[] },
   ) => Promise<{ feedback: LiveChatFeedback }>;
+  fetchConfig?: () => Promise<LiveChatConfig>;
 }
 
 export interface LiveChatSessionSocket {
@@ -85,6 +91,7 @@ export interface LiveChatSessionState {
   hasMoreHistory: boolean;
   topics: LiveChatHelpTopic[];
   feedbackTags: LiveChatFeedbackTag[];
+  config: LiveChatConfig | null;
   error: LiveChatError | null;
   isSending: boolean;
   pendingSend: "text" | "image" | null;
@@ -119,6 +126,7 @@ export const createLiveChatSession = ({ gateway }: CreateLiveChatSessionOptions)
     hasMoreHistory: false,
     topics: [],
     feedbackTags: [],
+    config: null,
     error: null,
     isSending: false,
     pendingSend: null,
@@ -223,14 +231,15 @@ export const createLiveChatSession = ({ gateway }: CreateLiveChatSessionOptions)
         gateway.fetchThreads(),
         gateway.fetchHelpTopics(),
         gateway.fetchFeedbackTags(),
+        gateway.fetchConfig ? gateway.fetchConfig() : Promise.reject("no_config"),
       ]);
       const { thread } = activeResult;
       if (currentGeneration !== generation) return;
       if (thread) await loadConversation(thread);
       if (currentGeneration === generation) {
-        const [historyResult, topicsResult, feedbackTagsResult] = auxiliaryResults;
+        const [historyResult, topicsResult, feedbackTagsResult, configResult] = auxiliaryResults;
         const rejectedAuxiliary = auxiliaryResults.find(
-          (result): result is PromiseRejectedResult => result.status === "rejected",
+          (result, index): result is PromiseRejectedResult => result.status === "rejected" && index !== 3,
         );
         const loadedTopics = topicsResult.status === "fulfilled"
           ? [...topicsResult.value.topics].sort((left, right) => left.sort_order - right.sort_order)
@@ -255,6 +264,9 @@ export const createLiveChatSession = ({ gateway }: CreateLiveChatSessionOptions)
           ...(feedbackTagsResult.status === "fulfilled" ? {
             feedbackTags: [...feedbackTagsResult.value.tags]
               .sort((left, right) => left.sort_order - right.sort_order),
+          } : {}),
+          ...(configResult.status === "fulfilled" && configResult.value ? {
+            config: configResult.value,
           } : {}),
           error: rejectedAuxiliary
             ? normalizeError(rejectedAuxiliary.reason)
